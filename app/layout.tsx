@@ -1,16 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
-
+import { Geist_Mono, Inter } from "next/font/google"
 import "./globals.css"
 
-import { Geist_Mono, Inter, Inter as V0_Font_Inter, Geist_Mono as V0_Font_Geist_Mono, Source_Serif_4 as V0_Font_Source_Serif_4 } from 'next/font/google'
-
-// Initialize fonts
-const _inter = V0_Font_Inter({ subsets: ['latin'], weight: ["100","200","300","400","500","600","700","800","900"] })
-const _geistMono = V0_Font_Geist_Mono({ subsets: ['latin'], weight: ["100","200","300","400","500","600","700","800","900"] })
-const _sourceSerif_4 = V0_Font_Source_Serif_4({ subsets: ['latin'], weight: ["200","300","400","500","600","700","800","900"] })
-
 const inter = Inter({ subsets: ["latin"] })
+const _geistMono = Geist_Mono({ subsets: ["latin"] })
+
 export const metadata: Metadata = {
   title: "Shelf Configurator",
   description: "Design your perfect modular shelf system",

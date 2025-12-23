@@ -3,6 +3,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hide all scrollbars globally */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   --background: oklch(0.1 0 0);
   --foreground: oklch(0.98 0 0);
@@ -38,43 +48,16 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* Configurator-specific semantic tokens */
-  --canvas-bg: oklch(0.13 0 0);
-  --ground-color: oklch(0.28 0.02 50);
-  --overlay-bg: oklch(0.1 0 0 / 0.85);
+  /* Adding custom tokens for the configurator UI */
+  --canvas-bg: oklch(0.08 0 0);
+  --ground-color: oklch(0.18 0.01 50);
+  --overlay-bg: oklch(0.1 0 0 / 0.9);
   --overlay-border: oklch(0.25 0 0);
-
-  /* Simpli brand colors */
-  --simpli-blue: oklch(0.6 0.18 230);
-  --simpli-blue-hover: oklch(0.65 0.18 230);
-  --simpli-success: oklch(0.6 0.15 145);
-  --simpli-warning: oklch(0.75 0.15 85);
-
-  /* Module colors for shelf configurator */
-  --module-weiss: #f5f5f5;
-  --module-schwarz: #1a1a1a;
-  --module-blau: #00b4d8;
-  --module-gruen: #228b22;
-  --module-gelb: #eab308;
-  --module-orange: #f97316;
-  --module-rot: #dc2626;
-
-  /* Control surfaces */
+  --accent-blue: oklch(0.55 0.18 240);
+  --accent-blue-hover: oklch(0.6 0.18 240);
+  --success: oklch(0.6 0.15 140);
   --control-bg: oklch(0.18 0 0);
   --control-hover: oklch(0.22 0 0);
-  --control-active: oklch(0.25 0 0);
-
-  /* Drag and drop states */
-  --drag-active: oklch(0.55 0.18 230 / 0.3);
-  --drag-over: oklch(0.6 0.2 145 / 0.4);
-  --drag-invalid: oklch(0.55 0.2 25 / 0.3);
-
-  --shadow-x: 0px;
-  --shadow-y: 1px;
-  --shadow-blur: 2px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.05;
-  --shadow-color: #000000;
 }
 
 .dark {
@@ -110,15 +93,10 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
-  --shadow-x: 0px;
-  --shadow-y: 1px;
-  --shadow-blur: 2px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.05;
-  --shadow-color: #000000;
 }
 
 @theme inline {
+  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --font-sans: "Inter", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -156,41 +134,6 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
-  --font-serif: "Source Serif 4", "Source Serif 4 Fallback";
-
-  /* Simpli brand colors */
-  --color-simpli-blue: var(--simpli-blue);
-  --color-simpli-blue-hover: var(--simpli-blue-hover);
-  --color-simpli-success: var(--simpli-success);
-  --color-simpli-warning: var(--simpli-warning);
-
-  /* computed shadow variables below - do not modify */
-  --shadow-2xs: var(--shadow-x) var(--shadow-y)
-    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-xs: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread)
-    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-sm: var(--shadow-x) var(--shadow-y) calc(var(--shadow-blur) * 1.5) var(--shadow-spread)
-    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-md: calc(var(--shadow-x) * 2) calc(var(--shadow-y) * 2) calc(var(--shadow-blur) * 3)
-    calc(var(--shadow-spread) - 1px)
-    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-lg: calc(var(--shadow-x) * 4) calc(var(--shadow-y) * 4) calc(var(--shadow-blur) * 5)
-    calc(var(--shadow-spread) - 3px)
-    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-xl: calc(var(--shadow-x) * 6) calc(var(--shadow-y) * 6) calc(var(--shadow-blur) * 7)
-    calc(var(--shadow-spread) - 5px)
-    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
-  --shadow-2xl: calc(var(--shadow-x) * 8) calc(var(--shadow-y) * 8) calc(max(0px, var(--shadow-blur) * 9 - 8px))
-    calc(var(--shadow-spread) - 12px)
-    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 250%), transparent);
-  --shadow: var(--shadow-md);
-  --color-shadow-color: var(--shadow-color);
-  --shadow-opacity: var(--shadow-opacity);
-  --shadow-spread: var(--shadow-spread);
-  --shadow-blur: var(--shadow-blur);
-  --shadow-y: var(--shadow-y);
-  --shadow-x: var(--shadow-x);
 }
 
 @layer base {
@@ -199,66 +142,5 @@
   }
   body {
     @apply bg-background text-foreground;
-  }
-
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    transition: scrollbar-color 0.3s ease;
-    overflow-x: hidden;
-  }
-
-  *:hover {
-    scrollbar-color: oklch(0.35 0 0) transparent;
-  }
-
-  *::-webkit-scrollbar {
-    width: 6px;
-    height: 0px;
-  }
-
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  *::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 3px;
-    transition: background 0.3s ease;
-  }
-
-  *:hover::-webkit-scrollbar-thumb {
-    background: oklch(0.35 0 0);
-  }
-
-  *:hover::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.4 0 0);
-  }
-}
-
-/* Drag and drop utility classes */
-@layer utilities {
-  .dragging {
-    opacity: 0.7;
-    cursor: grabbing !important;
-  }
-
-  .drag-over {
-    background-color: var(--drag-over);
-    border-color: var(--simpli-success) !important;
-  }
-
-  .drag-invalid {
-    background-color: var(--drag-invalid);
-    border-color: var(--destructive) !important;
-  }
-
-  .draggable {
-    cursor: grab;
-    user-select: none;
-  }
-
-  .draggable:active {
-    cursor: grabbing;
   }
 }

@@ -82,6 +82,8 @@ export const metallboeden: Product[] = [
   },
   { artNr: "sim008-rt", name: "Metallboden Rot 40", category: "metallboden", size: 40, price: 19.5, color: "rot" },
   { artNr: "sim009-rt", name: "Metallboden Rot 80", category: "metallboden", size: 80, price: 33.5, color: "rot" },
+  { artNr: "sim008-ge", name: "Metallboden Gelb 40", category: "metallboden", size: 40, price: 19.5, color: "gelb" },
+  { artNr: "sim009-ge", name: "Metallboden Gelb 80", category: "metallboden", size: 80, price: 33.5, color: "gelb" },
   { artNr: "sim008-gr", name: "Metallboden Grün 40", category: "metallboden", size: 40, price: 19.5, color: "gruen" },
   { artNr: "sim009-gr", name: "Metallboden Grün 80", category: "metallboden", size: 80, price: 33.5, color: "gruen" },
 ]
@@ -233,7 +235,7 @@ export function getLedPrice(stripes: 2 | 4): number {
 }
 
 // Color hex values for rendering
-export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar" | "gelb", string> = {
+export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar", string> = {
   schwarz: "#1a1a1a",
   weiss: "#f5f5f5",
   blau: "#00b4d8",
