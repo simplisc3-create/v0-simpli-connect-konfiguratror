@@ -6,7 +6,6 @@ import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "@/lib/types"
 import { GLBModule } from "./glb-module-loader"
 import type { JSX } from "react/jsx-runtime"
-import { DimensionLabels } from "./dimension-labels"
 
 type Props = {
   config: ShelfConfig
@@ -16,10 +15,6 @@ type Props = {
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (row: number, col: number, isHovering: boolean) => void
   useGLBModels?: boolean
-  onAddColumn?: () => void
-  onRemoveColumn?: () => void
-  onAddRow?: () => void
-  onRemoveRow?: () => void
 }
 
 const colorMap: Record<string, string> = {
@@ -483,10 +478,6 @@ export function ShelfScene({
   onCellClick,
   onCellHover,
   useGLBModels = false,
-  onAddColumn,
-  onRemoveColumn,
-  onAddRow,
-  onRemoveRow,
 }: Props) {
   const [localUseGLBModels, setLocalUseGLBModels] = useState(useGLBModels)
 
@@ -779,20 +770,7 @@ export function ShelfScene({
       {elements}
       {glbModules}
       {interactiveCells}
-      <DimensionLabels
-        totalWidth={dimensions.totalWidth}
-        totalHeight={dimensions.totalHeight}
-        depth={dimensions.depth}
-        offsetX={dimensions.offsetX}
-        offsetY={dimensions.offsetY}
-        offsetZ={dimensions.offsetZ}
-        onAddColumn={onAddColumn}
-        onRemoveColumn={onRemoveColumn}
-        onAddRow={onAddRow}
-        onRemoveRow={onRemoveRow}
-        canRemoveColumn={config.columns > 1}
-        canRemoveRow={config.rows > 1}
-      />
+      {/* DimensionLabels component is removed as per updates */}
     </group>
   )
 }
