@@ -427,14 +427,14 @@ export function ShelfConfigurator() {
               gl={{
                 antialias: true,
                 toneMapping: THREE.ACESFilmicToneMapping,
-                toneMappingExposure: 1.2, // Slightly brighter exposure for studio look
+                toneMappingExposure: 1.2,
                 powerPreference: "high-performance",
                 alpha: false,
                 stencil: false,
               }}
-              dpr={[1, 2]} // Higher pixel ratio for sharper rendering
+              dpr={[1, 2]}
             >
-              <color attach="background" args={["#f5f5f5"]} />
+              <color attach="background" args={["#f8f7f4"]} />
 
               <ambientLight intensity={0.6} />
 
@@ -453,23 +453,18 @@ export function ShelfConfigurator() {
                 shadow-normalBias={0.02}
               />
 
-              {/* Fill light - softer from opposite side */}
               <directionalLight position={[-6, 8, -4]} intensity={0.5} color="#ffffff" />
-
-              {/* Back/rim light */}
               <directionalLight position={[0, 6, -10]} intensity={0.3} color="#ffffff" />
-
-              {/* Front fill for chrome reflections */}
               <directionalLight position={[0, 4, 12]} intensity={0.3} color="#ffffff" />
 
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
                 <planeGeometry args={[50, 50]} />
-                <meshStandardMaterial color="#e5ddd5" roughness={0.9} metalness={0} />
+                <meshStandardMaterial color="#ebe8e2" roughness={0.9} metalness={0} />
               </mesh>
 
               <WoodFloor />
 
-              <ContactShadows position={[0, -0.001, 0]} opacity={0.25} scale={25} blur={3} far={6} color="#3d2817" />
+              <ContactShadows position={[0, -0.001, 0]} opacity={0.2} scale={25} blur={4} far={6} color="#2a2520" />
 
               <Environment preset="studio" background={false} />
 
@@ -503,64 +498,64 @@ export function ShelfConfigurator() {
               />
             </Canvas>
 
-            <div className="absolute left-2 top-2 flex flex-col gap-1 md:left-3 md:top-3 md:gap-1.5">
-              <div className="flex gap-1 md:gap-1.5">
+            <div className="absolute left-3 top-3 flex flex-col gap-1.5">
+              <div className="flex gap-1">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => setCameraView("front")}
                   className={cn(
-                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
-                    cameraView === "front" && "bg-simpli-blue/20 border-simpli-blue",
+                    "h-8 w-8 bg-card/90 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "front" && "bg-foreground text-background border-foreground hover:bg-foreground/90",
                   )}
-                  title="Vorderansicht"
+                  title="Front View"
                 >
-                  <Eye className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                  <Eye className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => setCameraView("side")}
                   className={cn(
-                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
-                    cameraView === "side" && "bg-simpli-blue/20 border-simpli-blue",
+                    "h-8 w-8 bg-card/90 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "side" && "bg-foreground text-background border-foreground hover:bg-foreground/90",
                   )}
-                  title="Seitenansicht"
+                  title="Side View"
                 >
-                  <Maximize2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                  <Maximize2 className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => setCameraView("top")}
                   className={cn(
-                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
-                    cameraView === "top" && "bg-simpli-blue/20 border-simpli-blue",
+                    "h-8 w-8 bg-card/90 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "top" && "bg-foreground text-background border-foreground hover:bg-foreground/90",
                   )}
-                  title="Draufsicht"
+                  title="Top View"
                 >
-                  <Grid3X3 className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                  <Grid3X3 className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => setCameraView("isometric")}
                   className={cn(
-                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
-                    cameraView === "isometric" && "bg-simpli-blue/20 border-simpli-blue",
+                    "h-8 w-8 bg-card/90 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "isometric" &&
+                      "bg-foreground text-background border-foreground hover:bg-foreground/90",
                   )}
-                  title="Isometrisch"
+                  title="Isometric View"
                 >
-                  <Box className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                  <Box className="h-3.5 w-3.5" />
                 </Button>
               </div>
 
-              {/* Selected tool indicator moved below camera controls */}
               {selectedTool && selectedTool !== "empty" && (
-                <div className="rounded-lg bg-card/80 backdrop-blur-sm border border-border px-2 py-1 md:px-2.5 md:py-1.5 mt-1">
-                  <div className="flex items-center gap-1.5 md:gap-2">
+                <div className="bg-card/90 backdrop-blur-sm border border-border px-2.5 py-1.5">
+                  <div className="flex items-center gap-2">
                     <div
-                      className="h-3.5 w-3.5 rounded md:h-5 md:w-5 shadow-sm"
+                      className="h-4 w-4 border border-border"
                       style={{
                         backgroundColor:
                           config.accentColor !== "none"
@@ -568,73 +563,61 @@ export function ShelfConfigurator() {
                             : getColorHex(config.baseColor),
                       }}
                     />
-                    <span className="text-sm md:text-base text-foreground">{getToolLabel(selectedTool)}</span>
+                    <span className="font-mono text-[10px] tracking-wide text-foreground">
+                      {getToolLabel(selectedTool).toUpperCase()}
+                    </span>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="absolute right-2 top-2 flex gap-1 md:right-3 md:top-3 md:gap-1.5">
+            <div className="absolute right-3 top-3 flex gap-1">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={undo}
                 disabled={!canUndo}
-                className="h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary disabled:opacity-30"
-                title="Rückgängig (Undo)"
+                className="h-8 w-8 bg-card/90 backdrop-blur-sm border-border hover:bg-secondary disabled:opacity-30"
+                title="Undo"
               >
-                <Undo2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                <Undo2 className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={redo}
                 disabled={!canRedo}
-                className="h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary disabled:opacity-30"
-                title="Wiederholen (Redo)"
+                className="h-8 w-8 bg-card/90 backdrop-blur-sm border-border hover:bg-secondary disabled:opacity-30"
+                title="Redo"
               >
-                <Redo2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                <Redo2 className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={reset}
-                className="h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary hover:border-destructive"
-                title="Zurücksetzen (Reset)"
+                className="h-8 w-8 bg-card/90 backdrop-blur-sm border-border hover:bg-secondary"
+                title="Reset"
               >
-                <RotateCcw className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                <RotateCcw className="h-3.5 w-3.5" />
               </Button>
             </div>
 
-            <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg bg-card/80 backdrop-blur-sm px-2.5 py-1.5 text-xs md:bottom-3 md:left-3 md:right-auto md:text-sm text-muted-foreground border border-border">
-              {selectedTool ? (
-                <span>
-                  <span className="font-semibold text-simpli-blue">
-                    {selectedTool === "empty" ? "Radierer" : getToolLabel(selectedTool)}
-                  </span>
-                  <span className="hidden sm:inline"> | Klicke auf Zellen oder ziehe Module</span>
-                </span>
-              ) : (
-                <span className="hidden sm:inline">Wähle ein Modul oder ziehe es auf das Regal</span>
-              )}
+            <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur-sm border border-border px-3 py-2">
+              <span className="font-mono text-[9px] tracking-[0.15em] text-muted-foreground block">TOTAL</span>
+              <span className="font-mono text-lg text-foreground">{priceFormatted} €</span>
             </div>
-          </div>
 
-          <button
-            onClick={() => setShowMobilePanel(!showMobilePanel)}
-            className="sticky bottom-0 z-20 flex items-center justify-between gap-2 border-t border-border bg-card px-4 py-4 text-foreground lg:hidden active:bg-secondary transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-base">Konfigurator</span>
-              <span className="text-sm text-muted-foreground">
-                ({config.rows}x{config.columns})
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xl font-bold text-simpli-blue">{priceFormatted} €</span>
-              <ChevronDown className={cn("h-5 w-5 transition-transform", showMobilePanel && "rotate-180")} />
-            </div>
-          </button>
+            {isMobile && (
+              <button
+                onClick={() => setShowMobilePanel(!showMobilePanel)}
+                className="absolute bottom-3 right-3 bg-foreground text-background px-4 py-2.5 flex items-center gap-2 shadow-sm"
+              >
+                <span className="font-mono text-[10px] tracking-wide">CONFIGURE</span>
+                <ChevronDown className={cn("h-4 w-4 transition-transform", showMobilePanel && "rotate-180")} />
+              </button>
+            )}
+          </div>
 
           <ConfiguratorPanel
             config={config}
