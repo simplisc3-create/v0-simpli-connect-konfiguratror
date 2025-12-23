@@ -591,117 +591,277 @@ export function ConfiguratorPanel({
 
 // Module preview SVG component
 function ModulePreviewSVG({ type }: { type: GridCell["type"] }) {
-  const baseClass = "w-full h-10 sm:h-12 md:h-10"
+  const baseClass = "w-full h-12 sm:h-14 md:h-12"
+
+  // 3D isometric box parameters
+  const iso = {
+    // Base points for isometric cube (centered, viewed from front-right-top)
+    // Front face
+    frontTopLeft: "15,12",
+    frontTopRight: "45,12",
+    frontBottomLeft: "15,32",
+    frontBottomRight: "45,32",
+    // Back face (offset up-left for depth)
+    backTopLeft: "10,8",
+    backTopRight: "40,8",
+    backBottomLeft: "10,28",
+    backBottomRight: "40,28",
+    // Top face
+    topFrontLeft: "15,12",
+    topFrontRight: "45,12",
+    topBackLeft: "20,6",
+    topBackRight: "50,6",
+    // Right side
+    rightFrontTop: "45,12",
+    rightFrontBottom: "45,32",
+    rightBackTop: "50,6",
+    rightBackBottom: "50,26",
+  }
 
   switch (type) {
     case "ohne-seitenwaende":
+      // Open frame - just the outline/frame structure
       return (
         <svg className={baseClass} viewBox="0 0 60 40" fill="none">
-          <rect x="5" y="5" width="50" height="30" stroke="currentColor" strokeWidth="1.5" fill="none" rx="1" />
-          <line x1="5" y1="35" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
+          {/* Frame structure - chrome tubes */}
+          {/* Bottom frame */}
+          <path d="M12,34 L42,34 L50,28 L20,28 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          {/* Top frame */}
+          <path d="M12,10 L42,10 L50,4 L20,4 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          {/* Vertical posts */}
+          <line x1="12" y1="10" x2="12" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="42" y1="10" x2="42" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="50" y1="4" x2="50" y2="28" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="20" y1="4" x2="20" y2="28" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" />
+          {/* Shelf surface hint */}
+          <path
+            d="M14,32 L40,32 L48,26 L22,26 Z"
+            fill="currentColor"
+            fillOpacity="0.1"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         </svg>
       )
     case "ohne-rueckwand":
+      // Open back - frame with floor and sides but no back panel
       return (
         <svg className={baseClass} viewBox="0 0 60 40" fill="none">
-          <rect x="5" y="5" width="50" height="30" stroke="currentColor" strokeWidth="1.5" fill="none" rx="1" />
-          <line x1="5" y1="5" x2="5" y2="35" stroke="currentColor" strokeWidth="2" />
-          <line x1="55" y1="5" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
-          <line x1="5" y1="35" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
+          {/* Frame */}
+          <path d="M12,34 L42,34 L50,28 L20,28 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M12,10 L42,10 L50,4 L20,4 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <line x1="12" y1="10" x2="12" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="42" y1="10" x2="42" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="50" y1="4" x2="50" y2="28" stroke="currentColor" strokeWidth="1.5" />
+          {/* Left side panel */}
+          <path
+            d="M12,10 L20,4 L20,28 L12,34 Z"
+            fill="currentColor"
+            fillOpacity="0.15"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
+          {/* Floor */}
+          <path
+            d="M12,32 L42,32 L50,26 L20,26 Z"
+            fill="currentColor"
+            fillOpacity="0.2"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
+          {/* Right side panel */}
+          <path
+            d="M42,10 L50,4 L50,28 L42,34 Z"
+            fill="currentColor"
+            fillOpacity="0.1"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         </svg>
       )
     case "mit-rueckwand":
+      // With back panel - fully enclosed back
       return (
         <svg className={baseClass} viewBox="0 0 60 40" fill="none">
-          <rect
-            x="5"
-            y="5"
-            width="50"
-            height="30"
-            stroke="currentColor"
-            strokeWidth="1.5"
+          {/* Back panel (visible through opening) */}
+          <path
+            d="M14,9 L20,4 L20,28 L14,33 Z"
             fill="currentColor"
-            fillOpacity="0.1"
-            rx="1"
+            fillOpacity="0.25"
+            stroke="currentColor"
+            strokeWidth="0.5"
           />
-          <line x1="5" y1="5" x2="5" y2="35" stroke="currentColor" strokeWidth="2" />
-          <line x1="55" y1="5" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
-          <line x1="5" y1="35" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
+          <path
+            d="M20,4 L48,4 L48,26 L20,26 Z"
+            fill="currentColor"
+            fillOpacity="0.2"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
+          {/* Frame */}
+          <path d="M12,34 L42,34 L50,28 L20,28 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M12,10 L42,10 L50,4 L20,4 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <line x1="12" y1="10" x2="12" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="42" y1="10" x2="42" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="50" y1="4" x2="50" y2="28" stroke="currentColor" strokeWidth="1.5" />
+          {/* Floor */}
+          <path
+            d="M12,32 L42,32 L50,26 L20,26 Z"
+            fill="currentColor"
+            fillOpacity="0.15"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
+          {/* Right side */}
+          <path
+            d="M42,10 L50,4 L50,28 L42,34 Z"
+            fill="currentColor"
+            fillOpacity="0.08"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         </svg>
       )
     case "mit-tueren":
+      // With double doors - front doors with handles
       return (
         <svg className={baseClass} viewBox="0 0 60 40" fill="none">
-          <rect
-            x="5"
-            y="5"
-            width="50"
-            height="30"
-            stroke="currentColor"
-            strokeWidth="1.5"
+          {/* Back panel */}
+          <path d="M20,4 L48,4 L48,26 L20,26 Z" fill="currentColor" fillOpacity="0.15" />
+          {/* Frame */}
+          <path d="M12,10 L42,10 L50,4 L20,4 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <line x1="12" y1="10" x2="12" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="42" y1="10" x2="42" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="50" y1="4" x2="50" y2="28" stroke="currentColor" strokeWidth="1.5" />
+          {/* Front doors */}
+          <path
+            d="M12,10 L42,10 L42,34 L12,34 Z"
             fill="currentColor"
-            fillOpacity="0.15"
-            rx="1"
+            fillOpacity="0.25"
+            stroke="currentColor"
+            strokeWidth="1"
           />
-          <line x1="30" y1="5" x2="30" y2="35" stroke="currentColor" strokeWidth="1" />
-          <circle cx="25" cy="20" r="2" fill="currentColor" />
-          <circle cx="35" cy="20" r="2" fill="currentColor" />
+          {/* Door divider line */}
+          <line x1="27" y1="10" x2="27" y2="34" stroke="currentColor" strokeWidth="1" />
+          {/* Door handles */}
+          <line x1="22" y1="21" x2="22" y2="23" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="32" y1="21" x2="32" y2="23" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          {/* Right side */}
+          <path
+            d="M42,10 L50,4 L50,28 L42,34 Z"
+            fill="currentColor"
+            fillOpacity="0.1"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         </svg>
       )
     case "mit-klapptuer":
+      // With flap door - single flip-up door at bottom
       return (
         <svg className={baseClass} viewBox="0 0 60 40" fill="none">
-          <rect
-            x="5"
-            y="5"
-            width="50"
-            height="30"
-            stroke="currentColor"
-            strokeWidth="1.5"
+          {/* Back panel */}
+          <path d="M20,4 L48,4 L48,26 L20,26 Z" fill="currentColor" fillOpacity="0.15" />
+          {/* Frame */}
+          <path d="M12,10 L42,10 L50,4 L20,4 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <line x1="12" y1="10" x2="12" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="42" y1="10" x2="42" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="50" y1="4" x2="50" y2="28" stroke="currentColor" strokeWidth="1.5" />
+          {/* Front flap door */}
+          <path
+            d="M12,10 L42,10 L42,34 L12,34 Z"
             fill="currentColor"
-            fillOpacity="0.15"
-            rx="1"
+            fillOpacity="0.25"
+            stroke="currentColor"
+            strokeWidth="1"
           />
-          <line x1="5" y1="28" x2="55" y2="28" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
-          <circle cx="30" cy="32" r="2" fill="currentColor" />
+          {/* Flap hinge line (dashed) */}
+          <line x1="12" y1="26" x2="42" y2="26" stroke="currentColor" strokeWidth="0.75" strokeDasharray="3 2" />
+          {/* Handle at bottom */}
+          <line x1="24" y1="30" x2="30" y2="30" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          {/* Right side */}
+          <path
+            d="M42,10 L50,4 L50,28 L42,34 Z"
+            fill="currentColor"
+            fillOpacity="0.1"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         </svg>
       )
     case "mit-doppelschublade":
+      // With double drawer - two stacked drawers with handles
       return (
         <svg className={baseClass} viewBox="0 0 60 40" fill="none">
-          <rect
-            x="5"
-            y="5"
-            width="50"
-            height="30"
-            stroke="currentColor"
-            strokeWidth="1.5"
+          {/* Back panel */}
+          <path d="M20,4 L48,4 L48,26 L20,26 Z" fill="currentColor" fillOpacity="0.15" />
+          {/* Frame */}
+          <path d="M12,10 L42,10 L50,4 L20,4 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <line x1="12" y1="10" x2="12" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="42" y1="10" x2="42" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="50" y1="4" x2="50" y2="28" stroke="currentColor" strokeWidth="1.5" />
+          {/* Upper drawer front */}
+          <path
+            d="M12,10 L42,10 L42,22 L12,22 Z"
             fill="currentColor"
-            fillOpacity="0.15"
-            rx="1"
+            fillOpacity="0.25"
+            stroke="currentColor"
+            strokeWidth="1"
           />
-          <line x1="5" y1="20" x2="55" y2="20" stroke="currentColor" strokeWidth="1" />
-          <line x1="25" y1="12" x2="35" y2="12" stroke="currentColor" strokeWidth="2" />
-          <line x1="25" y1="28" x2="35" y2="28" stroke="currentColor" strokeWidth="2" />
+          {/* Upper drawer handle */}
+          <line x1="20" y1="16" x2="34" y2="16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          {/* Lower drawer front */}
+          <path
+            d="M12,22 L42,22 L42,34 L12,34 Z"
+            fill="currentColor"
+            fillOpacity="0.3"
+            stroke="currentColor"
+            strokeWidth="1"
+          />
+          {/* Lower drawer handle */}
+          <line x1="20" y1="28" x2="34" y2="28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          {/* Right side */}
+          <path
+            d="M42,10 L50,4 L50,28 L42,34 Z"
+            fill="currentColor"
+            fillOpacity="0.1"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         </svg>
       )
     case "abschliessbare-tueren":
+      // With lockable doors - doors with lock indicators
       return (
         <svg className={baseClass} viewBox="0 0 60 40" fill="none">
-          <rect
-            x="5"
-            y="5"
-            width="50"
-            height="30"
-            stroke="currentColor"
-            strokeWidth="1.5"
+          {/* Back panel */}
+          <path d="M20,4 L48,4 L48,26 L20,26 Z" fill="currentColor" fillOpacity="0.15" />
+          {/* Frame */}
+          <path d="M12,10 L42,10 L50,4 L20,4 Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <line x1="12" y1="10" x2="12" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="42" y1="10" x2="42" y2="34" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="50" y1="4" x2="50" y2="28" stroke="currentColor" strokeWidth="1.5" />
+          {/* Front doors */}
+          <path
+            d="M12,10 L42,10 L42,34 L12,34 Z"
             fill="currentColor"
-            fillOpacity="0.15"
-            rx="1"
+            fillOpacity="0.25"
+            stroke="currentColor"
+            strokeWidth="1"
           />
-          <line x1="30" y1="5" x2="30" y2="35" stroke="currentColor" strokeWidth="1" />
-          <rect x="23" y="17" width="6" height="6" fill="currentColor" rx="1" />
-          <rect x="33" y="17" width="6" height="6" fill="currentColor" rx="1" />
+          {/* Door divider */}
+          <line x1="27" y1="10" x2="27" y2="34" stroke="currentColor" strokeWidth="1" />
+          {/* Lock indicators (small rectangles) */}
+          <rect x="20" y="19" width="4" height="5" fill="currentColor" rx="0.5" />
+          <rect x="30" y="19" width="4" height="5" fill="currentColor" rx="0.5" />
+          {/* Right side */}
+          <path
+            d="M42,10 L50,4 L50,28 L42,34 Z"
+            fill="currentColor"
+            fillOpacity="0.1"
+            stroke="currentColor"
+            strokeWidth="0.5"
+          />
         </svg>
       )
     default:

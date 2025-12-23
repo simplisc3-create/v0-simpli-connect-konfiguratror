@@ -88,16 +88,37 @@ export function optimizeShoppingList(config: ShelfConfig): OptimizationResult {
     addItem(leiterProduct, config.columns + 1)
   }
 
-  // Calculate tube sets needed per column width
+  // Each Stangenset contains 2 tubes (front + back) and connects between two uprights
+  // For each row, we need horizontal tube sets at top and bottom = rows + 1 levels
+  // But each Stangenset package contains 2 tubes, so we need:
+  // - Number of tube positions = (rows + 1) levels × columns
+  // - Each position needs tubes for front AND back depth
+  // - Since each Stangenset contains 2 tubes (for front+back), we need 1 set per position
+  //
+  // CORRECT FORMULA: Each level needs tube sets equal to number of columns
+  // Total Stangensets = columns × (rows + 1) levels
+  // BUT: Looking at real SIMPLI-CONNECT, each LEVEL is a horizontal plane
+  // A shelf with 2 rows has 2 horizontal shelves, needing tubes at:
+  // - Bottom (floor level) - optional, often just feet
+  // - Between row 1 and 2 (middle shelf)
+  // - Top
+  //
+  // Per the documentation, Stangensets connect BETWEEN uprights horizontally
+  // So for 3 columns = 3 bays, each bay needs 1 Stangenset per level
+  // For 2 rows: shelves are at row boundaries = 2 shelf levels (not 3!)
+  const shelfLevels = config.rows + 1 // Number of horizontal frame levels (bottom, between rows, top)
+
+  // Count columns by width
   const col80Count = config.columnWidths.filter((w) => w === 75).length
   const col40Count = config.columnWidths.filter((w) => w === 38).length
-  const levels = config.rows + 1 // Tubes needed at each level (top & bottom of each row)
 
   const stange80 = stangensets.find((s) => s.size === 80 && s.variant === "metall")
   const stange40 = stangensets.find((s) => s.size === 40 && s.variant === "metall")
 
-  if (stange80 && col80Count > 0) addItem(stange80, col80Count * levels)
-  if (stange40 && col40Count > 0) addItem(stange40, col40Count * levels)
+  // Each column needs Stangensets for each shelf level
+  // Example: 3 columns, 2 rows = 3 × 3 = 9 Stangensets
+  if (stange80 && col80Count > 0) addItem(stange80, col80Count * shelfLevels)
+  if (stange40 && col40Count > 0) addItem(stange40, col40Count * shelfLevels)
 
   // Track color and type usage for optimization suggestions
   const colorUsage: Record<string, number> = {}

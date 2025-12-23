@@ -1,17 +1,21 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment } from "@react-three/drei"
+import { OrbitControls, Environment, ContactShadows } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
 import { DragDropProvider } from "./drag-drop-context"
-import { Undo2, Redo2, RotateCcw, ChevronDown } from "lucide-react"
+import { Undo2, Redo2, RotateCcw, ChevronDown, Eye, Maximize2, Box, Grid3X3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { optimizeShoppingList, type OptimizationResult } from "@/lib/shopping-optimizer"
 import * as THREE from "three"
+import { useThree } from "@react-three/fiber"
+import { WoodFloor } from "./wood-floor"
 
 export type GridCell = {
   id: string
@@ -74,6 +78,73 @@ const initialConfig: ShelfConfig = {
   shelfMaterial: "metall",
 }
 
+type CameraView = "free" | "front" | "side" | "top" | "isometric"
+
+const cameraPresets: Record<
+  CameraView,
+  { position: [number, number, number]; target: [number, number, number]; label: string }
+> = {
+  free: { position: [2, 1.5, 3], target: [0, 0.4, 0], label: "Frei" },
+  front: { position: [0, 0.6, 3.5], target: [0, 0.4, 0], label: "Vorne" },
+  side: { position: [3.5, 0.6, 0], target: [0, 0.4, 0], label: "Seite" },
+  top: { position: [0, 4, 0.01], target: [0, 0, 0], label: "Oben" },
+  isometric: { position: [2.5, 2.5, 2.5], target: [0, 0.3, 0], label: "Iso" },
+}
+
+function CameraController({
+  view,
+  controlsRef,
+}: {
+  view: CameraView
+  controlsRef: React.RefObject<any>
+}) {
+  const { camera } = useThree()
+  const animationRef = useRef<number | null>(null)
+  const prevView = useRef<CameraView>(view)
+
+  useEffect(() => {
+    if (view === prevView.current) return
+    prevView.current = view
+
+    const preset = cameraPresets[view]
+    const startPosition = camera.position.clone()
+    const endPosition = new THREE.Vector3(...preset.position)
+    const startTime = performance.now()
+    const duration = 600 // ms
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // Smooth easing
+      const eased = 1 - Math.pow(1 - progress, 3)
+
+      camera.position.lerpVectors(startPosition, endPosition, eased)
+
+      if (controlsRef.current) {
+        controlsRef.current.target.set(...preset.target)
+        controlsRef.current.update()
+      }
+
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current)
+    }
+    animationRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [view, camera, controlsRef])
+
+  return null
+}
+
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
   const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("ohne-seitenwaende")
@@ -82,6 +153,8 @@ export function ShelfConfigurator() {
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
   const [showMobilePanel, setShowMobilePanel] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [cameraView, setCameraView] = useState<CameraView>("free")
+  const controlsRef = useRef<any>(null)
 
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
@@ -183,23 +256,30 @@ export function ShelfConfigurator() {
 
   const handleCellClick3D = useCallback(
     (row: number, col: number) => {
+      const currentCell = config.grid[row]?.[col]
+
       if (selectedTool === "empty") {
+        // Eraser tool active - clear the cell
         placeModule(row, col, "empty")
         setSelectedCell(null)
+        setSelectedTool(null)
       } else if (selectedTool) {
+        // Module tool active - place it
         placeModule(row, col, selectedTool)
         setSelectedCell({ row, col })
+        setSelectedTool(null) // Deselect tool after placing
       } else {
-        const currentType = config.grid[row]?.[col]?.type
-        if (currentType === "empty") {
-          placeModule(row, col, "ohne-seitenwaende")
-          setSelectedCell({ row, col })
+        // No tool selected - select/deselect cell for context menu
+        if (selectedCell?.row === row && selectedCell?.col === col) {
+          // Clicking same cell again - deselect
+          setSelectedCell(null)
         } else {
+          // Select new cell
           setSelectedCell({ row, col })
         }
       }
     },
-    [selectedTool, placeModule, config.grid],
+    [selectedTool, placeModule, config.grid, selectedCell],
   )
 
   const clearCell = useCallback(
@@ -296,6 +376,44 @@ export function ShelfConfigurator() {
   const { shoppingList, totalPrice, suggestions, optimalPackages } = optimizationResult
   const priceFormatted = totalPrice.toFixed(2).replace(".", ",")
 
+  const handleAddColumn = () => {
+    setConfig((prev) => ({
+      ...prev,
+      columns: Math.min(prev.columns + 1, 6),
+      columnWidths: [...prev.columnWidths, 75],
+      grid: prev.grid.map((row) => [...row, { type: "empty" }]),
+    }))
+  }
+
+  const handleRemoveColumn = () => {
+    if (config.columns <= 1) return
+    setConfig((prev) => ({
+      ...prev,
+      columns: prev.columns - 1,
+      columnWidths: prev.columnWidths.slice(0, -1),
+      grid: prev.grid.map((row) => row.slice(0, -1)),
+    }))
+  }
+
+  const handleAddRow = () => {
+    setConfig((prev) => ({
+      ...prev,
+      rows: Math.min(prev.rows + 1, 5),
+      rowHeights: [...prev.rowHeights, 38],
+      grid: [[...Array(prev.columns)].map(() => ({ type: "empty" })), ...prev.grid],
+    }))
+  }
+
+  const handleRemoveRow = () => {
+    if (config.rows <= 1) return
+    setConfig((prev) => ({
+      ...prev,
+      rows: prev.rows - 1,
+      rowHeights: prev.rowHeights.slice(1),
+      grid: prev.grid.slice(1),
+    }))
+  }
+
   return (
     <DragDropProvider>
       <div className="flex h-full w-full flex-col bg-background">
@@ -306,26 +424,55 @@ export function ShelfConfigurator() {
               shadows="soft"
               camera={isMobile ? { position: [0, 1.2, 3.5], fov: 60 } : { position: [2, 1.5, 3], fov: 50 }}
               className="h-full w-full touch-none"
-              gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
+              gl={{
+                antialias: true,
+                toneMapping: THREE.ACESFilmicToneMapping,
+                toneMappingExposure: 1.2, // Slightly brighter exposure for studio look
+                powerPreference: "high-performance",
+                alpha: false,
+                stencil: false,
+              }}
+              dpr={[1, 2]} // Higher pixel ratio for sharper rendering
             >
-              <color attach="background" args={["#2a2a2a"]} />
-              <ambientLight intensity={0.5} />
+              <color attach="background" args={["#f5f5f5"]} />
+
+              <ambientLight intensity={0.6} />
+
               <directionalLight
-                position={[4, 10, 6]}
+                position={[5, 12, 8]}
                 intensity={1.2}
                 castShadow
                 shadow-mapSize={[2048, 2048]}
-                shadow-camera-near={0.5}
+                shadow-camera-near={0.1}
                 shadow-camera-far={50}
                 shadow-camera-left={-10}
                 shadow-camera-right={10}
                 shadow-camera-top={10}
                 shadow-camera-bottom={-10}
                 shadow-bias={-0.0001}
+                shadow-normalBias={0.02}
               />
-              <directionalLight position={[-4, 6, -4]} intensity={0.4} />
-              <directionalLight position={[0, 3, 8]} intensity={0.3} />
-              <pointLight position={[0, 2, 0]} intensity={0.2} />
+
+              {/* Fill light - softer from opposite side */}
+              <directionalLight position={[-6, 8, -4]} intensity={0.5} color="#ffffff" />
+
+              {/* Back/rim light */}
+              <directionalLight position={[0, 6, -10]} intensity={0.3} color="#ffffff" />
+
+              {/* Front fill for chrome reflections */}
+              <directionalLight position={[0, 4, 12]} intensity={0.3} color="#ffffff" />
+
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
+                <planeGeometry args={[50, 50]} />
+                <meshStandardMaterial color="#e5ddd5" roughness={0.9} metalness={0} />
+              </mesh>
+
+              <WoodFloor />
+
+              <ContactShadows position={[0, -0.001, 0]} opacity={0.25} scale={25} blur={3} far={6} color="#3d2817" />
+
+              <Environment preset="studio" background={false} />
+
               <ShelfScene
                 config={config}
                 selectedTool={selectedTool}
@@ -333,27 +480,99 @@ export function ShelfConfigurator() {
                 selectedCell={selectedCell}
                 onCellClick={handleCellClick3D}
                 onCellHover={setHoveredCell}
+                onAddColumn={handleAddColumn}
+                onRemoveColumn={handleRemoveColumn}
+                onAddRow={handleAddRow}
+                onRemoveRow={handleRemoveRow}
               />
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
-                <planeGeometry args={[30, 30]} />
-                <shadowMaterial opacity={0.35} />
-              </mesh>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-                <planeGeometry args={[20, 20]} />
-                <meshStandardMaterial color="#4a3c2e" roughness={0.85} />
-              </mesh>
-              <Environment preset="studio" />
+
+              <CameraController view={cameraView} controlsRef={controlsRef} />
               <OrbitControls
+                ref={controlsRef}
                 makeDefault
-                minPolarAngle={0.2}
-                maxPolarAngle={Math.PI / 2.2}
-                minDistance={isMobile ? 2 : 1.5}
-                maxDistance={isMobile ? 6 : 8}
+                minPolarAngle={0.1}
+                maxPolarAngle={Math.PI / 2.05}
+                minDistance={isMobile ? 1.5 : 1}
+                maxDistance={isMobile ? 8 : 10}
                 enableDamping
                 dampingFactor={0.05}
-                enablePan={isMobile}
+                enablePan={true}
+                panSpeed={0.5}
+                rotateSpeed={0.7}
+                zoomSpeed={1.2}
               />
             </Canvas>
+
+            <div className="absolute left-2 top-2 flex flex-col gap-1 md:left-3 md:top-3 md:gap-1.5">
+              <div className="flex gap-1 md:gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCameraView("front")}
+                  className={cn(
+                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "front" && "bg-simpli-blue/20 border-simpli-blue",
+                  )}
+                  title="Vorderansicht"
+                >
+                  <Eye className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCameraView("side")}
+                  className={cn(
+                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "side" && "bg-simpli-blue/20 border-simpli-blue",
+                  )}
+                  title="Seitenansicht"
+                >
+                  <Maximize2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCameraView("top")}
+                  className={cn(
+                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "top" && "bg-simpli-blue/20 border-simpli-blue",
+                  )}
+                  title="Draufsicht"
+                >
+                  <Grid3X3 className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCameraView("isometric")}
+                  className={cn(
+                    "h-8 w-8 md:h-9 md:w-9 bg-card/80 backdrop-blur-sm border-border hover:bg-secondary",
+                    cameraView === "isometric" && "bg-simpli-blue/20 border-simpli-blue",
+                  )}
+                  title="Isometrisch"
+                >
+                  <Box className="h-3.5 w-3.5 md:h-4 md:w-4 text-foreground" />
+                </Button>
+              </div>
+
+              {/* Selected tool indicator moved below camera controls */}
+              {selectedTool && selectedTool !== "empty" && (
+                <div className="rounded-lg bg-card/80 backdrop-blur-sm border border-border px-2 py-1 md:px-2.5 md:py-1.5 mt-1">
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div
+                      className="h-3.5 w-3.5 rounded md:h-5 md:w-5 shadow-sm"
+                      style={{
+                        backgroundColor:
+                          config.accentColor !== "none"
+                            ? getColorHex(config.accentColor)
+                            : getColorHex(config.baseColor),
+                      }}
+                    />
+                    <span className="text-sm md:text-base text-foreground">{getToolLabel(selectedTool)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="absolute right-2 top-2 flex gap-1 md:right-3 md:top-3 md:gap-1.5">
               <Button
@@ -399,21 +618,6 @@ export function ShelfConfigurator() {
                 <span className="hidden sm:inline">Wähle ein Modul oder ziehe es auf das Regal</span>
               )}
             </div>
-
-            {selectedTool && selectedTool !== "empty" && (
-              <div className="absolute left-2 top-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border px-2 py-1 md:left-3 md:top-3 md:px-2.5 md:py-1.5">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <div
-                    className="h-3.5 w-3.5 rounded md:h-5 md:w-5 shadow-sm"
-                    style={{
-                      backgroundColor:
-                        config.accentColor !== "none" ? getColorHex(config.accentColor) : getColorHex(config.baseColor),
-                    }}
-                  />
-                  <span className="text-sm md:text-base text-foreground">{getToolLabel(selectedTool)}</span>
-                </div>
-              </div>
-            )}
           </div>
 
           <button

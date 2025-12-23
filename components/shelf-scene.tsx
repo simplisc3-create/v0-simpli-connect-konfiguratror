@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react"
 import * as THREE from "three"
 import type { ThreeEvent } from "@react-three/fiber"
-import type { ShelfConfig, GridCell } from "./shelf-configurator"
-import { colorHexMap } from "@/lib/simpli-products"
+import type { ShelfConfig, GridCell } from "@/lib/types"
 import { GLBModule } from "./glb-module-loader"
 import type { JSX } from "react/jsx-runtime"
+import { DimensionLabels } from "./dimension-labels"
 
 type Props = {
   config: ShelfConfig
@@ -14,23 +14,98 @@ type Props = {
   hoveredCell?: { row: number; col: number } | null
   selectedCell?: { row: number; col: number } | null
   onCellClick?: (row: number, col: number) => void
-  onCellHover?: (cell: { row: number; col: number } | null) => void
+  onCellHover?: (row: number, col: number, isHovering: boolean) => void
+  useGLBModels?: boolean
+  onAddColumn?: () => void
+  onRemoveColumn?: () => void
+  onAddRow?: () => void
+  onRemoveRow?: () => void
 }
 
 const colorMap: Record<string, string> = {
-  weiss: colorHexMap.weiss,
-  schwarz: colorHexMap.schwarz,
-  blau: colorHexMap.blau,
-  gruen: colorHexMap.gruen,
-  orange: colorHexMap.orange,
-  rot: colorHexMap.rot,
-  gelb: colorHexMap.gelb,
+  weiss: "#ffffff",
+  schwarz: "#1a1a1a", // Darker black for better contrast
+  blau: "#0066cc", // More realistic blue
+  gruen: "#228B22", // Forest green, more realistic
+  orange: "#ff8c00", // Darker orange
+  rot: "#cc0000", // Deeper red
+  gelb: "#ffd700", // Golden yellow
+}
+
+function ChromeBallConnector({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      {/* Top sphere */}
+      <mesh position={[0, 0.012, 0]} castShadow>
+        <sphereGeometry args={[0.016, 32, 32]} />
+        <meshStandardMaterial color="#e8e8e8" metalness={0.98} roughness={0.02} envMapIntensity={2.5} />
+      </mesh>
+      {/* Bottom sphere */}
+      <mesh position={[0, -0.012, 0]} castShadow>
+        <sphereGeometry args={[0.016, 32, 32]} />
+        <meshStandardMaterial color="#e8e8e8" metalness={0.98} roughness={0.02} envMapIntensity={2.5} />
+      </mesh>
+      {/* Connecting neck between spheres */}
+      <mesh castShadow>
+        <cylinderGeometry args={[0.008, 0.008, 0.016, 24]} />
+        <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.05} envMapIntensity={2.0} />
+      </mesh>
+    </group>
+  )
+}
+
+function GlassShelfPanel({
+  position,
+  width,
+  depth,
+}: {
+  position: [number, number, number]
+  width: number
+  depth: number
+}) {
+  const clipSize = 0.018
+  const clipOffset = 0.008
+
+  return (
+    <group position={position}>
+      {/* Glass panel with realistic glass material */}
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[width - 0.02, 0.01, depth - 0.02]} />
+        <meshPhysicalMaterial
+          color="#f0f8f8"
+          transparent
+          opacity={0.15}
+          roughness={0.0}
+          metalness={0}
+          transmission={0.95}
+          thickness={0.01}
+          ior={1.5}
+          envMapIntensity={1.5}
+          clearcoat={1}
+          clearcoatRoughness={0}
+        />
+      </mesh>
+
+      {/* Corner clips - polished chrome */}
+      {[
+        [-width / 2 + clipOffset + clipSize / 2, 0, -depth / 2 + clipOffset + clipSize / 2],
+        [width / 2 - clipOffset - clipSize / 2, 0, -depth / 2 + clipOffset + clipSize / 2],
+        [-width / 2 + clipOffset + clipSize / 2, 0, depth / 2 - clipOffset - clipSize / 2],
+        [width / 2 - clipOffset - clipSize / 2, 0, depth / 2 - clipOffset - clipSize / 2],
+      ].map((clipPos, i) => (
+        <mesh key={`clip-${i}`} position={clipPos as [number, number, number]} castShadow>
+          <boxGeometry args={[clipSize, 0.012, clipSize]} />
+          <meshStandardMaterial color="#666666" metalness={0.7} roughness={0.3} />
+        </mesh>
+      ))}
+    </group>
+  )
 }
 
 function ChromeTube({
   start,
   end,
-  radius = 0.012,
+  radius = 0.0095,
 }: {
   start: [number, number, number]
   end: [number, number, number]
@@ -57,8 +132,8 @@ function ChromeTube({
 
   return (
     <mesh position={position} rotation={rotation} castShadow receiveShadow>
-      <cylinderGeometry args={[radius, radius, length, 16]} />
-      <meshStandardMaterial color="#d4d4d4" metalness={0.95} roughness={0.08} envMapIntensity={1.5} />
+      <cylinderGeometry args={[radius, radius, length, 32]} />
+      <meshStandardMaterial color="#e0e0e0" metalness={0.98} roughness={0.02} envMapIntensity={2.5} />
     </mesh>
   )
 }
@@ -77,7 +152,7 @@ function ShelfPanel({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={[width, 0.018, depth]} />
-      <meshStandardMaterial color={color} roughness={0.35} metalness={0.2} />
+      <meshStandardMaterial color={color} roughness={0.15} metalness={0.7} envMapIntensity={1.2} />
     </mesh>
   )
 }
@@ -96,7 +171,7 @@ function SidePanel({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={[0.018, height, depth]} />
-      <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+      <meshStandardMaterial color={color} roughness={0.15} metalness={0.7} envMapIntensity={1.2} />
     </mesh>
   )
 }
@@ -115,7 +190,7 @@ function BackPanel({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={[width, height, 0.012]} />
-      <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+      <meshStandardMaterial color={color} roughness={0.15} metalness={0.7} envMapIntensity={1.2} />
     </mesh>
   )
 }
@@ -133,23 +208,76 @@ function DoorPanel({
   color: string
   hasLock?: boolean
 }) {
+  const handleHeight = height * 0.7
+  const handleRadius = 0.008 // Realistic bar handle thickness
+  const handleOffset = 0.025 // How far handle protrudes from door
+
   return (
     <group position={position}>
+      {/* Door front panel - smooth metal finish */}
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[width, height, 0.02]} />
-        <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+        <boxGeometry args={[width, height, 0.018]} />
+        <meshStandardMaterial color={color} roughness={0.12} metalness={0.75} envMapIntensity={1.3} />
       </mesh>
-      {/* Handle */}
-      <mesh position={[width * 0.35, 0, 0.015]} castShadow>
-        <cylinderGeometry args={[0.008, 0.008, 0.03, 8]} />
-        <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.2} />
-      </mesh>
+
+      {/* Vertical chrome bar handle */}
+      <group position={[width * 0.35, 0, 0.009 + handleOffset]}>
+        {/* Main vertical bar */}
+        <mesh castShadow>
+          <cylinderGeometry args={[handleRadius, handleRadius, handleHeight, 24]} />
+          <meshStandardMaterial color="#f0f0f0" metalness={0.98} roughness={0.02} envMapIntensity={3.0} />
+        </mesh>
+
+        {/* Top bracket */}
+        <group position={[0, handleHeight / 2, 0]}>
+          <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[handleRadius * 0.7, handleRadius * 0.7, handleOffset, 16]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.98} roughness={0.02} envMapIntensity={2.5} />
+          </mesh>
+          <mesh castShadow>
+            <sphereGeometry args={[handleRadius * 1.3, 24, 24]} />
+            <meshStandardMaterial color="#f0f0f0" metalness={0.98} roughness={0.02} envMapIntensity={3.0} />
+          </mesh>
+        </group>
+
+        {/* Bottom bracket */}
+        <group position={[0, -handleHeight / 2, 0]}>
+          <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[handleRadius * 0.7, handleRadius * 0.7, handleOffset, 16]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.98} roughness={0.02} envMapIntensity={2.5} />
+          </mesh>
+          <mesh castShadow>
+            <sphereGeometry args={[handleRadius * 1.3, 24, 24]} />
+            <meshStandardMaterial color="#f0f0f0" metalness={0.98} roughness={0.02} envMapIntensity={3.0} />
+          </mesh>
+        </group>
+      </group>
+
+      {/* Lock indicator */}
       {hasLock && (
-        <mesh position={[width * 0.35, -0.03, 0.015]} castShadow>
-          <cylinderGeometry args={[0.005, 0.005, 0.015, 8]} />
-          <meshStandardMaterial color="#888" metalness={0.8} roughness={0.3} />
+        <mesh position={[width * 0.35, -handleHeight * 0.55, 0.015]} castShadow>
+          <cylinderGeometry args={[0.005, 0.005, 0.012, 16]} />
+          <meshStandardMaterial color="#555" metalness={0.9} roughness={0.1} />
         </mesh>
       )}
+
+      {/* Subtle gap lines around door edges */}
+      <mesh position={[width / 2 - 0.0005, 0, 0.009]} castShadow>
+        <boxGeometry args={[0.001, height - 0.002, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+      </mesh>
+      <mesh position={[-width / 2 + 0.0005, 0, 0.009]} castShadow>
+        <boxGeometry args={[0.001, height - 0.002, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, height / 2 - 0.0005, 0.009]} castShadow>
+        <boxGeometry args={[width - 0.002, 0.001, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, -height / 2 + 0.0005, 0.009]} castShadow>
+        <boxGeometry args={[width - 0.002, 0.001, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+      </mesh>
     </group>
   )
 }
@@ -165,62 +293,68 @@ function DrawerPanel({
   height: number
   color: string
 }) {
-  const handleWidth = width * 0.6
-  const handleRadius = 0.005
-  const handleOffset = 0.02
-  const bracketHeight = 0.015
+  const handleWidth = width * 0.75
+  const handleRadius = 0.008 // Realistic bar handle thickness
+  const handleOffset = 0.025 // How far handle protrudes
+  const bracketHeight = handleOffset * 0.9
 
   return (
     <group position={position}>
-      {/* Drawer front panel */}
+      {/* Drawer front panel - smooth metal finish */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[width, height, 0.018]} />
-        <meshStandardMaterial color={color} roughness={0.25} metalness={0.15} />
+        <meshStandardMaterial color={color} roughness={0.12} metalness={0.75} envMapIntensity={1.3} />
       </mesh>
 
       {/* Chrome horizontal bar handle */}
-      <group position={[0, 0, 0.018]}>
+      <group position={[0, 0, 0.009 + handleOffset]}>
         {/* Main horizontal bar */}
         <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[handleRadius, handleRadius, handleWidth, 16]} />
-          <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} envMapIntensity={1.5} />
+          <cylinderGeometry args={[handleRadius, handleRadius, handleWidth, 24]} />
+          <meshStandardMaterial color="#f0f0f0" metalness={0.98} roughness={0.02} envMapIntensity={3.0} />
         </mesh>
 
-        {/* Left bracket (vertical piece connecting to drawer) */}
+        {/* Left bracket */}
         <group position={[-handleWidth / 2, 0, 0]}>
           <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[handleRadius * 0.8, handleRadius * 0.8, bracketHeight, 12]} />
-            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+            <cylinderGeometry args={[handleRadius * 0.7, handleRadius * 0.7, bracketHeight, 16]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.98} roughness={0.02} envMapIntensity={2.5} />
           </mesh>
-          {/* End cap */}
-          <mesh position={[0, 0, 0]} castShadow>
-            <sphereGeometry args={[handleRadius, 12, 12]} />
-            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+          <mesh castShadow>
+            <sphereGeometry args={[handleRadius * 1.3, 24, 24]} />
+            <meshStandardMaterial color="#f0f0f0" metalness={0.98} roughness={0.02} envMapIntensity={3.0} />
           </mesh>
         </group>
 
-        {/* Right bracket (vertical piece connecting to drawer) */}
+        {/* Right bracket */}
         <group position={[handleWidth / 2, 0, 0]}>
           <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[handleRadius * 0.8, handleRadius * 0.8, bracketHeight, 12]} />
-            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+            <cylinderGeometry args={[handleRadius * 0.7, handleRadius * 0.7, bracketHeight, 16]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.98} roughness={0.02} envMapIntensity={2.5} />
           </mesh>
-          {/* End cap */}
-          <mesh position={[0, 0, 0]} castShadow>
-            <sphereGeometry args={[handleRadius, 12, 12]} />
-            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+          <mesh castShadow>
+            <sphereGeometry args={[handleRadius * 1.3, 24, 24]} />
+            <meshStandardMaterial color="#f0f0f0" metalness={0.98} roughness={0.02} envMapIntensity={3.0} />
           </mesh>
         </group>
       </group>
 
-      {/* Subtle drawer gap/edge highlight */}
-      <mesh position={[0, height / 2 - 0.002, 0.009]} castShadow>
-        <boxGeometry args={[width - 0.004, 0.002, 0.002]} />
-        <meshStandardMaterial color="#333333" roughness={0.8} />
+      {/* Subtle gap lines around drawer edges */}
+      <mesh position={[0, height / 2 - 0.0005, 0.009]} castShadow>
+        <boxGeometry args={[width - 0.002, 0.001, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
       </mesh>
-      <mesh position={[0, -height / 2 + 0.002, 0.009]} castShadow>
-        <boxGeometry args={[width - 0.004, 0.002, 0.002]} />
-        <meshStandardMaterial color="#333333" roughness={0.8} />
+      <mesh position={[0, -height / 2 + 0.0005, 0.009]} castShadow>
+        <boxGeometry args={[width - 0.002, 0.001, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+      </mesh>
+      <mesh position={[width / 2 - 0.0005, 0, 0.009]} castShadow>
+        <boxGeometry args={[0.001, height - 0.002, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+      </mesh>
+      <mesh position={[-width / 2 + 0.0005, 0, 0.009]} castShadow>
+        <boxGeometry args={[0.001, height - 0.002, 0.001]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
       </mesh>
     </group>
   )
@@ -229,9 +363,10 @@ function DrawerPanel({
 function Foot({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
+      {/* Main foot body */}
       <mesh castShadow>
-        <cylinderGeometry args={[0.015, 0.018, 0.025, 16]} />
-        <meshStandardMaterial color="#2a2a2a" roughness={0.6} />
+        <cylinderGeometry args={[0.014, 0.016, 0.02, 24]} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.4} metalness={0.6} envMapIntensity={1.0} />
       </mesh>
     </group>
   )
@@ -244,10 +379,10 @@ function InteractiveCell({
   depth,
   row,
   col,
-  isEmpty,
+  cellType,
+  cellColor,
   isHovered,
   isSelected,
-  selectedTool,
   onClick,
   onHover,
 }: {
@@ -257,15 +392,16 @@ function InteractiveCell({
   depth: number
   row: number
   col: number
-  isEmpty: boolean
+  cellType: GridCell["type"]
+  cellColor?: string
   isHovered: boolean
   isSelected: boolean
-  selectedTool?: GridCell["type"] | null
   onClick?: (row: number, col: number) => void
   onHover?: (cell: { row: number; col: number } | null) => void
 }) {
   const [localHover, setLocalHover] = useState(false)
   const showHover = isHovered || localHover
+  const isEmpty = cellType === "empty"
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
@@ -285,37 +421,87 @@ function InteractiveCell({
     document.body.style.cursor = "auto"
   }
 
-  // Show clickable area for empty cells or all cells when a tool is selected
-  const showClickArea = selectedTool !== null
+  // Determine colors for different states
+  const getOverlayColor = () => {
+    if (isSelected) return "#fbbf24" // Gold for selected
+    if (showHover) return isEmpty ? "#60a5fa" : "#60a5fa" // Blue for hover
+    return "#3b82f6"
+  }
 
-  if (!showClickArea) return null
+  const getOpacity = () => {
+    if (isSelected) return 0.25
+    if (showHover) return 0.2
+    return 0
+  }
 
   return (
-    <mesh position={position} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
-      <boxGeometry args={[width - 0.01, height - 0.01, depth - 0.01]} />
-      <meshStandardMaterial
-        color={showHover ? (selectedTool === "empty" ? "#ff4444" : "#4488ff") : isSelected ? "#ffcc00" : "#666666"}
-        transparent
-        opacity={showHover ? 0.4 : isSelected ? 0.3 : 0}
-        depthWrite={false}
-        visible={showHover || isSelected}
-      />
-    </mesh>
+    <group>
+      {/* Invisible interaction mesh - always active */}
+      <mesh position={position} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+        <boxGeometry args={[width - 0.005, height - 0.005, depth - 0.005]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      {/* Visual overlay for hover/selection */}
+      {(showHover || isSelected) && (
+        <mesh position={position}>
+          <boxGeometry args={[width - 0.008, height - 0.008, depth - 0.008]} />
+          <meshStandardMaterial
+            color={getOverlayColor()}
+            transparent
+            opacity={getOpacity()}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
+
+      {/* Glowing outline for selected cell */}
+      {isSelected && (
+        <lineSegments position={position}>
+          <edgesGeometry args={[new THREE.BoxGeometry(width - 0.005, height - 0.005, depth - 0.005)]} />
+          <lineBasicMaterial color="#fbbf24" linewidth={2} />
+        </lineSegments>
+      )}
+
+      {/* Hover outline */}
+      {showHover && !isSelected && (
+        <lineSegments position={position}>
+          <edgesGeometry args={[new THREE.BoxGeometry(width - 0.005, height - 0.005, depth - 0.005)]} />
+          <lineBasicMaterial color="#60a5fa" linewidth={1} />
+        </lineSegments>
+      )}
+    </group>
   )
 }
 
-export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, onCellClick, onCellHover }: Props) {
-  const [useGLBModels, setUseGLBModules] = useState(true)
+export function ShelfScene({
+  config,
+  selectedTool,
+  hoveredCell,
+  selectedCell,
+  onCellClick,
+  onCellHover,
+  useGLBModels = false,
+  onAddColumn,
+  onRemoveColumn,
+  onAddRow,
+  onRemoveRow,
+}: Props) {
+  const [localUseGLBModels, setLocalUseGLBModels] = useState(useGLBModels)
 
-  const { elements, interactiveCells, glbModules } = useMemo(() => {
+  const { elements, interactiveCells, glbModules, dimensions } = useMemo(() => {
     const els: JSX.Element[] = []
     const cells: JSX.Element[] = []
     const glbs: JSX.Element[] = []
     const effectiveColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
     const panelColor = colorMap[effectiveColor] || colorMap.weiss
 
+    console.log("[v0] Rendering grid with", config.rows, "rows and", config.columns, "columns")
+    console.log("[v0] useGLBModels:", localUseGLBModels)
+
     const depth = 0.38
-    const tubeRadius = 0.012
+    const tubeRadius = 0.0095
 
     const columnPositions: number[] = [0]
     let currentX = 0
@@ -373,6 +559,10 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
             radius={tubeRadius * 0.8}
           />,
         )
+
+        // Add ball connectors at front and back intersections
+        els.push(<ChromeBallConnector key={`ball-front-${col}-${row}`} position={[x, y, offsetZ + depth]} />)
+        els.push(<ChromeBallConnector key={`ball-back-${col}-${row}`} position={[x, y, offsetZ]} />)
       }
     }
 
@@ -427,10 +617,10 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
             depth={depth}
             row={gridRow}
             col={gridCol}
-            isEmpty={isEmpty}
+            cellType={cell.type}
+            cellColor={cell.color}
             isHovered={isHovered}
             isSelected={isSelected}
-            selectedTool={selectedTool}
             onClick={onCellClick}
             onHover={onCellHover}
           />,
@@ -439,9 +629,11 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
         if (isEmpty) return
 
         const cellColor = cell.color || (config.accentColor !== "none" ? config.accentColor : config.baseColor)
-        const panelColor = colorMap[cellColor] || colorMap.weiss
+        const modulePanelColor = colorMap[cellColor] || colorMap.weiss
 
-        if (useGLBModels) {
+        console.log(`[v0] Cell [${gridRow}, ${gridCol}]: type=${cell.type}, color=${cellColor}`)
+
+        if (localUseGLBModels) {
           glbs.push(
             <GLBModule
               key={`glb-${gridRow}-${gridCol}`}
@@ -455,16 +647,27 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
           )
         }
 
-        if (!useGLBModels) {
-          els.push(
-            <ShelfPanel
-              key={`shelf-${gridRow}-${gridCol}`}
-              position={[cellX, bottomY + 0.009, offsetZ + depth / 2]}
-              width={cellWidth - 0.02}
-              depth={depth - 0.02}
-              color={panelColor}
-            />,
-          )
+        if (!localUseGLBModels) {
+          if (config.bodenmaterial === "glas") {
+            els.push(
+              <GlassShelfPanel
+                key={`glass-shelf-${gridRow}-${gridCol}`}
+                position={[cellX, bottomY + 0.009, offsetZ + depth / 2]}
+                width={cellWidth}
+                depth={depth}
+              />,
+            )
+          } else {
+            els.push(
+              <ShelfPanel
+                key={`shelf-${gridRow}-${gridCol}`}
+                position={[cellX, bottomY + 0.009, offsetZ + depth / 2]}
+                width={cellWidth - 0.02}
+                depth={depth - 0.02}
+                color={modulePanelColor}
+              />,
+            )
+          }
 
           if (gridRow === 0) {
             const topY = rowPositions[invertedRow + 1] + offsetY
@@ -474,7 +677,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
                 position={[cellX, topY + 0.009, offsetZ + depth / 2]}
                 width={cellWidth - 0.02}
                 depth={depth - 0.02}
-                color={panelColor}
+                color={modulePanelColor}
               />,
             )
           }
@@ -487,141 +690,67 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
                   position={[cellX, cellY, offsetZ + 0.006]}
                   width={cellWidth - 0.02}
                   height={cellHeight - 0.02}
-                  color={panelColor}
+                  color={modulePanelColor}
                 />,
               )
               break
 
             case "mit-tueren":
+              els.push(
+                <BackPanel
+                  key={`back-doors-${gridRow}-${gridCol}`}
+                  position={[cellX, cellY, offsetZ + 0.006]}
+                  width={cellWidth - 0.02}
+                  height={cellHeight - 0.02}
+                  color={modulePanelColor}
+                />,
+              )
               const doorWidth = (cellWidth - 0.03) / 2
               els.push(
                 <DoorPanel
                   key={`door-l-${gridRow}-${gridCol}`}
-                  position={[cellX - doorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
+                  position={[cellX - doorWidth / 2 - 0.007, cellY, offsetZ + depth - 0.02]}
                   width={doorWidth}
-                  height={cellHeight - 0.02}
-                  color={panelColor}
+                  height={cellHeight - 0.025}
+                  color={modulePanelColor}
+                  hasLock={cell.hasLocks}
                 />,
-              )
-              els.push(
                 <DoorPanel
                   key={`door-r-${gridRow}-${gridCol}`}
-                  position={[cellX + doorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
+                  position={[cellX + doorWidth / 2 + 0.007, cellY, offsetZ + depth - 0.02]}
                   width={doorWidth}
-                  height={cellHeight - 0.02}
-                  color={panelColor}
-                />,
-              )
-              els.push(
-                <SidePanel
-                  key={`side-l-${gridRow}-${gridCol}`}
-                  position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                  height={cellHeight - 0.02}
-                  depth={depth - 0.02}
-                  color={panelColor}
-                />,
-              )
-              els.push(
-                <SidePanel
-                  key={`side-r-${gridRow}-${gridCol}`}
-                  position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                  height={cellHeight - 0.02}
-                  depth={depth - 0.02}
-                  color={panelColor}
-                />,
-              )
-              break
-
-            case "abschliessbare-tueren":
-              const lockDoorWidth = (cellWidth - 0.03) / 2
-              els.push(
-                <DoorPanel
-                  key={`lock-door-l-${gridRow}-${gridCol}`}
-                  position={[cellX - lockDoorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
-                  width={lockDoorWidth}
-                  height={cellHeight - 0.02}
-                  color={panelColor}
-                  hasLock
-                />,
-              )
-              els.push(
-                <DoorPanel
-                  key={`lock-door-r-${gridRow}-${gridCol}`}
-                  position={[cellX + lockDoorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
-                  width={lockDoorWidth}
-                  height={cellHeight - 0.02}
-                  color={panelColor}
-                  hasLock
-                />,
-              )
-              els.push(
-                <SidePanel
-                  key={`side-l-lock-${gridRow}-${gridCol}`}
-                  position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                  height={cellHeight - 0.02}
-                  depth={depth - 0.02}
-                  color={panelColor}
-                />,
-              )
-              els.push(
-                <SidePanel
-                  key={`side-r-lock-${gridRow}-${gridCol}`}
-                  position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                  height={cellHeight - 0.02}
-                  depth={depth - 0.02}
-                  color={panelColor}
-                />,
-              )
-              break
-
-            case "mit-klapptuer":
-              els.push(
-                <DoorPanel
-                  key={`flip-${gridRow}-${gridCol}`}
-                  position={[cellX, cellY, offsetZ + depth + 0.01]}
-                  width={cellWidth - 0.02}
-                  height={cellHeight - 0.02}
-                  color={panelColor}
+                  height={cellHeight - 0.025}
+                  color={modulePanelColor}
+                  hasLock={cell.hasLocks}
                 />,
               )
               break
 
             case "mit-doppelschublade":
+              els.push(
+                <BackPanel
+                  key={`back-drawer-${gridRow}-${gridCol}`}
+                  position={[cellX, cellY, offsetZ + 0.006]}
+                  width={cellWidth - 0.02}
+                  height={cellHeight - 0.02}
+                  color={modulePanelColor}
+                />,
+              )
               const drawerHeight = (cellHeight - 0.03) / 2
               els.push(
                 <DrawerPanel
                   key={`drawer-top-${gridRow}-${gridCol}`}
-                  position={[cellX, cellY + drawerHeight / 2 + 0.005, offsetZ + depth + 0.01]}
-                  width={cellWidth - 0.02}
+                  position={[cellX, cellY + drawerHeight / 2 + 0.007, offsetZ + depth - 0.02]}
+                  width={cellWidth - 0.025}
                   height={drawerHeight}
-                  color={panelColor}
+                  color={modulePanelColor}
                 />,
-              )
-              els.push(
                 <DrawerPanel
-                  key={`drawer-bottom-${gridRow}-${gridCol}`}
-                  position={[cellX, cellY - drawerHeight / 2 - 0.005, offsetZ + depth + 0.01]}
-                  width={cellWidth - 0.02}
+                  key={`drawer-bot-${gridRow}-${gridCol}`}
+                  position={[cellX, cellY - drawerHeight / 2 - 0.007, offsetZ + depth - 0.02]}
+                  width={cellWidth - 0.025}
                   height={drawerHeight}
-                  color={panelColor}
-                />,
-              )
-              els.push(
-                <SidePanel
-                  key={`side-l-drawer-${gridRow}-${gridCol}`}
-                  position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                  height={cellHeight - 0.02}
-                  depth={depth - 0.02}
-                  color={panelColor}
-                />,
-              )
-              els.push(
-                <SidePanel
-                  key={`side-r-drawer-${gridRow}-${gridCol}`}
-                  position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                  height={cellHeight - 0.02}
-                  depth={depth - 0.02}
-                  color={panelColor}
+                  color={modulePanelColor}
                 />,
               )
               break
@@ -630,14 +759,40 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
       })
     })
 
-    return { elements: els, interactiveCells: cells, glbModules: glbs }
-  }, [config, selectedTool, hoveredCell, selectedCell, onCellClick, onCellHover, useGLBModels])
+    return {
+      elements: els,
+      interactiveCells: cells,
+      glbModules: glbs,
+      dimensions: {
+        totalWidth,
+        totalHeight,
+        depth,
+        offsetX,
+        offsetY,
+        offsetZ,
+      },
+    }
+  }, [config, selectedTool, hoveredCell, selectedCell, onCellClick, onCellHover, localUseGLBModels])
 
   return (
     <group>
       {elements}
       {glbModules}
       {interactiveCells}
+      <DimensionLabels
+        totalWidth={dimensions.totalWidth}
+        totalHeight={dimensions.totalHeight}
+        depth={dimensions.depth}
+        offsetX={dimensions.offsetX}
+        offsetY={dimensions.offsetY}
+        offsetZ={dimensions.offsetZ}
+        onAddColumn={onAddColumn}
+        onRemoveColumn={onRemoveColumn}
+        onAddRow={onAddRow}
+        onRemoveRow={onRemoveRow}
+        canRemoveColumn={config.columns > 1}
+        canRemoveRow={config.rows > 1}
+      />
     </group>
   )
 }

@@ -34,15 +34,16 @@ const CELL_TYPE_TO_CONFIG_40: Record<GridCell["type"], string | null> = {
   "abschliessbare-tueren": "2-7",
 }
 
+// For 80cm columns, we'll use fallback boxes instead until proper files are uploaded
 const CELL_TYPE_TO_CONFIG_80: Record<GridCell["type"], string | null> = {
   empty: null,
-  "ohne-seitenwaende": "1-1",
-  "ohne-rueckwand": "1-2",
-  "mit-rueckwand": "1-3",
-  "mit-tueren": "1-4",
-  "mit-klapptuer": "1-5",
-  "mit-doppelschublade": "1-6",
-  "abschliessbare-tueren": "1-7",
+  "ohne-seitenwaende": null, // Would be "1-1" but files not available
+  "ohne-rueckwand": null,
+  "mit-rueckwand": null,
+  "mit-tueren": null,
+  "mit-klapptuer": null,
+  "mit-doppelschublade": null,
+  "abschliessbare-tueren": null,
 }
 
 const AVAILABLE_COLORS_40: Record<string, string[]> = {
@@ -51,19 +52,8 @@ const AVAILABLE_COLORS_40: Record<string, string[]> = {
   "2-3": ["white", "gray", "orange", "green", "blue"],
   "2-4": ["white", "gray", "orange", "green", "blue"],
   "2-5": ["white", "gray", "orange", "green", "blue"],
-  "2-6": ["white", "gray", "orange", "green", "blue"],
+  "2-6": ["white", "orange", "green", "blue"],
   "2-7": ["white", "gray", "orange", "green", "blue"],
-}
-
-const AVAILABLE_COLORS_80: Record<string, string[]> = {
-  "1-1": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
-  "1-2": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
-  "1-3": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
-  "1-4": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
-  "1-5": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
-  "1-6": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
-  "1-7": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
-  "1-8": ["white", "gray", "orange", "green", "blue", "red", "yellow"],
 }
 
 const VALID_MODELS = new Set([
@@ -91,19 +81,18 @@ const VALID_MODELS = new Set([
   "/models/40x40x40-2-4-orange.glb",
   "/models/40x40x40-2-4-green.glb",
   "/models/40x40x40-2-4-blue.glb",
-  // 40x40x40 2-6 models (mit-doppelschublade) - uploaded via blob
+  // 40x40x40 2-5 models (all colors now uploaded)
+  "/models/40x40x40-2-5-white.glb",
+  "/models/40x40x40-2-5-gray.glb",
+  "/models/40x40x40-2-5-orange.glb",
+  "/models/40x40x40-2-5-green.glb",
+  "/models/40x40x40-2-5-blue.glb",
+  // 40x40x40 2-6 models (mit-doppelschublade) - white, orange, green, blue
   "/models/40x40x40-2-6-white.glb",
   "/models/40x40x40-2-6-orange.glb",
   "/models/40x40x40-2-6-green.glb",
   "/models/40x40x40-2-6-blue.glb",
-  // 80x40x40 1-1 models (ohne-seitenwaende for 80cm width)
-  "/models/80x40x40-1-1-white.glb",
-  "/models/80x40x40-1-1-gray.glb",
-  "/models/80x40x40-1-1-orange.glb",
-  "/models/80x40x40-1-1-green.glb",
-  "/models/80x40x40-1-1-blue.glb",
-  "/models/80x40x40-1-1-red.glb",
-  "/models/80x40x40-1-1-yellow.glb",
+  // NOTE: 80x40x40 models NOT included - files were not properly uploaded from GitHub
 ])
 
 const FallbackBox = ({
@@ -132,7 +121,7 @@ const FallbackBox = ({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={[width * 0.95, height * 0.95, depth * 0.95]} />
-      <meshStandardMaterial color={colorMap[color] || "#f5f5f5"} />
+      <meshStandardMaterial color={colorMap[color] || "#f5f5f5"} roughness={0.3} metalness={0.1} />
     </mesh>
   )
 }
@@ -149,8 +138,7 @@ export const GLBModule = ({ position, cellType, cellColor = "weiss", width, heig
     return <FallbackBox position={position} width={width} height={height} depth={depth} color={cellColor} />
   }
 
-  const is80cm = widthCm >= 60
-  const baseModelWidth = is80cm ? 0.8 : 0.4
+  const baseModelWidth = 0.4
   const baseModelHeight = 0.4
   const baseModelDepth = 0.4
 
@@ -205,9 +193,13 @@ const getModelPath = (
 ): string | null => {
   const is80cm = widthCm >= 60
 
-  const configMap = is80cm ? CELL_TYPE_TO_CONFIG_80 : CELL_TYPE_TO_CONFIG_40
-  const colorMap = is80cm ? AVAILABLE_COLORS_80 : AVAILABLE_COLORS_40
-  const modelPrefix = is80cm ? "80x40x40" : "40x40x40"
+  if (is80cm) {
+    return null
+  }
+
+  const configMap = CELL_TYPE_TO_CONFIG_40
+  const colorMap = AVAILABLE_COLORS_40
+  const modelPrefix = "40x40x40"
 
   const config = configMap[cellType]
   if (!config) return null
@@ -216,7 +208,7 @@ const getModelPath = (
 
   const availableColors = colorMap[config] || ["white"]
   if (!availableColors.includes(colorName)) {
-    colorName = "white"
+    colorName = "white" // Fallback to white if color not available
   }
 
   const path = `/models/${modelPrefix}-${config}-${colorName}.glb`
