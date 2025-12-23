@@ -38,16 +38,37 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* Adding custom tokens for the configurator UI */
+  /* Configurator-specific semantic tokens */
   --canvas-bg: oklch(0.13 0 0);
   --ground-color: oklch(0.28 0.02 50);
-  --overlay-bg: oklch(0.1 0 0 / 0.8);
+  --overlay-bg: oklch(0.1 0 0 / 0.85);
   --overlay-border: oklch(0.25 0 0);
-  --accent-blue: oklch(0.55 0.18 240);
-  --accent-blue-hover: oklch(0.6 0.18 240);
-  --success: oklch(0.6 0.15 140);
+
+  /* Simpli brand colors */
+  --simpli-blue: oklch(0.6 0.18 230);
+  --simpli-blue-hover: oklch(0.65 0.18 230);
+  --simpli-success: oklch(0.6 0.15 145);
+  --simpli-warning: oklch(0.75 0.15 85);
+
+  /* Module colors for shelf configurator */
+  --module-weiss: #f5f5f5;
+  --module-schwarz: #1a1a1a;
+  --module-blau: #00b4d8;
+  --module-gruen: #228b22;
+  --module-gelb: #eab308;
+  --module-orange: #f97316;
+  --module-rot: #dc2626;
+
+  /* Control surfaces */
   --control-bg: oklch(0.18 0 0);
   --control-hover: oklch(0.22 0 0);
+  --control-active: oklch(0.25 0 0);
+
+  /* Drag and drop states */
+  --drag-active: oklch(0.55 0.18 230 / 0.3);
+  --drag-over: oklch(0.6 0.2 145 / 0.4);
+  --drag-invalid: oklch(0.55 0.2 25 / 0.3);
+
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 2px;
@@ -98,7 +119,6 @@
 }
 
 @theme inline {
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --font-sans: "Inter", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -138,6 +158,13 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   --font-serif: "Source Serif 4", "Source Serif 4 Fallback";
+
+  /* Simpli brand colors */
+  --color-simpli-blue: var(--simpli-blue);
+  --color-simpli-blue-hover: var(--simpli-blue-hover);
+  --color-simpli-success: var(--simpli-success);
+  --color-simpli-warning: var(--simpli-warning);
+
   /* computed shadow variables below - do not modify */
   --shadow-2xs: var(--shadow-x) var(--shadow-y)
     color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
@@ -174,22 +201,20 @@
     @apply bg-background text-foreground;
   }
 
-  /* Custom scrollbar styling - only vertical scrollbar visible on hover, horizontal hidden completely */
   * {
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
     transition: scrollbar-color 0.3s ease;
-    overflow-x: hidden; /* Hide horizontal scrollbar */
+    overflow-x: hidden;
   }
 
   *:hover {
     scrollbar-color: oklch(0.35 0 0) transparent;
   }
 
-  /* Webkit browsers (Chrome, Safari, Edge) */
   *::-webkit-scrollbar {
-    width: 6px; /* Reduced from 8px */
-    height: 0px; /* Hide horizontal scrollbar */
+    width: 6px;
+    height: 0px;
   }
 
   *::-webkit-scrollbar-track {
@@ -208,5 +233,32 @@
 
   *:hover::-webkit-scrollbar-thumb:hover {
     background: oklch(0.4 0 0);
+  }
+}
+
+/* Drag and drop utility classes */
+@layer utilities {
+  .dragging {
+    opacity: 0.7;
+    cursor: grabbing !important;
+  }
+
+  .drag-over {
+    background-color: var(--drag-over);
+    border-color: var(--simpli-success) !important;
+  }
+
+  .drag-invalid {
+    background-color: var(--drag-invalid);
+    border-color: var(--destructive) !important;
+  }
+
+  .draggable {
+    cursor: grab;
+    user-select: none;
+  }
+
+  .draggable:active {
+    cursor: grabbing;
   }
 }

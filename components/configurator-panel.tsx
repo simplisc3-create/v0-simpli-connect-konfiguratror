@@ -2,8 +2,23 @@
 
 import { useState } from "react"
 import type { ShelfConfig, GridCell, ShoppingItem } from "./shelf-configurator"
+import type { OptimizationSuggestion, BuyingPackage } from "@/lib/shopping-optimizer"
+import { DraggableModule } from "./draggable-module"
+import { DroppableCell } from "./droppable-cell"
 import { cn } from "@/lib/utils"
-import { ShoppingCart, ChevronDown, ChevronRight, X, Plus, Minus, Eraser, List } from "lucide-react"
+import {
+  ShoppingCart,
+  ChevronDown,
+  ChevronRight,
+  X,
+  Plus,
+  Minus,
+  Eraser,
+  Lightbulb,
+  GripVertical,
+  Package,
+  Check,
+} from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 
 type Props = {
@@ -13,13 +28,16 @@ type Props = {
   onSelectTool: (tool: GridCell["type"] | null) => void
   onSelectCell: (cell: { row: number; col: number } | null) => void
   onUpdateCellColor: (row: number, col: number, color: GridCell["color"]) => void
-  onPlaceModule: (row: number, col: number, type: GridCell["type"]) => void
+  onPlaceModule: (row: number, col: number, type: GridCell["type"], color?: GridCell["color"]) => void
   onClearCell: (row: number, col: number) => void
   onResizeGrid: (rows: number, cols: number) => void
   onSetColumnWidth: (col: number, width: 75 | 38) => void
   onUpdateConfig: (updates: Partial<ShelfConfig>) => void
+  onDrop: (row: number, col: number, type: GridCell["type"], color?: GridCell["color"]) => void
   shoppingList: ShoppingItem[]
   price: string
+  suggestions: OptimizationSuggestion[]
+  optimalPackages?: BuyingPackage[]
   showShoppingList: boolean
   onToggleShoppingList: () => void
   showMobilePanel?: boolean
@@ -69,14 +87,18 @@ export function ConfiguratorPanel({
   onResizeGrid,
   onSetColumnWidth,
   onUpdateConfig,
+  onDrop,
   shoppingList,
   price,
+  suggestions,
+  optimalPackages = [],
   showShoppingList,
   onToggleShoppingList,
   showMobilePanel = true,
   onCloseMobilePanel,
 }: Props) {
-  const [expandedSection, setExpandedSection] = useState<string | null>("grid")
+  const [showSuggestions, setShowSuggestions] = useState(true)
+  const [showPackages, setShowPackages] = useState(true)
 
   const handleCellClick = (row: number, col: number) => {
     if (selectedTool === "empty") {
@@ -122,6 +144,17 @@ export function ConfiguratorPanel({
 
   const selectedCellData = selectedCell ? config.grid[selectedCell.row]?.[selectedCell.col] : null
 
+  const getPriorityBadge = (priority: BuyingPackage["priority"]) => {
+    switch (priority) {
+      case "essential":
+        return { label: "Pflicht", className: "bg-[var(--simpli-blue)] text-primary" }
+      case "recommended":
+        return { label: "Empfohlen", className: "bg-[var(--simpli-success)] text-primary" }
+      case "optional":
+        return { label: "Optional", className: "bg-muted text-muted-foreground" }
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -132,21 +165,22 @@ export function ConfiguratorPanel({
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-3 lg:hidden">
         <h2 className="font-semibold text-card-foreground">Konfigurator</h2>
-        <button onClick={onCloseMobilePanel} className="rounded-full p-1 hover:bg-control-hover">
+        <button onClick={onCloseMobilePanel} className="rounded-full p-1 hover:bg-secondary">
           <X className="h-5 w-5 text-muted-foreground" />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        {/* Selected cell color picker */}
         {selectedCellData && selectedCellData.type !== "empty" && (
-          <div className="border-b border-border bg-accent-blue/10 p-4">
+          <div className="border-b border-border bg-[var(--simpli-blue)]/10 p-4">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-medium text-card-foreground">
                 Ausgewählte Zelle: R{selectedCell!.row + 1}C{selectedCell!.col + 1}
               </h3>
               <button
                 onClick={() => onSelectCell(null)}
-                className="rounded p-1 hover:bg-control-hover"
+                className="rounded p-1 hover:bg-secondary"
                 title="Auswahl aufheben"
               >
                 <X className="h-4 w-4 text-muted-foreground" />
@@ -173,8 +207,9 @@ export function ConfiguratorPanel({
           </div>
         )}
 
+        {/* Base color selection */}
         <div className="border-b border-border p-4">
-          <h3 className="mb-3 text-sm font-medium text-card-foreground">Standardfarbe (für neue Module)</h3>
+          <h3 className="mb-3 text-sm font-medium text-card-foreground">Farbe</h3>
           <div className="flex items-start gap-3">
             <div className="flex gap-2">
               {baseColors.map((color) => (
@@ -192,14 +227,15 @@ export function ConfiguratorPanel({
                 />
               ))}
             </div>
-            <div className="ml-auto flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-accent-blue to-accent-blue-hover md:h-14 md:w-14">
+            <div className="ml-auto flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--simpli-blue)] to-[var(--simpli-blue-hover)] md:h-14 md:w-14">
               <span className="text-3xl font-bold text-primary md:text-2xl">S</span>
             </div>
           </div>
         </div>
 
+        {/* Special colors */}
         <div className="border-b border-border p-4">
-          <h3 className="mb-3 text-sm font-medium text-card-foreground">Sonderfarbe (für neue Module)</h3>
+          <h3 className="mb-3 text-sm font-medium text-card-foreground">Sonderfarbe</h3>
           <div className="flex flex-wrap gap-2">
             {specialColors.map((color) => (
               <button
@@ -208,8 +244,8 @@ export function ConfiguratorPanel({
                 className={cn(
                   "h-12 w-12 rounded border-2 transition-all md:h-10 md:w-10",
                   config.accentColor === color.id
-                    ? "border-primary bg-secondary text-primary"
-                    : "border-border text-muted-foreground hover:border-muted-foreground",
+                    ? "border-primary ring-2 ring-ring ring-offset-2 ring-offset-background"
+                    : "border-border hover:border-muted-foreground",
                 )}
                 style={{ backgroundColor: color.color }}
                 title={color.label}
@@ -218,6 +254,7 @@ export function ConfiguratorPanel({
           </div>
         </div>
 
+        {/* Shelf material */}
         <div className="border-b border-border p-4">
           <h3 className="mb-3 text-sm font-medium text-card-foreground">Bodenmaterial</h3>
           <div className="flex gap-2">
@@ -228,7 +265,7 @@ export function ConfiguratorPanel({
                 className={cn(
                   "flex-1 rounded-lg border px-4 py-3 text-sm transition-all md:py-2",
                   config.shelfMaterial === mat.id
-                    ? "border-primary bg-secondary text-primary"
+                    ? "border-[var(--simpli-blue)] bg-[var(--simpli-blue)]/20 text-[var(--simpli-blue)]"
                     : "border-border text-muted-foreground hover:border-muted-foreground",
                 )}
               >
@@ -238,6 +275,7 @@ export function ConfiguratorPanel({
           </div>
         </div>
 
+        {/* Grid size controls */}
         <div className="border-b border-border p-4">
           <h3 className="mb-3 text-sm font-medium text-card-foreground">Regal-Größe</h3>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -245,14 +283,14 @@ export function ConfiguratorPanel({
               <span className="text-sm text-muted-foreground">Reihen:</span>
               <button
                 onClick={() => config.rows > 1 && onResizeGrid(config.rows - 1, config.columns)}
-                className="rounded bg-control-bg p-2 hover:bg-control-hover active:bg-control-hover"
+                className="rounded bg-secondary p-2 hover:bg-accent active:bg-accent"
               >
                 <Minus className="h-5 w-5 text-muted-foreground" />
               </button>
               <span className="w-8 text-center text-card-foreground">{config.rows}</span>
               <button
                 onClick={() => config.rows < 8 && onResizeGrid(config.rows + 1, config.columns)}
-                className="rounded bg-control-bg p-2 hover:bg-control-hover active:bg-control-hover"
+                className="rounded bg-secondary p-2 hover:bg-accent active:bg-accent"
               >
                 <Plus className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -262,14 +300,14 @@ export function ConfiguratorPanel({
               <span className="text-sm text-muted-foreground">Spalten:</span>
               <button
                 onClick={() => config.columns > 1 && onResizeGrid(config.rows, config.columns - 1)}
-                className="rounded bg-control-bg p-2 hover:bg-control-hover active:bg-control-hover"
+                className="rounded bg-secondary p-2 hover:bg-accent active:bg-accent"
               >
                 <Minus className="h-5 w-5 text-muted-foreground" />
               </button>
               <span className="w-8 text-center text-card-foreground">{config.columns}</span>
               <button
                 onClick={() => config.columns < 6 && onResizeGrid(config.rows, config.columns + 1)}
-                className="rounded bg-control-bg p-2 hover:bg-control-hover active:bg-control-hover"
+                className="rounded bg-secondary p-2 hover:bg-accent active:bg-accent"
               >
                 <Plus className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -277,8 +315,11 @@ export function ConfiguratorPanel({
           </div>
         </div>
 
+        {/* Module elements with drag and drop */}
         <div className="border-b border-border p-4">
-          <h3 className="mb-3 text-sm font-medium text-card-foreground">Simpli-Elemente (Klicken zum Auswählen)</h3>
+          <h3 className="mb-3 text-sm font-medium text-card-foreground">
+            Simpli-Elemente <span className="text-muted-foreground">(Klicken oder Ziehen)</span>
+          </h3>
 
           <div className="mb-3">
             <button
@@ -297,36 +338,45 @@ export function ConfiguratorPanel({
 
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2 sm:grid-cols-2">
             {moduleTypes.map((module) => (
-              <button
+              <DraggableModule
                 key={module.id}
-                onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
-                className={cn(
-                  "flex flex-col items-center rounded-lg border p-2 transition-all sm:p-3 md:p-2",
-                  selectedTool === module.id
-                    ? "border-accent-blue bg-accent-blue/20 text-accent-blue"
-                    : "border-border text-muted-foreground hover:border-muted-foreground active:border-muted-foreground",
-                )}
+                moduleType={module.id}
+                color={config.accentColor !== "none" ? config.accentColor : config.baseColor}
               >
-                <ModulePreviewSVG type={module.id} />
-                <span className="mt-0.5 sm:mt-1 text-center text-[9px] leading-tight sm:text-[11px] md:text-[10px]">
-                  {module.label}
-                </span>
-              </button>
+                <button
+                  onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
+                  className={cn(
+                    "relative flex w-full flex-col items-center rounded-lg border p-2 transition-all sm:p-3 md:p-2",
+                    selectedTool === module.id
+                      ? "border-[var(--simpli-blue)] bg-[var(--simpli-blue)]/20 text-[var(--simpli-blue)]"
+                      : "border-border text-muted-foreground hover:border-muted-foreground active:border-muted-foreground",
+                  )}
+                >
+                  <GripVertical className="absolute right-1 top-1 h-3 w-3 opacity-40" />
+                  <ModulePreviewSVG type={module.id} />
+                  <span className="mt-0.5 sm:mt-1 text-center text-[9px] leading-tight sm:text-[11px] md:text-[10px]">
+                    {module.label}
+                  </span>
+                </button>
+              </DraggableModule>
             ))}
           </div>
+
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Tipp: Ziehe Module direkt auf das Regal oder klicke zum Auswählen
+          </p>
         </div>
 
+        {/* Configuration grid */}
         <div className="border-b border-border p-4">
-          <h3 className="mb-3 text-sm font-medium text-card-foreground">
-            Konfigurations-Raster (Klicken zum Platzieren/Bearbeiten)
-          </h3>
+          <h3 className="mb-3 text-sm font-medium text-card-foreground">Konfigurations-Raster</h3>
 
           <div className="mb-2 flex gap-1 pl-12">
             {config.columnWidths.map((width, colIndex) => (
               <button
                 key={`col-width-${colIndex}`}
                 onClick={() => onSetColumnWidth(colIndex, width === 75 ? 38 : 75)}
-                className="flex-1 rounded bg-control-bg px-1 py-1 text-[11px] text-muted-foreground hover:bg-control-hover active:bg-control-hover md:py-0.5 md:text-[10px]"
+                className="flex-1 rounded bg-secondary px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent active:bg-accent md:py-0.5 md:text-[10px]"
               >
                 {width}cm
               </button>
@@ -359,62 +409,150 @@ export function ConfiguratorPanel({
                 const isSelected = selectedCell?.row === cell.row && selectedCell?.col === cell.col
 
                 return (
-                  <button
-                    key={cell.id}
-                    onClick={() => handleCellClick(cell.row, cell.col)}
-                    className={cn(
-                      "relative flex items-center justify-center rounded border-2 text-[9px] font-medium transition-all active:scale-95",
-                      isEmpty
-                        ? "border-dashed border-border hover:border-muted-foreground hover:bg-secondary/30 active:bg-secondary/50"
-                        : "border-solid border-muted",
-                      isSelected && !isEmpty && "ring-2 ring-accent-blue ring-offset-1",
-                      selectedTool && "cursor-pointer",
-                    )}
-                    style={{ backgroundColor: isEmpty ? undefined : bgColor }}
-                  >
-                    {isEmpty ? (
-                      <Plus className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <>
-                        <span
-                          className={cn(
-                            "text-center",
-                            cellColor === "weiss" ? "text-primary-foreground" : "text-primary",
-                          )}
-                        >
-                          {getModuleShortLabel(cell.type)}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onClearCell(cell.row, cell.col)
-                            if (isSelected) onSelectCell(null)
-                          }}
-                          className="absolute -right-1 -top-1 rounded-full bg-destructive p-1 text-destructive-foreground hover:bg-destructive/80 active:bg-destructive/80 md:p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </>
-                    )}
-                  </button>
+                  <DroppableCell key={cell.id} row={cell.row} col={cell.col} onDrop={onDrop} isEmpty={isEmpty}>
+                    <button
+                      onClick={() => handleCellClick(cell.row, cell.col)}
+                      className={cn(
+                        "relative flex h-full w-full items-center justify-center rounded border-2 text-[9px] font-medium transition-all active:scale-95",
+                        isEmpty
+                          ? "border-dashed border-border hover:border-muted-foreground hover:bg-secondary/30 active:bg-secondary/50"
+                          : "border-solid border-muted",
+                        isSelected && !isEmpty && "ring-2 ring-[var(--simpli-blue)] ring-offset-1",
+                        selectedTool && "cursor-pointer",
+                      )}
+                      style={{ backgroundColor: isEmpty ? undefined : bgColor }}
+                    >
+                      {isEmpty ? (
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <>
+                          <span
+                            className={cn("text-center", cellColor === "weiss" ? "text-[#1a1a1a]" : "text-primary")}
+                          >
+                            {getModuleShortLabel(cell.type)}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onClearCell(cell.row, cell.col)
+                              if (isSelected) onSelectCell(null)
+                            }}
+                            className="absolute -right-1 -top-1 rounded-full bg-destructive p-1 text-destructive-foreground hover:bg-destructive/80 active:bg-destructive/80 md:p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </>
+                      )}
+                    </button>
+                  </DroppableCell>
                 )
               })}
             </div>
           </div>
 
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            Tipp: Klicke auf Module um deren Farbe einzeln zu ändern
-          </p>
+          <p className="mt-2 text-[10px] text-muted-foreground">Ziehe Module hierher oder klicke auf eine Zelle</p>
         </div>
 
+        {optimalPackages.length > 0 && (
+          <div className="border-b border-border">
+            <button
+              onClick={() => setShowPackages(!showPackages)}
+              className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50 active:bg-secondary/50"
+            >
+              {showPackages ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <Package className="h-4 w-4 text-[var(--simpli-blue)]" />
+              <span className="font-medium">Optimale Bestellpakete ({optimalPackages.length})</span>
+            </button>
+
+            {showPackages && (
+              <div className="px-4 pb-4 space-y-3">
+                {optimalPackages.map((pkg) => {
+                  const badge = getPriorityBadge(pkg.priority)
+                  return (
+                    <div key={pkg.id} className="rounded-lg border border-border bg-secondary/30 p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-card-foreground">{pkg.name}</h4>
+                            <span className={cn("text-[10px] px-1.5 py-0.5 rounded", badge.className)}>
+                              {badge.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{pkg.description}</p>
+                        </div>
+                        <span className="font-semibold text-[var(--simpli-blue)]">
+                          {pkg.packagePrice.toFixed(2).replace(".", ",")} €
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {pkg.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between py-0.5">
+                            <span>
+                              {item.quantity}x {item.product.name}
+                            </span>
+                            <span>{item.subtotal.toFixed(2).replace(".", ",")} €</span>
+                          </div>
+                        ))}
+                      </div>
+                      {pkg.savings > 0 && (
+                        <div className="mt-2 flex items-center gap-1 text-xs text-[var(--simpli-success)]">
+                          <Check className="h-3 w-3" />
+                          <span>Ersparnis: {pkg.savings.toFixed(2).replace(".", ",")} €</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Optimization suggestions */}
+        {suggestions.length > 0 && (
+          <div className="border-b border-border">
+            <button
+              onClick={() => setShowSuggestions(!showSuggestions)}
+              className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50 active:bg-secondary/50"
+            >
+              {showSuggestions ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <Lightbulb className="h-4 w-4 text-[var(--simpli-warning)]" />
+              <span className="font-medium">Optimierungs-Tipps ({suggestions.length})</span>
+            </button>
+
+            {showSuggestions && (
+              <div className="px-4 pb-4 space-y-2">
+                {suggestions.map((suggestion, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-2 rounded bg-[var(--simpli-warning)]/10 border border-[var(--simpli-warning)]/20 px-3 py-2 text-sm"
+                  >
+                    <Lightbulb className="h-4 w-4 text-[var(--simpli-warning)] mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-card-foreground">{suggestion.message}</p>
+                      {suggestion.potentialSavings > 0 && (
+                        <p className="text-xs text-[var(--simpli-success)] mt-1">
+                          Mögliche Ersparnis: ~{suggestion.potentialSavings.toFixed(2).replace(".", ",")} €
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Shopping list */}
         <div className="border-b border-border">
           <button
             onClick={onToggleShoppingList}
             className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50 active:bg-secondary/50"
           >
             {showShoppingList ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            <List className="h-4 w-4" />
-            <span className="font-medium">Einkaufsliste ({shoppingList.length} Produkte)</span>
+            <ShoppingCart className="h-4 w-4" />
+            <span className="font-medium">Einkaufsliste</span>
+            <span className="ml-auto font-bold text-[var(--simpli-blue)]">{price} €</span>
           </button>
 
           {showShoppingList && (
@@ -423,160 +561,150 @@ export function ConfiguratorPanel({
                 <p className="text-sm text-muted-foreground">Füge Module hinzu um die Einkaufsliste zu sehen</p>
               ) : (
                 <div className="space-y-2">
-                  {shoppingList.map((item) => (
+                  {shoppingList.map((item, idx) => (
                     <div
-                      key={item.product.artNr}
-                      className="flex items-center justify-between rounded bg-secondary px-3 py-2 text-sm"
+                      key={idx}
+                      className="flex items-center justify-between rounded bg-secondary/50 px-3 py-2 text-sm"
                     >
-                      <div className="flex-1">
-                        <div className="text-card-foreground">{item.product.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Art.Nr: {item.product.artNr} | {item.quantity}x à{" "}
-                          {item.product.price.toFixed(2).replace(".", ",")} €
-                        </div>
+                      <div>
+                        <span className="text-card-foreground">{item.product.name}</span>
+                        <span className="ml-2 text-muted-foreground">x{item.quantity}</span>
                       </div>
-                      <div className="text-right font-medium text-card-foreground">
+                      <span className="font-medium text-card-foreground">
                         {item.subtotal.toFixed(2).replace(".", ",")} €
-                      </div>
+                      </span>
                     </div>
                   ))}
+                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                    <span className="font-semibold text-card-foreground">Gesamt</span>
+                    <span className="text-xl font-bold text-[var(--simpli-blue)]">{price} €</span>
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
-
-      <div className="border-t border-border bg-card p-4">
-        <div className="mb-3 flex items-baseline justify-between">
-          <span className="text-sm text-muted-foreground">Preis:</span>
-          <span className="text-2xl font-bold text-card-foreground">{price} €</span>
-        </div>
-        <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent-blue py-4 font-medium uppercase tracking-wide text-primary transition-colors hover:bg-accent-blue-hover active:bg-accent-blue-hover md:py-3">
-          <ShoppingCart className="h-5 w-5" />
-          In den Warenkorb
-        </button>
-      </div>
     </div>
   )
 }
 
-function ModulePreviewSVG({ type }: { type: string }) {
-  const baseStyle = "stroke-current"
+// Module preview SVG component
+function ModulePreviewSVG({ type }: { type: GridCell["type"] }) {
+  const baseClass = "w-full h-10 sm:h-12 md:h-10"
 
   switch (type) {
     case "ohne-seitenwaende":
       return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="5" width="40" height="25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
+        <svg className={baseClass} viewBox="0 0 60 40" fill="none">
+          <rect x="5" y="5" width="50" height="30" stroke="currentColor" strokeWidth="1.5" fill="none" rx="1" />
+          <line x1="5" y1="35" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
         </svg>
       )
     case "ohne-rueckwand":
       return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="5" width="40" height="25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
-          <rect x="6" y="6" width="38" height="10" fill="currentColor" fillOpacity="0.15" />
-          <rect x="6" y="18" width="38" height="11" fill="currentColor" fillOpacity="0.15" />
+        <svg className={baseClass} viewBox="0 0 60 40" fill="none">
+          <rect x="5" y="5" width="50" height="30" stroke="currentColor" strokeWidth="1.5" fill="none" rx="1" />
+          <line x1="5" y1="5" x2="5" y2="35" stroke="currentColor" strokeWidth="2" />
+          <line x1="55" y1="5" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
+          <line x1="5" y1="35" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
         </svg>
       )
     case "mit-rueckwand":
       return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className={baseClass} viewBox="0 0 60 40" fill="none">
           <rect
             x="5"
             y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
+            width="50"
+            height="30"
             stroke="currentColor"
             strokeWidth="1.5"
+            fill="currentColor"
+            fillOpacity="0.1"
+            rx="1"
           />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
-          <rect x="5" y="5" width="2" height="25" fill="currentColor" fillOpacity="0.4" />
-          <rect x="43" y="5" width="2" height="25" fill="currentColor" fillOpacity="0.4" />
+          <line x1="5" y1="5" x2="5" y2="35" stroke="currentColor" strokeWidth="2" />
+          <line x1="55" y1="5" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
+          <line x1="5" y1="35" x2="55" y2="35" stroke="currentColor" strokeWidth="2" />
         </svg>
       )
     case "mit-tueren":
       return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className={baseClass} viewBox="0 0 60 40" fill="none">
           <rect
             x="5"
             y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
+            width="50"
+            height="30"
             stroke="currentColor"
             strokeWidth="1.5"
+            fill="currentColor"
+            fillOpacity="0.15"
+            rx="1"
           />
-          <line x1="25" y1="5" x2="25" y2="30" stroke="currentColor" strokeWidth="1" />
-          <circle cx="22" cy="17" r="1.5" fill="currentColor" />
-          <circle cx="28" cy="17" r="1.5" fill="currentColor" />
+          <line x1="30" y1="5" x2="30" y2="35" stroke="currentColor" strokeWidth="1" />
+          <circle cx="25" cy="20" r="2" fill="currentColor" />
+          <circle cx="35" cy="20" r="2" fill="currentColor" />
         </svg>
       )
     case "mit-klapptuer":
       return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className={baseClass} viewBox="0 0 60 40" fill="none">
           <rect
             x="5"
             y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
+            width="50"
+            height="30"
             stroke="currentColor"
             strokeWidth="1.5"
+            fill="currentColor"
+            fillOpacity="0.15"
+            rx="1"
           />
-          <line x1="5" y1="25" x2="45" y2="25" stroke="currentColor" strokeWidth="1" />
-          <line x1="20" y1="27" x2="30" y2="27" stroke="currentColor" strokeWidth="2" />
+          <line x1="5" y1="28" x2="55" y2="28" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" />
+          <circle cx="30" cy="32" r="2" fill="currentColor" />
         </svg>
       )
     case "mit-doppelschublade":
       return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className={baseClass} viewBox="0 0 60 40" fill="none">
           <rect
             x="5"
             y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
+            width="50"
+            height="30"
             stroke="currentColor"
             strokeWidth="1.5"
+            fill="currentColor"
+            fillOpacity="0.15"
+            rx="1"
           />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
-          <line x1="18" y1="11" x2="32" y2="11" stroke="currentColor" strokeWidth="2" />
-          <line x1="18" y1="23" x2="32" y2="23" stroke="currentColor" strokeWidth="2" />
+          <line x1="5" y1="20" x2="55" y2="20" stroke="currentColor" strokeWidth="1" />
+          <line x1="25" y1="12" x2="35" y2="12" stroke="currentColor" strokeWidth="2" />
+          <line x1="25" y1="28" x2="35" y2="28" stroke="currentColor" strokeWidth="2" />
         </svg>
       )
     case "abschliessbare-tueren":
       return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className={baseClass} viewBox="0 0 60 40" fill="none">
           <rect
             x="5"
             y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
+            width="50"
+            height="30"
             stroke="currentColor"
             strokeWidth="1.5"
+            fill="currentColor"
+            fillOpacity="0.15"
+            rx="1"
           />
-          <line x1="25" y1="5" x2="25" y2="30" stroke="currentColor" strokeWidth="1" />
-          <circle cx="22" cy="15" r="2" fill="none" stroke="currentColor" strokeWidth="1" />
-          <rect x="21" y="15" width="2" height="4" fill="currentColor" />
-          <circle cx="28" cy="15" r="2" fill="none" stroke="currentColor" strokeWidth="1" />
-          <rect x="27" y="15" width="2" height="4" fill="currentColor" />
+          <line x1="30" y1="5" x2="30" y2="35" stroke="currentColor" strokeWidth="1" />
+          <rect x="23" y="17" width="6" height="6" fill="currentColor" rx="1" />
+          <rect x="33" y="17" width="6" height="6" fill="currentColor" rx="1" />
         </svg>
       )
     default:
-      return (
-        <svg viewBox="0 0 50 35" className="h-6 w-10 sm:h-8 sm:w-12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="5" width="40" height="25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        </svg>
-      )
+      return null
   }
 }

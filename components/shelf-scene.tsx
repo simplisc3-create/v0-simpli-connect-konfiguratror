@@ -58,7 +58,7 @@ function ChromeTube({
   return (
     <mesh position={position} rotation={rotation} castShadow receiveShadow>
       <cylinderGeometry args={[radius, radius, length, 16]} />
-      <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
+      <meshStandardMaterial color="#d4d4d4" metalness={0.95} roughness={0.08} envMapIntensity={1.5} />
     </mesh>
   )
 }
@@ -77,7 +77,7 @@ function ShelfPanel({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={[width, 0.018, depth]} />
-      <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+      <meshStandardMaterial color={color} roughness={0.35} metalness={0.2} />
     </mesh>
   )
 }
@@ -165,27 +165,62 @@ function DrawerPanel({
   height: number
   color: string
 }) {
-  const handleWidth = width * 0.7
+  const handleWidth = width * 0.6
+  const handleRadius = 0.005
+  const handleOffset = 0.02
+  const bracketHeight = 0.015
+
   return (
     <group position={position}>
-      {/* Drawer front */}
+      {/* Drawer front panel */}
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[width, height, 0.02]} />
-        <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+        <boxGeometry args={[width, height, 0.018]} />
+        <meshStandardMaterial color={color} roughness={0.25} metalness={0.15} />
       </mesh>
-      {/* Horizontal bar handle */}
-      <mesh position={[0, 0, 0.025]} castShadow rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.006, 0.006, handleWidth, 16]} />
-        <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
+
+      {/* Chrome horizontal bar handle */}
+      <group position={[0, 0, 0.018]}>
+        {/* Main horizontal bar */}
+        <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[handleRadius, handleRadius, handleWidth, 16]} />
+          <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} envMapIntensity={1.5} />
+        </mesh>
+
+        {/* Left bracket (vertical piece connecting to drawer) */}
+        <group position={[-handleWidth / 2, 0, 0]}>
+          <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[handleRadius * 0.8, handleRadius * 0.8, bracketHeight, 12]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+          </mesh>
+          {/* End cap */}
+          <mesh position={[0, 0, 0]} castShadow>
+            <sphereGeometry args={[handleRadius, 12, 12]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+          </mesh>
+        </group>
+
+        {/* Right bracket (vertical piece connecting to drawer) */}
+        <group position={[handleWidth / 2, 0, 0]}>
+          <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[handleRadius * 0.8, handleRadius * 0.8, bracketHeight, 12]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+          </mesh>
+          {/* End cap */}
+          <mesh position={[0, 0, 0]} castShadow>
+            <sphereGeometry args={[handleRadius, 12, 12]} />
+            <meshStandardMaterial color="#e8e8e8" metalness={0.95} roughness={0.05} />
+          </mesh>
+        </group>
+      </group>
+
+      {/* Subtle drawer gap/edge highlight */}
+      <mesh position={[0, height / 2 - 0.002, 0.009]} castShadow>
+        <boxGeometry args={[width - 0.004, 0.002, 0.002]} />
+        <meshStandardMaterial color="#333333" roughness={0.8} />
       </mesh>
-      {/* Handle end caps */}
-      <mesh position={[-handleWidth / 2, 0, 0.025]} castShadow>
-        <sphereGeometry args={[0.008, 16, 16]} />
-        <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
-      </mesh>
-      <mesh position={[handleWidth / 2, 0, 0.025]} castShadow>
-        <sphereGeometry args={[0.008, 16, 16]} />
-        <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
+      <mesh position={[0, -height / 2 + 0.002, 0.009]} castShadow>
+        <boxGeometry args={[width - 0.004, 0.002, 0.002]} />
+        <meshStandardMaterial color="#333333" roughness={0.8} />
       </mesh>
     </group>
   )
@@ -270,7 +305,7 @@ function InteractiveCell({
 }
 
 export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, onCellClick, onCellHover }: Props) {
-  const [useGLBModels, setUseGLBModules] = useState(false)
+  const [useGLBModels, setUseGLBModules] = useState(true)
 
   const { elements, interactiveCells, glbModules } = useMemo(() => {
     const els: JSX.Element[] = []
@@ -412,183 +447,185 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
               key={`glb-${gridRow}-${gridCol}`}
               position={[cellX, cellY, offsetZ + depth / 2]}
               cellType={cell.type}
+              cellColor={cellColor as GridCell["color"]}
               width={cellWidth}
               height={cellHeight}
               depth={depth}
-              color={panelColor}
             />,
           )
         }
 
-        els.push(
-          <ShelfPanel
-            key={`shelf-${gridRow}-${gridCol}`}
-            position={[cellX, bottomY + 0.009, offsetZ + depth / 2]}
-            width={cellWidth - 0.02}
-            depth={depth - 0.02}
-            color={panelColor}
-          />,
-        )
-
-        if (gridRow === 0) {
-          const topY = rowPositions[invertedRow + 1] + offsetY
+        if (!useGLBModels) {
           els.push(
             <ShelfPanel
-              key={`shelf-top-${gridCol}`}
-              position={[cellX, topY + 0.009, offsetZ + depth / 2]}
+              key={`shelf-${gridRow}-${gridCol}`}
+              position={[cellX, bottomY + 0.009, offsetZ + depth / 2]}
               width={cellWidth - 0.02}
               depth={depth - 0.02}
               color={panelColor}
             />,
           )
-        }
 
-        switch (cell.type) {
-          case "mit-rueckwand":
+          if (gridRow === 0) {
+            const topY = rowPositions[invertedRow + 1] + offsetY
             els.push(
-              <BackPanel
-                key={`back-${gridRow}-${gridCol}`}
-                position={[cellX, cellY, offsetZ + 0.006]}
+              <ShelfPanel
+                key={`shelf-top-${gridCol}`}
+                position={[cellX, topY + 0.009, offsetZ + depth / 2]}
                 width={cellWidth - 0.02}
-                height={cellHeight - 0.02}
+                depth={depth - 0.02}
                 color={panelColor}
               />,
             )
-            break
+          }
 
-          case "mit-tueren":
-            const doorWidth = (cellWidth - 0.03) / 2
-            els.push(
-              <DoorPanel
-                key={`door-l-${gridRow}-${gridCol}`}
-                position={[cellX - doorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
-                width={doorWidth}
-                height={cellHeight - 0.02}
-                color={panelColor}
-              />,
-            )
-            els.push(
-              <DoorPanel
-                key={`door-r-${gridRow}-${gridCol}`}
-                position={[cellX + doorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
-                width={doorWidth}
-                height={cellHeight - 0.02}
-                color={panelColor}
-              />,
-            )
-            els.push(
-              <SidePanel
-                key={`side-l-${gridRow}-${gridCol}`}
-                position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                height={cellHeight - 0.02}
-                depth={depth - 0.02}
-                color={panelColor}
-              />,
-            )
-            els.push(
-              <SidePanel
-                key={`side-r-${gridRow}-${gridCol}`}
-                position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                height={cellHeight - 0.02}
-                depth={depth - 0.02}
-                color={panelColor}
-              />,
-            )
-            break
+          switch (cell.type) {
+            case "mit-rueckwand":
+              els.push(
+                <BackPanel
+                  key={`back-${gridRow}-${gridCol}`}
+                  position={[cellX, cellY, offsetZ + 0.006]}
+                  width={cellWidth - 0.02}
+                  height={cellHeight - 0.02}
+                  color={panelColor}
+                />,
+              )
+              break
 
-          case "abschliessbare-tueren":
-            const lockDoorWidth = (cellWidth - 0.03) / 2
-            els.push(
-              <DoorPanel
-                key={`lock-door-l-${gridRow}-${gridCol}`}
-                position={[cellX - lockDoorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
-                width={lockDoorWidth}
-                height={cellHeight - 0.02}
-                color={panelColor}
-                hasLock
-              />,
-            )
-            els.push(
-              <DoorPanel
-                key={`lock-door-r-${gridRow}-${gridCol}`}
-                position={[cellX + lockDoorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
-                width={lockDoorWidth}
-                height={cellHeight - 0.02}
-                color={panelColor}
-                hasLock
-              />,
-            )
-            els.push(
-              <SidePanel
-                key={`side-l-lock-${gridRow}-${gridCol}`}
-                position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                height={cellHeight - 0.02}
-                depth={depth - 0.02}
-                color={panelColor}
-              />,
-            )
-            els.push(
-              <SidePanel
-                key={`side-r-lock-${gridRow}-${gridCol}`}
-                position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                height={cellHeight - 0.02}
-                depth={depth - 0.02}
-                color={panelColor}
-              />,
-            )
-            break
+            case "mit-tueren":
+              const doorWidth = (cellWidth - 0.03) / 2
+              els.push(
+                <DoorPanel
+                  key={`door-l-${gridRow}-${gridCol}`}
+                  position={[cellX - doorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
+                  width={doorWidth}
+                  height={cellHeight - 0.02}
+                  color={panelColor}
+                />,
+              )
+              els.push(
+                <DoorPanel
+                  key={`door-r-${gridRow}-${gridCol}`}
+                  position={[cellX + doorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
+                  width={doorWidth}
+                  height={cellHeight - 0.02}
+                  color={panelColor}
+                />,
+              )
+              els.push(
+                <SidePanel
+                  key={`side-l-${gridRow}-${gridCol}`}
+                  position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
+                  height={cellHeight - 0.02}
+                  depth={depth - 0.02}
+                  color={panelColor}
+                />,
+              )
+              els.push(
+                <SidePanel
+                  key={`side-r-${gridRow}-${gridCol}`}
+                  position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
+                  height={cellHeight - 0.02}
+                  depth={depth - 0.02}
+                  color={panelColor}
+                />,
+              )
+              break
 
-          case "mit-klapptuer":
-            els.push(
-              <DoorPanel
-                key={`flip-${gridRow}-${gridCol}`}
-                position={[cellX, cellY, offsetZ + depth + 0.01]}
-                width={cellWidth - 0.02}
-                height={cellHeight - 0.02}
-                color={panelColor}
-              />,
-            )
-            break
+            case "abschliessbare-tueren":
+              const lockDoorWidth = (cellWidth - 0.03) / 2
+              els.push(
+                <DoorPanel
+                  key={`lock-door-l-${gridRow}-${gridCol}`}
+                  position={[cellX - lockDoorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
+                  width={lockDoorWidth}
+                  height={cellHeight - 0.02}
+                  color={panelColor}
+                  hasLock
+                />,
+              )
+              els.push(
+                <DoorPanel
+                  key={`lock-door-r-${gridRow}-${gridCol}`}
+                  position={[cellX + lockDoorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
+                  width={lockDoorWidth}
+                  height={cellHeight - 0.02}
+                  color={panelColor}
+                  hasLock
+                />,
+              )
+              els.push(
+                <SidePanel
+                  key={`side-l-lock-${gridRow}-${gridCol}`}
+                  position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
+                  height={cellHeight - 0.02}
+                  depth={depth - 0.02}
+                  color={panelColor}
+                />,
+              )
+              els.push(
+                <SidePanel
+                  key={`side-r-lock-${gridRow}-${gridCol}`}
+                  position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
+                  height={cellHeight - 0.02}
+                  depth={depth - 0.02}
+                  color={panelColor}
+                />,
+              )
+              break
 
-          case "mit-doppelschublade":
-            const drawerHeight = (cellHeight - 0.03) / 2
-            els.push(
-              <DrawerPanel
-                key={`drawer-top-${gridRow}-${gridCol}`}
-                position={[cellX, cellY + drawerHeight / 2 + 0.005, offsetZ + depth + 0.01]}
-                width={cellWidth - 0.02}
-                height={drawerHeight}
-                color={panelColor}
-              />,
-            )
-            els.push(
-              <DrawerPanel
-                key={`drawer-bottom-${gridRow}-${gridCol}`}
-                position={[cellX, cellY - drawerHeight / 2 - 0.005, offsetZ + depth + 0.01]}
-                width={cellWidth - 0.02}
-                height={drawerHeight}
-                color={panelColor}
-              />,
-            )
-            els.push(
-              <SidePanel
-                key={`side-l-drawer-${gridRow}-${gridCol}`}
-                position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                height={cellHeight - 0.02}
-                depth={depth - 0.02}
-                color={panelColor}
-              />,
-            )
-            els.push(
-              <SidePanel
-                key={`side-r-drawer-${gridRow}-${gridCol}`}
-                position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                height={cellHeight - 0.02}
-                depth={depth - 0.02}
-                color={panelColor}
-              />,
-            )
-            break
+            case "mit-klapptuer":
+              els.push(
+                <DoorPanel
+                  key={`flip-${gridRow}-${gridCol}`}
+                  position={[cellX, cellY, offsetZ + depth + 0.01]}
+                  width={cellWidth - 0.02}
+                  height={cellHeight - 0.02}
+                  color={panelColor}
+                />,
+              )
+              break
+
+            case "mit-doppelschublade":
+              const drawerHeight = (cellHeight - 0.03) / 2
+              els.push(
+                <DrawerPanel
+                  key={`drawer-top-${gridRow}-${gridCol}`}
+                  position={[cellX, cellY + drawerHeight / 2 + 0.005, offsetZ + depth + 0.01]}
+                  width={cellWidth - 0.02}
+                  height={drawerHeight}
+                  color={panelColor}
+                />,
+              )
+              els.push(
+                <DrawerPanel
+                  key={`drawer-bottom-${gridRow}-${gridCol}`}
+                  position={[cellX, cellY - drawerHeight / 2 - 0.005, offsetZ + depth + 0.01]}
+                  width={cellWidth - 0.02}
+                  height={drawerHeight}
+                  color={panelColor}
+                />,
+              )
+              els.push(
+                <SidePanel
+                  key={`side-l-drawer-${gridRow}-${gridCol}`}
+                  position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
+                  height={cellHeight - 0.02}
+                  depth={depth - 0.02}
+                  color={panelColor}
+                />,
+              )
+              els.push(
+                <SidePanel
+                  key={`side-r-drawer-${gridRow}-${gridCol}`}
+                  position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
+                  height={cellHeight - 0.02}
+                  depth={depth - 0.02}
+                  color={panelColor}
+                />,
+              )
+              break
+          }
         }
       })
     })
