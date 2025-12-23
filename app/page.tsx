@@ -1,5 +1,9 @@
-import { SimpliKonfigurator } from "@/components/simpli-konfigurator"
+import { ShelfConfigurator } from "@/components/shelf-configurator"
 
 export default function Home() {
-  return <SimpliKonfigurator />
+  return (
+    <main className="h-screen w-screen overflow-hidden">
+      <ShelfConfigurator />
+    </main>
+  )
 }
