@@ -5,6 +5,7 @@ import * as THREE from "three"
 import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
+import { GLBModule } from "./glb-module-loader"
 import type { JSX } from "react/jsx-runtime"
 
 type Props = {
@@ -14,13 +15,6 @@ type Props = {
   selectedCell?: { row: number; col: number } | null
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (cell: { row: number; col: number } | null) => void
-  onAddCellToColumn?: (col: number) => void
-  onRemoveCellFromColumn?: (col: number) => void
-  onAddColumnLeft?: () => void
-  onAddColumnRight?: () => void
-  onRemoveColumn?: (col: number) => void
-  hoveredExpansionZone?: { type: "top" | "left" | "right"; col?: number } | null
-  onHoverExpansionZone?: (zone: { type: "top" | "left" | "right"; col?: number } | null) => void
 }
 
 const colorMap: Record<string, string> = {
@@ -145,6 +139,7 @@ function DoorPanel({
         <boxGeometry args={[width, height, 0.02]} />
         <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
       </mesh>
+      {/* Handle */}
       <mesh position={[width * 0.35, 0, 0.015]} castShadow>
         <cylinderGeometry args={[0.008, 0.008, 0.03, 8]} />
         <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.2} />
@@ -173,14 +168,17 @@ function DrawerPanel({
   const handleWidth = width * 0.7
   return (
     <group position={position}>
+      {/* Drawer front */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[width, height, 0.02]} />
         <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
       </mesh>
+      {/* Horizontal bar handle */}
       <mesh position={[0, 0, 0.025]} castShadow rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.006, 0.006, handleWidth, 16]} />
         <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
       </mesh>
+      {/* Handle end caps */}
       <mesh position={[-handleWidth / 2, 0, 0.025]} castShadow>
         <sphereGeometry args={[0.008, 16, 16]} />
         <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
@@ -252,6 +250,7 @@ function InteractiveCell({
     document.body.style.cursor = "auto"
   }
 
+  // Show clickable area for empty cells or all cells when a tool is selected
   const showClickArea = selectedTool !== null
 
   if (!showClickArea) return null
@@ -269,289 +268,129 @@ function InteractiveCell({
   )
 }
 
-function ColumnExpansionZone({
-  position,
-  width,
-  depth,
-  colIndex,
-  isHovered,
-  canExpand,
-  onClick,
-  onHover,
-}: {
-  position: [number, number, number]
-  width: number
-  depth: number
-  colIndex: number
-  isHovered: boolean
-  canExpand: boolean
-  onClick: () => void
-  onHover: (hovered: boolean) => void
-}) {
-  if (!canExpand) return null
+export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, onCellClick, onCellHover }: Props) {
+  const [useGLBModels, setUseGLBModules] = useState(false)
 
-  return (
-    <group position={position}>
-      <mesh
-        onClick={(e) => {
-          e.stopPropagation()
-          onClick()
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation()
-          onHover(true)
-          document.body.style.cursor = "pointer"
-        }}
-        onPointerOut={() => {
-          onHover(false)
-          document.body.style.cursor = "auto"
-        }}
-      >
-        <boxGeometry args={[width - 0.02, 0.06, depth - 0.02]} />
-        <meshStandardMaterial
-          color={isHovered ? "#22c55e" : "#3b82f6"}
-          transparent
-          opacity={isHovered ? 0.7 : 0.25}
-          depthWrite={false}
-        />
-      </mesh>
-      {/* Plus icon */}
-      {isHovered && (
-        <>
-          <mesh position={[0, 0.001, 0]}>
-            <boxGeometry args={[0.06, 0.012, 0.012]} />
-            <meshStandardMaterial color="#ffffff" />
-          </mesh>
-          <mesh position={[0, 0.001, 0]}>
-            <boxGeometry args={[0.012, 0.012, 0.06]} />
-            <meshStandardMaterial color="#ffffff" />
-          </mesh>
-        </>
-      )}
-    </group>
-  )
-}
-
-function SideExpansionZone({
-  position,
-  height,
-  depth,
-  side,
-  isHovered,
-  canExpand,
-  onClick,
-  onHover,
-}: {
-  position: [number, number, number]
-  height: number
-  depth: number
-  side: "left" | "right"
-  isHovered: boolean
-  canExpand: boolean
-  onClick: () => void
-  onHover: (hovered: boolean) => void
-}) {
-  if (!canExpand) return null
-
-  return (
-    <group position={position}>
-      <mesh
-        onClick={(e) => {
-          e.stopPropagation()
-          onClick()
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation()
-          onHover(true)
-          document.body.style.cursor = "pointer"
-        }}
-        onPointerOut={() => {
-          onHover(false)
-          document.body.style.cursor = "auto"
-        }}
-      >
-        <boxGeometry args={[0.06, height, depth - 0.02]} />
-        <meshStandardMaterial
-          color={isHovered ? "#22c55e" : "#8b5cf6"}
-          transparent
-          opacity={isHovered ? 0.7 : 0.25}
-          depthWrite={false}
-        />
-      </mesh>
-      {/* Plus icon */}
-      {isHovered && (
-        <>
-          <mesh position={[0, 0, 0]}>
-            <boxGeometry args={[0.012, 0.06, 0.012]} />
-            <meshStandardMaterial color="#ffffff" />
-          </mesh>
-          <mesh position={[0, 0, 0]}>
-            <boxGeometry args={[0.012, 0.012, 0.06]} />
-            <meshStandardMaterial color="#ffffff" />
-          </mesh>
-        </>
-      )}
-    </group>
-  )
-}
-
-export function ShelfScene({
-  config,
-  selectedTool,
-  hoveredCell,
-  selectedCell,
-  onCellClick,
-  onCellHover,
-  onAddCellToColumn,
-  onRemoveCellFromColumn,
-  onAddColumnLeft,
-  onAddColumnRight,
-  onRemoveColumn,
-  hoveredExpansionZone,
-  onHoverExpansionZone,
-}: Props) {
-  const { elements, interactiveCells, expansionZones, totalWidth, maxHeight, offsetX, offsetY, depth } = useMemo(() => {
+  const { elements, interactiveCells, glbModules } = useMemo(() => {
     const els: JSX.Element[] = []
     const cells: JSX.Element[] = []
-    const zones: JSX.Element[] = []
+    const glbs: JSX.Element[] = []
+    const effectiveColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
+    const panelColor = colorMap[effectiveColor] || colorMap.weiss
 
     const depth = 0.38
     const tubeRadius = 0.012
-    const rowHeight = config.rowHeight / 100
 
-    // Calculate column positions
     const columnPositions: number[] = [0]
     let currentX = 0
-    for (const col of config.columns) {
-      const width = col.width / 100
+    for (let col = 0; col < config.columns; col++) {
+      const width = config.columnWidths[col] / 100
       currentX += width
       columnPositions.push(currentX)
     }
     const totalWidth = currentX
 
-    // Find max height across all columns
-    const maxCells = Math.max(...config.columns.map((c) => c.cells.length))
-    const maxHeight = maxCells * rowHeight
+    const rowPositions: number[] = [0]
+    let currentY = 0
+    for (let row = config.rows - 1; row >= 0; row--) {
+      const height = config.rowHeights[row] / 100
+      currentY += height
+      rowPositions.push(currentY)
+    }
+    const totalHeight = currentY
 
     const offsetX = -totalWidth / 2
     const offsetY = 0.025
     const offsetZ = -depth / 2
 
-    // Draw each column independently
-    config.columns.forEach((column, colIdx) => {
-      const colX1 = columnPositions[colIdx] + offsetX
-      const colX2 = columnPositions[colIdx + 1] + offsetX
-      const colWidth = column.width / 100
-      const colCenterX = colX1 + colWidth / 2
-      const colHeight = column.cells.length * rowHeight
+    // Draw vertical posts
+    for (let col = 0; col <= config.columns; col++) {
+      const x = columnPositions[col] + offsetX
 
-      // Vertical posts for this column
       els.push(
         <ChromeTube
-          key={`vpost-front-${colIdx}-left`}
-          start={[colX1, offsetY, offsetZ + depth]}
-          end={[colX1, offsetY + colHeight, offsetZ + depth]}
+          key={`vpost-front-${col}`}
+          start={[x, offsetY, offsetZ + depth]}
+          end={[x, offsetY + totalHeight, offsetZ + depth]}
           radius={tubeRadius}
         />,
       )
       els.push(
         <ChromeTube
-          key={`vpost-back-${colIdx}-left`}
-          start={[colX1, offsetY, offsetZ]}
-          end={[colX1, offsetY + colHeight, offsetZ]}
+          key={`vpost-back-${col}`}
+          start={[x, offsetY, offsetZ]}
+          end={[x, offsetY + totalHeight, offsetZ]}
           radius={tubeRadius}
         />,
       )
 
-      // Right posts (only for last column or where height differs)
-      if (colIdx === config.columns.length - 1) {
+      els.push(<Foot key={`foot-front-${col}`} position={[x, 0.012, offsetZ + depth]} />)
+      els.push(<Foot key={`foot-back-${col}`} position={[x, 0.012, offsetZ]} />)
+
+      for (let row = 0; row <= config.rows; row++) {
+        const y = rowPositions[row] + offsetY
         els.push(
           <ChromeTube
-            key={`vpost-front-${colIdx}-right`}
-            start={[colX2, offsetY, offsetZ + depth]}
-            end={[colX2, offsetY + colHeight, offsetZ + depth]}
-            radius={tubeRadius}
-          />,
-        )
-        els.push(
-          <ChromeTube
-            key={`vpost-back-${colIdx}-right`}
-            start={[colX2, offsetY, offsetZ]}
-            end={[colX2, offsetY + colHeight, offsetZ]}
-            radius={tubeRadius}
+            key={`hconn-${col}-${row}`}
+            start={[x, y, offsetZ]}
+            end={[x, y, offsetZ + depth]}
+            radius={tubeRadius * 0.8}
           />,
         )
       }
+    }
 
-      // Feet
-      els.push(<Foot key={`foot-front-${colIdx}-left`} position={[colX1, 0.012, offsetZ + depth]} />)
-      els.push(<Foot key={`foot-back-${colIdx}-left`} position={[colX1, 0.012, offsetZ]} />)
-      if (colIdx === config.columns.length - 1) {
-        els.push(<Foot key={`foot-front-${colIdx}-right`} position={[colX2, 0.012, offsetZ + depth]} />)
-        els.push(<Foot key={`foot-back-${colIdx}-right`} position={[colX2, 0.012, offsetZ]} />)
-      }
+    // Draw horizontal rails
+    for (let row = 0; row <= config.rows; row++) {
+      const y = rowPositions[row] + offsetY
 
-      // Horizontal rails and depth connectors for each level in this column
-      for (let level = 0; level <= column.cells.length; level++) {
-        const y = level * rowHeight + offsetY
+      for (let col = 0; col < config.columns; col++) {
+        const x1 = columnPositions[col] + offsetX
+        const x2 = columnPositions[col + 1] + offsetX
 
-        // Front and back rails
         els.push(
           <ChromeTube
-            key={`hrail-front-${colIdx}-${level}`}
-            start={[colX1, y, offsetZ + depth]}
-            end={[colX2, y, offsetZ + depth]}
+            key={`hrail-front-${col}-${row}`}
+            start={[x1, y, offsetZ + depth]}
+            end={[x2, y, offsetZ + depth]}
             radius={tubeRadius * 0.8}
           />,
         )
         els.push(
           <ChromeTube
-            key={`hrail-back-${colIdx}-${level}`}
-            start={[colX1, y, offsetZ]}
-            end={[colX2, y, offsetZ]}
+            key={`hrail-back-${col}-${row}`}
+            start={[x1, y, offsetZ]}
+            end={[x2, y, offsetZ]}
             radius={tubeRadius * 0.8}
           />,
         )
-
-        // Depth connectors
-        els.push(
-          <ChromeTube
-            key={`hconn-left-${colIdx}-${level}`}
-            start={[colX1, y, offsetZ]}
-            end={[colX1, y, offsetZ + depth]}
-            radius={tubeRadius * 0.8}
-          />,
-        )
-        if (colIdx === config.columns.length - 1) {
-          els.push(
-            <ChromeTube
-              key={`hconn-right-${colIdx}-${level}`}
-              start={[colX2, y, offsetZ]}
-              end={[colX2, y, offsetZ + depth]}
-              radius={tubeRadius * 0.8}
-            />,
-          )
-        }
       }
+    }
 
-      // Draw cells for this column
-      column.cells.forEach((cell) => {
-        const cellY = cell.row * rowHeight + rowHeight / 2 + offsetY
-        const bottomY = cell.row * rowHeight + offsetY
+    // Draw cells
+    config.grid.forEach((rowCells, gridRow) => {
+      rowCells.forEach((cell, gridCol) => {
+        const cellWidth = config.columnWidths[gridCol] / 100
+        const cellHeight = config.rowHeights[gridRow] / 100
+
+        const invertedRow = config.rows - 1 - gridRow
+        const cellX = columnPositions[gridCol] + cellWidth / 2 + offsetX
+        const cellY = rowPositions[invertedRow] + cellHeight / 2 + offsetY
+        const bottomY = rowPositions[invertedRow] + offsetY
 
         const isEmpty = cell.type === "empty"
-        const isHovered = hoveredCell?.row === cell.row && hoveredCell?.col === colIdx
-        const isSelected = selectedCell?.row === cell.row && selectedCell?.col === colIdx
+        const isHovered = hoveredCell?.row === gridRow && hoveredCell?.col === gridCol
+        const isSelected = selectedCell?.row === gridRow && selectedCell?.col === gridCol
 
         cells.push(
           <InteractiveCell
-            key={`interactive-${colIdx}-${cell.row}`}
-            position={[colCenterX, cellY, offsetZ + depth / 2]}
-            width={colWidth}
-            height={rowHeight}
+            key={`interactive-${gridRow}-${gridCol}`}
+            position={[cellX, cellY, offsetZ + depth / 2]}
+            width={cellWidth}
+            height={cellHeight}
             depth={depth}
-            row={cell.row}
-            col={colIdx}
+            row={gridRow}
+            col={gridCol}
             isEmpty={isEmpty}
             isHovered={isHovered}
             isSelected={isSelected}
@@ -566,79 +405,90 @@ export function ShelfScene({
         const cellColor = cell.color || (config.accentColor !== "none" ? config.accentColor : config.baseColor)
         const panelColor = colorMap[cellColor] || colorMap.weiss
 
-        // Bottom shelf
+        if (useGLBModels) {
+          glbs.push(
+            <GLBModule
+              key={`glb-${gridRow}-${gridCol}`}
+              position={[cellX, cellY, offsetZ + depth / 2]}
+              cellType={cell.type}
+              width={cellWidth}
+              height={cellHeight}
+              depth={depth}
+              color={panelColor}
+            />,
+          )
+        }
+
         els.push(
           <ShelfPanel
-            key={`shelf-${colIdx}-${cell.row}`}
-            position={[colCenterX, bottomY + 0.009, offsetZ + depth / 2]}
-            width={colWidth - 0.02}
+            key={`shelf-${gridRow}-${gridCol}`}
+            position={[cellX, bottomY + 0.009, offsetZ + depth / 2]}
+            width={cellWidth - 0.02}
             depth={depth - 0.02}
             color={panelColor}
           />,
         )
 
-        // Top shelf for topmost cell
-        if (cell.row === column.cells.length - 1) {
-          const topY = (cell.row + 1) * rowHeight + offsetY
+        if (gridRow === 0) {
+          const topY = rowPositions[invertedRow + 1] + offsetY
           els.push(
             <ShelfPanel
-              key={`shelf-top-${colIdx}`}
-              position={[colCenterX, topY + 0.009, offsetZ + depth / 2]}
-              width={colWidth - 0.02}
+              key={`shelf-top-${gridCol}`}
+              position={[cellX, topY + 0.009, offsetZ + depth / 2]}
+              width={cellWidth - 0.02}
               depth={depth - 0.02}
               color={panelColor}
             />,
           )
         }
 
-        // Cell type specific elements
         switch (cell.type) {
           case "mit-rueckwand":
             els.push(
               <BackPanel
-                key={`back-${colIdx}-${cell.row}`}
-                position={[colCenterX, cellY, offsetZ + 0.006]}
-                width={colWidth - 0.02}
-                height={rowHeight - 0.02}
+                key={`back-${gridRow}-${gridCol}`}
+                position={[cellX, cellY, offsetZ + 0.006]}
+                width={cellWidth - 0.02}
+                height={cellHeight - 0.02}
                 color={panelColor}
               />,
             )
             break
 
           case "mit-tueren":
-            const doorWidth = (colWidth - 0.03) / 2
+            const doorWidth = (cellWidth - 0.03) / 2
             els.push(
               <DoorPanel
-                key={`door-l-${colIdx}-${cell.row}`}
-                position={[colCenterX - doorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
+                key={`door-l-${gridRow}-${gridCol}`}
+                position={[cellX - doorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
                 width={doorWidth}
-                height={rowHeight - 0.02}
+                height={cellHeight - 0.02}
                 color={panelColor}
               />,
             )
             els.push(
               <DoorPanel
-                key={`door-r-${colIdx}-${cell.row}`}
-                position={[colCenterX + doorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
+                key={`door-r-${gridRow}-${gridCol}`}
+                position={[cellX + doorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
                 width={doorWidth}
-                height={rowHeight - 0.02}
+                height={cellHeight - 0.02}
                 color={panelColor}
               />,
             )
             els.push(
               <SidePanel
-                key={`side-l-${colIdx}-${cell.row}`}
-                position={[colCenterX - colWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                height={rowHeight - 0.02}
+                key={`side-l-${gridRow}-${gridCol}`}
+                position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
+                height={cellHeight - 0.02}
                 depth={depth - 0.02}
                 color={panelColor}
               />,
             )
             els.push(
               <SidePanel
-                key={`side-r-${colIdx}-${cell.row}`}
-                position={[colCenterX + colWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                height={rowHeight - 0.02}
+                key={`side-r-${gridRow}-${gridCol}`}
+                position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
+                height={cellHeight - 0.02}
                 depth={depth - 0.02}
                 color={panelColor}
               />,
@@ -646,41 +496,41 @@ export function ShelfScene({
             break
 
           case "abschliessbare-tueren":
-            const lockDoorWidth = (colWidth - 0.03) / 2
+            const lockDoorWidth = (cellWidth - 0.03) / 2
             els.push(
               <DoorPanel
-                key={`lock-door-l-${colIdx}-${cell.row}`}
-                position={[colCenterX - lockDoorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
+                key={`lock-door-l-${gridRow}-${gridCol}`}
+                position={[cellX - lockDoorWidth / 2 - 0.005, cellY, offsetZ + depth + 0.01]}
                 width={lockDoorWidth}
-                height={rowHeight - 0.02}
+                height={cellHeight - 0.02}
                 color={panelColor}
                 hasLock
               />,
             )
             els.push(
               <DoorPanel
-                key={`lock-door-r-${colIdx}-${cell.row}`}
-                position={[colCenterX + lockDoorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
+                key={`lock-door-r-${gridRow}-${gridCol}`}
+                position={[cellX + lockDoorWidth / 2 + 0.005, cellY, offsetZ + depth + 0.01]}
                 width={lockDoorWidth}
-                height={rowHeight - 0.02}
+                height={cellHeight - 0.02}
                 color={panelColor}
                 hasLock
               />,
             )
             els.push(
               <SidePanel
-                key={`side-l-lock-${colIdx}-${cell.row}`}
-                position={[colCenterX - colWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
-                height={rowHeight - 0.02}
+                key={`side-l-lock-${gridRow}-${gridCol}`}
+                position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
+                height={cellHeight - 0.02}
                 depth={depth - 0.02}
                 color={panelColor}
               />,
             )
             els.push(
               <SidePanel
-                key={`side-r-lock-${colIdx}-${cell.row}`}
-                position={[colCenterX + colWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
-                height={rowHeight - 0.02}
+                key={`side-r-lock-${gridRow}-${gridCol}`}
+                position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
+                height={cellHeight - 0.02}
                 depth={depth - 0.02}
                 color={panelColor}
               />,
@@ -690,125 +540,66 @@ export function ShelfScene({
           case "mit-klapptuer":
             els.push(
               <DoorPanel
-                key={`flip-${colIdx}-${cell.row}`}
-                position={[colCenterX, cellY, offsetZ + depth + 0.01]}
-                width={colWidth - 0.02}
-                height={rowHeight - 0.02}
+                key={`flip-${gridRow}-${gridCol}`}
+                position={[cellX, cellY, offsetZ + depth + 0.01]}
+                width={cellWidth - 0.02}
+                height={cellHeight - 0.02}
                 color={panelColor}
               />,
             )
             break
 
           case "mit-doppelschublade":
-            const drawerHeight = (rowHeight - 0.03) / 2
+            const drawerHeight = (cellHeight - 0.03) / 2
             els.push(
               <DrawerPanel
-                key={`drawer-top-${colIdx}-${cell.row}`}
-                position={[colCenterX, cellY + drawerHeight / 2 + 0.005, offsetZ + depth + 0.01]}
-                width={colWidth - 0.02}
+                key={`drawer-top-${gridRow}-${gridCol}`}
+                position={[cellX, cellY + drawerHeight / 2 + 0.005, offsetZ + depth + 0.01]}
+                width={cellWidth - 0.02}
                 height={drawerHeight}
                 color={panelColor}
               />,
             )
             els.push(
               <DrawerPanel
-                key={`drawer-bottom-${colIdx}-${cell.row}`}
-                position={[colCenterX, cellY - drawerHeight / 2 - 0.005, offsetZ + depth + 0.01]}
-                width={colWidth - 0.02}
+                key={`drawer-bottom-${gridRow}-${gridCol}`}
+                position={[cellX, cellY - drawerHeight / 2 - 0.005, offsetZ + depth + 0.01]}
+                width={cellWidth - 0.02}
                 height={drawerHeight}
                 color={panelColor}
               />,
             )
-            break
-
-          case "ohne-rueckwand":
-          case "ohne-seitenwaende":
-          default:
+            els.push(
+              <SidePanel
+                key={`side-l-drawer-${gridRow}-${gridCol}`}
+                position={[cellX - cellWidth / 2 + 0.015, cellY, offsetZ + depth / 2]}
+                height={cellHeight - 0.02}
+                depth={depth - 0.02}
+                color={panelColor}
+              />,
+            )
+            els.push(
+              <SidePanel
+                key={`side-r-drawer-${gridRow}-${gridCol}`}
+                position={[cellX + cellWidth / 2 - 0.015, cellY, offsetZ + depth / 2]}
+                height={cellHeight - 0.02}
+                depth={depth - 0.02}
+                color={panelColor}
+              />,
+            )
             break
         }
       })
-
-      const canExpandColumn = column.cells.length < 6
-      const expansionY = colHeight + offsetY + 0.04
-      const isThisColumnHovered = hoveredExpansionZone?.type === "top" && hoveredExpansionZone?.col === colIdx
-
-      zones.push(
-        <ColumnExpansionZone
-          key={`expand-top-${colIdx}`}
-          position={[colCenterX, expansionY, offsetZ + depth / 2]}
-          width={colWidth}
-          depth={depth}
-          colIndex={colIdx}
-          isHovered={isThisColumnHovered}
-          canExpand={canExpandColumn}
-          onClick={() => onAddCellToColumn?.(colIdx)}
-          onHover={(hovered) => onHoverExpansionZone?.(hovered ? { type: "top", col: colIdx } : null)}
-        />,
-      )
     })
 
-    const canAddColumns = config.columns.length < 6
-    const baseHeight = Math.min(...config.columns.map((c) => c.cells.length)) * rowHeight
-
-    // Left side
-    zones.push(
-      <SideExpansionZone
-        key="expand-left"
-        position={[offsetX - 0.04, offsetY + baseHeight / 2, offsetZ + depth / 2]}
-        height={baseHeight}
-        depth={depth}
-        side="left"
-        isHovered={hoveredExpansionZone?.type === "left"}
-        canExpand={canAddColumns}
-        onClick={() => onAddColumnLeft?.()}
-        onHover={(hovered) => onHoverExpansionZone?.(hovered ? { type: "left" } : null)}
-      />,
-    )
-
-    // Right side
-    zones.push(
-      <SideExpansionZone
-        key="expand-right"
-        position={[offsetX + totalWidth + 0.04, offsetY + baseHeight / 2, offsetZ + depth / 2]}
-        height={baseHeight}
-        depth={depth}
-        side="right"
-        isHovered={hoveredExpansionZone?.type === "right"}
-        canExpand={canAddColumns}
-        onClick={() => onAddColumnRight?.()}
-        onHover={(hovered) => onHoverExpansionZone?.(hovered ? { type: "right" } : null)}
-      />,
-    )
-
-    return {
-      elements: els,
-      interactiveCells: cells,
-      expansionZones: zones,
-      totalWidth,
-      maxHeight,
-      offsetX,
-      offsetY,
-      depth,
-    }
-  }, [
-    config,
-    selectedTool,
-    hoveredCell,
-    selectedCell,
-    onCellClick,
-    onCellHover,
-    onAddCellToColumn,
-    onAddColumnLeft,
-    onAddColumnRight,
-    hoveredExpansionZone,
-    onHoverExpansionZone,
-  ])
+    return { elements: els, interactiveCells: cells, glbModules: glbs }
+  }, [config, selectedTool, hoveredCell, selectedCell, onCellClick, onCellHover, useGLBModels])
 
   return (
     <group>
       {elements}
+      {glbModules}
       {interactiveCells}
-      {expansionZones}
     </group>
   )
 }

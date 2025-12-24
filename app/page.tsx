@@ -1,9 +1,9 @@
-import { ShelfConfiguratorLoader } from "@/components/shelf-configurator-loader"
+import { ShelfConfigurator } from "@/components/shelf-configurator"
 
 export default function Home() {
   return (
     <main className="h-screen w-screen overflow-hidden">
-      <ShelfConfiguratorLoader />
+      <ShelfConfigurator />
     </main>
   )
 }
