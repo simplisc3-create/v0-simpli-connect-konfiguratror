@@ -1,7 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Loader2, Sparkles, Box, Layers, Palette, ArrowRight } from "lucide-react"
 
@@ -93,32 +93,28 @@ const features = [
 
 export function ConfiguratorLoader() {
   const [mounted, setMounted] = useState(false)
-  const [showIntro, setShowIntro] = useState(true)
+  const [showIntro, setShowIntro] = useState<boolean | null>(null)
   const [introPhase, setIntroPhase] = useState(0)
-  const hasPlayedIntro = useRef(false)
 
   useEffect(() => {
     setMounted(true)
 
     // Check if intro was already played this session
-    if (typeof window !== "undefined") {
-      const played = sessionStorage.getItem("simpli-intro-played")
-      if (played) {
-        hasPlayedIntro.current = true
-        setShowIntro(false)
-        return
-      }
+    const played = sessionStorage.getItem("simpli-intro-played")
+    if (played) {
+      setShowIntro(false)
+      return
     }
 
-    // Intro animation sequence
+    // Show intro and start animation sequence
+    setShowIntro(true)
+
     const phase1 = setTimeout(() => setIntroPhase(1), 500)
     const phase2 = setTimeout(() => setIntroPhase(2), 1800)
     const phase3 = setTimeout(() => setIntroPhase(3), 3000)
     const endIntro = setTimeout(() => {
       setShowIntro(false)
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("simpli-intro-played", "true")
-      }
+      sessionStorage.setItem("simpli-intro-played", "true")
     }, 4000)
 
     return () => {
@@ -129,7 +125,7 @@ export function ConfiguratorLoader() {
     }
   }, [])
 
-  if (!mounted) {
+  if (!mounted || showIntro === null) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-accent-gold" />
