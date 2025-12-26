@@ -15,6 +15,7 @@ type Props = {
   selectedCell?: { row: number; col: number } | null
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (cell: { row: number; col: number } | null) => void
+  showFrame?: boolean
 }
 
 const colorMap: Record<string, string> = {
@@ -268,7 +269,15 @@ function InteractiveCell({
   )
 }
 
-export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, onCellClick, onCellHover }: Props) {
+export function ShelfScene({
+  config,
+  selectedTool,
+  hoveredCell,
+  selectedCell,
+  onCellClick,
+  onCellHover,
+  showFrame = true,
+}: Props) {
   const [useGLBModels, setUseGLBModules] = useState(false)
 
   const { elements, interactiveCells, glbModules } = useMemo(() => {
@@ -303,71 +312,73 @@ export function ShelfScene({ config, selectedTool, hoveredCell, selectedCell, on
     const offsetY = 0.025
     const offsetZ = -depth / 2
 
-    // Draw vertical posts
-    for (let col = 0; col <= config.columns; col++) {
-      const x = columnPositions[col] + offsetX
+    if (showFrame) {
+      // Draw vertical posts
+      for (let col = 0; col <= config.columns; col++) {
+        const x = columnPositions[col] + offsetX
 
-      els.push(
-        <ChromeTube
-          key={`vpost-front-${col}`}
-          start={[x, offsetY, offsetZ + depth]}
-          end={[x, offsetY + totalHeight, offsetZ + depth]}
-          radius={tubeRadius}
-        />,
-      )
-      els.push(
-        <ChromeTube
-          key={`vpost-back-${col}`}
-          start={[x, offsetY, offsetZ]}
-          end={[x, offsetY + totalHeight, offsetZ]}
-          radius={tubeRadius}
-        />,
-      )
+        els.push(
+          <ChromeTube
+            key={`vpost-front-${col}`}
+            start={[x, offsetY, offsetZ + depth]}
+            end={[x, offsetY + totalHeight, offsetZ + depth]}
+            radius={tubeRadius}
+          />,
+        )
+        els.push(
+          <ChromeTube
+            key={`vpost-back-${col}`}
+            start={[x, offsetY, offsetZ]}
+            end={[x, offsetY + totalHeight, offsetZ]}
+            radius={tubeRadius}
+          />,
+        )
 
-      els.push(<Foot key={`foot-front-${col}`} position={[x, 0.012, offsetZ + depth]} />)
-      els.push(<Foot key={`foot-back-${col}`} position={[x, 0.012, offsetZ]} />)
+        els.push(<Foot key={`foot-front-${col}`} position={[x, 0.012, offsetZ + depth]} />)
+        els.push(<Foot key={`foot-back-${col}`} position={[x, 0.012, offsetZ]} />)
 
+        for (let row = 0; row <= config.rows; row++) {
+          const y = rowPositions[row] + offsetY
+          els.push(
+            <ChromeTube
+              key={`hconn-${col}-${row}`}
+              start={[x, y, offsetZ]}
+              end={[x, y, offsetZ + depth]}
+              radius={tubeRadius * 0.8}
+            />,
+          )
+        }
+      }
+
+      // Draw horizontal rails
       for (let row = 0; row <= config.rows; row++) {
         const y = rowPositions[row] + offsetY
-        els.push(
-          <ChromeTube
-            key={`hconn-${col}-${row}`}
-            start={[x, y, offsetZ]}
-            end={[x, y, offsetZ + depth]}
-            radius={tubeRadius * 0.8}
-          />,
-        )
+
+        for (let col = 0; col < config.columns; col++) {
+          const x1 = columnPositions[col] + offsetX
+          const x2 = columnPositions[col + 1] + offsetX
+
+          els.push(
+            <ChromeTube
+              key={`hrail-front-${col}-${row}`}
+              start={[x1, y, offsetZ + depth]}
+              end={[x2, y, offsetZ + depth]}
+              radius={tubeRadius * 0.8}
+            />,
+          )
+          els.push(
+            <ChromeTube
+              key={`hrail-back-${col}-${row}`}
+              start={[x1, y, offsetZ]}
+              end={[x2, y, offsetZ]}
+              radius={tubeRadius * 0.8}
+            />,
+          )
+        }
       }
     }
 
-    // Draw horizontal rails
-    for (let row = 0; row <= config.rows; row++) {
-      const y = rowPositions[row] + offsetY
-
-      for (let col = 0; col < config.columns; col++) {
-        const x1 = columnPositions[col] + offsetX
-        const x2 = columnPositions[col + 1] + offsetX
-
-        els.push(
-          <ChromeTube
-            key={`hrail-front-${col}-${row}`}
-            start={[x1, y, offsetZ + depth]}
-            end={[x2, y, offsetZ + depth]}
-            radius={tubeRadius * 0.8}
-          />,
-        )
-        els.push(
-          <ChromeTube
-            key={`hrail-back-${col}-${row}`}
-            start={[x1, y, offsetZ]}
-            end={[x2, y, offsetZ]}
-            radius={tubeRadius * 0.8}
-          />,
-        )
-      }
-    }
-
-    // Draw cells
+    // Draw cells (still needed for interaction even without frame)
     config.grid.forEach((rowCells, gridRow) => {
       rowCells.forEach((cell, gridCol) => {
         const cellWidth = config.columnWidths[gridCol] / 100

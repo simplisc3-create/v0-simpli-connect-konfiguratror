@@ -25,7 +25,7 @@ import {
 } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 
-type Props = {
+interface ConfiguratorPanelProps {
   config: ShelfConfig
   selectedTool: GridCell["type"] | null
   selectedCell: { row: number; col: number } | null
@@ -36,7 +36,7 @@ type Props = {
   onClearCell: (row: number, col: number) => void
   onResizeGrid: (rows: number, cols: number) => void
   onSetColumnWidth: (col: number, width: 75 | 38) => void
-  onSetRowHeight: (row: number, height: 38 | 76) => void
+  // onSetRowHeight is removed, row heights are always 38cm
   onUpdateConfig: (updates: Partial<ShelfConfig>) => void
   shoppingList: ShoppingItem[]
   price: string
@@ -44,6 +44,9 @@ type Props = {
   onToggleShoppingList: () => void
   showMobilePanel?: boolean
   onCloseMobilePanel?: () => void
+  // Props from updates (added for onSetColumns and onSetRows)
+  onSetColumns: (cols: number) => void
+  onSetRows: (rows: number) => void
 }
 
 const baseColors = [
@@ -98,18 +101,24 @@ export function ConfiguratorPanel({
   onClearCell,
   onResizeGrid,
   onSetColumnWidth,
-  onSetRowHeight,
+  // onSetRowHeight removed from destructuring
   onUpdateConfig,
   shoppingList,
   price,
   showShoppingList,
   onToggleShoppingList,
-  showMobilePanel = true,
+  showMobilePanel = false,
   onCloseMobilePanel,
-}: Props) {
-  const [expandedSection, setExpandedSection] = useState<string | null>("grid")
+  // Destructure props from updates
+  onSetColumns,
+  onSetRows,
+}: ConfiguratorPanelProps) {
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    dimensions: true,
+    colors: true,
+    details: false,
+  })
   const [showExportOptions, setShowExportOptions] = useState(false)
-  const [showConfigDetails, setShowConfigDetails] = useState(false)
   const [hoveredArticle, setHoveredArticle] = useState<string | null>(null)
 
   const generateConfigId = () => {
@@ -268,7 +277,10 @@ export function ConfiguratorPanel({
   }
 
   const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section)
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }))
   }
 
   const selectedCellData = selectedCell ? config.grid[selectedCell.row]?.[selectedCell.col] : null
@@ -297,17 +309,17 @@ export function ConfiguratorPanel({
         {/* Grid Size Section */}
         <div className="border-b border-border">
           <button
-            onClick={() => toggleSection("grid")}
+            onClick={() => toggleSection("dimensions")}
             className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
           >
-            {expandedSection === "grid" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {expandedSections.dimensions ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <span className="font-medium">Rastergröße</span>
             <span className="ml-auto text-xs text-muted-foreground">
               {config.rows}×{config.columns}
             </span>
           </button>
 
-          {expandedSection === "grid" && (
+          {expandedSections.dimensions && (
             <div className="px-4 pb-4 space-y-4">
               {/* Columns */}
               <div className="space-y-2">
@@ -318,20 +330,18 @@ export function ConfiguratorPanel({
                   <button
                     onClick={() => config.columns > 1 && onResizeGrid(config.rows, config.columns - 1)}
                     disabled={config.columns <= 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-secondary text-card-foreground transition-colors hover:bg-control-hover disabled:opacity-50"
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-accent-gold transition-all"
-                      style={{ width: `${(config.columns / 6) * 100}%` }}
-                    />
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-bold">{config.columns}</span>
+                    <span className="text-sm text-muted-foreground ml-1">Spalten</span>
                   </div>
                   <button
                     onClick={() => config.columns < 6 && onResizeGrid(config.rows, config.columns + 1)}
                     disabled={config.columns >= 6}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-secondary text-card-foreground transition-colors hover:bg-control-hover disabled:opacity-50"
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -365,42 +375,23 @@ export function ConfiguratorPanel({
                   <button
                     onClick={() => config.rows > 1 && onResizeGrid(config.rows - 1, config.columns)}
                     disabled={config.rows <= 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-secondary text-card-foreground transition-colors hover:bg-control-hover disabled:opacity-50"
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-accent-gold transition-all"
-                      style={{ width: `${(config.rows / 5) * 100}%` }}
-                    />
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-bold">{config.rows}</span>
+                    <span className="text-sm text-muted-foreground ml-1">Reihen</span>
                   </div>
                   <button
-                    onClick={() => config.rows < 5 && onResizeGrid(config.rows + 1, config.columns)}
-                    disabled={config.rows >= 5}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-secondary text-card-foreground transition-colors hover:bg-control-hover disabled:opacity-50"
+                    onClick={() => config.rows < 6 && onResizeGrid(config.rows + 1, config.columns)}
+                    disabled={config.rows >= 6}
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-
-                {/* Row heights */}
-                <div className="flex flex-col gap-1 mt-2">
-                  {config.rowHeights.map((height, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => onSetRowHeight(idx, height === 38 ? 76 : 38)}
-                      className={cn(
-                        "py-1.5 text-xs rounded-md border transition-colors",
-                        height === 76
-                          ? "bg-accent-gold/10 border-accent-gold text-accent-gold"
-                          : "bg-secondary border-border text-muted-foreground hover:bg-control-hover",
-                      )}
-                    >
-                      Reihe {idx + 1}: {height}cm {height === 76 ? "(doppelt)" : "(standard)"}
-                    </button>
-                  ))}
-                </div>
+                <div className="text-xs text-muted-foreground mt-1">Alle Reihen: 38cm (Standard)</div>
               </div>
             </div>
           )}
@@ -412,7 +403,7 @@ export function ConfiguratorPanel({
             onClick={() => toggleSection("colors")}
             className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
           >
-            {expandedSection === "colors" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {expandedSections.colors ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <span className="font-medium">Farben</span>
             <div className="ml-auto flex gap-1">
               <div
@@ -428,7 +419,7 @@ export function ConfiguratorPanel({
             </div>
           </button>
 
-          {expandedSection === "colors" && (
+          {expandedSections.colors && (
             <div className="px-4 pb-4 space-y-4">
               {/* Base Color */}
               <div className="space-y-2">
@@ -495,16 +486,12 @@ export function ConfiguratorPanel({
             onClick={() => toggleSection("material")}
             className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
           >
-            {expandedSection === "material" ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
+            {expandedSections.material ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <span className="font-medium">Material</span>
             <span className="ml-auto text-xs text-muted-foreground capitalize">{config.shelfMaterial}</span>
           </button>
 
-          {expandedSection === "material" && (
+          {expandedSections.material && (
             <div className="px-4 pb-4">
               <div className="flex gap-2">
                 {materialOptions.map((m) => (
@@ -532,11 +519,11 @@ export function ConfiguratorPanel({
             onClick={() => toggleSection("modules")}
             className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
           >
-            {expandedSection === "modules" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {expandedSections.modules ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <span className="font-medium">Module</span>
           </button>
 
-          {expandedSection === "modules" && (
+          {expandedSections.modules && (
             <div className="px-4 pb-4">
               <div className="grid grid-cols-4 gap-2">
                 <button
@@ -651,8 +638,8 @@ export function ConfiguratorPanel({
               </span>
             </div>
             <div className="text-right">
-              <div className="text-lg font-bold text-accent-blue">{price} €</div>
-              <div className="text-[10px] text-muted-foreground">netto</div>
+              <div className="text-lg font-bold text-card-foreground">{price} €</div>
+              <div className="text-xs text-muted-foreground">{bruttoPrice.toFixed(2).replace(".", ",")} € brutto</div>
             </div>
           </button>
 
@@ -671,21 +658,21 @@ export function ConfiguratorPanel({
                   {/* Configuration Summary Card */}
                   <div className="group rounded-xl border border-border bg-gradient-to-br from-secondary/50 to-secondary/20 p-4 transition-all hover:border-accent-blue/30 hover:shadow-lg hover:shadow-accent-blue/5">
                     <button
-                      onClick={() => setShowConfigDetails(!showConfigDetails)}
+                      onClick={() => toggleSection("details")}
                       className="flex w-full items-center gap-3 text-left"
                     >
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-blue/10 text-accent-blue transition-colors group-hover:bg-accent-blue/20">
                         <Info className="h-4 w-4" />
                       </div>
                       <span className="text-sm font-medium text-card-foreground flex-1">Konfigurationsdetails</span>
-                      {showConfigDetails ? (
+                      {expandedSections.details ? (
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       )}
                     </button>
 
-                    {showConfigDetails && (
+                    {expandedSections.details && (
                       <div className="mt-4 grid grid-cols-2 gap-3">
                         <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2.5">
                           <Ruler className="h-4 w-4 text-accent-blue" />

@@ -2,11 +2,27 @@
 
 import { useState, useCallback, useMemo, useRef } from "react"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment, ContactShadows, useTexture } from "@react-three/drei"
+import { OrbitControls, Environment, useTexture } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
-import { ConfiguratorHeader } from "./configurator-header"
-import { Undo2, Redo2, RotateCcw, Eraser } from "lucide-react"
+import {
+  Undo2,
+  Redo2,
+  RotateCcw,
+  Eraser,
+  Square,
+  PanelTop,
+  DoorOpen,
+  Lock,
+  PanelTopOpen,
+  Archive,
+  Trash2,
+  ZoomIn,
+  ZoomOut,
+  Move3D,
+  Grid3X3,
+  LayoutGrid,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import * as THREE from "three"
@@ -20,39 +36,35 @@ import {
   schubladenTueren,
   funktionswaende,
 } from "@/lib/simpli-products"
+import type { ShoppingItem } from "@/lib/shopping-item" // Declare or import ShoppingItem
 
 export type GridCell = {
   id: string
   type:
     | "empty"
     | "ohne-seitenwaende"
+    | "mit-seitenwaenden"
     | "ohne-rueckwand"
     | "mit-rueckwand"
     | "mit-tueren"
+    | "abschliessbare-tueren"
     | "mit-klapptuer"
     | "mit-doppelschublade"
-    | "abschliessbare-tueren"
   row: number
   col: number
   color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
 }
 
-export type ShelfConfig = {
+export interface ShelfConfig {
   grid: GridCell[][]
   columns: number
   rows: number
   columnWidths: (75 | 38)[]
-  rowHeights: (38 | 76)[]
+  rowHeights: 38[]
   footType: "standard" | "adjustable"
   baseColor: "weiss" | "schwarz"
   accentColor: "none" | "blau" | "gruen" | "gelb" | "orange" | "rot"
   shelfMaterial: "metall" | "glas" | "holz"
-}
-
-export type ShoppingItem = {
-  product: Product
-  quantity: number
-  subtotal: number
 }
 
 const createEmptyGrid = (rows: number, cols: number): GridCell[][] => {
@@ -67,11 +79,11 @@ const createEmptyGrid = (rows: number, cols: number): GridCell[][] => {
 }
 
 const initialConfig: ShelfConfig = {
-  grid: createEmptyGrid(2, 3),
-  columns: 3,
-  rows: 2,
-  columnWidths: [75, 75, 75],
-  rowHeights: [38, 38],
+  grid: createEmptyGrid(1, 1),
+  columns: 1,
+  rows: 1,
+  columnWidths: [75],
+  rowHeights: Array(1).fill(38),
   footType: "standard",
   baseColor: "weiss",
   accentColor: "none",
@@ -79,14 +91,15 @@ const initialConfig: ShelfConfig = {
 }
 
 const moduleTypes = [
-  { id: "ohne-seitenwaende" as const, label: "Offen", icon: "open" },
-  { id: "ohne-rueckwand" as const, label: "O. Rück", icon: "shelf" },
-  { id: "mit-rueckwand" as const, label: "M. Rück", icon: "back" },
-  { id: "mit-tueren" as const, label: "Türen", icon: "doors" },
-  { id: "mit-klapptuer" as const, label: "Klapp", icon: "flip" },
-  { id: "mit-doppelschublade" as const, label: "Schub.", icon: "drawer" },
-  { id: "abschliessbare-tueren" as const, label: "Schloss", icon: "lock" },
-]
+  { id: "ohne-seitenwaende" as const, label: "Ohne Seitenwände", icon: Square },
+  { id: "mit-seitenwaenden" as const, label: "Mit Seitenwänden", icon: Grid3X3 },
+  { id: "ohne-rueckwand" as const, label: "Ohne Rückwand", icon: LayoutGrid },
+  { id: "mit-rueckwand" as const, label: "Mit Rückwand", icon: PanelTop },
+  { id: "mit-tueren" as const, label: "Mit Türen", icon: DoorOpen },
+  { id: "abschliessbare-tueren" as const, label: "Abschließbare Türen", icon: Lock },
+  { id: "mit-klapptuer" as const, label: "Mit Klapptür", icon: PanelTopOpen },
+  { id: "mit-doppelschublade" as const, label: "Mit Doppelschublade", icon: Archive },
+] as const
 
 const baseColors = [
   { id: "weiss" as const, label: "Weiß" },
@@ -120,70 +133,40 @@ function ModuleIconSVG({ type }: { type: GridCell["type"] }) {
   const iconSize = 20
   switch (type) {
     case "ohne-seitenwaende":
-      return (
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" strokeDasharray="4 2" />
-        </svg>
-      )
+      return <Square width={iconSize} height={iconSize} />
+    case "mit-seitenwaenden":
+      return <Grid3X3 width={iconSize} height={iconSize} />
     case "ohne-rueckwand":
-      return (
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 4v16M20 4v16M4 20h16M4 4h16" />
-        </svg>
-      )
+      return <LayoutGrid width={iconSize} height={iconSize} />
     case "mit-rueckwand":
-      return (
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor" fillOpacity="0.2" />
-        </svg>
-      )
+      return <PanelTop width={iconSize} height={iconSize} />
     case "mit-tueren":
-      return (
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-          <line x1="12" y1="4" x2="12" y2="20" />
-          <circle cx="9" cy="12" r="1" fill="currentColor" />
-          <circle cx="15" cy="12" r="1" fill="currentColor" />
-        </svg>
-      )
-    case "mit-klapptuer":
-      return (
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-          <line x1="4" y1="14" x2="20" y2="14" />
-          <circle cx="12" cy="9" r="1" fill="currentColor" />
-        </svg>
-      )
-    case "mit-doppelschublade":
-      return (
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-          <line x1="4" y1="12" x2="20" y2="12" />
-          <line x1="10" y1="8" x2="14" y2="8" />
-          <line x1="10" y1="16" x2="14" y2="16" />
-        </svg>
-      )
+      return <DoorOpen width={iconSize} height={iconSize} />
     case "abschliessbare-tueren":
-      return (
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-          <line x1="12" y1="4" x2="12" y2="20" />
-          <rect x="10" y="10" width="4" height="4" rx="1" fill="currentColor" />
-        </svg>
-      )
+      return <Lock width={iconSize} height={iconSize} />
+    case "mit-klapptuer":
+      return <PanelTopOpen width={iconSize} height={iconSize} />
+    case "mit-doppelschublade":
+      return <Archive width={iconSize} height={iconSize} />
     default:
       return null
   }
 }
 
+const hasAnyModules = (grid: GridCell[][]): boolean => {
+  return grid.some((row) => row.some((cell) => cell.type !== "empty"))
+}
+
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
-  const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("ohne-seitenwaende")
+  const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>(null)
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
   const [showMobilePanel, setShowMobilePanel] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+
+  const isConfiguratorStarted = hasAnyModules(config.grid)
 
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
@@ -322,9 +305,7 @@ export function ShelfConfigurator() {
         while (newColumnWidths.length < newCols) newColumnWidths.push(75)
         while (newColumnWidths.length > newCols) newColumnWidths.pop()
 
-        const newRowHeights = [...prev.rowHeights]
-        while (newRowHeights.length < newRows) newRowHeights.push(38)
-        while (newRowHeights.length > newRows) newRowHeights.pop()
+        const newRowHeights = Array(newRows).fill(38)
 
         const newConfig = {
           ...prev,
@@ -332,7 +313,7 @@ export function ShelfConfigurator() {
           columns: newCols,
           rows: newRows,
           columnWidths: newColumnWidths as (75 | 38)[],
-          rowHeights: newRowHeights as (38 | 76)[],
+          rowHeights: newRowHeights,
         }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
@@ -354,18 +335,19 @@ export function ShelfConfigurator() {
     [saveToHistory],
   )
 
-  const setRowHeight = useCallback(
-    (rowIndex: number, height: 38 | 76) => {
-      setConfig((prev) => {
-        const newHeights = [...prev.rowHeights]
-        newHeights[rowIndex] = height
-        const newConfig = { ...prev, rowHeights: newHeights as (38 | 76)[] }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
+  // Removed setRowHeight as rowHeights is now always 38
+  // const setRowHeight = useCallback(
+  //   (rowIndex: number, height: 38 | 75) => {
+  //     setConfig((prev) => {
+  //       const newHeights = [...prev.rowHeights]
+  //       newHeights[rowIndex] = height
+  //       const newConfig = { ...prev, rowHeights: newHeights as (38 | 75)[] }
+  //       setTimeout(() => saveToHistory(newConfig), 0)
+  //       return newConfig
+  //     })
+  //   },
+  //   [saveToHistory],
+  // )
 
   const updateConfig = useCallback(
     (updates: Partial<ShelfConfig>) => {
@@ -384,7 +366,7 @@ export function ShelfConfigurator() {
       columns: 3,
       rows: 2,
       columnWidths: [75, 75, 75] as (75 | 38)[],
-      rowHeights: [38, 38] as (38 | 76)[],
+      rowHeights: Array(2).fill(38),
       footType: "standard" as const,
       baseColor: "weiss" as const,
       accentColor: "none" as const,
@@ -506,51 +488,35 @@ export function ShelfConfigurator() {
     setSelectedTool(tool)
   }, [])
 
-  return (
-    <div className="flex h-full w-full flex-col bg-background">
-      <ConfiguratorHeader />
-      <div className="flex flex-1 flex-col lg:flex-row min-h-0">
-        <div className="relative flex-1 min-h-[400px] lg:min-h-0">
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 hidden lg:flex flex-col gap-1 rounded-xl bg-card/95 backdrop-blur-sm border border-border p-2 shadow-lg">
-            <button
-              onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
-              className={cn(
-                "flex items-center justify-center w-11 h-11 rounded-lg transition-all",
-                selectedTool === "empty"
-                  ? "bg-destructive/20 text-destructive border border-destructive"
-                  : "text-muted-foreground hover:bg-control-hover border border-transparent",
-              )}
-              title="Radierer"
-            >
-              <Eraser className="h-5 w-5" />
-            </button>
-            <div className="h-px bg-border my-1" />
-            {moduleTypes.map((module) => (
-              <button
-                key={module.id}
-                onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
-                className={cn(
-                  "flex flex-col items-center justify-center w-11 h-11 rounded-lg transition-all",
-                  selectedTool === module.id
-                    ? "bg-accent-gold/20 text-accent-gold border border-accent-gold"
-                    : "text-muted-foreground hover:bg-control-hover border border-transparent",
-                )}
-                title={module.label}
-              >
-                <ModuleIconSVG type={module.id} />
-              </button>
-            ))}
-          </div>
+  const handleZoomIn = useCallback(() => {
+    // Implement zoom in functionality
+  }, [])
 
+  const handleZoomOut = useCallback(() => {
+    // Implement zoom out functionality
+  }, [])
+
+  const handleResetView = useCallback(() => {
+    // Implement reset view functionality
+  }, [])
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-muted/30">
+      {/* Left side - 3D Configurator */}
+      <div className="relative flex flex-1 flex-col">
+        {/* 3D Canvas */}
+        <div className="relative h-full w-full">
           <Canvas
             shadows
-            camera={isMobile ? { position: [0, 1.2, 3.5], fov: 60 } : { position: [2, 1.5, 3], fov: 50 }}
-            className="h-full w-full touch-none"
+            camera={{ position: [0, 1.2, 2.5], fov: 45 }}
+            gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+            className="touch-none"
           >
-            <color attach="background" args={["hsl(var(--canvas-bg))"]} />
+            <color attach="background" args={["#f8f8f8"]} />
             <ambientLight intensity={0.6} />
-            <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} />
-            <directionalLight position={[-3, 3, -3]} intensity={0.4} />
+            <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} />
+            <directionalLight position={[-3, 4, -2]} intensity={0.4} />
+
             <ShelfScene
               config={config}
               selectedTool={selectedTool}
@@ -558,21 +524,83 @@ export function ShelfConfigurator() {
               selectedCell={selectedCell}
               onCellClick={handleCellClick3D}
               onCellHover={setHoveredCell}
+              showFrame={isConfiguratorStarted}
             />
-            <ContactShadows position={[0, 0.001, 0]} opacity={0.4} scale={10} blur={2.5} far={4} />
-            <Environment preset="apartment" />
-            <OrbitControls
-              makeDefault
-              minPolarAngle={0.2}
-              maxPolarAngle={Math.PI / 2.2}
-              minDistance={isMobile ? 2 : 1.5}
-              maxDistance={isMobile ? 6 : 8}
-              enableDamping
-              dampingFactor={0.05}
-              enablePan={isMobile}
-            />
+
+            {/* Wood floor */}
             <WoodFloor />
+
+            <OrbitControls
+              enablePan={true}
+              enableZoom={true}
+              minDistance={1}
+              maxDistance={6}
+              minPolarAngle={0.2}
+              maxPolarAngle={Math.PI / 2 - 0.1}
+            />
+            <Environment preset="city" />
           </Canvas>
+
+          {!isConfiguratorStarted && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="pointer-events-auto max-w-md rounded-2xl border border-border/50 bg-background/95 p-8 text-center shadow-2xl backdrop-blur-sm">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-gold/10">
+                  <Grid3X3 className="h-8 w-8 text-accent-gold" />
+                </div>
+                <h2 className="mb-2 text-2xl font-semibold text-foreground">Willkommen zum Konfigurator</h2>
+                <p className="mb-6 text-muted-foreground">
+                  Wählen Sie ein Modul aus der Werkzeugleiste und klicken Sie auf ein Feld im Raster, um Ihr
+                  individuelles Regal zu gestalten.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {moduleTypes.slice(0, 4).map((mod) => (
+                    <button
+                      key={mod.id}
+                      onClick={() => setSelectedTool(mod.id)}
+                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm transition-all hover:border-accent-gold hover:bg-accent-gold/5"
+                    >
+                      <mod.icon className="h-4 w-4" />
+                      <span>{mod.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Floating toolbar - visible only on desktop and when configurator started */}
+          {isConfiguratorStarted && (
+            <div className="absolute left-4 top-1/2 hidden -translate-y-1/2 flex-col gap-1 rounded-xl border border-border/50 bg-background/90 p-2 shadow-lg backdrop-blur-sm lg:flex">
+              <button
+                onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
+                className={cn(
+                  "flex items-center justify-center w-11 h-11 rounded-lg transition-all",
+                  selectedTool === "empty"
+                    ? "bg-destructive/20 text-destructive border border-destructive"
+                    : "text-muted-foreground hover:bg-control-hover border border-transparent",
+                )}
+                title="Radierer"
+              >
+                <Eraser className="h-5 w-5" />
+              </button>
+              <div className="h-px bg-border my-1" />
+              {moduleTypes.map((module) => (
+                <button
+                  key={module.id}
+                  onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
+                  className={cn(
+                    "flex flex-col items-center justify-center w-11 h-11 rounded-lg transition-all",
+                    selectedTool === module.id
+                      ? "bg-accent-gold/20 text-accent-gold border border-accent-gold"
+                      : "text-muted-foreground hover:bg-control-hover border border-transparent",
+                  )}
+                  title={module.label}
+                >
+                  <ModuleIconSVG type={module.id} />
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="absolute right-3 top-3 flex gap-2">
             <Button
@@ -648,45 +676,114 @@ export function ShelfConfigurator() {
               </div>
             </div>
           )}
+
+          {/* Module selector - mobile */}
+          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1 rounded-xl border border-border/50 bg-background/90 p-2 shadow-lg backdrop-blur-sm lg:hidden">
+            {moduleTypes.map((mod) => (
+              <Button
+                key={mod.id}
+                variant={selectedTool === mod.id ? "default" : "ghost"}
+                size="icon"
+                className={cn(
+                  "h-10 w-10",
+                  selectedTool === mod.id && "bg-accent-gold text-white hover:bg-accent-gold/90",
+                )}
+                onClick={() => setSelectedTool(selectedTool === mod.id ? null : mod.id)}
+                title={mod.label}
+              >
+                <mod.icon className="h-5 w-5" />
+              </Button>
+            ))}
+            <div className="mx-1 w-px bg-border" />
+            <Button
+              variant={selectedTool === "empty" ? "destructive" : "ghost"}
+              size="icon"
+              className="h-10 w-10"
+              onClick={() => setSelectedTool(selectedTool === "empty" ? null : "empty")}
+              title="Modul entfernen"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Status bar with controls */}
+          {isConfiguratorStarted && (
+            <div className="absolute bottom-4 right-4 flex items-center gap-2">
+              <div className="flex items-center gap-1 rounded-full border border-border/50 bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+                <Move3D className="mr-1 h-3.5 w-3.5" />
+                Ziehen zum Drehen
+              </div>
+              <div className="flex gap-1 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-sm">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full"
+                  onClick={handleZoomIn}
+                  title="Vergrößern"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full"
+                  onClick={handleZoomOut}
+                  title="Verkleinern"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full"
+                  onClick={handleResetView}
+                  title="Ansicht zurücksetzen"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-
-        <button
-          onClick={() => setShowMobilePanel(!showMobilePanel)}
-          className="sticky bottom-0 z-20 flex items-center justify-between gap-2 border-t border-border bg-card px-4 py-4 text-foreground lg:hidden active:bg-control-hover transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-base">Konfigurator</span>
-            <span className="text-sm text-muted-foreground">
-              ({config.rows}x{config.columns})
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-accent-gold">{priceFormatted} €</span>
-            <Eraser className={cn("h-5 w-5 transition-transform", showMobilePanel && "rotate-180")} />
-          </div>
-        </button>
-
-        <ConfiguratorPanel
-          config={config}
-          selectedTool={selectedTool}
-          selectedCell={selectedCell}
-          onSelectTool={onSelectTool}
-          onSelectCell={setSelectedCell}
-          onUpdateCellColor={updateCellColor}
-          onPlaceModule={placeModule}
-          onClearCell={clearCell}
-          onResizeGrid={resizeGrid}
-          onSetColumnWidth={setColumnWidth}
-          onSetRowHeight={setRowHeight}
-          onUpdateConfig={updateConfig}
-          shoppingList={shoppingList}
-          price={priceFormatted}
-          showShoppingList={showShoppingList}
-          onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
-          showMobilePanel={showMobilePanel}
-          onCloseMobilePanel={() => setShowMobilePanel(false)}
-        />
       </div>
+
+      <button
+        onClick={() => setShowMobilePanel(!showMobilePanel)}
+        className="sticky bottom-0 z-20 flex items-center justify-between gap-2 border-t border-border bg-card px-4 py-4 text-foreground lg:hidden active:bg-control-hover transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-base">Konfigurator</span>
+          <span className="text-sm text-muted-foreground">
+            ({config.rows}x{config.columns})
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-bold text-accent-gold">{priceFormatted} €</span>
+          <Eraser className={cn("h-5 w-5 transition-transform", showMobilePanel && "rotate-180")} />
+        </div>
+      </button>
+
+      <ConfiguratorPanel
+        config={config}
+        selectedTool={selectedTool}
+        selectedCell={selectedCell}
+        onSelectTool={onSelectTool}
+        onSelectCell={setSelectedCell}
+        onUpdateCellColor={updateCellColor}
+        onPlaceModule={placeModule}
+        onClearCell={clearCell}
+        onResizeGrid={resizeGrid}
+        onSetColumnWidth={setColumnWidth}
+        // Removed onSetRowHeight as rowHeights is now always 38
+        // onSetRowHeight={setRowHeight}
+        onUpdateConfig={updateConfig}
+        shoppingList={shoppingList}
+        price={priceFormatted}
+        showShoppingList={showShoppingList}
+        onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
+        showMobilePanel={showMobilePanel}
+        onCloseMobilePanel={() => setShowMobilePanel(false)}
+      />
     </div>
   )
 }
@@ -694,13 +791,14 @@ export function ShelfConfigurator() {
 function getToolLabel(tool: GridCell["type"]): string {
   const labels: Record<GridCell["type"], string> = {
     empty: "Leer",
-    "ohne-seitenwaende": "Offenes Fach",
+    "ohne-seitenwaende": "Ohne Seitenwände",
+    "mit-seitenwaenden": "Mit Seitenwänden",
     "ohne-rueckwand": "Ohne Rückwand",
     "mit-rueckwand": "Mit Rückwand",
     "mit-tueren": "Mit Türen",
+    "abschliessbare-tueren": "Abschließbare Türen",
     "mit-klapptuer": "Mit Klapptür",
-    "mit-doppelschublade": "Mit Schubladen",
-    "abschliessbare-tueren": "Abschließbar",
+    "mit-doppelschublade": "Mit Doppelschublade",
   }
   return labels[tool] || tool
 }
