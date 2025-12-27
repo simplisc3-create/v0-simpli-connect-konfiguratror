@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useCallback, useMemo, useRef } from "react"
+import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment, useTexture } from "@react-three/drei"
+import { OrbitControls, Environment } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import {
@@ -22,10 +22,13 @@ import {
   Move3D,
   Grid3X3,
   LayoutGrid,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import * as THREE from "three"
 import {
   type Product,
   leitern,
@@ -36,7 +39,8 @@ import {
   schubladenTueren,
   funktionswaende,
 } from "@/lib/simpli-products"
-import type { ShoppingItem } from "@/lib/shopping-item" // Declare or import ShoppingItem
+import type { ShoppingItem } from "@/lib/shopping-item"
+import { useTexture } from "@react-three/drei"
 
 export type GridCell = {
   id: string
@@ -48,24 +52,22 @@ export type GridCell = {
     | "mit-rueckwand"
     | "mit-tueren"
     | "abschliessbare-tueren"
-    | "mit-klapptuer"
-    | "mit-doppelschublade"
-  row: number
-  col: number
-  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
+    | "schubladen"
+    | "delete"
+  color: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau"
 }
 
-export interface ShelfConfig {
-  grid: GridCell[][]
-  columns: number
+export type ShelfConfig = {
   rows: number
-  columnWidths: (75 | 38)[]
+  columns: number
+  grid: GridCell[][]
   rowHeights: 38[]
-  footType: "standard" | "adjustable"
-  baseColor: "weiss" | "schwarz"
-  accentColor: "none" | "blau" | "gruen" | "gelb" | "orange" | "rot"
-  shelfMaterial: "metall" | "glas" | "holz"
+  colWidths: (38 | 75)[]
+  material: "metall" | "glas" | "holz"
+  accentColor: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau"
 }
+
+type ModuleType = GridCell["type"]
 
 const createEmptyGrid = (rows: number, cols: number): GridCell[][] => {
   return Array.from({ length: rows }, (_, rowIndex) =>
@@ -74,20 +76,19 @@ const createEmptyGrid = (rows: number, cols: number): GridCell[][] => {
       type: "empty" as const,
       row: rowIndex,
       col: colIndex,
+      color: "weiss" as const,
     })),
   )
 }
 
 const initialConfig: ShelfConfig = {
-  grid: createEmptyGrid(1, 1),
-  columns: 1,
   rows: 1,
-  columnWidths: [75],
+  columns: 1,
+  grid: createEmptyGrid(1, 1),
   rowHeights: Array(1).fill(38),
-  footType: "standard",
-  baseColor: "weiss",
-  accentColor: "none",
-  shelfMaterial: "metall",
+  colWidths: [75],
+  material: "metall",
+  accentColor: "weiss",
 }
 
 const moduleTypes = [
@@ -99,6 +100,8 @@ const moduleTypes = [
   { id: "abschliessbare-tueren" as const, label: "Abschließbare Türen", icon: Lock },
   { id: "mit-klapptuer" as const, label: "Mit Klapptür", icon: PanelTopOpen },
   { id: "mit-doppelschublade" as const, label: "Mit Doppelschublade", icon: Archive },
+  { id: "schubladen" as const, label: "Schublade", icon: Archive },
+  { id: "delete" as const, label: "Löschen", icon: Trash2 },
 ] as const
 
 const baseColors = [
@@ -107,17 +110,16 @@ const baseColors = [
 ]
 
 const specialColors = [
-  { id: "blau" as const, label: "Blau" },
+  { id: "rot" as const, label: "Rot" },
   { id: "gruen" as const, label: "Grün" },
   { id: "gelb" as const, label: "Gelb" },
-  { id: "orange" as const, label: "Orange" },
-  { id: "rot" as const, label: "Rot" },
+  { id: "blau" as const, label: "Blau" },
 ]
 
 function WoodFloor() {
   const texture = useTexture("/seamless-light-oak-wood-parquet-floor-texture-top-.jpg")
 
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+  texture.wrapS = texture.wrapT = 1000
   texture.repeat.set(8, 8)
   texture.anisotropy = 16
 
@@ -148,38 +150,46 @@ function ModuleIconSVG({ type }: { type: GridCell["type"] }) {
       return <PanelTopOpen width={iconSize} height={iconSize} />
     case "mit-doppelschublade":
       return <Archive width={iconSize} height={iconSize} />
+    case "schubladen":
+      return <Archive width={iconSize} height={iconSize} />
+    case "delete":
+      return <Trash2 width={iconSize} height={iconSize} />
     default:
       return null
   }
 }
 
-const hasAnyModules = (grid: GridCell[][]): boolean => {
+const hasAnyModules = (grid: GridCell[][] | undefined): boolean => {
+  if (!grid || !Array.isArray(grid)) return false
   return grid.some((row) => row.some((cell) => cell.type !== "empty"))
 }
 
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
-  const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>(null)
+  const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>(null)
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
-  const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
+  const [showShoppingList, setShowShoppingList] = useState(false)
   const [showMobilePanel, setShowMobilePanel] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragAction, setDragAction] = useState<"add" | "remove" | null>(null)
+  const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false)
 
-  const isConfiguratorStarted = hasAnyModules(config.grid)
+  const isConfiguratorStarted = config?.grid ? hasAnyModules(config.grid) : false
 
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
   const isUndoRedo = useRef(false)
 
-  useState(() => {
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024)
     }
     checkMobile()
     window.addEventListener("resize", checkMobile)
     return () => window.removeEventListener("resize", checkMobile)
-  })
+  }, [])
 
   const saveToHistory = useCallback(
     (newConfig: ShelfConfig) => {
@@ -223,7 +233,7 @@ export function ShelfConfigurator() {
         const newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
-              const cellColor = cell.color || (prev.accentColor !== "none" ? prev.accentColor : prev.baseColor)
+              const cellColor = cell.color || prev.accentColor
               return { ...cell, type, color: type !== "empty" ? cellColor : undefined }
             }
             return cell
@@ -234,7 +244,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory, config.accentColor, config.baseColor],
+    [saveToHistory, config.accentColor],
   )
 
   const updateCellColor = useCallback(
@@ -258,24 +268,116 @@ export function ShelfConfigurator() {
 
   const handleCellClick3D = useCallback(
     (row: number, col: number) => {
-      if (selectedTool === "empty") {
+      const lastRow = config.rows - 1
+      console.log("[v0] handleCellClick3D:", {
+        row,
+        col,
+        lastRow,
+        selectedTool,
+        gridRows: config.grid.length,
+        gridCols: config.grid[0]?.length,
+      })
+
+      const currentType = config.grid[row]?.[col]?.type
+      const isEmpty = !currentType || currentType === "empty"
+
+      // If eraser tool or clicking on filled cell with no tool, remove
+      if (selectedTool === "empty" || (!selectedTool && !isEmpty)) {
+        // Check if there are modules above - can't remove if supporting modules above
+        let hasModuleAbove = false
+        for (let r = 0; r < row; r++) {
+          if (config.grid[r]?.[col]?.type && config.grid[r][col].type !== "empty") {
+            hasModuleAbove = true
+            break
+          }
+        }
+
+        if (hasModuleAbove) {
+          console.log("[v0] Cannot remove - has modules above")
+          return // Can't remove, has modules above
+        }
+
+        console.log("[v0] Removing module")
         placeModule(row, col, "empty")
-        setSelectedCell(null)
-      } else if (selectedTool) {
+        return
+      }
+
+      // If no tool selected and cell is empty, do nothing
+      if (!selectedTool && isEmpty) {
+        console.log("[v0] No tool selected and cell is empty")
+        return
+      }
+
+      // Placing a module - check stacking constraints
+      if (isEmpty) {
+        const isGroundLevel = row === lastRow
+
+        if (!isGroundLevel) {
+          // Check if the cell directly below has a module
+          const cellBelow = config.grid[row + 1]?.[col]
+          const hasSupportBelow = cellBelow?.type && cellBelow.type !== "empty"
+
+          if (!hasSupportBelow) {
+            console.log("[v0] Cannot place - no support below at row", row + 1)
+            return
+          }
+        }
+
+        console.log("[v0] Placing module:", selectedTool)
         placeModule(row, col, selectedTool)
-        setSelectedCell({ row, col })
+      }
+    },
+    [config.grid, config.rows, selectedTool, placeModule],
+  )
+
+  const handleDragStart = useCallback(
+    (row: number, col: number) => {
+      setIsDragging(true)
+      const currentType = config.grid[row]?.[col]?.type
+      const isEmpty = !currentType || currentType === "empty"
+
+      if (selectedTool === "empty" || (!selectedTool && !isEmpty)) {
+        setDragAction("remove")
       } else {
-        const currentType = config.grid[row]?.[col]?.type
-        if (currentType === "empty") {
-          placeModule(row, col, "ohne-seitenwaende")
-          setSelectedCell({ row, col })
-        } else {
-          setSelectedCell({ row, col })
+        setDragAction("add")
+      }
+
+      // Trigger the initial click
+      handleCellClick3D(row, col)
+    },
+    [config.grid, selectedTool, handleCellClick3D],
+  )
+
+  const handleDragOver = useCallback(
+    (row: number, col: number) => {
+      if (!isDragging) return
+
+      const currentType = config.grid[row]?.[col]?.type
+      const isEmpty = !currentType || currentType === "empty"
+
+      if (dragAction === "add" && isEmpty) {
+        handleCellClick3D(row, col)
+      } else if (dragAction === "remove" && !isEmpty) {
+        // Check if we can remove (no modules above)
+        let hasModuleAbove = false
+        for (let r = 0; r < row; r++) {
+          if (config.grid[r]?.[col]?.type !== "empty") {
+            hasModuleAbove = true
+            break
+          }
+        }
+        if (!hasModuleAbove) {
+          placeModule(row, col, "empty")
         }
       }
     },
-    [selectedTool, placeModule, config.grid],
+    [isDragging, dragAction, config.grid, handleCellClick3D, placeModule],
   )
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false)
+    setDragAction(null)
+  }, [])
 
   const clearCell = useCallback(
     (row: number, col: number) => {
@@ -295,24 +397,23 @@ export function ShelfConfigurator() {
             return {
               id: `cell-${rowIndex}-${colIndex}`,
               type: "empty" as const,
-              row: rowIndex,
-              col: colIndex,
+              color: "weiss" as const,
             }
           }),
         )
 
-        const newColumnWidths = [...prev.columnWidths]
-        while (newColumnWidths.length < newCols) newColumnWidths.push(75)
-        while (newColumnWidths.length > newCols) newColumnWidths.pop()
+        const newColWidths = [...prev.colWidths]
+        while (newColWidths.length < newCols) newColWidths.push(75)
+        while (newColWidths.length > newCols) newColWidths.pop()
 
         const newRowHeights = Array(newRows).fill(38)
 
         const newConfig = {
           ...prev,
           grid: newGrid,
-          columns: newCols,
           rows: newRows,
-          columnWidths: newColumnWidths as (75 | 38)[],
+          columns: newCols,
+          colWidths: newColWidths as (75 | 38)[],
           rowHeights: newRowHeights,
         }
         setTimeout(() => saveToHistory(newConfig), 0)
@@ -325,29 +426,23 @@ export function ShelfConfigurator() {
   const setColumnWidth = useCallback(
     (colIndex: number, width: 75 | 38) => {
       setConfig((prev) => {
-        const newWidths = [...prev.columnWidths]
+        const hasModulesInColumn = prev.grid.some((row) => row[colIndex]?.type && row[colIndex].type !== "empty")
+
+        if (hasModulesInColumn) {
+          // Cannot change width when modules exist in this column
+          console.log("[v0] Cannot change column width - modules exist in column", colIndex)
+          return prev
+        }
+
+        const newWidths = [...prev.colWidths]
         newWidths[colIndex] = width
-        const newConfig = { ...prev, columnWidths: newWidths as (75 | 38)[] }
+        const newConfig = { ...prev, colWidths: newWidths as (75 | 38)[] }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
     },
     [saveToHistory],
   )
-
-  // Removed setRowHeight as rowHeights is now always 38
-  // const setRowHeight = useCallback(
-  //   (rowIndex: number, height: 38 | 75) => {
-  //     setConfig((prev) => {
-  //       const newHeights = [...prev.rowHeights]
-  //       newHeights[rowIndex] = height
-  //       const newConfig = { ...prev, rowHeights: newHeights as (38 | 75)[] }
-  //       setTimeout(() => saveToHistory(newConfig), 0)
-  //       return newConfig
-  //     })
-  //   },
-  //   [saveToHistory],
-  // )
 
   const updateConfig = useCallback(
     (updates: Partial<ShelfConfig>) => {
@@ -362,15 +457,13 @@ export function ShelfConfigurator() {
 
   const reset = useCallback(() => {
     const newConfig = {
-      grid: createEmptyGrid(2, 3),
-      columns: 3,
       rows: 2,
-      columnWidths: [75, 75, 75] as (75 | 38)[],
+      columns: 3,
+      grid: createEmptyGrid(2, 3),
       rowHeights: Array(2).fill(38),
-      footType: "standard" as const,
-      baseColor: "weiss" as const,
-      accentColor: "none" as const,
-      shelfMaterial: "metall" as const,
+      colWidths: [75, 75, 75] as (75 | 38)[],
+      material: "metall" as const,
+      accentColor: "weiss" as const,
     }
     setConfig(newConfig)
     setHistory([newConfig])
@@ -416,8 +509,8 @@ export function ShelfConfigurator() {
     const stangenPerLevel = config.columns
     const levels = config.rows + 1
 
-    const col80Count = config.columnWidths.filter((w) => w === 75).length
-    const col40Count = config.columnWidths.filter((w) => w === 38).length
+    const col80Count = config.colWidths.filter((w) => w === 75).length
+    const col40Count = config.colWidths.filter((w) => w === 38).length
 
     const stange80 = stangensets.find((s) => s.size === 80 && s.variant === "metall")
     const stange40 = stangensets.find((s) => s.size === 40 && s.variant === "metall")
@@ -426,16 +519,16 @@ export function ShelfConfigurator() {
     if (stange40 && col40Count > 0) addItem(stange40, col40Count * levels)
 
     filledCells.forEach((cell) => {
-      const cellWidth = config.columnWidths[cell.col]
+      const cellWidth = config.colWidths[cell.col]
       const cellHeight = config.rowHeights[cell.row]
       const bodenSize = cellWidth === 75 ? 80 : 40
 
       let shelfProduct: Product | undefined
-      if (config.shelfMaterial === "metall") {
+      if (config.material === "metall") {
         shelfProduct =
           metallboeden.find((p) => p.size === bodenSize && p.color === getToolLabel(cell.type)) ||
           metallboeden.find((p) => p.size === bodenSize && p.color === "weiss")
-      } else if (config.shelfMaterial === "glas") {
+      } else if (config.material === "glas") {
         shelfProduct = glasboeden.find((p) => p.size === bodenSize)
       } else {
         shelfProduct = holzboeden.find((p) => p.size === bodenSize)
@@ -473,6 +566,13 @@ export function ShelfConfigurator() {
           if (drawer) addItem(drawer, 1)
           break
         }
+        case "schubladen": {
+          const drawer =
+            schubladenTueren.find((p) => p.category === "schublade" && p.color === getToolLabel(cell.type)) ||
+            schubladenTueren.find((p) => p.category === "schublade")
+          if (drawer) addItem(drawer, 1)
+          break
+        }
       }
     })
 
@@ -484,7 +584,7 @@ export function ShelfConfigurator() {
 
   const priceFormatted = totalPrice.toFixed(2).replace(".", ",")
 
-  const onSelectTool = useCallback((tool: GridCell["type"] | null) => {
+  const onSelectTool = useCallback((tool: ModuleType | "empty" | null) => {
     setSelectedTool(tool)
   }, [])
 
@@ -500,17 +600,152 @@ export function ShelfConfigurator() {
     // Implement reset view functionality
   }, [])
 
+  const handleResizeUp = useCallback(() => {
+    resizeGrid(config.rows + 1, config.columns)
+  }, [resizeGrid, config.rows, config.columns])
+
+  const handleResizeDown = useCallback(() => {
+    resizeGrid(config.rows - 1, config.columns)
+  }, [resizeGrid, config.rows, config.columns])
+
+  const handleResizeLeft = useCallback(() => {
+    resizeGrid(config.rows, config.columns - 1)
+  }, [resizeGrid, config.rows, config.columns])
+
+  const handleResizeRight = useCallback(() => {
+    resizeGrid(config.rows, config.columns + 1)
+  }, [resizeGrid, config.rows, config.columns])
+
+  const handleExpandLeft = useCallback(
+    (row: number, col: number, width?: 38 | 75) => {
+      const columnWidth = width || 75
+      setConfig((prev) => {
+        // Add a new column at the left (shift all columns right)
+        const newCols = prev.columns + 1
+        const newGrid = prev.grid.map((r, rIdx) => [
+          {
+            id: `cell-${rIdx}-new-left`,
+            type: "empty" as const,
+            color: "weiss" as const,
+          },
+          ...r,
+        ])
+        const newColWidths = [columnWidth as const, ...prev.colWidths] as (75 | 38)[]
+        const newConfig = {
+          ...prev,
+          columns: newCols,
+          grid: newGrid,
+          colWidths: newColWidths,
+        }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const handleExpandRight = useCallback(
+    (row: number, col: number, width?: 38 | 75) => {
+      const columnWidth = width || 75
+      setConfig((prev) => {
+        const newCols = prev.columns + 1
+        const newGrid = prev.grid.map((r, rowIndex) => [
+          ...r,
+          {
+            id: `cell-${rowIndex}-${prev.columns}`,
+            type: "empty" as const,
+            color: "weiss" as const,
+          },
+        ])
+        const newColWidths = [...prev.colWidths, columnWidth as const] as (75 | 38)[]
+        const newConfig = {
+          ...prev,
+          columns: newCols,
+          grid: newGrid,
+          colWidths: newColWidths,
+        }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const handleExpandUp = useCallback(
+    (row: number, col: number) => {
+      setConfig((prev) => {
+        // Only add one row at top, but the user clicked on a specific column
+        // We add a full row but keep other cells empty - the frame only renders around modules
+        const newRows = prev.rows + 1
+        const newRow = Array.from({ length: prev.columns }, (_, colIndex) => ({
+          id: `cell-0-${colIndex}`,
+          type: "empty" as const,
+          color: "weiss" as const,
+        }))
+        const newGrid = [newRow, ...prev.grid]
+        const newRowHeights = [38, ...prev.rowHeights] as 38[]
+        const newConfig = {
+          ...prev,
+          rows: newRows,
+          grid: newGrid,
+          rowHeights: newRowHeights,
+        }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const handleExpandDown = useCallback(
+    (row: number, col: number) => {
+      setConfig((prev) => {
+        const newRows = prev.rows + 1
+        const newRow = Array.from({ length: prev.columns }, (_, colIndex) => ({
+          id: `cell-${prev.rows}-${colIndex}`,
+          type: "empty" as const,
+          color: "weiss" as const,
+        }))
+        const newGrid = [...prev.grid, newRow]
+        const newRowHeights = [...prev.rowHeights, 38] as 38[]
+        const newConfig = {
+          ...prev,
+          rows: newRows,
+          grid: newGrid,
+          rowHeights: newRowHeights,
+        }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const configWithDefaults = useMemo(
+    () => ({
+      ...config,
+      colWidths: config.colWidths || (Array(config.columns).fill(75) as (75 | 38)[]),
+      rowHeights: config.rowHeights || (Array(config.rows).fill(38) as 38[]),
+      columns: config.columns, // Alias for panel compatibility
+      grid: config.grid || createEmptyGrid(config.rows, config.columns),
+    }),
+    [config],
+  )
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-muted/30">
+    <div className="flex h-screen flex-col bg-muted/30 lg:flex-row">
       {/* Left side - 3D Configurator */}
       <div className="relative flex flex-1 flex-col">
         {/* 3D Canvas */}
         <div className="relative h-full w-full">
           <Canvas
             shadows
-            camera={{ position: [0, 1.2, 2.5], fov: 45 }}
-            gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-            className="touch-none"
+            camera={{ position: [0, 1.5, 3], fov: 45 }}
+            onPointerMissed={() => {
+              setSelectedCell(null)
+              handleDragEnd()
+            }}
+            onPointerUp={handleDragEnd}
           >
             <color attach="background" args={["#f8f8f8"]} />
             <ambientLight intensity={0.6} />
@@ -518,13 +753,21 @@ export function ShelfConfigurator() {
             <directionalLight position={[-3, 4, -2]} intensity={0.4} />
 
             <ShelfScene
-              config={config}
+              config={configWithDefaults}
               selectedTool={selectedTool}
               hoveredCell={hoveredCell}
               selectedCell={selectedCell}
               onCellClick={handleCellClick3D}
               onCellHover={setHoveredCell}
-              showFrame={isConfiguratorStarted}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              isDragging={isDragging}
+              showFrame={!isSidePanelCollapsed || selectedTool !== "empty"}
+              onExpandLeft={handleExpandLeft}
+              onExpandRight={handleExpandRight}
+              onExpandUp={handleExpandUp}
+              onExpandDown={handleExpandDown}
             />
 
             {/* Wood floor */}
@@ -540,211 +783,213 @@ export function ShelfConfigurator() {
             />
             <Environment preset="city" />
           </Canvas>
+        </div>
 
-          {!isConfiguratorStarted && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="pointer-events-auto max-w-md rounded-2xl border border-border/50 bg-background/95 p-8 text-center shadow-2xl backdrop-blur-sm">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-gold/10">
-                  <Grid3X3 className="h-8 w-8 text-accent-gold" />
-                </div>
-                <h2 className="mb-2 text-2xl font-semibold text-foreground">Willkommen zum Konfigurator</h2>
-                <p className="mb-6 text-muted-foreground">
-                  Wählen Sie ein Modul aus der Werkzeugleiste und klicken Sie auf ein Feld im Raster, um Ihr
-                  individuelles Regal zu gestalten.
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {moduleTypes.slice(0, 4).map((mod) => (
-                    <button
-                      key={mod.id}
-                      onClick={() => setSelectedTool(mod.id)}
-                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm transition-all hover:border-accent-gold hover:bg-accent-gold/5"
-                    >
-                      <mod.icon className="h-4 w-4" />
-                      <span>{mod.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Floating toolbar - visible only on desktop and when configurator started */}
-          {isConfiguratorStarted && (
-            <div className="absolute left-4 top-1/2 hidden -translate-y-1/2 flex-col gap-1 rounded-xl border border-border/50 bg-background/90 p-2 shadow-lg backdrop-blur-sm lg:flex">
-              <button
-                onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
-                className={cn(
-                  "flex items-center justify-center w-11 h-11 rounded-lg transition-all",
-                  selectedTool === "empty"
-                    ? "bg-destructive/20 text-destructive border border-destructive"
-                    : "text-muted-foreground hover:bg-control-hover border border-transparent",
-                )}
-                title="Radierer"
-              >
-                <Eraser className="h-5 w-5" />
-              </button>
-              <div className="h-px bg-border my-1" />
-              {moduleTypes.map((module) => (
-                <button
-                  key={module.id}
-                  onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
-                  className={cn(
-                    "flex flex-col items-center justify-center w-11 h-11 rounded-lg transition-all",
-                    selectedTool === module.id
-                      ? "bg-accent-gold/20 text-accent-gold border border-accent-gold"
-                      : "text-muted-foreground hover:bg-control-hover border border-transparent",
-                  )}
-                  title={module.label}
-                >
-                  <ModuleIconSVG type={module.id} />
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="absolute right-3 top-3 flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={undo}
-              disabled={!canUndo}
-              className="h-10 w-10 bg-card/95 backdrop-blur-sm border-border hover:bg-control-hover disabled:opacity-30"
-              title="Rückgängig"
-            >
-              <Undo2 className="h-5 w-5 text-foreground" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={redo}
-              disabled={!canRedo}
-              className="h-10 w-10 bg-card/95 backdrop-blur-sm border-border hover:bg-control-hover disabled:opacity-30"
-              title="Wiederholen"
-            >
-              <Redo2 className="h-5 w-5 text-foreground" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={reset}
-              className="h-10 w-10 bg-card/95 backdrop-blur-sm border-border hover:bg-control-hover hover:border-destructive"
-              title="Zurücksetzen"
-            >
-              <RotateCcw className="h-5 w-5 text-foreground" />
-            </Button>
-          </div>
-
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-card/95 backdrop-blur-sm px-4 py-2 text-sm text-muted-foreground border border-border shadow-lg">
-            {selectedTool ? (
-              <span className="flex items-center gap-2">
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{
-                    backgroundColor:
-                      selectedTool === "empty"
-                        ? "hsl(var(--destructive))"
-                        : config.accentColor !== "none"
-                          ? getColorHex(config.accentColor)
-                          : getColorHex(config.baseColor),
-                  }}
-                />
-                <span className="font-medium text-foreground">
-                  {selectedTool === "empty" ? "Radierer" : getToolLabel(selectedTool)}
-                </span>
-                <span className="text-muted-foreground">aktiv</span>
-              </span>
-            ) : (
-              <span>Klicke auf ein Modul links</span>
+        {/* Floating toolbar - always visible on desktop */}
+        <div className="absolute left-4 top-1/2 hidden -translate-y-1/2 flex-col gap-1 rounded-xl border border-border/50 bg-background/90 p-2 shadow-lg backdrop-blur-sm lg:flex">
+          <button
+            onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
+            className={cn(
+              "flex items-center justify-center w-11 h-11 rounded-lg transition-all",
+              selectedTool === "empty"
+                ? "bg-destructive/20 text-destructive border border-destructive"
+                : "text-muted-foreground hover:bg-control-hover border border-transparent",
             )}
-          </div>
-
-          {selectedTool && selectedTool !== "empty" && (
-            <div className="absolute left-16 lg:left-20 top-3 rounded-full bg-card/95 backdrop-blur-sm border border-border px-3 py-2 shadow-lg">
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-5 w-5 rounded-full ring-2 ring-border"
-                  style={{
-                    backgroundColor:
-                      config.accentColor !== "none" ? getColorHex(config.accentColor) : getColorHex(config.baseColor),
-                  }}
-                />
-                <span className="text-sm text-foreground hidden sm:inline">
-                  {config.accentColor !== "none"
-                    ? specialColors.find((c) => c.id === config.accentColor)?.label
-                    : baseColors.find((c) => c.id === config.baseColor)?.label}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Module selector - mobile */}
-          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1 rounded-xl border border-border/50 bg-background/90 p-2 shadow-lg backdrop-blur-sm lg:hidden">
-            {moduleTypes.map((mod) => (
-              <Button
-                key={mod.id}
-                variant={selectedTool === mod.id ? "default" : "ghost"}
-                size="icon"
-                className={cn(
-                  "h-10 w-10",
-                  selectedTool === mod.id && "bg-accent-gold text-white hover:bg-accent-gold/90",
-                )}
-                onClick={() => setSelectedTool(selectedTool === mod.id ? null : mod.id)}
-                title={mod.label}
-              >
-                <mod.icon className="h-5 w-5" />
-              </Button>
-            ))}
-            <div className="mx-1 w-px bg-border" />
-            <Button
-              variant={selectedTool === "empty" ? "destructive" : "ghost"}
-              size="icon"
-              className="h-10 w-10"
-              onClick={() => setSelectedTool(selectedTool === "empty" ? null : "empty")}
-              title="Modul entfernen"
+            title="Radierer"
+          >
+            <Eraser className="h-5 w-5" />
+          </button>
+          <div className="h-px bg-border my-1" />
+          {moduleTypes.map((module) => (
+            <button
+              key={module.id}
+              onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
+              className={cn(
+                "flex flex-col items-center justify-center w-11 h-11 rounded-lg transition-all",
+                selectedTool === module.id
+                  ? "bg-accent-gold/20 text-accent-gold border border-accent-gold"
+                  : "text-muted-foreground hover:bg-control-hover border border-transparent",
+              )}
+              title={module.label}
             >
-              <Trash2 className="h-5 w-5" />
-            </Button>
-          </div>
+              <ModuleIconSVG type={module.id} />
+            </button>
+          ))}
+        </div>
 
-          {/* Status bar with controls */}
-          {isConfiguratorStarted && (
-            <div className="absolute bottom-4 right-4 flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded-full border border-border/50 bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
-                <Move3D className="mr-1 h-3.5 w-3.5" />
-                Ziehen zum Drehen
-              </div>
-              <div className="flex gap-1 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-sm">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full"
-                  onClick={handleZoomIn}
-                  title="Vergrößern"
-                >
-                  <ZoomIn className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full"
-                  onClick={handleZoomOut}
-                  title="Verkleinern"
-                >
-                  <ZoomOut className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full"
-                  onClick={handleResetView}
-                  title="Ansicht zurücksetzen"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
+        <div className="absolute right-3 top-3 flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={undo}
+            disabled={!canUndo}
+            className="h-10 w-10 bg-card/95 backdrop-blur-sm border-border hover:bg-control-hover disabled:opacity-30"
+            title="Rückgängig"
+          >
+            <Undo2 className="h-5 w-5 text-foreground" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={redo}
+            disabled={!canRedo}
+            className="h-10 w-10 bg-card/95 backdrop-blur-sm border-border hover:bg-control-hover disabled:opacity-30"
+            title="Wiederholen"
+          >
+            <Redo2 className="h-5 w-5 text-foreground" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={reset}
+            className="h-10 w-10 bg-card/95 backdrop-blur-sm border-border hover:bg-control-hover hover:border-destructive"
+            title="Zurücksetzen"
+          >
+            <RotateCcw className="h-5 w-5 text-foreground" />
+          </Button>
+        </div>
+
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-card/95 backdrop-blur-sm px-4 py-2 text-sm text-muted-foreground border border-border shadow-lg">
+          {selectedTool ? (
+            <span className="flex items-center gap-2">
+              <span
+                className="h-3 w-3 rounded-full"
+                style={{
+                  backgroundColor:
+                    selectedTool === "empty" ? "hsl(var(--destructive))" : getColorHex(config.accentColor),
+                }}
+              />
+              <span className="font-medium text-foreground">
+                {selectedTool === "empty" ? "Radierer" : getToolLabel(selectedTool)}
+              </span>
+              <span className="text-muted-foreground">aktiv</span>
+            </span>
+          ) : (
+            <span>Klicke auf ein Modul links</span>
           )}
         </div>
+
+        {selectedTool && selectedTool !== "empty" && (
+          <div className="absolute left-16 lg:left-20 top-3 rounded-full bg-card/95 backdrop-blur-sm border border-border px-3 py-2 shadow-lg">
+            <div className="flex items-center gap-2">
+              <div
+                className="h-5 w-5 rounded-full ring-2 ring-border"
+                style={{
+                  backgroundColor: getColorHex(config.accentColor),
+                }}
+              />
+              <span className="text-sm text-foreground hidden sm:inline">
+                {specialColors.find((c) => c.id === config.accentColor)?.label}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Module selector - mobile */}
+        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1 rounded-xl border border-border/50 bg-background/90 p-2 shadow-lg backdrop-blur-sm lg:hidden">
+          {moduleTypes.map((mod) => (
+            <Button
+              key={mod.id}
+              variant={selectedTool === mod.id ? "default" : "ghost"}
+              size="icon"
+              className={cn(
+                "h-10 w-10",
+                selectedTool === mod.id && "bg-accent-gold text-white hover:bg-accent-gold/90",
+              )}
+              onClick={() => setSelectedTool(selectedTool === mod.id ? null : mod.id)}
+              title={mod.label}
+            >
+              <mod.icon className="h-5 w-5" />
+            </Button>
+          ))}
+          <div className="mx-1 w-px bg-border" />
+          <Button
+            variant={selectedTool === "empty" ? "destructive" : "ghost"}
+            size="icon"
+            className="h-10 w-10"
+            onClick={() => setSelectedTool(selectedTool === "empty" ? null : "empty")}
+            title="Modul entfernen"
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Status bar with controls */}
+        {isConfiguratorStarted && (
+          <div className="absolute bottom-4 right-4 flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-full border border-border/50 bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+              <Move3D className="mr-1 h-3.5 w-3.5" />
+              Ziehen zum Drehen
+            </div>
+            <div className="flex gap-1 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-sm">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleZoomIn}
+                title="Vergrößern"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleZoomOut}
+                title="Verkleinern"
+              >
+                <ZoomOut className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleResetView}
+                title="Ansicht zurücksetzen"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <div className="flex gap-1 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-sm">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleResizeUp}
+                title="Hochskalieren"
+              >
+                <ChevronUp className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleResizeDown}
+                title="Runterskalieren"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleResizeLeft}
+                title="Linksskalieren"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={handleResizeRight}
+                title="Rechtsskalieren"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <button
@@ -764,7 +1009,7 @@ export function ShelfConfigurator() {
       </button>
 
       <ConfiguratorPanel
-        config={config}
+        config={configWithDefaults}
         selectedTool={selectedTool}
         selectedCell={selectedCell}
         onSelectTool={onSelectTool}
@@ -774,8 +1019,6 @@ export function ShelfConfigurator() {
         onClearCell={clearCell}
         onResizeGrid={resizeGrid}
         onSetColumnWidth={setColumnWidth}
-        // Removed onSetRowHeight as rowHeights is now always 38
-        // onSetRowHeight={setRowHeight}
         onUpdateConfig={updateConfig}
         shoppingList={shoppingList}
         price={priceFormatted}
@@ -783,13 +1026,14 @@ export function ShelfConfigurator() {
         onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
         showMobilePanel={showMobilePanel}
         onCloseMobilePanel={() => setShowMobilePanel(false)}
+        onCollapseSidePanel={() => setIsSidePanelCollapsed(!isSidePanelCollapsed)}
       />
     </div>
   )
 }
 
-function getToolLabel(tool: GridCell["type"]): string {
-  const labels: Record<GridCell["type"], string> = {
+function getToolLabel(tool: ModuleType | "empty"): string {
+  const labels: Record<ModuleType | "empty", string> = {
     empty: "Leer",
     "ohne-seitenwaende": "Ohne Seitenwände",
     "mit-seitenwaenden": "Mit Seitenwänden",
@@ -799,6 +1043,8 @@ function getToolLabel(tool: GridCell["type"]): string {
     "abschliessbare-tueren": "Abschließbare Türen",
     "mit-klapptuer": "Mit Klapptür",
     "mit-doppelschublade": "Mit Doppelschublade",
+    schubladen: "Schublade",
+    delete: "Löschen",
   }
   return labels[tool] || tool
 }
@@ -807,11 +1053,10 @@ function getColorHex(color: string): string {
   const colors: Record<string, string> = {
     weiss: "#F5F5F5",
     schwarz: "#1A1A1A",
-    blau: "#00A0D6",
+    rot: "#DC143C",
     gruen: "#228B22",
     gelb: "#FFD700",
-    orange: "#FF8C00",
-    rot: "#DC143C",
+    blau: "#00A0D6",
   }
   return colors[color] || "#F5F5F5"
 }

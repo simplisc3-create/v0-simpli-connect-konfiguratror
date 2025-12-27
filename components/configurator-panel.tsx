@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { ShelfConfig, GridCell, ShoppingItem } from "./shelf-configurator"
+import type { ShelfConfig, GridCell } from "./shelf-configurator"
+import type { ShoppingItem } from "@/lib/shopping-item"
 import { cn } from "@/lib/utils"
 import {
   ShoppingCart,
@@ -22,6 +23,7 @@ import {
   Sparkles,
   Tag,
   ArrowRight,
+  ArrowLeft,
 } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 
@@ -44,9 +46,7 @@ interface ConfiguratorPanelProps {
   onToggleShoppingList: () => void
   showMobilePanel?: boolean
   onCloseMobilePanel?: () => void
-  // Props from updates (added for onSetColumns and onSetRows)
-  onSetColumns: (cols: number) => void
-  onSetRows: (rows: number) => void
+  onCollapseSidePanel?: () => void // Added prop for collapsing side panel
 }
 
 const baseColors = [
@@ -109,9 +109,7 @@ export function ConfiguratorPanel({
   onToggleShoppingList,
   showMobilePanel = false,
   onCloseMobilePanel,
-  // Destructure props from updates
-  onSetColumns,
-  onSetRows,
+  onCollapseSidePanel, // Destructure the new prop
 }: ConfiguratorPanelProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     dimensions: true,
@@ -120,6 +118,7 @@ export function ConfiguratorPanel({
   })
   const [showExportOptions, setShowExportOptions] = useState(false)
   const [hoveredArticle, setHoveredArticle] = useState<string | null>(null)
+  const [showConfigDetails, setShowConfigDetails] = useState(false)
 
   const generateConfigId = () => {
     const timestamp = Date.now().toString(36)
@@ -127,9 +126,9 @@ export function ConfiguratorPanel({
     return `SC-${timestamp}-${random}`.toUpperCase()
   }
 
-  const totalWidth = config.columnWidths.reduce((sum, w) => sum + w, 0)
-  const totalHeight = config.rowHeights.reduce((sum, h) => sum + h, 0)
-  const filledCells = config.grid.flat().filter((c) => c.type !== "empty")
+  const totalWidth = config.colWidths?.reduce((sum, w) => sum + w, 0) ?? 0
+  const totalHeight = config.rowHeights?.reduce((sum, h) => sum + h, 0) ?? 0
+  const filledCells = config.grid?.flat().filter((c) => c.type !== "empty") ?? []
 
   const groupedByCategory = shoppingList.reduce(
     (acc, item) => {
@@ -162,7 +161,7 @@ export function ConfiguratorPanel({
           hoeheGesamt: totalHeight,
           spalten: config.columns,
           reihen: config.rows,
-          spaltenBreiten: config.columnWidths,
+          spaltenBreiten: config.colWidths,
           reihenHoehen: config.rowHeights,
           einheit: "cm",
         },
@@ -176,7 +175,7 @@ export function ConfiguratorPanel({
           position: { reihe: cell.row + 1, spalte: cell.col + 1 },
           typ: cell.type,
           farbe: cell.color || (config.accentColor !== "none" ? config.accentColor : config.baseColor),
-          breite: config.columnWidths[cell.col],
+          breite: config.colWidths[cell.col],
           hoehe: config.rowHeights[cell.row],
         })),
         rasterDaten: config.grid.map((row, rowIdx) =>
@@ -264,7 +263,7 @@ export function ConfiguratorPanel({
     csv += "Position;Typ;Farbe;Breite;Höhe\n"
     filledCells.forEach((cell) => {
       const cellColor = cell.color || (config.accentColor !== "none" ? config.accentColor : config.baseColor)
-      csv += `R${cell.row + 1}C${cell.col + 1};${cell.type};${cellColor};${config.columnWidths[cell.col]} cm;${config.rowHeights[cell.row]} cm\n`
+      csv += `R${cell.row + 1}C${cell.col + 1};${cell.type};${cellColor};${config.colWidths[cell.col]} cm;${config.rowHeights[cell.row]} cm\n`
     })
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
@@ -302,6 +301,14 @@ export function ConfiguratorPanel({
         >
           <X className="h-5 w-5" />
         </button>
+        {onCollapseSidePanel && ( // Button to collapse side panel
+          <button
+            onClick={onCollapseSidePanel}
+            className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-control-hover"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Scrollable content */}
@@ -348,21 +355,32 @@ export function ConfiguratorPanel({
                 </div>
 
                 {/* Column widths */}
-                <div className="flex gap-1 mt-2">
-                  {config.columnWidths.map((width, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => onSetColumnWidth(idx, width === 75 ? 38 : 75)}
-                      className={cn(
-                        "flex-1 py-1.5 text-xs rounded-md border transition-colors",
-                        width === 75
-                          ? "bg-accent-gold/10 border-accent-gold text-accent-gold"
-                          : "bg-secondary border-border text-muted-foreground hover:bg-control-hover",
-                      )}
-                    >
-                      {width}cm
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {config.colWidths?.map((width, idx) => {
+                    const hasModules = config.grid?.some((row) => row[idx]?.type && row[idx].type !== "empty")
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => !hasModules && onSetColumnWidth(idx, width === 75 ? 38 : 75)}
+                        disabled={hasModules}
+                        title={
+                          hasModules
+                            ? "Module entfernen um Breite zu ändern"
+                            : `Spalte ${idx + 1}: Klicken um auf ${width === 75 ? 38 : 75}cm zu wechseln`
+                        }
+                        className={cn(
+                          "min-w-[42px] py-1.5 px-2 text-xs rounded-md border transition-colors",
+                          hasModules
+                            ? "opacity-50 cursor-not-allowed bg-secondary/30 border-border/50 text-muted-foreground/50"
+                            : width === 75
+                              ? "bg-accent-gold/10 border-accent-gold text-accent-gold hover:bg-accent-gold/20"
+                              : "bg-secondary border-border text-muted-foreground hover:bg-control-hover",
+                        )}
+                      >
+                        {width}cm
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -638,7 +656,7 @@ export function ConfiguratorPanel({
               </span>
             </div>
             <div className="text-right">
-              <div className="text-lg font-bold text-card-foreground">{price} €</div>
+              <div className="text-3xl font-bold text-card-foreground">{price} €</div>
               <div className="text-xs text-muted-foreground">{bruttoPrice.toFixed(2).replace(".", ",")} € brutto</div>
             </div>
           </button>
@@ -658,21 +676,21 @@ export function ConfiguratorPanel({
                   {/* Configuration Summary Card */}
                   <div className="group rounded-xl border border-border bg-gradient-to-br from-secondary/50 to-secondary/20 p-4 transition-all hover:border-accent-blue/30 hover:shadow-lg hover:shadow-accent-blue/5">
                     <button
-                      onClick={() => toggleSection("details")}
+                      onClick={() => setShowConfigDetails(!showConfigDetails)}
                       className="flex w-full items-center gap-3 text-left"
                     >
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-blue/10 text-accent-blue transition-colors group-hover:bg-accent-blue/20">
                         <Info className="h-4 w-4" />
                       </div>
                       <span className="text-sm font-medium text-card-foreground flex-1">Konfigurationsdetails</span>
-                      {expandedSections.details ? (
+                      {showConfigDetails ? (
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       )}
                     </button>
 
-                    {expandedSections.details && (
+                    {showConfigDetails && (
                       <div className="mt-4 grid grid-cols-2 gap-3">
                         <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2.5">
                           <Ruler className="h-4 w-4 text-accent-blue" />
@@ -836,7 +854,7 @@ export function ConfiguratorPanel({
                   </div>
 
                   {/* Premium Price Summary */}
-                  <div className="rounded-xl border border-border bg-gradient-to-br from-card to-secondary/30 p-4 space-y-3">
+                  <div className="rounded-xl border border-dashed border-border bg-secondary/20 p-4 space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Zwischensumme</span>
                       <span className="text-card-foreground font-medium">

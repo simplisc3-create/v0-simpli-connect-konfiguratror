@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Loader2, Sparkles, Box, Layers, Palette, ArrowRight } from "lucide-react"
+import { Loader2, Sparkles, MousePointer2, Layers, Move3D, ShoppingCart, X } from "lucide-react"
 
 const ShelfConfigurator = dynamic(
   () => import("@/components/shelf-configurator").then((mod) => mod.ShelfConfigurator),
@@ -13,88 +13,11 @@ const ShelfConfigurator = dynamic(
   },
 )
 
-// Animated shelf icon for the intro
-function AnimatedShelf() {
-  return (
-    <div className="relative w-48 h-48">
-      {/* Base shelf structure */}
-      <motion.div
-        className="absolute inset-0"
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-      >
-        {/* Vertical poles */}
-        <motion.div
-          className="absolute left-4 top-0 w-1.5 h-full bg-gradient-to-b from-zinc-400 to-zinc-600 rounded-full"
-          initial={{ height: 0 }}
-          animate={{ height: "100%" }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        />
-        <motion.div
-          className="absolute right-4 top-0 w-1.5 h-full bg-gradient-to-b from-zinc-400 to-zinc-600 rounded-full"
-          initial={{ height: 0 }}
-          animate={{ height: "100%" }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        />
-        <motion.div
-          className="absolute left-1/2 -translate-x-1/2 top-0 w-1.5 h-full bg-gradient-to-b from-zinc-400 to-zinc-600 rounded-full"
-          initial={{ height: 0 }}
-          animate={{ height: "100%" }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        />
-
-        {/* Horizontal shelves */}
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className="absolute left-2 right-2 h-2 bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 rounded-sm shadow-md"
-            style={{ top: `${20 + i * 35}%` }}
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.6 + i * 0.15 }}
-          />
-        ))}
-
-        {/* Decorative modules appearing */}
-        <motion.div
-          className="absolute left-6 bg-gradient-to-br from-amber-200 to-amber-300 rounded-sm shadow-inner"
-          style={{ top: "23%", width: "35%", height: "30%" }}
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 1.2 }}
-        />
-        <motion.div
-          className="absolute right-6 bg-gradient-to-br from-slate-100 to-slate-200 rounded-sm shadow-inner"
-          style={{ top: "58%", width: "35%", height: "30%" }}
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 1.4 }}
-        />
-      </motion.div>
-
-      {/* Glow effect */}
-      <motion.div
-        className="absolute inset-0 bg-accent-gold/20 rounded-full blur-3xl"
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: [0, 0.5, 0.3], scale: [0.5, 1.2, 1] }}
-        transition={{ duration: 1.5, delay: 0.5 }}
-      />
-    </div>
-  )
-}
-
-// Feature cards that fly in
-const features = [
-  { icon: Box, label: "3D Vorschau", delay: 0.8 },
-  { icon: Layers, label: "Modulares System", delay: 1.0 },
-  { icon: Palette, label: "Individuelle Farben", delay: 1.2 },
-]
-
 export function ConfiguratorLoader() {
   const [mounted, setMounted] = useState(false)
   const [showIntro, setShowIntro] = useState<boolean | null>(null)
-  const [introPhase, setIntroPhase] = useState(0)
+  const [showHints, setShowHints] = useState(false)
+  const [hintsVisible, setHintsVisible] = useState(true)
 
   useEffect(() => {
     setMounted(true)
@@ -103,25 +26,30 @@ export function ConfiguratorLoader() {
     const played = sessionStorage.getItem("simpli-intro-played")
     if (played) {
       setShowIntro(false)
-      return
+      // Show hints briefly for returning users too
+      setShowHints(true)
+      const hideHints = setTimeout(() => setHintsVisible(false), 8000)
+      return () => clearTimeout(hideHints)
     }
 
-    // Show intro and start animation sequence
+    // Show intro
     setShowIntro(true)
 
-    const phase1 = setTimeout(() => setIntroPhase(1), 500)
-    const phase2 = setTimeout(() => setIntroPhase(2), 1800)
-    const phase3 = setTimeout(() => setIntroPhase(3), 3000)
+    // End intro and show hints
     const endIntro = setTimeout(() => {
       setShowIntro(false)
       sessionStorage.setItem("simpli-intro-played", "true")
-    }, 4000)
+      setShowHints(true)
+    }, 2500)
+
+    // Auto-hide hints after 10 seconds
+    const hideHints = setTimeout(() => {
+      setHintsVisible(false)
+    }, 12000)
 
     return () => {
-      clearTimeout(phase1)
-      clearTimeout(phase2)
-      clearTimeout(phase3)
       clearTimeout(endIntro)
+      clearTimeout(hideHints)
     }
   }, [])
 
@@ -135,122 +63,189 @@ export function ConfiguratorLoader() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
-      {/* Main Configurator (always mounted for preloading) */}
+      {/* Main Configurator - always visible after mount */}
       <div className={`h-full w-full transition-opacity duration-700 ${showIntro ? "opacity-0" : "opacity-100"}`}>
         <ShelfConfigurator />
       </div>
 
-      {/* Intro Animation Overlay */}
+      {/* Professional Intro Overlay - Quick brand flash */}
       <AnimatePresence>
         {showIntro && (
           <motion.div
-            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-background via-background to-muted"
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.7, ease: "easeInOut" }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-5">
+            {/* Subtle grid background */}
+            <div className="absolute inset-0 opacity-[0.03]">
               <div
                 className="h-full w-full"
                 style={{
-                  backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                  backgroundSize: "40px 40px",
+                  backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px),
+                                    linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
+                  backgroundSize: "60px 60px",
                 }}
               />
             </div>
 
-            {/* Animated content */}
-            <div className="relative z-10 flex flex-col items-center">
-              {/* Logo/Brand */}
+            {/* Centered brand */}
+            <motion.div
+              className="relative z-10 flex flex-col items-center"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* Logo */}
               <motion.div
-                initial={{ opacity: 0, y: -30 }}
-                animate={{ opacity: introPhase >= 0 ? 1 : 0, y: introPhase >= 0 ? 0 : -30 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="mb-8"
+                className="mb-6 flex items-center gap-3"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-accent-gold/20 to-accent-gold/5 shadow-lg">
                   <Sparkles className="h-6 w-6 text-accent-gold" />
-                  <span className="text-2xl font-light tracking-widest text-foreground">SIMPLI</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-semibold tracking-wider text-foreground">SIMPLI</span>
+                  <span className="text-xs tracking-widest text-muted-foreground">CONNECT</span>
                 </div>
               </motion.div>
 
-              {/* Animated Shelf */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: introPhase >= 1 ? 1 : 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <AnimatedShelf />
-              </motion.div>
-
               {/* Tagline */}
-              <motion.h1
-                className="mt-8 text-center text-3xl font-light tracking-tight text-foreground md:text-4xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: introPhase >= 1 ? 1 : 0, y: introPhase >= 1 ? 0 : 20 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+              <motion.p
+                className="text-lg text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
               >
                 Regal-Konfigurator
-              </motion.h1>
-
-              <motion.p
-                className="mt-3 text-center text-muted-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: introPhase >= 1 ? 1 : 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-              >
-                Gestalten Sie Ihr individuelles Regalsystem
               </motion.p>
 
-              {/* Feature badges */}
+              {/* Loading bar */}
               <motion.div
-                className="mt-10 flex flex-wrap justify-center gap-4"
+                className="mt-8 h-0.5 w-48 overflow-hidden rounded-full bg-muted"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: introPhase >= 2 ? 1 : 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
               >
-                {features.map((feature, i) => (
-                  <motion.div
-                    key={feature.label}
-                    className="flex items-center gap-2 rounded-full bg-muted/50 px-4 py-2 backdrop-blur-sm"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{
-                      opacity: introPhase >= 2 ? 1 : 0,
-                      x: introPhase >= 2 ? 0 : -20,
-                    }}
-                    transition={{ duration: 0.4, delay: i * 0.15 }}
-                  >
-                    <feature.icon className="h-4 w-4 text-accent-gold" />
-                    <span className="text-sm text-foreground">{feature.label}</span>
-                  </motion.div>
-                ))}
+                <motion.div
+                  className="h-full bg-gradient-to-r from-accent-gold to-amber-400"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 1.8, ease: "easeInOut", delay: 0.7 }}
+                />
               </motion.div>
-
-              {/* Loading indicator / Start hint */}
-              <motion.div
-                className="mt-12 flex items-center gap-2 text-muted-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: introPhase >= 3 ? 1 : 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <span className="text-sm">Konfigurator wird gestartet</span>
-                <motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}>
-                  <ArrowRight className="h-4 w-4" />
-                </motion.div>
-              </motion.div>
-            </div>
-
-            {/* Hyperlapse zoom effect on exit */}
-            <motion.div
-              className="pointer-events-none absolute inset-0 bg-background"
-              initial={{ opacity: 0, scale: 1 }}
-              animate={{
-                opacity: introPhase >= 3 ? [0, 0.5, 0] : 0,
-                scale: introPhase >= 3 ? [1, 0.95, 1.5] : 1,
-              }}
-              transition={{ duration: 1, ease: "easeIn", delay: 0.3 }}
-            />
+            </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Hints - Blend in around edges */}
+      <AnimatePresence>
+        {showHints && hintsVisible && (
+          <>
+            {/* Dismiss button */}
+            <motion.button
+              className="absolute right-4 top-4 z-40 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-muted-foreground shadow-lg backdrop-blur-sm transition-colors hover:bg-background hover:text-foreground"
+              onClick={() => setHintsVisible(false)}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3, delay: 1 }}
+            >
+              <X className="h-4 w-4" />
+            </motion.button>
+
+            {/* Top center - Title hint */}
+            <motion.div
+              className="absolute left-1/2 top-6 z-40 -translate-x-1/2"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <div className="rounded-2xl border border-border/30 bg-background/70 px-6 py-3 shadow-xl backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-gold/10">
+                    <Sparkles className="h-4 w-4 text-accent-gold" />
+                  </div>
+                  <div>
+                    <h1 className="text-sm font-medium text-foreground">SIMPLI Regal-Konfigurator</h1>
+                    <p className="text-xs text-muted-foreground">Gestalten Sie Ihr individuelles Regalsystem</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Left side - Tool hint */}
+            <motion.div
+              className="absolute bottom-1/2 left-20 z-40 hidden translate-y-1/2 lg:block"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl border border-border/30 bg-background/70 p-3 shadow-xl backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <MousePointer2 className="h-4 w-4 text-accent-gold" />
+                    <span className="text-xs text-foreground">Modul wählen</span>
+                  </div>
+                </div>
+                <motion.div
+                  className="h-px w-8 bg-gradient-to-r from-accent-gold/50 to-transparent"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.3, delay: 0.9 }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Bottom center - Interaction hints */}
+            <motion.div
+              className="absolute bottom-6 left-1/2 z-40 -translate-x-1/2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background/70 px-4 py-2 shadow-lg backdrop-blur-md">
+                  <Move3D className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Ziehen zum Drehen</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background/70 px-4 py-2 shadow-lg backdrop-blur-md">
+                  <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">+ zum Erweitern</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right side - Cart hint */}
+            <motion.div
+              className="absolute bottom-1/2 right-6 z-40 hidden translate-y-1/2 lg:block"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 30 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <div className="flex items-center gap-3">
+                <motion.div
+                  className="h-px w-8 bg-gradient-to-l from-accent-gold/50 to-transparent"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.3, delay: 1 }}
+                />
+                <div className="rounded-xl border border-border/30 bg-background/70 p-3 shadow-xl backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4 text-accent-gold" />
+                    <span className="text-xs text-foreground">Warenkorb</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
