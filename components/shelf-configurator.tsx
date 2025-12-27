@@ -166,7 +166,7 @@ const hasAnyModules = (grid: GridCell[][] | undefined): boolean => {
 
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
-  const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>(null)
+  const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>("ohne-rueckwand")
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
   const [showShoppingList, setShowShoppingList] = useState(false)
@@ -175,6 +175,10 @@ export function ShelfConfigurator() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragAction, setDragAction] = useState<"add" | "remove" | null>(null)
   const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false)
+  const [dragState, setDragState] = useState<{ active: boolean; startCell: { row: number; col: number } | null }>({
+    active: false,
+    startCell: null,
+  })
 
   const isConfiguratorStarted = config?.grid ? hasAnyModules(config.grid) : false
 
@@ -269,114 +273,103 @@ export function ShelfConfigurator() {
   const handleCellClick3D = useCallback(
     (row: number, col: number) => {
       const lastRow = config.rows - 1
-      console.log("[v0] handleCellClick3D:", {
-        row,
-        col,
-        lastRow,
-        selectedTool,
-        gridRows: config.grid.length,
-        gridCols: config.grid[0]?.length,
-      })
 
       const currentType = config.grid[row]?.[col]?.type
       const isEmpty = !currentType || currentType === "empty"
 
-      // If eraser tool or clicking on filled cell with no tool, remove
-      if (selectedTool === "empty" || (!selectedTool && !isEmpty)) {
-        // Check if there are modules above - can't remove if supporting modules above
-        let hasModuleAbove = false
-        for (let r = 0; r < row; r++) {
-          if (config.grid[r]?.[col]?.type && config.grid[r][col].type !== "empty") {
-            hasModuleAbove = true
-            break
+      // If eraser tool or clicking on filled cell with eraser, remove
+      if (selectedTool === "empty") {
+        if (!isEmpty) {
+          // Check if there are modules above - can't remove if supporting modules above
+          let hasModuleAbove = false
+          for (let r = 0; r < row; r++) {
+            if (config.grid[r]?.[col]?.type && config.grid[r][col].type !== "empty") {
+              hasModuleAbove = true
+              break
+            }
           }
-        }
 
-        if (hasModuleAbove) {
-          console.log("[v0] Cannot remove - has modules above")
-          return // Can't remove, has modules above
-        }
+          if (hasModuleAbove) {
+            return // Can't remove, has modules above
+          }
 
-        console.log("[v0] Removing module")
-        placeModule(row, col, "empty")
+          placeModule(row, col, "empty")
+        }
+        return
+      }
+
+      if (!isEmpty && selectedTool && selectedTool !== "empty" && selectedTool !== "delete") {
+        placeModule(row, col, selectedTool)
         return
       }
 
       // If no tool selected and cell is empty, do nothing
       if (!selectedTool && isEmpty) {
-        console.log("[v0] No tool selected and cell is empty")
         return
       }
 
-      // Placing a module - check stacking constraints
-      if (isEmpty) {
+      // Placing a new module - check stacking constraints
+      if (isEmpty && selectedTool && selectedTool !== "empty" && selectedTool !== "delete") {
         const isGroundLevel = row === lastRow
 
         if (!isGroundLevel) {
-          // Check if the cell directly below has a module
           const cellBelow = config.grid[row + 1]?.[col]
           const hasSupportBelow = cellBelow?.type && cellBelow.type !== "empty"
 
           if (!hasSupportBelow) {
-            console.log("[v0] Cannot place - no support below at row", row + 1)
             return
           }
         }
 
-        console.log("[v0] Placing module:", selectedTool)
         placeModule(row, col, selectedTool)
       }
     },
     [config.grid, config.rows, selectedTool, placeModule],
   )
 
-  const handleDragStart = useCallback(
-    (row: number, col: number) => {
-      setIsDragging(true)
-      const currentType = config.grid[row]?.[col]?.type
-      const isEmpty = !currentType || currentType === "empty"
-
-      if (selectedTool === "empty" || (!selectedTool && !isEmpty)) {
-        setDragAction("remove")
-      } else {
-        setDragAction("add")
-      }
-
-      // Trigger the initial click
-      handleCellClick3D(row, col)
-    },
-    [config.grid, selectedTool, handleCellClick3D],
-  )
+  const handleDragStart = useCallback((row: number, col: number) => {
+    setDragState({ active: true, startCell: { row, col } })
+  }, [])
 
   const handleDragOver = useCallback(
     (row: number, col: number) => {
-      if (!isDragging) return
+      if (!dragState.active || !dragState.startCell) return
 
       const currentType = config.grid[row]?.[col]?.type
       const isEmpty = !currentType || currentType === "empty"
 
-      if (dragAction === "add" && isEmpty) {
-        handleCellClick3D(row, col)
-      } else if (dragAction === "remove" && !isEmpty) {
-        // Check if we can remove (no modules above)
-        let hasModuleAbove = false
-        for (let r = 0; r < row; r++) {
-          if (config.grid[r]?.[col]?.type !== "empty") {
-            hasModuleAbove = true
-            break
-          }
-        }
-        if (!hasModuleAbove) {
+      if (selectedTool === "empty") {
+        if (!isEmpty) {
           placeModule(row, col, "empty")
         }
+        return
+      }
+
+      if (!isEmpty && selectedTool && selectedTool !== "empty" && selectedTool !== "delete") {
+        placeModule(row, col, selectedTool)
+        return
+      }
+
+      if (isEmpty && selectedTool && selectedTool !== "empty" && selectedTool !== "delete") {
+        const isGroundLevel = row === config.rows - 1
+
+        if (!isGroundLevel) {
+          const cellBelow = config.grid[row + 1]?.[col]
+          const hasSupportBelow = cellBelow?.type && cellBelow.type !== "empty"
+
+          if (!hasSupportBelow) {
+            return
+          }
+        }
+
+        placeModule(row, col, selectedTool)
       }
     },
-    [isDragging, dragAction, config.grid, handleCellClick3D, placeModule],
+    [config.grid, config.rows, selectedTool, placeModule, dragState],
   )
 
   const handleDragEnd = useCallback(() => {
-    setIsDragging(false)
-    setDragAction(null)
+    setDragState({ active: false, startCell: null })
   }, [])
 
   const clearCell = useCallback(
@@ -622,11 +615,16 @@ export function ShelfConfigurator() {
       setConfig((prev) => {
         // Add a new column at the left (shift all columns right)
         const newCols = prev.columns + 1
+        const groundRow = prev.rows - 1
+
         const newGrid = prev.grid.map((r, rIdx) => [
           {
             id: `cell-${rIdx}-new-left`,
-            type: "empty" as const,
-            color: "weiss" as const,
+            type:
+              rIdx === groundRow && selectedTool && selectedTool !== "empty" && selectedTool !== "delete"
+                ? selectedTool
+                : ("empty" as const),
+            color: prev.accentColor || ("weiss" as const),
           },
           ...r,
         ])
@@ -641,7 +639,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory],
+    [saveToHistory, selectedTool],
   )
 
   const handleExpandRight = useCallback(
@@ -649,12 +647,17 @@ export function ShelfConfigurator() {
       const columnWidth = width || 75
       setConfig((prev) => {
         const newCols = prev.columns + 1
+        const groundRow = prev.rows - 1
+
         const newGrid = prev.grid.map((r, rowIndex) => [
           ...r,
           {
             id: `cell-${rowIndex}-${prev.columns}`,
-            type: "empty" as const,
-            color: "weiss" as const,
+            type:
+              rowIndex === groundRow && selectedTool && selectedTool !== "empty" && selectedTool !== "delete"
+                ? selectedTool
+                : ("empty" as const),
+            color: prev.accentColor || ("weiss" as const),
           },
         ])
         const newColWidths = [...prev.colWidths, columnWidth as const] as (75 | 38)[]
@@ -668,20 +671,25 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory],
+    [saveToHistory, selectedTool],
   )
 
   const handleExpandUp = useCallback(
     (row: number, col: number) => {
       setConfig((prev) => {
-        // Only add one row at top, but the user clicked on a specific column
-        // We add a full row but keep other cells empty - the frame only renders around modules
         const newRows = prev.rows + 1
-        const newRow = Array.from({ length: prev.columns }, (_, colIndex) => ({
-          id: `cell-0-${colIndex}`,
-          type: "empty" as const,
-          color: "weiss" as const,
-        }))
+        const newRow = Array.from({ length: prev.columns }, (_, colIndex) => {
+          const hasModuleBelow = prev.grid[0]?.[colIndex]?.type && prev.grid[0][colIndex].type !== "empty"
+          return {
+            id: `cell-0-${colIndex}`,
+            type:
+              hasModuleBelow && selectedTool && selectedTool !== "empty" && selectedTool !== "delete"
+                ? selectedTool
+                : ("empty" as const),
+            color: prev.accentColor || ("weiss" as const),
+          }
+        })
+        // New row at index 0, existing rows shift to indices 1, 2, 3...
         const newGrid = [newRow, ...prev.grid]
         const newRowHeights = [38, ...prev.rowHeights] as 38[]
         const newConfig = {
@@ -694,20 +702,28 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory],
+    [saveToHistory, selectedTool],
   )
 
   const handleExpandDown = useCallback(
     (row: number, col: number) => {
+      // This gives more stacking height while keeping modules grounded
       setConfig((prev) => {
         const newRows = prev.rows + 1
-        const newRow = Array.from({ length: prev.columns }, (_, colIndex) => ({
-          id: `cell-${prev.rows}-${colIndex}`,
-          type: "empty" as const,
-          color: "weiss" as const,
-        }))
-        const newGrid = [...prev.grid, newRow]
-        const newRowHeights = [...prev.rowHeights, 38] as 38[]
+        const newRow = Array.from({ length: prev.columns }, (_, colIndex) => {
+          const hasModuleBelow = prev.grid[0]?.[colIndex]?.type && prev.grid[0][colIndex].type !== "empty"
+          return {
+            id: `cell-0-${colIndex}`,
+            type:
+              hasModuleBelow && selectedTool && selectedTool !== "empty" && selectedTool !== "delete"
+                ? selectedTool
+                : ("empty" as const),
+            color: prev.accentColor || ("weiss" as const),
+          }
+        })
+        // New empty row at index 0, existing rows shift to indices 1, 2, 3...
+        const newGrid = [newRow, ...prev.grid]
+        const newRowHeights = [38, ...prev.rowHeights] as 38[]
         const newConfig = {
           ...prev,
           rows: newRows,
@@ -718,7 +734,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory],
+    [saveToHistory, selectedTool],
   )
 
   const configWithDefaults = useMemo(

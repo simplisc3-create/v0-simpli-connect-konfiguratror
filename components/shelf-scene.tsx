@@ -1,12 +1,9 @@
 "use client"
-
-import type React from "react"
 import { Html } from "@react-three/drei"
 import { useMemo, useState } from "react"
 import * as THREE from "three"
 import type { ShelfConfig } from "@/components/shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
-import { GLBModule } from "./glb-module-loader"
 import type { JSX } from "react/jsx-runtime"
 import { floorTexture } from "@/lib/textures"
 
@@ -196,32 +193,26 @@ function DrawerPanel({
   const handleWidth = width * 0.7
   return (
     <group position={position}>
-      {/* Main drawer front panel */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[width, height, 0.025]} />
         <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
       </mesh>
-      {/* Drawer line groove - top */}
       <mesh position={[0, height * 0.15, 0.013]} castShadow>
         <boxGeometry args={[width * 0.9, 0.003, 0.005]} />
         <meshStandardMaterial color="#999" roughness={0.5} metalness={0.3} />
       </mesh>
-      {/* Drawer line groove - bottom */}
       <mesh position={[0, -height * 0.15, 0.013]} castShadow>
         <boxGeometry args={[width * 0.9, 0.003, 0.005]} />
         <meshStandardMaterial color="#999" roughness={0.5} metalness={0.3} />
       </mesh>
-      {/* Handle bar */}
       <mesh position={[0, 0, 0.03]} castShadow rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.006, 0.006, handleWidth, 16]} />
         <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
       </mesh>
-      {/* Handle end cap left */}
       <mesh position={[-handleWidth / 2, 0, 0.03]} castShadow>
         <sphereGeometry args={[0.008, 16, 16]} />
         <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
       </mesh>
-      {/* Handle end cap right */}
       <mesh position={[handleWidth / 2, 0, 0.03]} castShadow>
         <sphereGeometry args={[0.008, 16, 16]} />
         <meshStandardMaterial color="#d0d0d0" metalness={0.95} roughness={0.1} />
@@ -251,11 +242,9 @@ function InteractiveCell({
   isEmpty,
   isSelected,
   selectedTool,
-  onClick,
-  onHover,
   onDragStart,
   onDragOver,
-  onDragEnd,
+  onHover,
   isDragging,
   hasModuleBelow,
   totalRows,
@@ -269,11 +258,9 @@ function InteractiveCell({
   isEmpty: boolean
   isSelected: boolean
   selectedTool: string | null
-  onClick?: (row: number, col: number) => void
-  onHover?: (cell: { row: number; col: number } | null) => void
   onDragStart?: (row: number, col: number) => void
   onDragOver?: (row: number, col: number) => void
-  onDragEnd?: () => void
+  onHover?: (cell: { row: number; col: number } | null) => void
   isDragging?: boolean
   hasModuleBelow?: boolean
   totalRows: number
@@ -282,7 +269,6 @@ function InteractiveCell({
 
   const handlePointerDown = (e: any) => {
     e.stopPropagation()
-    console.log("[v0] InteractiveCell clicked:", { row, col, isEmpty, hasModuleBelow, totalRows })
     onDragStart?.(row, col)
   }
 
@@ -305,8 +291,6 @@ function InteractiveCell({
   const isGroundLevel = row === totalRows - 1
   const canInteract = !isEmpty || isGroundLevel || hasModuleBelow
 
-  // This allows clicking on cells that should be stackable
-
   const showStartHint = isEmpty && isGroundLevel && localHover
   const showStackHint = isEmpty && hasModuleBelow && localHover
   const showHover = localHover
@@ -315,25 +299,25 @@ function InteractiveCell({
   let opacity = 0.02
 
   if (showStartHint || showStackHint) {
-    color = "#22c55e" // Green for "add here"
+    color = "#22c55e"
     opacity = 0.5
   } else if (showHover && selectedTool === "empty") {
-    color = "#ef4444" // Red for remove
+    color = "#ef4444"
     opacity = 0.4
   } else if (showHover && !isEmpty) {
-    color = "#3b82f6" // Blue for hover on filled
+    color = "#3b82f6"
     opacity = 0.4
   } else if (showHover && canInteract) {
-    color = "#22c55e" // Green for stackable position
+    color = "#22c55e"
     opacity = 0.4
   } else if (isSelected) {
-    color = "#f59e0b" // Amber for selected
+    color = "#f59e0b"
     opacity = 0.3
   } else if (isEmpty && isGroundLevel) {
-    color = "#22c55e" // Subtle green for ground level empty
+    color = "#22c55e"
     opacity = 0.15
   } else if (isEmpty && hasModuleBelow) {
-    color = "#22c55e" // Subtle green for stackable empty
+    color = "#22c55e"
     opacity = 0.1
   }
 
@@ -354,98 +338,62 @@ function InteractiveCell({
   )
 }
 
-function ExpandButton({
+function ExpansionCell({
   position,
+  width,
+  height,
+  depth,
   direction,
   onClick,
-  row,
-  col,
+  columnWidth,
 }: {
   position: [number, number, number]
-  direction: "left" | "right" | "up" | "down"
-  onClick?: (row: number, col: number, width?: 38 | 75) => void
-  row: number
-  col: number
+  width: number
+  height: number
+  depth: number
+  direction: "left" | "right" | "up"
+  onClick: (direction: "left" | "right" | "up", width?: number) => void
+  columnWidth?: number
 }) {
   const [hovered, setHovered] = useState(false)
-  const [showSizeSelector, setShowSizeSelector] = useState(false)
 
-  const isHorizontal = direction === "left" || direction === "right"
-  const label = isHorizontal ? "SPALTE" : "REIHE"
-
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: any) => {
     e.stopPropagation()
-    if (isHorizontal) {
-      setShowSizeSelector(!showSizeSelector)
-    } else {
-      onClick?.(row, col)
-    }
+    onClick(direction, columnWidth)
   }
 
-  const handleSizeSelect = (width: 38 | 75) => {
-    onClick?.(row, col, width)
-    setShowSizeSelector(false)
-  }
+  const color = "#22c55e"
+  const opacity = hovered ? 0.6 : 0.2
 
   return (
-    <Html position={position} center>
-      <div className="relative">
-        <button
-          onClick={handleClick}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => !showSizeSelector && setHovered(false)}
+    <group>
+      <mesh
+        position={position}
+        onPointerDown={handleClick}
+        onPointerEnter={() => {
+          setHovered(true)
+          document.body.style.cursor = "pointer"
+        }}
+        onPointerOut={() => {
+          setHovered(false)
+          document.body.style.cursor = "auto"
+        }}
+      >
+        <boxGeometry args={[width * 0.95, height * 0.95, depth * 0.95]} />
+        <meshBasicMaterial color={color} transparent opacity={opacity} depthWrite={false} />
+      </mesh>
+      <Html position={position} center>
+        <div
           className={`
-            group flex items-center gap-1.5
-            px-3 py-1.5 rounded-full
-            font-semibold text-[11px] uppercase tracking-wider
-            transition-all duration-200 ease-out
-            border shadow-lg whitespace-nowrap
-            ${
-              hovered || showSizeSelector
-                ? "bg-amber-500 text-white border-amber-400 scale-110 shadow-amber-500/30"
-                : "bg-zinc-900/90 text-white/90 border-white/20 backdrop-blur-md hover:bg-zinc-800"
-            }
-          `}
+          ${hovered ? "bg-green-500 scale-110" : "bg-green-500/70"}
+          text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold shadow-lg
+          transition-all duration-150
+        `}
         >
-          <span className={`transition-transform duration-200 ${hovered || showSizeSelector ? "rotate-90" : ""}`}>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-          </span>
-          <span>{label}</span>
-        </button>
-
-        {/* Size selector dropdown for horizontal expansion */}
-        {showSizeSelector && isHorizontal && (
-          <div
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex gap-1.5 bg-zinc-900/95 backdrop-blur-md rounded-lg p-2 border border-white/20 shadow-2xl z-50"
-            onMouseLeave={() => {
-              setShowSizeSelector(false)
-              setHovered(false)
-            }}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                handleSizeSelect(38)
-              }}
-              className="px-4 py-2 text-sm font-bold text-white bg-zinc-700 hover:bg-amber-500 rounded-md transition-all hover:scale-105 whitespace-nowrap"
-            >
-              38cm
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                handleSizeSelect(75)
-              }}
-              className="px-4 py-2 text-sm font-bold text-white bg-zinc-700 hover:bg-amber-500 rounded-md transition-all hover:scale-105 whitespace-nowrap"
-            >
-              75cm
-            </button>
-          </div>
-        )}
-      </div>
-    </Html>
+          +
+        </div>
+      </Html>
+    </group>
   )
 }
 
@@ -466,7 +414,6 @@ function StartingPlaceholder({
 
   return (
     <group position={position}>
-      {/* Pulsing base indicator */}
       <mesh
         onClick={onClick}
         onPointerOver={() => {
@@ -481,20 +428,14 @@ function StartingPlaceholder({
         <boxGeometry args={[width, height, depth]} />
         <meshStandardMaterial color={hovered ? "#22c55e" : "#d4a574"} transparent opacity={hovered ? 0.7 : 0.4} />
       </mesh>
-
-      {/* Plus icon indicator */}
       <mesh position={[0, height / 2 + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[0.15, 0.15]} />
         <meshBasicMaterial color={hovered ? "#16a34a" : "#92400e"} transparent opacity={0.9} />
       </mesh>
-
-      {/* Vertical bar of plus */}
       <mesh position={[0, height / 2 + 0.021, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[0.03, 0.1]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
-
-      {/* Horizontal bar of plus */}
       <mesh position={[0, height / 2 + 0.021, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[0.1, 0.03]} />
         <meshBasicMaterial color="#ffffff" />
@@ -503,7 +444,6 @@ function StartingPlaceholder({
   )
 }
 
-// Helper function to calculate cumulative X position for variable column widths
 function getColumnStartX(col: number, colWidths: (75 | 38)[], offsetX: number): number {
   let x = offsetX
   for (let i = 0; i < col; i++) {
@@ -512,237 +452,16 @@ function getColumnStartX(col: number, colWidths: (75 | 38)[], offsetX: number): 
   return x
 }
 
-// Helper function to calculate total width
 function getTotalWidth(colWidths: (75 | 38)[]): number {
   return colWidths.reduce((sum, w) => sum + (w || 75) / 100, 0)
 }
 
-// Helper function to calculate total height
 function getTotalHeight(rowHeights: 38[], rows: number): number {
   let total = 0
   for (let i = 0; i < rows; i++) {
     total += (rowHeights[i] || 38) / 100
   }
   return total
-}
-
-function ChromeFrameElements({
-  config,
-  showFrame,
-  offsetX,
-  offsetY,
-  offsetZ,
-  depth,
-  tubeRadius,
-}: {
-  config: ShelfConfig
-  showFrame: boolean
-  offsetX: number
-  offsetY: number
-  offsetZ: number
-  depth: number
-  tubeRadius: number
-}) {
-  const els: JSX.Element[] = []
-
-  // Helper to check if a cell has a module
-  const hasModuleAt = (row: number, col: number) => {
-    const cell = config.grid[row]?.[col]
-    return cell && cell.type !== "empty"
-  }
-
-  const getTopmostModuleRow = (col: number): number | null => {
-    for (let row = 0; row < config.rows; row++) {
-      if (hasModuleAt(row, col)) {
-        return row
-      }
-    }
-    return null
-  }
-
-  // Set to track already-drawn elements
-  const drawnVerticals = new Set<string>()
-  const drawnHorizontals = new Set<string>()
-  const drawnDepths = new Set<string>()
-  const drawnFeet = new Set<string>()
-
-  const filledCells = new Set<string>()
-  for (let r = 0; r < config.rows; r++) {
-    for (let c = 0; c < config.columns; c++) {
-      if (hasModuleAt(r, c)) {
-        filledCells.add(`${r}-${c}`)
-      }
-    }
-  }
-
-  if (showFrame && filledCells.size > 0) {
-    // For each filled cell, draw its frame
-    for (let gridRow = 0; gridRow < config.rows; gridRow++) {
-      for (let gridCol = 0; gridCol < config.columns; gridCol++) {
-        if (!hasModuleAt(gridRow, gridCol)) continue
-
-        const invertedRow = config.rows - 1 - gridRow
-        const cellWidth = (config.colWidths?.[gridCol] || 75) / 100
-        const cellHeight = (config.rowHeights?.[gridRow] || 38) / 100
-
-        const leftX = getColumnStartX(gridCol, config.colWidths, offsetX)
-        const rightX = leftX + cellWidth
-        const bottomY = invertedRow * cellHeight + offsetY
-        const topY = (invertedRow + 1) * cellHeight + offsetY
-
-        let lowestY = bottomY
-
-        // Check if there's an empty gap below this module
-        if (gridRow < config.rows - 1 && !hasModuleAt(gridRow + 1, gridCol)) {
-          // Find the next module below or ground
-          let foundModuleBelow = false
-          for (let checkRow = gridRow + 1; checkRow < config.rows; checkRow++) {
-            if (hasModuleAt(checkRow, gridCol)) {
-              // Found a module below - extend posts to the top of that module
-              const belowInvertedRow = config.rows - 1 - checkRow
-              const belowCellHeight = (config.rowHeights?.[checkRow] || 38) / 100
-              lowestY = (belowInvertedRow + 1) * belowCellHeight + offsetY
-              foundModuleBelow = true
-              break
-            }
-          }
-          // If no module below, extend to ground
-          if (!foundModuleBelow) {
-            lowestY = offsetY
-          }
-        }
-
-        // Don't draw posts higher than the topmost module
-        const topmostRow = getTopmostModuleRow(gridCol)
-        let maxTopY = topY
-        if (topmostRow !== null) {
-          const topmostInvertedRow = config.rows - 1 - topmostRow
-          const topmostCellHeight = (config.rowHeights?.[topmostRow] || 38) / 100
-          maxTopY = (topmostInvertedRow + 1) * topmostCellHeight + offsetY
-        }
-        // Cap topY to not exceed the topmost module's top
-        const cappedTopY = Math.min(topY, maxTopY)
-
-        // Draw vertical posts at corners
-        const corners = [
-          { x: leftX, key: `${leftX.toFixed(3)}` },
-          { x: rightX, key: `${rightX.toFixed(3)}` },
-        ]
-
-        corners.forEach(({ x, key }) => {
-          const vKey = `v-${key}-${lowestY.toFixed(3)}-${cappedTopY.toFixed(3)}`
-          if (!drawnVerticals.has(vKey)) {
-            drawnVerticals.add(vKey)
-            els.push(
-              <ChromeTube
-                key={`vpost-front-${vKey}`}
-                start={[x, lowestY, offsetZ + depth]}
-                end={[x, cappedTopY, offsetZ + depth]}
-                radius={tubeRadius}
-              />,
-            )
-            els.push(
-              <ChromeTube
-                key={`vpost-back-${vKey}`}
-                start={[x, lowestY, offsetZ]}
-                end={[x, cappedTopY, offsetZ]}
-                radius={tubeRadius}
-              />,
-            )
-          }
-
-          // Depth rails at top and bottom of the cell (not lowestY)
-          const dKeyBottom = `d-${key}-${bottomY.toFixed(3)}`
-          if (!drawnDepths.has(dKeyBottom)) {
-            drawnDepths.add(dKeyBottom)
-            els.push(
-              <ChromeTube
-                key={`depth-${dKeyBottom}`}
-                start={[x, bottomY, offsetZ]}
-                end={[x, bottomY, offsetZ + depth]}
-                radius={tubeRadius}
-              />,
-            )
-          }
-
-          const dKeyTop = `d-${key}-${topY.toFixed(3)}`
-          if (!drawnDepths.has(dKeyTop)) {
-            drawnDepths.add(dKeyTop)
-            els.push(
-              <ChromeTube
-                key={`depth-${dKeyTop}`}
-                start={[x, topY, offsetZ]}
-                end={[x, topY, offsetZ + depth]}
-                radius={tubeRadius}
-              />,
-            )
-          }
-
-          if (Math.abs(lowestY - offsetY) < 0.001) {
-            const fKey = `f-${key}`
-            if (!drawnFeet.has(fKey)) {
-              drawnFeet.add(fKey)
-              els.push(<Foot key={`foot-front-${fKey}`} position={[x, 0.012, offsetZ + depth]} />)
-              els.push(<Foot key={`foot-back-${fKey}`} position={[x, 0.012, offsetZ]} />)
-            }
-          }
-        })
-
-        // Horizontal rails
-        const hKeyBottom = `h-${getColumnStartX(gridCol, config.colWidths, offsetX).toFixed(3)}-${getColumnStartX(
-          gridCol + 1,
-          config.colWidths,
-          offsetX,
-        ).toFixed(3)}-${bottomY.toFixed(3)}`
-        if (!drawnHorizontals.has(hKeyBottom)) {
-          drawnHorizontals.add(hKeyBottom)
-          els.push(
-            <ChromeTube
-              key={`hrail-front-${hKeyBottom}`}
-              start={[getColumnStartX(gridCol, config.colWidths, offsetX), bottomY, offsetZ + depth]}
-              end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), bottomY, offsetZ + depth]}
-              radius={tubeRadius}
-            />,
-          )
-          els.push(
-            <ChromeTube
-              key={`hrail-back-${hKeyBottom}`}
-              start={[getColumnStartX(gridCol, config.colWidths, offsetX), bottomY, offsetZ]}
-              end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), bottomY, offsetZ]}
-              radius={tubeRadius}
-            />,
-          )
-        }
-
-        const hKeyTop = `h-${getColumnStartX(gridCol, config.colWidths, offsetX).toFixed(3)}-${getColumnStartX(
-          gridCol + 1,
-          config.colWidths,
-          offsetX,
-        ).toFixed(3)}-${topY.toFixed(3)}`
-        if (!drawnHorizontals.has(hKeyTop)) {
-          drawnHorizontals.add(hKeyTop)
-          els.push(
-            <ChromeTube
-              key={`hrail-front-${hKeyTop}`}
-              start={[getColumnStartX(gridCol, config.colWidths, offsetX), topY, offsetZ + depth]}
-              end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), topY, offsetZ + depth]}
-              radius={tubeRadius}
-            />,
-          )
-          els.push(
-            <ChromeTube
-              key={`hrail-back-${hKeyTop}`}
-              start={[getColumnStartX(gridCol, config.colWidths, offsetX), topY, offsetZ]}
-              end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), topY, offsetZ]}
-              radius={tubeRadius}
-            />,
-          )
-        }
-      }
-    }
-  }
-
-  return els
 }
 
 export function ShelfScene({
@@ -762,163 +481,25 @@ export function ShelfScene({
   onExpandUp,
   onExpandDown,
 }: Props) {
-  const [useGLBModels, setUseGLBModules] = useState(false)
-
   const depth = 0.38
   const tubeRadius = 0.012
 
-  const cellPositions = useMemo(() => {
-    const positions: {
-      row: number
-      col: number
-      x: number
-      y: number
-      z: number
-      width: number
-      height: number
-      hasModule: boolean
-    }[] = []
-
-    let yOffset = 0
-    for (let row = config.rows - 1; row >= 0; row--) {
-      const rowHeight = (config.rowHeights[row] || 38) / 100
-      let xOffset = 0
-
-      for (let col = 0; col < config.columns; col++) {
-        const colWidth = (config.colWidths[col] || 75) / 100
-        const cell = config.grid[row]?.[col]
-        const hasModule = cell && cell.type !== "empty"
-
-        positions.push({
-          row,
-          col,
-          x: xOffset + colWidth / 2,
-          y: yOffset + rowHeight / 2,
-          z: depth / 2,
-          width: colWidth,
-          height: rowHeight,
-          hasModule,
-        })
-
-        xOffset += colWidth
-      }
-      yOffset += rowHeight
-    }
-
-    // Center the positions
-    const centerX =
-      positions.length > 0
-        ? (Math.max(...positions.map((p) => p.x + p.width / 2)) +
-            Math.min(...positions.map((p) => p.x - p.width / 2))) /
-          2
-        : 0
-    return positions.map((p) => ({ ...p, x: p.x - centerX }))
-  }, [config, depth])
-
-  const moduleBoundaryInfo = useMemo(() => {
-    const filledCells = cellPositions.filter((c) => c.hasModule)
-    if (filledCells.length === 0) return []
-
-    // Find the actual boundaries of the filled structure
-    const minCol = Math.min(...filledCells.map((c) => c.col))
-    const maxCol = Math.max(...filledCells.map((c) => c.col))
-
-    // For each column, find the topmost filled cell (lowest row number)
-    const topCellByCol = new Map<number, (typeof cellPositions)[0]>()
-    filledCells.forEach((cell) => {
-      const existing = topCellByCol.get(cell.col)
-      if (!existing || cell.row < existing.row) {
-        topCellByCol.set(cell.col, cell)
-      }
-    })
-
-    // Find ground-level (row === rows-1) cells at edges
-    const groundCells = filledCells.filter((c) => c.row === config.rows - 1)
-    const leftmostGroundCell = groundCells.length > 0 ? groundCells.reduce((a, b) => (a.col < b.col ? a : b)) : null
-    const rightmostGroundCell = groundCells.length > 0 ? groundCells.reduce((a, b) => (a.col > b.col ? a : b)) : null
-
-    const boundaries: {
-      row: number
-      col: number
-      x: number
-      y: number
-      z: number
-      width: number
-      height: number
-      showUp: boolean
-      showLeft: boolean
-      showRight: boolean
-    }[] = []
-
-    filledCells.forEach((cell) => {
-      const isTopInColumn = topCellByCol.get(cell.col) === cell
-      const isLeftEdge = leftmostGroundCell && cell.row === config.rows - 1 && cell.col === minCol
-      const isRightEdge = rightmostGroundCell && cell.row === config.rows - 1 && cell.col === maxCol
-
-      // Only add if this cell has at least one button to show
-      if (isTopInColumn || isLeftEdge || isRightEdge) {
-        boundaries.push({
-          row: cell.row,
-          col: cell.col,
-          x: cell.x,
-          y: cell.y,
-          z: cell.z,
-          width: cell.width,
-          height: cell.height,
-          showUp: isTopInColumn,
-          showLeft: isLeftEdge || false,
-          showRight: isRightEdge || false,
-        })
-      }
-    })
-
-    return boundaries
-  }, [cellPositions, config.rows])
-
-  const { elements, interactiveCells, glbModules, shelfBounds, moduleBounds } = useMemo(() => {
+  const { elements, interactiveCells, expansionCells } = useMemo(() => {
     const els: JSX.Element[] = []
     const cells: JSX.Element[] = []
-    const glbs: JSX.Element[] = []
-    const effectiveColor = config.accentColor !== "none" ? config.accentColor : "weiss"
+    const expansionCells: JSX.Element[] = []
 
-    const offsetX = -getTotalWidth(config.colWidths) / 2 // Center based on total width
+    const offsetX = -getTotalWidth(config.colWidths) / 2
     const offsetY = 0.025
     const offsetZ = -depth / 2
 
-    const totalWidth = getTotalWidth(config.colWidths)
-    const totalHeight = getTotalHeight(config.rowHeights, config.rows)
-
-    const bounds = {
-      minX: offsetX,
-      maxX: offsetX + totalWidth,
-      minY: offsetY,
-      maxY: offsetY + totalHeight,
-      centerZ: offsetZ + depth / 2,
-    }
-
     const filledCells = new Set<string>()
-    let modMinX = Number.POSITIVE_INFINITY,
-      modMaxX = Number.NEGATIVE_INFINITY
-    let modMinY = Number.POSITIVE_INFINITY,
-      modMaxY = Number.NEGATIVE_INFINITY
 
+    // Find all filled cells
     for (let row = 0; row < config.rows; row++) {
       for (let gridCol = 0; gridCol < config.columns; gridCol++) {
         if (config.grid[row]?.[gridCol]?.type && config.grid[row][gridCol].type !== "empty") {
           filledCells.add(`${row}-${gridCol}`)
-          const invertedRow = config.rows - 1 - row
-          const cellWidth = (config.colWidths?.[gridCol] || 75) / 100
-          const cellHeight = (config.rowHeights?.[row] || 38) / 100
-
-          const leftX = getColumnStartX(gridCol, config.colWidths, offsetX)
-          const rightX = leftX + cellWidth
-          const bottomY = invertedRow * cellHeight + offsetY
-          const topY = (invertedRow + 1) * cellHeight + offsetY
-
-          modMinX = Math.min(modMinX, leftX)
-          modMaxX = Math.max(modMaxX, rightX)
-          modMinY = Math.min(modMinY, bottomY)
-          modMaxY = Math.max(modMaxY, topY)
         }
       }
     }
@@ -927,13 +508,19 @@ export function ShelfScene({
       return filledCells.has(`${row}-${col}`)
     }
 
+    const canPlaceAt = (gridRow: number, gridCol: number): boolean => {
+      if (gridRow === config.rows - 1) return true
+      const cellBelow = config.grid[gridRow + 1]?.[gridCol]
+      return cellBelow?.type !== undefined && cellBelow?.type !== "empty"
+    }
+
     const drawnVerticals = new Set<string>()
     const drawnHorizontals = new Set<string>()
     const drawnDepths = new Set<string>()
     const drawnFeet = new Set<string>()
 
+    // Draw frame and modules
     if (showFrame && filledCells.size > 0) {
-      // For each filled cell, draw its frame
       for (let gridRow = 0; gridRow < config.rows; gridRow++) {
         for (let gridCol = 0; gridCol < config.columns; gridCol++) {
           if (!hasModuleAt(gridRow, gridCol)) continue
@@ -947,43 +534,48 @@ export function ShelfScene({
           const bottomY = invertedRow * cellHeight + offsetY
           const topY = (invertedRow + 1) * cellHeight + offsetY
 
-          let lowestY = bottomY
+          // Find the topmost module in this column to cap vertical posts properly
+          let topmostModuleRow = config.rows
+          for (let r = 0; r < config.rows; r++) {
+            if (hasModuleAt(r, gridCol)) {
+              topmostModuleRow = Math.min(topmostModuleRow, r)
+            }
+          }
 
-          // Check if there's an empty gap below this module
-          if (gridRow < config.rows - 1 && !hasModuleAt(gridRow + 1, gridCol)) {
-            // Find the next module below or ground
+          // Calculate the actual top Y based on the topmost module
+          const topmostInvertedRow = config.rows - 1 - topmostModuleRow
+          const cappedTopY = topmostModuleRow < config.rows ? (topmostInvertedRow + 1) * cellHeight + offsetY : topY
+
+          let lowestY = offsetY
+          if (hasModuleAt(gridRow, gridCol)) {
             let foundModuleBelow = false
-            for (let checkRow = gridRow + 1; checkRow < config.rows; checkRow++) {
-              if (hasModuleAt(checkRow, gridCol)) {
-                // Found a module below - extend posts to the top of that module
-                const belowInvertedRow = config.rows - 1 - checkRow
-                const belowCellHeight = (config.rowHeights?.[checkRow] || 38) / 100
-                lowestY = (belowInvertedRow + 1) * belowCellHeight + offsetY
+            for (let r = gridRow + 1; r < config.rows; r++) {
+              if (hasModuleAt(r, gridCol)) {
                 foundModuleBelow = true
+                const belowInverted = config.rows - 1 - r
+                lowestY = belowInverted * cellHeight + offsetY
                 break
               }
             }
-            // If no module below, extend to ground
             if (!foundModuleBelow) {
               lowestY = offsetY
             }
           }
 
-          // Draw vertical posts at corners
           const corners = [
             { x: leftX, key: `${leftX.toFixed(3)}` },
             { x: rightX, key: `${rightX.toFixed(3)}` },
           ]
 
           corners.forEach(({ x, key }) => {
-            const vKey = `v-${key}-${lowestY.toFixed(3)}-${topY.toFixed(3)}`
+            const vKey = `v-${key}-${lowestY.toFixed(3)}-${cappedTopY.toFixed(3)}`
             if (!drawnVerticals.has(vKey)) {
               drawnVerticals.add(vKey)
               els.push(
                 <ChromeTube
                   key={`vpost-front-${vKey}`}
                   start={[x, lowestY, offsetZ + depth]}
-                  end={[x, topY, offsetZ + depth]}
+                  end={[x, cappedTopY, offsetZ + depth]}
                   radius={tubeRadius}
                 />,
               )
@@ -991,13 +583,12 @@ export function ShelfScene({
                 <ChromeTube
                   key={`vpost-back-${vKey}`}
                   start={[x, lowestY, offsetZ]}
-                  end={[x, topY, offsetZ]}
+                  end={[x, cappedTopY, offsetZ]}
                   radius={tubeRadius}
                 />,
               )
             }
 
-            // Depth rails at top and bottom of the cell (not lowestY)
             const dKeyBottom = `d-${key}-${bottomY.toFixed(3)}`
             if (!drawnDepths.has(dKeyBottom)) {
               drawnDepths.add(dKeyBottom)
@@ -1011,20 +602,20 @@ export function ShelfScene({
               )
             }
 
-            const dKeyTop = `d-${key}-${topY.toFixed(3)}`
+            const dKeyTop = `d-${key}-${cappedTopY.toFixed(3)}`
             if (!drawnDepths.has(dKeyTop)) {
               drawnDepths.add(dKeyTop)
               els.push(
                 <ChromeTube
                   key={`depth-${dKeyTop}`}
-                  start={[x, topY, offsetZ]}
-                  end={[x, topY, offsetZ + depth]}
+                  start={[x, cappedTopY, offsetZ]}
+                  end={[x, cappedTopY, offsetZ + depth]}
                   radius={tubeRadius}
                 />,
               )
             }
 
-            if (Math.abs(lowestY - offsetY) < 0.001) {
+            if (gridRow === config.rows - 1) {
               const fKey = `f-${key}`
               if (!drawnFeet.has(fKey)) {
                 drawnFeet.add(fKey)
@@ -1034,52 +625,43 @@ export function ShelfScene({
             }
           })
 
-          // Horizontal rails
-          const hKeyBottom = `h-${getColumnStartX(gridCol, config.colWidths, offsetX).toFixed(3)}-${getColumnStartX(
-            gridCol + 1,
-            config.colWidths,
-            offsetX,
-          ).toFixed(3)}-${bottomY.toFixed(3)}`
+          const hKeyBottom = `h-${leftX.toFixed(3)}-${rightX.toFixed(3)}-${bottomY.toFixed(3)}`
           if (!drawnHorizontals.has(hKeyBottom)) {
             drawnHorizontals.add(hKeyBottom)
             els.push(
               <ChromeTube
                 key={`hrail-front-${hKeyBottom}`}
-                start={[getColumnStartX(gridCol, config.colWidths, offsetX), bottomY, offsetZ + depth]}
-                end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), bottomY, offsetZ + depth]}
+                start={[leftX, bottomY, offsetZ + depth]}
+                end={[rightX, bottomY, offsetZ + depth]}
                 radius={tubeRadius}
               />,
             )
             els.push(
               <ChromeTube
                 key={`hrail-back-${hKeyBottom}`}
-                start={[getColumnStartX(gridCol, config.colWidths, offsetX), bottomY, offsetZ]}
-                end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), bottomY, offsetZ]}
+                start={[leftX, bottomY, offsetZ]}
+                end={[rightX, bottomY, offsetZ]}
                 radius={tubeRadius}
               />,
             )
           }
 
-          const hKeyTop = `h-${getColumnStartX(gridCol, config.colWidths, offsetX).toFixed(3)}-${getColumnStartX(
-            gridCol + 1,
-            config.colWidths,
-            offsetX,
-          ).toFixed(3)}-${topY.toFixed(3)}`
+          const hKeyTop = `h-${leftX.toFixed(3)}-${rightX.toFixed(3)}-${cappedTopY.toFixed(3)}`
           if (!drawnHorizontals.has(hKeyTop)) {
             drawnHorizontals.add(hKeyTop)
             els.push(
               <ChromeTube
                 key={`hrail-front-${hKeyTop}`}
-                start={[getColumnStartX(gridCol, config.colWidths, offsetX), topY, offsetZ + depth]}
-                end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), topY, offsetZ + depth]}
+                start={[leftX, cappedTopY, offsetZ + depth]}
+                end={[rightX, cappedTopY, offsetZ + depth]}
                 radius={tubeRadius}
               />,
             )
             els.push(
               <ChromeTube
                 key={`hrail-back-${hKeyTop}`}
-                start={[getColumnStartX(gridCol, config.colWidths, offsetX), topY, offsetZ]}
-                end={[getColumnStartX(gridCol + 1, config.colWidths, offsetX), topY, offsetZ]}
+                start={[leftX, cappedTopY, offsetZ]}
+                end={[rightX, cappedTopY, offsetZ]}
                 radius={tubeRadius}
               />,
             )
@@ -1088,19 +670,7 @@ export function ShelfScene({
       }
     }
 
-    const canPlaceAt = (gridRow: number, gridCol: number): boolean => {
-      // Bottom row can always have modules
-      if (gridRow === config.rows - 1) return true
-      // Check if ALL rows below have modules
-      for (let r = gridRow + 1; r < config.rows; r++) {
-        if (!config.grid[r]?.[gridCol]?.type || config.grid[r][gridCol].type === "empty") {
-          return false
-        }
-      }
-      return true
-    }
-
-    // Draw cells and modules
+    // Draw interactive cells and modules
     config.grid.forEach((rowCells, gridRow) => {
       rowCells.forEach((cell, gridCol) => {
         const cellWidth = (config.colWidths?.[gridCol] || 75) / 100
@@ -1112,9 +682,8 @@ export function ShelfScene({
         const cellZ = offsetZ + depth / 2
 
         const isEmpty = !cell.type || cell.type === "empty"
-        const canPlace = canPlaceAt(gridRow, gridCol) // Calculate if placement is valid
+        const canPlace = canPlaceAt(gridRow, gridCol)
 
-        // Interactive cell overlay
         cells.push(
           <InteractiveCell
             key={`interact-${gridRow}-${gridCol}`}
@@ -1126,14 +695,12 @@ export function ShelfScene({
             col={gridCol}
             isEmpty={isEmpty}
             isSelected={selectedCell?.row === gridRow && selectedCell?.col === gridCol}
-            selectedTool={selectedTool}
-            onClick={onCellClick}
+            selectedTool={selectedTool || null}
             onHover={onCellHover}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
-            onDragEnd={onDragEnd}
             isDragging={isDragging}
-            hasModuleBelow={canPlace} // Pass canPlace prop
+            hasModuleBelow={canPlace}
             totalRows={config.rows}
           />,
         )
@@ -1142,20 +709,6 @@ export function ShelfScene({
 
         const cellColor = cell.color || config.accentColor || "weiss"
         const panelColorForCell = colorMap[cellColor] || colorMap.weiss
-
-        if (useGLBModels) {
-          glbs.push(
-            <GLBModule
-              key={`glb-${gridRow}-${gridCol}`}
-              position={[cellX, cellY, cellZ]}
-              cellType={cell.type}
-              width={cellWidth}
-              height={cellHeight}
-              depth={depth}
-              color={panelColorForCell}
-            />,
-          )
-        }
 
         // Shelf panel at bottom of cell
         els.push(
@@ -1244,7 +797,7 @@ export function ShelfScene({
             )
             els.push(
               <SidePanel
-                key={`side-l-${gridRow}-${gridCol}`}
+                key={`side-l-door-${gridRow}-${gridCol}`}
                 position={[cellX - cellWidth / 2 + 0.015, cellY, cellZ]}
                 height={cellHeight - 0.02}
                 depth={depth - 0.02}
@@ -1253,7 +806,7 @@ export function ShelfScene({
             )
             els.push(
               <SidePanel
-                key={`side-r-${gridRow}-${gridCol}`}
+                key={`side-r-door-${gridRow}-${gridCol}`}
                 position={[cellX + cellWidth / 2 - 0.015, cellY, cellZ]}
                 height={cellHeight - 0.02}
                 depth={depth - 0.02}
@@ -1360,38 +913,115 @@ export function ShelfScene({
       })
     })
 
-    return {
-      elements: els,
-      interactiveCells: cells,
-      glbModules: glbs,
-      shelfBounds: bounds,
-      moduleBounds: {
-        minX: modMinX,
-        maxX: modMaxX,
-        minY: modMinY,
-        maxY: modMaxY,
-      },
+    // Add expansion cells if there are any modules
+    const hasAnyModule = filledCells.size > 0
+
+    if (hasAnyModule) {
+      const groundLevelRow = config.rows - 1
+
+      // Find boundaries
+      let maxFilledCol = -1
+      let minFilledCol = config.columns
+      let minFilledRow = config.rows
+
+      for (let gridCol = 0; gridCol < config.columns; gridCol++) {
+        for (let gridRow = 0; gridRow < config.rows; gridRow++) {
+          if (hasModuleAt(gridRow, gridCol)) {
+            maxFilledCol = Math.max(maxFilledCol, gridCol)
+            minFilledCol = Math.min(minFilledCol, gridCol)
+            minFilledRow = Math.min(minFilledRow, gridRow)
+          }
+        }
+      }
+
+      // Expansion cell to the RIGHT
+      if (maxFilledCol === config.columns - 1) {
+        const rightColWidth = (config.colWidths?.[maxFilledCol] || 75) / 100
+        const rightCellHeight = (config.rowHeights?.[groundLevelRow] || 38) / 100
+        const rightEdgeX = getColumnStartX(config.columns, config.colWidths, offsetX)
+        const rightCellY = rightCellHeight / 2 + offsetY
+
+        expansionCells.push(
+          <ExpansionCell
+            key="expand-right-ghost"
+            position={[rightEdgeX + rightColWidth / 2, rightCellY, offsetZ + depth / 2]}
+            width={rightColWidth}
+            height={rightCellHeight}
+            depth={depth}
+            direction="right"
+            onClick={(dir, w) => onExpandRight?.(0, 0, w)}
+            columnWidth={config.colWidths?.[maxFilledCol] || 75}
+          />,
+        )
+      }
+
+      // Expansion cell to the LEFT
+      if (minFilledCol === 0) {
+        const leftColWidth = (config.colWidths?.[0] || 75) / 100
+        const leftCellHeight = (config.rowHeights?.[groundLevelRow] || 38) / 100
+        const leftEdgeX = getColumnStartX(0, config.colWidths, offsetX)
+        const leftCellY = leftCellHeight / 2 + offsetY
+
+        expansionCells.push(
+          <ExpansionCell
+            key="expand-left-ghost"
+            position={[leftEdgeX - leftColWidth / 2, leftCellY, offsetZ + depth / 2]}
+            width={leftColWidth}
+            height={leftCellHeight}
+            depth={depth}
+            direction="left"
+            onClick={(dir, w) => onExpandLeft?.(0, 0, w)}
+            columnWidth={config.colWidths?.[0] || 75}
+          />,
+        )
+      }
+
+      // Expansion cells ABOVE topmost modules
+      if (minFilledRow === 0) {
+        config.grid[0]?.forEach((cell, gridCol) => {
+          if (cell.type && cell.type !== "empty") {
+            const colWidth = (config.colWidths?.[gridCol] || 75) / 100
+            const topCellHeight = (config.rowHeights?.[0] || 38) / 100
+            const cellX = getColumnStartX(gridCol, config.colWidths, offsetX) + colWidth / 2
+            const topY = config.rows * topCellHeight + topCellHeight / 2 + offsetY
+
+            expansionCells.push(
+              <ExpansionCell
+                key={`expand-up-ghost-${gridCol}`}
+                position={[cellX, topY, offsetZ + depth / 2]}
+                width={colWidth}
+                height={topCellHeight}
+                depth={depth}
+                direction="up"
+                onClick={() => onExpandUp?.(0, gridCol)}
+                columnWidth={config.colWidths?.[gridCol] || 75}
+              />,
+            )
+          }
+        })
+      }
     }
+
+    return { elements: els, interactiveCells: cells, expansionCells }
   }, [
     config,
     depth,
+    tubeRadius,
+    showFrame,
     selectedTool,
-    onCellClick,
+    selectedCell,
     onCellHover,
-    useGLBModels,
     onDragStart,
     onDragOver,
-    onDragEnd,
     isDragging,
+    onExpandLeft,
+    onExpandRight,
+    onExpandUp,
   ])
 
-  const isGridEmpty = useMemo(() => {
-    return !config.grid.some((row) => row.some((cell) => cell.type !== "empty"))
-  }, [config.grid])
-
   const hasAnyFilledCells = useMemo(() => {
-    return cellPositions.some((cell) => cell.hasModule)
-  }, [cellPositions])
+    return config.grid.some((row) => row.some((cell) => cell.type && cell.type !== "empty"))
+  }, [config.grid])
 
   const cellWidth = useMemo(() => {
     return getTotalWidth(config.colWidths) / config.columns
@@ -1401,24 +1031,11 @@ export function ShelfScene({
     return getTotalHeight(config.rowHeights, config.rows) / config.rows
   }, [config.rowHeights, config.rows])
 
-  const frameElements = useMemo(() => {
-    return ChromeFrameElements({
-      config,
-      showFrame,
-      offsetX: -getTotalWidth(config.colWidths) / 2,
-      offsetY: 0.025,
-      offsetZ: -depth / 2,
-      depth,
-      tubeRadius,
-    })
-  }, [config, showFrame, depth, tubeRadius])
-
   return (
     <group>
       {elements}
       {interactiveCells}
-      {glbModules}
-      {frameElements}
+      {expansionCells}
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />
