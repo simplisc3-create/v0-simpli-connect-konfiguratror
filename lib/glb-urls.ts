@@ -3,11 +3,11 @@
 export const BLOB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
 
 export const GLB_BLOB_URLS: Record<string, string> = {
-  // Drawer model (code 5)
-  "drawer-gray": `${BLOB_BASE_URL}/80x40x40-1-5-gray-opt%20(2)-WdDp6JVxOOeWtEGYZpn3xCP1L635Ez.glb`,
+  // Drawer model (code 5) - original URL from user upload
+  "drawer-gray": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
 
-  // Door model (code 6)
-  "door-green": `${BLOB_BASE_URL}/80x40x40-1-6-green-opt%20(1)-MXpwaYoVVujRkE8LKarACybfkf6fU8.glb`,
+  // Door model (code 6) - original URL from user upload
+  "door-green": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
 
   // Basic modules (code 3 - without back panel)
   "80x40x40-1-3-white": `${BLOB_BASE_URL}/80x40x40-1-3-white-opt.glb`,
