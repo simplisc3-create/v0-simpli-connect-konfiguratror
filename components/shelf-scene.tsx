@@ -6,7 +6,7 @@ import * as THREE from "three"
 import type { ShelfConfig, ColumnData } from "@/components/shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import type { JSX } from "react/jsx-runtime"
-import { GLBModuleLoader } from "@/components/glb-module-loader" // Import GLBModuleLoader component
+import { GLBModule } from "@/components/glb-module-loader"
 
 interface ShelfSceneProps {
   config: ShelfConfig
@@ -454,14 +454,14 @@ export function ShelfScene({
           // Render GLB model for drawers and doors
           if (usesGLBModel) {
             els.push(
-              <GLBModuleLoader
+              <GLBModule
                 key={`glb-${colIndex}-${stackIndex}`}
                 position={[cellCenterX, cellCenterY, offsetZ + depth / 2]}
                 cellType={cell.type}
                 width={cell.width}
                 height={cell.height}
                 depth={cell.depth}
-                color={panelColor}
+                color={cellColor}
               />,
             )
           }
