@@ -6,6 +6,7 @@ import * as THREE from "three"
 import type { ShelfConfig, ColumnData } from "@/components/shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import type { JSX } from "react/jsx-runtime"
+import { GLBModule } from "@/components/glb-module" // Import GLBModule component
 
 interface ShelfSceneProps {
   config: ShelfConfig
@@ -442,7 +443,7 @@ export function ShelfScene({
           const cellColor = cell.color || config.accentColor || "weiss"
           const panelColor = colorMap[cellColor] || colorMap.weiss
 
-          const needsEnclosure = [
+          const usesGLBModel = [
             "mit-tueren",
             "abschliessbare-tueren",
             "mit-klapptuer",
@@ -450,7 +451,24 @@ export function ShelfScene({
             "mit-doppelschublade",
           ].includes(cell.type)
 
-          if (needsEnclosure) {
+          // Render GLB model for drawers and doors
+          if (usesGLBModel) {
+            els.push(
+              <GLBModule
+                key={`glb-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + depth / 2]}
+                cellType={cell.type}
+                width={cell.width}
+                height={cell.height}
+                depth={cell.depth}
+                color={panelColor}
+              />,
+            )
+          }
+
+          const needsManualEnclosure = cell.type === "mit-rueckwand" || cell.type === "mit-seitenwaenden"
+
+          if (needsManualEnclosure) {
             // Back panel
             els.push(
               <mesh
@@ -514,105 +532,6 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
               </mesh>,
             )
-          }
-
-          if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
-            const doorWidth = (cellWidth - 0.03) / 2
-            // Left door panel
-            els.push(
-              <mesh
-                key={`door-left-${colIndex}-${stackIndex}`}
-                position={[leftX + doorWidth / 2 + 0.012, cellCenterY, offsetZ + depth + 0.005]}
-              >
-                <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
-              </mesh>,
-            )
-            // Left door handle (vertical)
-            els.push(
-              <mesh
-                key={`door-handle-left-${colIndex}-${stackIndex}`}
-                position={[leftX + doorWidth - 0.02, cellCenterY, offsetZ + depth + 0.02]}
-              >
-                <cylinderGeometry args={[0.006, 0.006, cellHeight * 0.5, 8]} />
-                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
-              </mesh>,
-            )
-            // Right door panel
-            els.push(
-              <mesh
-                key={`door-right-${colIndex}-${stackIndex}`}
-                position={[rightX - doorWidth / 2 - 0.012, cellCenterY, offsetZ + depth + 0.005]}
-              >
-                <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
-              </mesh>,
-            )
-            // Right door handle (vertical)
-            els.push(
-              <mesh
-                key={`door-handle-right-${colIndex}-${stackIndex}`}
-                position={[rightX - doorWidth + 0.02, cellCenterY, offsetZ + depth + 0.02]}
-              >
-                <cylinderGeometry args={[0.006, 0.006, cellHeight * 0.5, 8]} />
-                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
-              </mesh>,
-            )
-          }
-
-          if (cell.type === "mit-klapptuer") {
-            els.push(
-              <mesh
-                key={`flap-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
-              >
-                <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
-              </mesh>,
-            )
-            // Flap door handle (vertical)
-            els.push(
-              <mesh
-                key={`flap-handle-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, cellCenterY, offsetZ + depth + 0.02]}
-              >
-                <cylinderGeometry args={[0.006, 0.006, cellHeight * 0.5, 8]} />
-                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
-              </mesh>,
-            )
-          }
-
-          if (cell.type === "schubladen" || cell.type === "mit-doppelschublade") {
-            const drawerHeight = cell.type === "mit-doppelschublade" ? (cellHeight - 0.04) / 2 : cellHeight - 0.03
-            const drawerCount = cell.type === "mit-doppelschublade" ? 2 : 1
-
-            for (let d = 0; d < drawerCount; d++) {
-              const drawerY =
-                cell.type === "mit-doppelschublade"
-                  ? bottomY + 0.02 + d * (drawerHeight + 0.01) + drawerHeight / 2
-                  : cellCenterY
-              // Drawer front panel
-              els.push(
-                <mesh
-                  key={`drawer-${d}-${colIndex}-${stackIndex}`}
-                  position={[cellCenterX, drawerY, offsetZ + depth + 0.005]}
-                >
-                  <boxGeometry args={[cellWidth - 0.03, drawerHeight, 0.01]} />
-                  <meshStandardMaterial color={panelColor} />
-                </mesh>,
-              )
-              // Drawer handle (horizontal bar)
-              els.push(
-                <mesh
-                  key={`drawer-handle-${d}-${colIndex}-${stackIndex}`}
-                  position={[cellCenterX, drawerY, offsetZ + depth + 0.02]}
-                  rotation={[0, 0, Math.PI / 2]}
-                >
-                  <cylinderGeometry args={[0.006, 0.006, cellWidth * 0.4, 8]} />
-                  <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
-                </mesh>,
-              )
-            }
           }
 
           if (cell.type === "mit-seitenwaenden") {
