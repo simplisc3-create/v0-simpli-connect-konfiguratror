@@ -38,6 +38,9 @@ const COLOR_TO_FILE_CODE: Record<string, string> = {
   grau: "gray",
 }
 
+const DRAWER_GLB_URL = "/images/80x40x40-1-5-gray-opt-20-282-29.glb"
+const DOOR_GLB_URL = "/images/80x40x40-1-6-green-opt-20-281-29.glb"
+
 const GLB_URLS: Record<string, string> = {
   // 80x40x40-1-3 models (basic open style)
   "80x40x40-1-3-white": "/images/80x40x40-1-3-white-opt.glb",
@@ -50,22 +53,20 @@ const GLB_URLS: Record<string, string> = {
   "80x40x40-1-4-white": "/images/80x40x40-1-3-white-opt.glb",
   "80x40x40-1-4-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
   "80x40x40-1-4-red": "/images/80x40x40-1-3-red-opt.glb",
-  // 80x40x40-1-5 models (drawer style) - using blob storage
-  "80x40x40-1-5-gray": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
-  "80x40x40-1-5-white": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
-  "80x40x40-1-5-blue": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
-  "80x40x40-1-5-green": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
-  "80x40x40-1-5-orange": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
-  "80x40x40-1-5-red": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
-  "80x40x40-1-5-yellow": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
-  // 80x40x40-1-6 models (door style) - using blob storage
-  "80x40x40-1-6-green": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
-  "80x40x40-1-6-white": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
-  "80x40x40-1-6-blue": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
-  "80x40x40-1-6-gray": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
-  "80x40x40-1-6-orange": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
-  "80x40x40-1-6-red": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
-  "80x40x40-1-6-yellow": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  "80x40x40-1-5-gray": DRAWER_GLB_URL,
+  "80x40x40-1-5-white": DRAWER_GLB_URL,
+  "80x40x40-1-5-blue": DRAWER_GLB_URL,
+  "80x40x40-1-5-green": DRAWER_GLB_URL,
+  "80x40x40-1-5-orange": DRAWER_GLB_URL,
+  "80x40x40-1-5-red": DRAWER_GLB_URL,
+  "80x40x40-1-5-yellow": DRAWER_GLB_URL,
+  "80x40x40-1-6-green": DOOR_GLB_URL,
+  "80x40x40-1-6-white": DOOR_GLB_URL,
+  "80x40x40-1-6-blue": DOOR_GLB_URL,
+  "80x40x40-1-6-gray": DOOR_GLB_URL,
+  "80x40x40-1-6-orange": DOOR_GLB_URL,
+  "80x40x40-1-6-red": DOOR_GLB_URL,
+  "80x40x40-1-6-yellow": DOOR_GLB_URL,
 
   // 40x40x40-2-1 models (basic modules)
   "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
@@ -86,17 +87,18 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
 
   // For 80cm modules (widthCm > 60 typically means 75cm cells)
   if (widthCm > 60) {
+    if (moduleCode === "5") {
+      return DRAWER_GLB_URL
+    }
+    if (moduleCode === "6") {
+      return DOOR_GLB_URL
+    }
+
     const key = `80x40x40-1-${moduleCode}-${colorCode}`
     if (GLB_URLS[key]) {
       return GLB_URLS[key]
     }
-    // Fallback: try gray for drawers, green for doors, white for others
-    if (moduleCode === "5") {
-      return GLB_URLS["80x40x40-1-5-gray"]
-    }
-    if (moduleCode === "6") {
-      return GLB_URLS["80x40x40-1-6-green"]
-    }
+    // Fallback to white for others
     const fallbackKey = `80x40x40-1-${moduleCode}-white`
     if (GLB_URLS[fallbackKey]) {
       return GLB_URLS[fallbackKey]
@@ -131,7 +133,9 @@ export function GLBModule({ position, cellType, width, height, depth, color }: G
     return null
   }
 
-  return <GLBModelWithErrorBoundary url={modelUrl} position={position} widthCm={width} color={color} />
+  return (
+    <GLBModelWithErrorBoundary url={modelUrl} position={position} widthCm={width} color={color} cellType={cellType} />
+  )
 }
 
 function GLBModelWithErrorBoundary({
@@ -139,22 +143,23 @@ function GLBModelWithErrorBoundary({
   position,
   widthCm,
   color,
+  cellType,
 }: {
   url: string
   position: [number, number, number]
   widthCm: number
   color: string
+  cellType: GridCell["type"]
 }) {
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const gltf = useGLTF(url)
-  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     setIsLoading(true)
     setHasError(false)
 
-    // For blob URLs, we trust they exist - just try to load
+    // For blob URLs, trust they exist
     if (url.includes("blob.vercel-storage.com") || url.includes("blob.v0.app")) {
       setIsLoading(false)
       return
@@ -175,7 +180,7 @@ function GLBModelWithErrorBoundary({
   }, [url])
 
   const clonedScene = useMemo(() => {
-    if (!gltf?.scene || loadError) return null
+    if (!gltf?.scene) return null
 
     try {
       const clone = gltf.scene.clone(true)
@@ -200,7 +205,7 @@ function GLBModelWithErrorBoundary({
       console.error("[v0] Error processing GLB model:", error)
       return null
     }
-  }, [gltf, widthCm, loadError])
+  }, [gltf, widthCm])
 
   if (hasError || isLoading || !clonedScene) {
     return null
@@ -210,6 +215,14 @@ function GLBModelWithErrorBoundary({
 }
 
 export function preloadGLBModels() {
+  // Preload drawer and door models
+  try {
+    useGLTF.preload(DRAWER_GLB_URL)
+    useGLTF.preload(DOOR_GLB_URL)
+  } catch (e) {
+    // Silently fail
+  }
+
   Object.values(GLB_URLS).forEach((url) => {
     try {
       useGLTF.preload(url)

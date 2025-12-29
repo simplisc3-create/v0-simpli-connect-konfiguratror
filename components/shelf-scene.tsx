@@ -494,6 +494,17 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} />
               </mesh>,
             )
+
+            // Front panel
+            els.push(
+              <mesh
+                key={`enclosure-front-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + depth - panelThickness / 2]}
+              >
+                <boxGeometry args={[cellWidth - 0.024, cellHeight - 0.024, panelThickness]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
           }
 
           if (cell.type === "mit-rueckwand") {
