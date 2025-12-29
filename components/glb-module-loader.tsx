@@ -19,11 +19,11 @@ const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
   "ohne-seitenwaende": "3",
   "ohne-rueckwand": "3",
   "mit-rueckwand": "4",
-  "mit-tueren": "3",
-  "mit-klapptuer": "4",
-  "mit-doppelschublade": "4",
-  schubladen: "4",
-  "abschliessbare-tueren": "3",
+  "mit-tueren": "6",
+  "mit-klapptuer": "6",
+  "abschliessbare-tueren": "6",
+  "mit-doppelschublade": "5",
+  schubladen: "5",
   "mit-seitenwaenden": "4",
 }
 
@@ -47,6 +47,8 @@ const GLB_URLS: Record<string, string> = {
   "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
   "80x40x40-1-4-green": "/images/80x40x40-1-4-green-opt.glb",
   "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-opt.glb",
+  "80x40x40-1-5-gray": "/models/80x40x40-1-5-gray-opt.glb",
+  "80x40x40-1-6-green": "/models/80x40x40-1-6-green-opt.glb",
 
   // 40x40x40-2-1 models (basic modules)
   "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
