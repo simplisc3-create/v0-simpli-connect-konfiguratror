@@ -28,24 +28,6 @@ const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
   "mit-seitenwaenden": "4",
 }
 
-// Local GLB URLs for basic modules
-const LOCAL_GLB_URLS: Record<string, string> = {
-  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-opt.glb",
-  "80x40x40-1-3-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
-  "80x40x40-1-3-red": "/images/80x40x40-1-3-red-opt.glb",
-  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
-  "80x40x40-1-4-green": "/images/80x40x40-1-4-green-opt.glb",
-  "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-opt.glb",
-  "80x40x40-1-4-white": "/images/80x40x40-1-3-white-opt.glb",
-  "80x40x40-1-4-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
-  "80x40x40-1-4-red": "/images/80x40x40-1-3-red-opt.glb",
-  "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
-  "40x40x40-2-1-orange": "/images/40x40x40-2-1-orange-opt.glb",
-  "40x40x40-2-1-green": "/images/40x40x40-2-1-green-opt.glb",
-  "40x40x40-2-1-gray": "/images/40x40x40-2-1-gray-opt.glb",
-  "40x40x40-2-6-red": "/images/40x40x40-2-6-red-opt.glb",
-}
-
 function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): string | null {
   if (cellType === "empty") return null
 
@@ -54,36 +36,37 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
 
   const colorCode = COLOR_TO_FILE_CODE[color] || "white"
 
+  // Drawer types (code 5) - use drawer GLB
   if (moduleCode === "5") {
-    return GLB_BLOB_URLS.drawer
-  }
-  if (moduleCode === "6") {
-    return GLB_BLOB_URLS.door
+    return GLB_BLOB_URLS["drawer-gray"]
   }
 
-  // For 80cm modules
+  // Door types (code 6) - use door GLB
+  if (moduleCode === "6") {
+    return GLB_BLOB_URLS["door-green"]
+  }
+
+  // For 80cm modules (code 3 or 4)
   if (widthCm > 60) {
     const key = `80x40x40-1-${moduleCode}-${colorCode}`
-    if (LOCAL_GLB_URLS[key]) {
-      return LOCAL_GLB_URLS[key]
+    if (GLB_BLOB_URLS[key]) {
+      return GLB_BLOB_URLS[key]
     }
+    // Fallback to white
     const fallbackKey = `80x40x40-1-${moduleCode}-white`
-    if (LOCAL_GLB_URLS[fallbackKey]) {
-      return LOCAL_GLB_URLS[fallbackKey]
+    if (GLB_BLOB_URLS[fallbackKey]) {
+      return GLB_BLOB_URLS[fallbackKey]
     }
+    // Last resort - try code 3 white
+    return GLB_BLOB_URLS["80x40x40-1-3-white"]
   } else {
     // For 40cm modules
     const key = `40x40x40-2-1-${colorCode}`
-    if (LOCAL_GLB_URLS[key]) {
-      return LOCAL_GLB_URLS[key]
+    if (GLB_BLOB_URLS[key]) {
+      return GLB_BLOB_URLS[key]
     }
-    const fallbackKey = `40x40x40-2-1-white`
-    if (LOCAL_GLB_URLS[fallbackKey]) {
-      return LOCAL_GLB_URLS[fallbackKey]
-    }
+    return GLB_BLOB_URLS["40x40x40-2-1-white"]
   }
-
-  return null
 }
 
 export function GLBModule({ position, cellType, width, height, depth, color }: GLBModuleProps) {
@@ -139,13 +122,13 @@ function GLBModelWithErrorBoundary({
             const materials = Array.isArray(child.material) ? child.material : [child.material]
             materials.forEach((mat) => {
               if (mat instanceof THREE.MeshStandardMaterial) {
-                // Check if this is a colored panel (not metal frame)
-                const currentColor = mat.color.getHexString()
-                // Gray drawer base color or green door base color - recolor these
+                const currentColor = mat.color.getHexString().toLowerCase()
+                // Skip chrome/metal (silver), black feet, and white frame
                 if (
-                  currentColor !== "c0c0c0" && // Skip chrome/metal
-                  currentColor !== "333333" && // Skip black feet
-                  currentColor !== "ffffff" // Skip white frame
+                  currentColor !== "c0c0c0" &&
+                  currentColor !== "333333" &&
+                  currentColor !== "ffffff" &&
+                  currentColor !== "808080" // Skip gray metal
                 ) {
                   mat.color.set(targetColorHex)
                 }
@@ -176,20 +159,11 @@ function GLBModelWithErrorBoundary({
 }
 
 export function preloadGLBModels() {
-  // Preload drawer and door models from Blob storage
-  try {
-    useGLTF.preload(GLB_BLOB_URLS.drawer)
-    useGLTF.preload(GLB_BLOB_URLS.door)
-  } catch (e) {
-    // Silently fail
-  }
-
-  // Preload local models
-  Object.values(LOCAL_GLB_URLS).forEach((url) => {
+  Object.values(GLB_BLOB_URLS).forEach((url) => {
     try {
       useGLTF.preload(url)
     } catch (error) {
-      // Silently fail
+      // Silently fail preload
     }
   })
 }

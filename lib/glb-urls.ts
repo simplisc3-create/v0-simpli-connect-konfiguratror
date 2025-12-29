@@ -1,12 +1,30 @@
 // GLB model URLs from Vercel Blob storage
-// These are the original uploaded files
+// Base URL for all GLB files
+export const BLOB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
 
-export const GLB_BLOB_URLS = {
-  // Drawer model (code 5) - gray base, will be color-adjusted
-  drawer: "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+export const GLB_BLOB_URLS: Record<string, string> = {
+  // Drawer model (code 5)
+  "drawer-gray": `${BLOB_BASE_URL}/80x40x40-1-5-gray-opt%20(2)-WdDp6JVxOOeWtEGYZpn3xCP1L635Ez.glb`,
 
-  // Door model (code 6) - green base, will be color-adjusted
-  door: "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  // Door model (code 6)
+  "door-green": `${BLOB_BASE_URL}/80x40x40-1-6-green-opt%20(1)-MXpwaYoVVujRkE8LKarACybfkf6fU8.glb`,
+
+  // Basic modules (code 3 - without back panel)
+  "80x40x40-1-3-white": `${BLOB_BASE_URL}/80x40x40-1-3-white-opt.glb`,
+  "80x40x40-1-3-yellow": `${BLOB_BASE_URL}/80x40x40-1-3-yellow-opt.glb`,
+  "80x40x40-1-3-red": `${BLOB_BASE_URL}/80x40x40-1-3-red-opt.glb`,
+
+  // Basic modules (code 4 - with back panel)
+  "80x40x40-1-4-orange": `${BLOB_BASE_URL}/80x40x40-1-4-orange-opt.glb`,
+  "80x40x40-1-4-green": `${BLOB_BASE_URL}/80x40x40-1-4-green-opt.glb`,
+  "80x40x40-1-4-blue": `${BLOB_BASE_URL}/80x40x40-1-4-blue-opt.glb`,
+
+  // 40cm modules
+  "40x40x40-2-1-white": `${BLOB_BASE_URL}/40x40x40-2-1-white-opt.glb`,
+  "40x40x40-2-1-orange": `${BLOB_BASE_URL}/40x40x40-2-1-orange-opt.glb`,
+  "40x40x40-2-1-green": `${BLOB_BASE_URL}/40x40x40-2-1-green-opt.glb`,
+  "40x40x40-2-1-gray": `${BLOB_BASE_URL}/40x40x40-2-1-gray-opt.glb`,
+  "40x40x40-2-6-red": `${BLOB_BASE_URL}/40x40x40-2-6-red-opt.glb`,
 }
 
 // Color hex values for special colors
