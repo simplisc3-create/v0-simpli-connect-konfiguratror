@@ -27,6 +27,7 @@ const colorMap: Record<string, string> = {
   orange: colorHexMap.orange,
   rot: colorHexMap.rot,
   gelb: colorHexMap.gelb,
+  grau: "#808080", // Added grau color
 }
 
 function ChromeTube({
@@ -226,6 +227,7 @@ export function ShelfScene({
   const tubeRadius = 0.012
   const cellHeight = 0.38
   const offsetY = 0.025
+  const panelThickness = 0.01 // Panel thickness for enclosure
 
   const floorTexture = useTexture("/seamless-light-oak-wood-parquet-floor-texture-top-.jpg")
 
@@ -440,6 +442,60 @@ export function ShelfScene({
           const cellColor = cell.color || config.accentColor || "weiss"
           const panelColor = colorMap[cellColor] || colorMap.weiss
 
+          const needsEnclosure = [
+            "mit-tueren",
+            "abschliessbare-tueren",
+            "mit-klapptuer",
+            "schubladen",
+            "mit-doppelschublade",
+          ].includes(cell.type)
+
+          if (needsEnclosure) {
+            // Back panel
+            els.push(
+              <mesh
+                key={`enclosure-back-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + panelThickness / 2]}
+              >
+                <boxGeometry args={[cellWidth - 0.024, cellHeight - 0.024, panelThickness]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+
+            // Left side panel
+            els.push(
+              <mesh
+                key={`enclosure-left-${colIndex}-${stackIndex}`}
+                position={[leftX + panelThickness / 2 + 0.012, cellCenterY, offsetZ + depth / 2]}
+              >
+                <boxGeometry args={[panelThickness, cellHeight - 0.024, depth - 0.024]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+
+            // Right side panel
+            els.push(
+              <mesh
+                key={`enclosure-right-${colIndex}-${stackIndex}`}
+                position={[rightX - panelThickness / 2 - 0.012, cellCenterY, offsetZ + depth / 2]}
+              >
+                <boxGeometry args={[panelThickness, cellHeight - 0.024, depth - 0.024]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+
+            // Top panel
+            els.push(
+              <mesh
+                key={`enclosure-top-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, topY - panelThickness / 2 - 0.012, offsetZ + depth / 2]}
+              >
+                <boxGeometry args={[cellWidth - 0.024, panelThickness, depth - 0.024]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+          }
+
           if (cell.type === "mit-rueckwand") {
             els.push(
               <mesh key={`backpanel-${colIndex}-${stackIndex}`} position={[cellCenterX, cellCenterY, offsetZ + 0.005]}>
@@ -451,6 +507,7 @@ export function ShelfScene({
 
           if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
             const doorWidth = (cellWidth - 0.03) / 2
+            // Left door panel
             els.push(
               <mesh
                 key={`door-left-${colIndex}-${stackIndex}`}
@@ -460,6 +517,17 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} />
               </mesh>,
             )
+            // Left door handle (vertical)
+            els.push(
+              <mesh
+                key={`door-handle-left-${colIndex}-${stackIndex}`}
+                position={[leftX + doorWidth - 0.02, cellCenterY, offsetZ + depth + 0.02]}
+              >
+                <cylinderGeometry args={[0.006, 0.006, cellHeight * 0.5, 8]} />
+                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
+              </mesh>,
+            )
+            // Right door panel
             els.push(
               <mesh
                 key={`door-right-${colIndex}-${stackIndex}`}
@@ -467,6 +535,16 @@ export function ShelfScene({
               >
                 <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
                 <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+            // Right door handle (vertical)
+            els.push(
+              <mesh
+                key={`door-handle-right-${colIndex}-${stackIndex}`}
+                position={[rightX - doorWidth + 0.02, cellCenterY, offsetZ + depth + 0.02]}
+              >
+                <cylinderGeometry args={[0.006, 0.006, cellHeight * 0.5, 8]} />
+                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
               </mesh>,
             )
           }
@@ -481,6 +559,16 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} />
               </mesh>,
             )
+            // Flap door handle (vertical)
+            els.push(
+              <mesh
+                key={`flap-handle-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + depth + 0.02]}
+              >
+                <cylinderGeometry args={[0.006, 0.006, cellHeight * 0.5, 8]} />
+                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
+              </mesh>,
+            )
           }
 
           if (cell.type === "schubladen" || cell.type === "mit-doppelschublade") {
@@ -492,6 +580,7 @@ export function ShelfScene({
                 cell.type === "mit-doppelschublade"
                   ? bottomY + 0.02 + d * (drawerHeight + 0.01) + drawerHeight / 2
                   : cellCenterY
+              // Drawer front panel
               els.push(
                 <mesh
                   key={`drawer-${d}-${colIndex}-${stackIndex}`}
@@ -501,14 +590,15 @@ export function ShelfScene({
                   <meshStandardMaterial color={panelColor} />
                 </mesh>,
               )
+              // Drawer handle (horizontal bar)
               els.push(
                 <mesh
                   key={`drawer-handle-${d}-${colIndex}-${stackIndex}`}
-                  position={[cellCenterX, drawerY, offsetZ + depth + 0.015]}
+                  position={[cellCenterX, drawerY, offsetZ + depth + 0.02]}
                   rotation={[0, 0, Math.PI / 2]}
                 >
-                  <cylinderGeometry args={[0.004, 0.004, 0.1, 8]} />
-                  <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
+                  <cylinderGeometry args={[0.006, 0.006, cellWidth * 0.4, 8]} />
+                  <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
                 </mesh>,
               )
             }
@@ -615,6 +705,7 @@ export function ShelfScene({
     onExpandLeft,
     onExpandRight,
     onExpandUp,
+    panelThickness, // Added dependency
   ])
 
   const defaultCellWidth = config.columns[0]?.width / 100 || 0.75

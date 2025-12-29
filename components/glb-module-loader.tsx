@@ -29,26 +29,43 @@ const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
 
 const COLOR_TO_FILE_CODE: Record<string, string> = {
   weiss: "white",
-  schwarz: "gray", // Map schwarz to gray since we have gray models
+  schwarz: "gray",
   blau: "blue",
   gruen: "green",
   orange: "orange",
   rot: "red",
   gelb: "yellow",
-  grau: "gray", // Added gray color
+  grau: "gray",
 }
 
 const GLB_URLS: Record<string, string> = {
-  // 80x40x40-1-3 models (mit-tueren style)
+  // 80x40x40-1-3 models (basic open style)
   "80x40x40-1-3-white": "/images/80x40x40-1-3-white-opt.glb",
   "80x40x40-1-3-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
   "80x40x40-1-3-red": "/images/80x40x40-1-3-red-opt.glb",
-  // 80x40x40-1-4 models (mit-klapptuer style)
+  // 80x40x40-1-4 models (with back panel style)
   "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
   "80x40x40-1-4-green": "/images/80x40x40-1-4-green-opt.glb",
   "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-opt.glb",
-  "80x40x40-1-5-gray": "/models/80x40x40-1-5-gray-opt.glb",
-  "80x40x40-1-6-green": "/models/80x40x40-1-6-green-opt.glb",
+  "80x40x40-1-4-white": "/images/80x40x40-1-3-white-opt.glb",
+  "80x40x40-1-4-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
+  "80x40x40-1-4-red": "/images/80x40x40-1-3-red-opt.glb",
+  // 80x40x40-1-5 models (drawer style) - using blob storage
+  "80x40x40-1-5-gray": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+  "80x40x40-1-5-white": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+  "80x40x40-1-5-blue": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+  "80x40x40-1-5-green": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+  "80x40x40-1-5-orange": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+  "80x40x40-1-5-red": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+  "80x40x40-1-5-yellow": "/images/80x40x40-1-5-gray-opt-20-282-29.glb",
+  // 80x40x40-1-6 models (door style) - using blob storage
+  "80x40x40-1-6-green": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  "80x40x40-1-6-white": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  "80x40x40-1-6-blue": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  "80x40x40-1-6-gray": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  "80x40x40-1-6-orange": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  "80x40x40-1-6-red": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
+  "80x40x40-1-6-yellow": "/images/80x40x40-1-6-green-opt-20-281-29.glb",
 
   // 40x40x40-2-1 models (basic modules)
   "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
@@ -73,14 +90,19 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
     if (GLB_URLS[key]) {
       return GLB_URLS[key]
     }
-    // Fallback: try white if color not found
+    // Fallback: try gray for drawers, green for doors, white for others
+    if (moduleCode === "5") {
+      return GLB_URLS["80x40x40-1-5-gray"]
+    }
+    if (moduleCode === "6") {
+      return GLB_URLS["80x40x40-1-6-green"]
+    }
     const fallbackKey = `80x40x40-1-${moduleCode}-white`
     if (GLB_URLS[fallbackKey]) {
       return GLB_URLS[fallbackKey]
     }
   } else {
     // For 40cm modules (38cm cells)
-    // First try 2-6 variant for certain types (mit-tueren)
     if (moduleCode === "3" && colorCode === "red") {
       const specialKey = `40x40x40-2-6-${colorCode}`
       if (GLB_URLS[specialKey]) {
@@ -88,13 +110,11 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
       }
     }
 
-    // Try 2-1 basic variant
     const key = `40x40x40-2-1-${colorCode}`
     if (GLB_URLS[key]) {
       return GLB_URLS[key]
     }
 
-    // Fallback: try white if color not found
     const fallbackKey = `40x40x40-2-1-white`
     if (GLB_URLS[fallbackKey]) {
       return GLB_URLS[fallbackKey]
@@ -135,7 +155,7 @@ function GLBModelWithErrorBoundary({
     setHasError(false)
 
     // For blob URLs, we trust they exist - just try to load
-    if (url.includes("blob.vercel-storage.com")) {
+    if (url.includes("blob.vercel-storage.com") || url.includes("blob.v0.app")) {
       setIsLoading(false)
       return
     }
@@ -164,8 +184,7 @@ function GLBModelWithErrorBoundary({
       const box = new THREE.Box3().setFromObject(clone)
       const size = box.getSize(new THREE.Vector3())
 
-      // Determine base model size (40 or 80)
-      const baseModelWidth = widthCm <= 60 ? 0.4 : 0.8 // 40cm or 80cm in meters
+      // Target width based on cell width
       const targetWidth = widthCm / 100 // Convert cell width to meters
       const scaleRatio = targetWidth / size.x
 
@@ -191,7 +210,6 @@ function GLBModelWithErrorBoundary({
 }
 
 export function preloadGLBModels() {
-  // Preload all available GLB models from blob storage
   Object.values(GLB_URLS).forEach((url) => {
     try {
       useGLTF.preload(url)
