@@ -11,6 +11,7 @@ export type ProductCategory =
   | "jalousie"
   | "funktionswand"
   | "led"
+  | "regalteile" // Added shelf parts category
 
 export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb" | "grau"
 
@@ -325,6 +326,15 @@ export const ledUnits: Product[] = [
   { artNr: "sim022", name: "LED Unit 4 Stripes", category: "led", size: 4, price: 99.5 },
 ]
 
+// Regalteile (Shelf Parts) - 38 parts with blob storage URL
+export const regalteile: Product[] = Array.from({ length: 38 }, (_, i) => ({
+  artNr: `reg${String(i + 1).padStart(3, "0")}`,
+  name: `Regalteil ${i + 1}`,
+  category: "regalteile" as const,
+  size: 40,
+  price: 29.5,
+}))
+
 // All products combined
 export const allProducts: Product[] = [
   ...leitern,
@@ -335,6 +345,7 @@ export const allProducts: Product[] = [
   ...schubladenTueren,
   ...funktionswaende,
   ...ledUnits,
+  ...regalteile, // Added shelf parts to all products
 ]
 
 // Price lookup helpers

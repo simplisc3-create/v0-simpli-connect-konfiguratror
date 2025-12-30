@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, Environment } from "@react-three/drei"
-import { ShelfScene } from "./shelf-scene"
+import ShelfScene from "./shelf-scene"
 import { LiveCart } from "./live-cart"
 import {
   Undo2,

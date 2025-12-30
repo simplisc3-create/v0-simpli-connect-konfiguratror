@@ -45,6 +45,7 @@ const categoryLabels: Record<string, string> = {
   jalousie: "Jalousien",
   funktionswand: "Funktionswände",
   led: "LED-Beleuchtung",
+  regalteile: "Regalteile", // Added shelf parts category label
 }
 
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -58,6 +59,7 @@ const categoryIcons: Record<string, React.ReactNode> = {
   jalousie: <Package className="h-3.5 w-3.5" />,
   funktionswand: <Package className="h-3.5 w-3.5" />,
   led: <Package className="h-3.5 w-3.5" />,
+  regalteile: <Package className="h-3.5 w-3.5" />, // Added shelf parts category icon
 }
 
 export function DetailedCart({ shoppingList, config, onUpdateQuantity, onRemoveItem }: DetailedCartProps) {

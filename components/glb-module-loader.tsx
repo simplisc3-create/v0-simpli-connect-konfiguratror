@@ -193,6 +193,57 @@ function GLBModelWithErrorBoundary({
     try {
       const clone = gltf.scene.clone(true)
 
+      console.log("[v0] Loading GLB model:", url)
+      let textureCount = 0
+      let materialCount = 0
+
+      clone.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh
+          materialCount++
+
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((mat) => {
+              if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+                console.log("[v0] Material:", mat.name, {
+                  hasMap: !!mat.map,
+                  hasNormalMap: !!mat.normalMap,
+                  hasRoughnessMap: !!mat.roughnessMap,
+                  hasMetalnessMap: !!mat.metalnessMap,
+                  color: mat.color.getHexString(),
+                })
+                if (mat.map) textureCount++
+                if (mat.normalMap) textureCount++
+                if (mat.roughnessMap) textureCount++
+                if (mat.metalnessMap) textureCount++
+              }
+            })
+          } else if (
+            mesh.material instanceof THREE.MeshStandardMaterial ||
+            mesh.material instanceof THREE.MeshPhysicalMaterial
+          ) {
+            const mat = mesh.material
+            console.log("[v0] Material:", mat.name, {
+              hasMap: !!mat.map,
+              hasNormalMap: !!mat.normalMap,
+              hasRoughnessMap: !!mat.roughnessMap,
+              hasMetalnessMap: !!mat.metalnessMap,
+              color: mat.color.getHexString(),
+            })
+            if (mat.map) textureCount++
+            if (mat.normalMap) textureCount++
+            if (mat.roughnessMap) textureCount++
+            if (mat.metalnessMap) textureCount++
+          }
+
+          // Enable shadows for better visual quality
+          mesh.castShadow = true
+          mesh.receiveShadow = true
+        }
+      })
+
+      console.log("[v0] Model loaded with", materialCount, "materials and", textureCount, "textures")
+
       // Calculate bounding box to determine original size
       const box = new THREE.Box3().setFromObject(clone)
       const size = box.getSize(new THREE.Vector3())
@@ -214,7 +265,7 @@ function GLBModelWithErrorBoundary({
       console.error("[v0] Error processing GLB model:", error)
       return null
     }
-  }, [gltf, widthCm, loadError])
+  }, [gltf, widthCm, loadError, url])
 
   if (hasError || isLoading || !clonedScene) {
     return null
