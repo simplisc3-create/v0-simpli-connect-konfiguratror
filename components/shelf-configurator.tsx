@@ -337,13 +337,10 @@ export function ShelfConfigurator() {
   const canRedo = historyIndex < history.length - 1
 
   const handleCellSelect = useCallback((col: number, stackIndex: number) => {
-    console.log("[v0] Cell selected:", { col, stackIndex })
     setSelectedCell((prev) => {
       if (prev?.col === col && prev?.stackIndex === stackIndex) {
-        console.log("[v0] Deselecting cell")
         return null // Deselect if clicking the same cell
       }
-      console.log("[v0] Selecting new cell")
       return { col, stackIndex }
     })
     setEditMode("cell")
