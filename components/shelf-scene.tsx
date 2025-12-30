@@ -445,6 +445,18 @@ export function ShelfScene({
           </mesh>,
         )
 
+        const bottomPanelColor = colorMap[cell?.color || config.accentColor || "weiss"] || colorMap.weiss
+        els.push(
+          <mesh
+            key={`bottom-panel-${colIndex}-${stackIndex}`}
+            position={[cellCenterX, bottomY + 0.005, offsetZ + depth / 2]}
+            rotation={[-Math.PI / 2, 0, 0]}
+          >
+            <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+            <meshStandardMaterial color={bottomPanelColor} side={THREE.DoubleSide} />
+          </mesh>,
+        )
+
         const topPanelColor = colorMap[cell?.color || config.accentColor || "weiss"] || colorMap.weiss
         els.push(
           <mesh

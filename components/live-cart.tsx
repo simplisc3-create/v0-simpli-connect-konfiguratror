@@ -162,7 +162,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
     return items
   }, [config])
 
-  // Calculate aggregated cart items (grouped)
   const cartItems = useMemo(() => {
     const itemsMap = new Map<string, CartItem>()
 
@@ -192,7 +191,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
     return Array.from(itemsMap.values())
   }, [detailedItems])
 
-  // Calculate stangensets
   const stangensets = useMemo(() => {
     const stangensetMap = new Map<string, { width: number; variant: string; count: number; unitPrice: number }>()
 
@@ -226,20 +224,17 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
     const maxHeight = Math.max(
       ...config.columns.map((col) => {
         const filledCells = col.cells.filter((c) => c.type !== "empty" && c.type !== "delete")
-        return filledCells.length * 38 // Each cell is 38cm high
+        return filledCells.length * 38
       }),
     )
 
-    // Round up to nearest standard Leiter size (40, 80, 120, 160, 200)
     const leiterSizes = [40, 80, 120, 160, 200]
     const leiterHeight = leiterSizes.find((s) => s >= maxHeight) || 200
 
-    // We need 4 Leitern per shelf unit (one at each corner)
     const filledColumns = config.columns.filter((col) =>
       col.cells.some((c) => c.type !== "empty" && c.type !== "delete"),
     ).length
 
-    // For multiple columns, we share corner posts, so: 2 + (columns * 2)
     const leiterCount = filledColumns > 0 ? 2 + filledColumns * 2 : 0
     const unitPrice = getLeiterPrice(leiterHeight)
 
@@ -256,7 +251,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
 
     config.columns.forEach((col) => {
       col.cells.forEach((cell) => {
-        // Modules with side walls need Zwischenwände
         if (
           cell.type === "mit-seitenwaenden" ||
           cell.type === "mit-tueren" ||
@@ -265,12 +259,12 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
           cell.type === "mit-doppelschublade" ||
           cell.type === "schubladen"
         ) {
-          count += 2 // 2 side walls per closed module
+          count += 2
         }
       })
     })
 
-    const unitPrice = 14.5 // Funktionswand 2-seitig price
+    const unitPrice = 14.5
     return {
       count,
       unitPrice,
@@ -297,7 +291,7 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
       })
     })
 
-    const unitPrice = 12.5 // Funktionswand 1-seitig price
+    const unitPrice = 12.5
     return {
       count,
       unitPrice,
@@ -315,7 +309,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
   const total = subtotal + tax
   const totalItems = totalModules + totalStangensets + leitern.count + zwischenwaende.count + rueckwaende.count
 
-  // Export functions
   const exportAsJSON = () => {
     const data = {
       orderDate: new Date().toISOString(),
@@ -362,7 +355,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
       `${item.totalPrice.toFixed(2)}€`,
     ])
 
-    // Add stangensets
     stangensets.forEach((item, i) => {
       rows.push([
         detailedItems.length + i + 1,
@@ -375,7 +367,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
       ])
     })
 
-    // Add Leitern
     if (leitern.count > 0) {
       rows.push([
         detailedItems.length + stangensets.length + 1,
@@ -388,7 +379,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
       ])
     }
 
-    // Add Zwischenwände
     if (zwischenwaende.count > 0) {
       rows.push([
         detailedItems.length + stangensets.length + (leitern.count > 0 ? 2 : 1),
@@ -401,7 +391,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
       ])
     }
 
-    // Add Rückwände
     if (rueckwaende.count > 0) {
       rows.push([
         detailedItems.length + stangensets.length + (leitern.count > 0 ? 2 : 1) + (zwischenwaende.count > 0 ? 1 : 0),
@@ -463,19 +452,21 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
 
   if (alwaysVisible) {
     return (
-      <div className="h-full w-full flex flex-col bg-[#0a0a0a] border-l border-border/30">
+      <div className="h-full w-full flex flex-col bg-card border-l border-border">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border/30 p-4">
+        <div className="flex items-center justify-between border-b border-border p-4">
           <div className="flex items-center gap-3">
-            <ShoppingCart className="h-5 w-5 text-[#00b4d8]" />
+            <div className="h-10 w-10 rounded-xl bg-accent-gold/10 flex items-center justify-center">
+              <ShoppingCart className="h-5 w-5 text-accent-gold" />
+            </div>
             <div>
-              <h2 className="font-bold text-white">Warenkorb</h2>
-              <p className="text-xs text-gray-400">{totalItems} Artikel</p>
+              <h2 className="font-semibold text-foreground">Warenkorb</h2>
+              <p className="text-xs text-muted-foreground">{totalItems} Artikel</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-[#00b4d8]">{total.toFixed(0)} €</div>
-            <div className="text-[10px] text-gray-500">inkl. MwSt.</div>
+            <div className="text-2xl font-bold text-accent-gold">{total.toFixed(0)} €</div>
+            <div className="text-[10px] text-muted-foreground">inkl. MwSt.</div>
           </div>
         </div>
 
@@ -483,27 +474,30 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
         <div className="flex-1 overflow-y-auto">
           {totalModules === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-              <Package className="h-12 w-12 text-gray-600 mb-4" />
-              <p className="text-sm text-gray-400">Noch keine Module</p>
-              <p className="text-xs text-gray-500 mt-1">
+              <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Noch keine Module</p>
+              <p className="text-xs text-muted-foreground mt-1">
                 Klicken Sie auf das Regal oder wählen Sie Module aus dem Editor
               </p>
             </div>
           ) : (
-            <div className="p-4 space-y-4">
-              <div className="rounded-lg border border-border/30 overflow-hidden">
+            <div className="p-4 space-y-3">
+              {/* Shipping Section */}
+              <div className="rounded-xl border border-border overflow-hidden">
                 <button
                   onClick={() => toggleSection("shipping")}
-                  className="w-full flex items-center justify-between p-3 bg-green-900/20 hover:bg-green-900/30 transition-colors"
+                  className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-green-400" />
-                    <span className="text-sm font-medium text-white">Versanddaten</span>
+                    <Truck className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-foreground">Versanddaten</span>
                   </div>
                   {expandedSections.shipping ? (
-                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
                 <AnimatePresence>
@@ -514,89 +508,89 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="p-3 space-y-3 bg-gray-900/20">
+                      <div className="p-3 space-y-3 bg-secondary/30">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Firma</label>
+                            <label className="text-[10px] text-muted-foreground block mb-1">Firma</label>
                             <input
                               type="text"
                               value={customerInfo.company}
                               onChange={(e) => setCustomerInfo((prev) => ({ ...prev, company: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+                              className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground"
                               placeholder="Firmenname"
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Ansprechpartner</label>
+                            <label className="text-[10px] text-muted-foreground block mb-1">Ansprechpartner</label>
                             <input
                               type="text"
                               value={customerInfo.contact}
                               onChange={(e) => setCustomerInfo((prev) => ({ ...prev, contact: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+                              className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground"
                               placeholder="Name"
                             />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">E-Mail</label>
+                            <label className="text-[10px] text-muted-foreground block mb-1">E-Mail</label>
                             <input
                               type="email"
                               value={customerInfo.email}
                               onChange={(e) => setCustomerInfo((prev) => ({ ...prev, email: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+                              className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground"
                               placeholder="email@firma.de"
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Telefon</label>
+                            <label className="text-[10px] text-muted-foreground block mb-1">Telefon</label>
                             <input
                               type="tel"
                               value={customerInfo.phone}
                               onChange={(e) => setCustomerInfo((prev) => ({ ...prev, phone: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+                              className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground"
                               placeholder="+49..."
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="text-[10px] text-gray-500 block mb-1">Straße</label>
+                          <label className="text-[10px] text-muted-foreground block mb-1">Straße</label>
                           <input
                             type="text"
                             value={customerInfo.street}
                             onChange={(e) => setCustomerInfo((prev) => ({ ...prev, street: e.target.value }))}
-                            className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+                            className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground"
                             placeholder="Straße + Hausnummer"
                           />
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">PLZ</label>
+                            <label className="text-[10px] text-muted-foreground block mb-1">PLZ</label>
                             <input
                               type="text"
                               value={customerInfo.postalCode}
                               onChange={(e) => setCustomerInfo((prev) => ({ ...prev, postalCode: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+                              className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground"
                               placeholder="12345"
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="text-[10px] text-gray-500 block mb-1">Ort</label>
+                            <label className="text-[10px] text-muted-foreground block mb-1">Ort</label>
                             <input
                               type="text"
                               value={customerInfo.city}
                               onChange={(e) => setCustomerInfo((prev) => ({ ...prev, city: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+                              className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground"
                               placeholder="Stadt"
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="text-[10px] text-gray-500 block mb-1">Land</label>
+                          <label className="text-[10px] text-muted-foreground block mb-1">Land</label>
                           <select
                             value={customerInfo.country}
                             onChange={(e) => setCustomerInfo((prev) => ({ ...prev, country: e.target.value }))}
-                            className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white"
+                            className="w-full px-2 py-1.5 text-sm bg-card border border-border rounded-lg text-foreground"
                           >
                             <option value="Deutschland">Deutschland</option>
                             <option value="Österreich">Österreich</option>
@@ -609,21 +603,22 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                 </AnimatePresence>
               </div>
 
-              <div className="rounded-lg border border-border/30 overflow-hidden">
+              {/* Parts Overview */}
+              <div className="rounded-xl border border-border overflow-hidden">
                 <button
                   onClick={() => toggleSection("partsList")}
-                  className="w-full flex items-center justify-between p-3 bg-amber-900/20 hover:bg-amber-900/30 transition-colors"
+                  className="w-full flex items-center justify-between p-3 bg-amber-50 hover:bg-amber-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Ruler className="h-4 w-4 text-amber-400" />
-                    <span className="text-sm font-medium text-white">Teile-Übersicht</span>
+                    <Ruler className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm font-medium text-foreground">Teile-Übersicht</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-amber-400 font-semibold">{partsSubtotal.toFixed(0)} €</span>
+                    <span className="text-sm text-amber-600 font-semibold">{partsSubtotal.toFixed(0)} €</span>
                     {expandedSections.partsList ? (
-                      <ChevronUp className="h-4 w-4 text-gray-400" />
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                 </button>
@@ -636,78 +631,74 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                       className="overflow-hidden"
                     >
                       <div className="p-2 space-y-1.5">
-                        {/* Leitern */}
                         {leitern.count > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20">
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Ruler className="h-4 w-4 text-amber-400" />
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50">
+                            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                              <Ruler className="h-4 w-4 text-amber-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">Leiter {leitern.height}cm</div>
-                              <div className="text-[10px] text-gray-400">
+                              <div className="text-sm font-medium text-foreground">Leiter {leitern.height}cm</div>
+                              <div className="text-[10px] text-muted-foreground">
                                 {leitern.count}x à {leitern.unitPrice.toFixed(2)} €
                               </div>
                             </div>
-                            <div className="text-sm font-semibold text-amber-400">
+                            <div className="text-sm font-semibold text-amber-600">
                               {leitern.totalPrice.toFixed(0)} €
                             </div>
                           </div>
                         )}
 
-                        {/* Stangensets */}
                         {stangensets.map((item) => (
                           <div
                             key={`stg-${item.width}-${item.variant}`}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20"
+                            className="flex items-center gap-2 p-2 rounded-lg bg-amber-50"
                           >
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Cylinder className="h-4 w-4 text-amber-400" />
+                            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                              <Cylinder className="h-4 w-4 text-amber-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">
+                              <div className="text-sm font-medium text-foreground">
                                 Stangenset {item.variant === "glas" ? "Glas" : "Metall"} {item.width}cm
                               </div>
-                              <div className="text-[10px] text-gray-400">
+                              <div className="text-[10px] text-muted-foreground">
                                 {item.count}x à {item.unitPrice.toFixed(2)} €
                               </div>
                             </div>
-                            <div className="text-sm font-semibold text-amber-400">
+                            <div className="text-sm font-semibold text-amber-600">
                               {(item.count * item.unitPrice).toFixed(0)} €
                             </div>
                           </div>
                         ))}
 
-                        {/* Zwischenwände */}
                         {zwischenwaende.count > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20">
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Package className="h-4 w-4 text-amber-400" />
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50">
+                            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                              <Package className="h-4 w-4 text-amber-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">Seitenwände</div>
-                              <div className="text-[10px] text-gray-400">
+                              <div className="text-sm font-medium text-foreground">Seitenwände</div>
+                              <div className="text-[10px] text-muted-foreground">
                                 {zwischenwaende.count}x à {zwischenwaende.unitPrice.toFixed(2)} €
                               </div>
                             </div>
-                            <div className="text-sm font-semibold text-amber-400">
+                            <div className="text-sm font-semibold text-amber-600">
                               {zwischenwaende.totalPrice.toFixed(0)} €
                             </div>
                           </div>
                         )}
 
-                        {/* Rückwände */}
                         {rueckwaende.count > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20">
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Grid3X3 className="h-4 w-4 text-amber-400" />
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50">
+                            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                              <Grid3X3 className="h-4 w-4 text-amber-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">Rückwände</div>
-                              <div className="text-[10px] text-gray-400">
+                              <div className="text-sm font-medium text-foreground">Rückwände</div>
+                              <div className="text-[10px] text-muted-foreground">
                                 {rueckwaende.count}x à {rueckwaende.unitPrice.toFixed(2)} €
                               </div>
                             </div>
-                            <div className="text-sm font-semibold text-amber-400">
+                            <div className="text-sm font-semibold text-amber-600">
                               {rueckwaende.totalPrice.toFixed(0)} €
                             </div>
                           </div>
@@ -718,19 +709,20 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                 </AnimatePresence>
               </div>
 
-              <div className="rounded-lg border border-border/30 overflow-hidden">
+              {/* Configuration Overview */}
+              <div className="rounded-xl border border-border overflow-hidden">
                 <button
                   onClick={() => toggleSection("configuration")}
-                  className="w-full flex items-center justify-between p-3 bg-gray-900/50 hover:bg-gray-900/70 transition-colors"
+                  className="w-full flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Grid3X3 className="h-4 w-4 text-[#00b4d8]" />
-                    <span className="text-sm font-medium text-white">Konfigurationsübersicht</span>
+                    <Grid3X3 className="h-4 w-4 text-accent-gold" />
+                    <span className="text-sm font-medium text-foreground">Konfigurationsübersicht</span>
                   </div>
                   {expandedSections.configuration ? (
-                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
                 <AnimatePresence>
@@ -741,22 +733,23 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="p-3 space-y-2 bg-gray-900/20">
+                      <div className="p-3 space-y-2 bg-secondary/30">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Material:</span>
-                          <span className="text-white capitalize">{config.material}</span>
+                          <span className="text-muted-foreground">Material:</span>
+                          <span className="text-foreground capitalize font-medium">{config.material}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Spalten:</span>
-                          <span className="text-white">{config.columns.length}</span>
+                          <span className="text-muted-foreground">Spalten:</span>
+                          <span className="text-foreground font-medium">{config.columns.length}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Reihen:</span>
-                          <span className="text-white">{Math.max(...config.columns.map((c) => c.cells.length))}</span>
+                          <span className="text-muted-foreground">Reihen:</span>
+                          <span className="text-foreground font-medium">
+                            {Math.max(...config.columns.map((c) => c.cells.length))}
+                          </span>
                         </div>
-                        {/* Grid visualization */}
-                        <div className="mt-3 pt-3 border-t border-border/30">
-                          <div className="text-xs text-gray-500 mb-2">Raster-Vorschau:</div>
+                        <div className="mt-3 pt-3 border-t border-border">
+                          <div className="text-xs text-muted-foreground mb-2">Raster-Vorschau:</div>
                           <div className="flex gap-1">
                             {config.columns.map((col, colIdx) => (
                               <div key={colIdx} className="flex flex-col gap-1">
@@ -764,10 +757,10 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                                   <div
                                     key={rowIdx}
                                     className={cn(
-                                      "w-6 h-6 rounded text-[8px] flex items-center justify-center",
+                                      "w-6 h-6 rounded text-[8px] flex items-center justify-center font-medium",
                                       cell.type !== "empty"
-                                        ? "bg-[#00b4d8]/30 border border-[#00b4d8]/50 text-[#00b4d8]"
-                                        : "bg-gray-800 border border-dashed border-gray-600 text-gray-500",
+                                        ? "bg-accent-gold/20 border border-accent-gold/40 text-accent-gold"
+                                        : "bg-secondary border border-dashed border-muted-foreground/30 text-muted-foreground",
                                     )}
                                   >
                                     {cell.type !== "empty" ? "M" : "+"}
@@ -783,21 +776,22 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                 </AnimatePresence>
               </div>
 
-              <div className="rounded-lg border border-border/30 overflow-hidden">
+              {/* Modules */}
+              <div className="rounded-xl border border-border overflow-hidden">
                 <button
                   onClick={() => toggleSection("modules")}
-                  className="w-full flex items-center justify-between p-3 bg-gray-900/50 hover:bg-gray-900/70 transition-colors"
+                  className="w-full flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-[#00b4d8]" />
-                    <span className="text-sm font-medium text-white">Module ({totalModules})</span>
+                    <Package className="h-4 w-4 text-accent-gold" />
+                    <span className="text-sm font-medium text-foreground">Module ({totalModules})</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-[#00b4d8] font-semibold">{modulesSubtotal.toFixed(0)} €</span>
+                    <span className="text-sm text-accent-gold font-semibold">{modulesSubtotal.toFixed(0)} €</span>
                     {expandedSections.modules ? (
-                      <ChevronUp className="h-4 w-4 text-gray-400" />
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                 </button>
@@ -810,23 +804,22 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                       className="overflow-hidden"
                     >
                       <div className="p-2 space-y-1.5">
-                        {/* Detailed items with positions */}
                         {detailedItems.map((item, index) => (
                           <div
                             key={item.id}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-gray-900/30 hover:bg-gray-900/50 transition-colors"
+                            className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
                           >
                             <div
-                              className="h-8 w-8 rounded flex-shrink-0 ring-1 ring-border/50"
+                              className="h-8 w-8 rounded-lg flex-shrink-0 ring-1 ring-border shadow-sm"
                               style={{ backgroundColor: colorValues[item.color] || "#888" }}
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white truncate">{item.name}</div>
-                              <div className="text-[10px] text-gray-400">
+                              <div className="text-sm font-medium text-foreground truncate">{item.name}</div>
+                              <div className="text-[10px] text-muted-foreground">
                                 {item.width}cm · {item.colorLabel} · {item.position}
                               </div>
                             </div>
-                            <div className="text-sm font-semibold text-white">{item.unitPrice.toFixed(0)} €</div>
+                            <div className="text-sm font-semibold text-foreground">{item.unitPrice.toFixed(0)} €</div>
                           </div>
                         ))}
                       </div>
@@ -834,65 +827,61 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                   )}
                 </AnimatePresence>
               </div>
-
-              {/* Remove standalone Stangensets section since it's now in Teile-Übersicht */}
             </div>
           )}
         </div>
 
-        {/* Footer with price summary */}
+        {/* Footer */}
         {totalModules > 0 && (
-          <div className="border-t border-border/30 bg-gray-900/50 p-4 space-y-4">
+          <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-400">Module</span>
-                <span className="text-white">{modulesSubtotal.toFixed(2)} €</span>
+                <span className="text-muted-foreground">Module</span>
+                <span className="text-foreground">{modulesSubtotal.toFixed(2)} €</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Teile (Leitern, Stangen, etc.)</span>
-                <span className="text-white">{(stangensetsSubtotal + partsSubtotal).toFixed(2)} €</span>
+                <span className="text-muted-foreground">Teile (Leitern, Stangen, etc.)</span>
+                <span className="text-foreground">{(stangensetsSubtotal + partsSubtotal).toFixed(2)} €</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Netto</span>
-                <span className="text-white">{subtotal.toFixed(2)} €</span>
+                <span className="text-muted-foreground">Netto</span>
+                <span className="text-foreground">{subtotal.toFixed(2)} €</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">MwSt. 19%</span>
-                <span className="text-white">{tax.toFixed(2)} €</span>
+                <span className="text-muted-foreground">MwSt. 19%</span>
+                <span className="text-foreground">{tax.toFixed(2)} €</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-border/30 font-bold text-lg">
-                <span className="text-white">Gesamt</span>
-                <span className="text-[#00b4d8]">{total.toFixed(2)} €</span>
+              <div className="flex justify-between pt-2 border-t border-border font-bold text-lg">
+                <span className="text-foreground">Gesamt</span>
+                <span className="text-accent-gold">{total.toFixed(2)} €</span>
               </div>
             </div>
 
-            {/* Export Buttons */}
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={exportAsJSON}
-                className="flex flex-col items-center gap-1 p-2.5 rounded-lg border border-border/30 hover:border-[#00b4d8] hover:bg-[#00b4d8]/10 transition-all"
+                className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-border bg-card hover:border-accent-gold hover:bg-accent-gold/5 transition-all"
               >
-                <FileJson className="h-4 w-4 text-[#00b4d8]" />
-                <span className="text-[10px] text-gray-400">JSON</span>
+                <FileJson className="h-4 w-4 text-accent-gold" />
+                <span className="text-[10px] text-muted-foreground">JSON</span>
               </button>
               <button
                 onClick={exportAsCSV}
-                className="flex flex-col items-center gap-1 p-2.5 rounded-lg border border-border/30 hover:border-[#00b4d8] hover:bg-[#00b4d8]/10 transition-all"
+                className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-border bg-card hover:border-accent-gold hover:bg-accent-gold/5 transition-all"
               >
-                <FileSpreadsheet className="h-4 w-4 text-[#00b4d8]" />
-                <span className="text-[10px] text-gray-400">CSV</span>
+                <FileSpreadsheet className="h-4 w-4 text-accent-gold" />
+                <span className="text-[10px] text-muted-foreground">CSV</span>
               </button>
               <button
                 onClick={exportForERP}
-                className="flex flex-col items-center gap-1 p-2.5 rounded-lg border border-border/30 hover:border-[#00b4d8] hover:bg-[#00b4d8]/10 transition-all"
+                className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-border bg-card hover:border-accent-gold hover:bg-accent-gold/5 transition-all"
               >
-                <Database className="h-4 w-4 text-[#00b4d8]" />
-                <span className="text-[10px] text-gray-400">ERP</span>
+                <Database className="h-4 w-4 text-accent-gold" />
+                <span className="text-[10px] text-muted-foreground">ERP</span>
               </button>
             </div>
 
-            {/* Order Button */}
-            <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#00b4d8] py-3 font-semibold text-white transition-all hover:bg-[#00b4d8]/90">
+            <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent-gold py-3 font-semibold text-white transition-all hover:bg-accent-gold-hover shadow-sm">
               <Send className="h-4 w-4" />
               <span>Bestellen</span>
             </button>
@@ -902,111 +891,109 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
     )
   }
 
-  // Original toggle cart (keeping for mobile compatibility)
+  // Toggle cart for mobile
   return (
     <>
-      {/* Toggle Button */}
       <button
         onClick={onToggle}
         className={cn(
-          "fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border border-border bg-background/95 px-4 py-2.5 shadow-lg backdrop-blur-sm transition-all hover:bg-card",
-          isOpen && "bg-[#00b4d8]/10 border-[#00b4d8]/50",
+          "fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 shadow-lg transition-all hover:shadow-xl",
+          isOpen && "bg-accent-gold/10 border-accent-gold/50",
         )}
       >
-        <ShoppingCart className={cn("h-5 w-5", isOpen ? "text-[#00b4d8]" : "text-foreground")} />
+        <ShoppingCart className={cn("h-5 w-5", isOpen ? "text-accent-gold" : "text-foreground")} />
         {totalItems > 0 && (
-          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#00b4d8] px-1.5 text-xs font-bold text-white">
+          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-accent-gold px-1.5 text-xs font-bold text-white">
             {totalItems}
           </span>
         )}
-        <span className="hidden font-semibold sm:inline">{total.toFixed(0)} €</span>
+        <span className="hidden font-semibold sm:inline text-foreground">{total.toFixed(0)} €</span>
       </button>
 
-      {/* Panel */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-foreground/10 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onToggle}
             />
 
-            {/* Slide Panel */}
             <motion.div
-              className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-[#0a0a0a] shadow-2xl"
+              className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-card shadow-2xl"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-border/30 p-4">
+              <div className="flex items-center justify-between border-b border-border p-4">
                 <div className="flex items-center gap-3">
-                  <ShoppingCart className="h-5 w-5 text-[#00b4d8]" />
+                  <div className="h-10 w-10 rounded-xl bg-accent-gold/10 flex items-center justify-center">
+                    <ShoppingCart className="h-5 w-5 text-accent-gold" />
+                  </div>
                   <div>
-                    <h2 className="font-bold text-white">Warenkorb</h2>
-                    <p className="text-xs text-gray-400">{totalItems} Artikel</p>
+                    <h2 className="font-semibold text-foreground">Warenkorb</h2>
+                    <p className="text-xs text-muted-foreground">{totalItems} Artikel</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={onToggle} className="rounded-full p-2 text-gray-400 hover:bg-gray-800">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
+                <button onClick={onToggle} className="rounded-full p-2 text-muted-foreground hover:bg-secondary">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
-              {/* Content - reuse always visible content */}
               <div className="flex-1 overflow-y-auto p-4">
                 {totalModules === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <Package className="h-12 w-12 text-gray-600 mb-4" />
-                    <p className="text-sm text-gray-400">Noch keine Module</p>
-                    <p className="text-xs text-gray-500">Klicken Sie auf das Regal</p>
+                    <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
+                      <Package className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">Noch keine Module</p>
+                    <p className="text-xs text-muted-foreground">Klicken Sie auf das Regal</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {detailedItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-900/30">
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                      >
                         <div
-                          className="h-8 w-8 rounded flex-shrink-0 ring-1 ring-border/50"
+                          className="h-8 w-8 rounded-lg flex-shrink-0 ring-1 ring-border shadow-sm"
                           style={{ backgroundColor: colorValues[item.color] || "#888" }}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white truncate">{item.name}</div>
-                          <div className="text-[10px] text-gray-400">
+                          <div className="text-sm font-medium text-foreground truncate">{item.name}</div>
+                          <div className="text-[10px] text-muted-foreground">
                             {item.width}cm · {item.colorLabel} · {item.position}
                           </div>
                         </div>
-                        <div className="text-sm font-semibold text-white">{item.unitPrice.toFixed(0)} €</div>
+                        <div className="text-sm font-semibold text-foreground">{item.unitPrice.toFixed(0)} €</div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Footer */}
               {totalModules > 0 && (
-                <div className="border-t border-border/30 bg-gray-900/50 p-4 space-y-4">
+                <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Netto</span>
-                      <span className="text-white">{subtotal.toFixed(2)} €</span>
+                      <span className="text-muted-foreground">Netto</span>
+                      <span className="text-foreground">{subtotal.toFixed(2)} €</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">MwSt. 19%</span>
-                      <span className="text-white">{tax.toFixed(2)} €</span>
+                      <span className="text-muted-foreground">MwSt. 19%</span>
+                      <span className="text-foreground">{tax.toFixed(2)} €</span>
                     </div>
-                    <div className="flex justify-between pt-2 border-t border-border/30 font-bold text-lg">
-                      <span className="text-white">Gesamt</span>
-                      <span className="text-[#00b4d8]">{total.toFixed(2)} €</span>
+                    <div className="flex justify-between pt-2 border-t border-border font-bold text-lg">
+                      <span className="text-foreground">Gesamt</span>
+                      <span className="text-accent-gold">{total.toFixed(2)} €</span>
                     </div>
                   </div>
 
-                  <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#00b4d8] py-3 font-semibold text-white transition-all hover:bg-[#00b4d8]/90">
+                  <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent-gold py-3 font-semibold text-white transition-all hover:bg-accent-gold-hover shadow-sm">
                     <Send className="h-4 w-4" />
                     <span>Bestellen</span>
                   </button>
