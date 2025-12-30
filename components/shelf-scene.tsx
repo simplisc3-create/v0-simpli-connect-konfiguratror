@@ -1,6 +1,6 @@
 "use client"
 
-import { Html, useTexture } from "@react-three/drei"
+import { Html, useTexture, useGLTF } from "@react-three/drei"
 import { useMemo, useState } from "react"
 import * as THREE from "three"
 import type { ShelfConfig, ColumnData } from "@/components/shelf-configurator"
@@ -28,6 +28,198 @@ const colorMap: Record<string, string> = {
   orange: colorHexMap.orange,
   rot: colorHexMap.rot,
   gelb: colorHexMap.gelb,
+}
+
+function FrameFromGLB({
+  start,
+  end,
+  frameUrl = "/images/80x40x40-1-5-orange-optimized-20-281-29-opt.glb",
+}: {
+  start: [number, number, number]
+  end: [number, number, number]
+  frameUrl?: string
+}) {
+  const { scene } = useGLTF(frameUrl)
+
+  const frameSegment = useMemo(() => {
+    if (!scene) return null
+
+    try {
+      // Calculate direction and length
+      const startVec = new THREE.Vector3(...start)
+      const endVec = new THREE.Vector3(...end)
+      const direction = new THREE.Vector3().subVectors(endVec, startVec)
+      const length = direction.length()
+
+      // Get midpoint for positioning
+      const midpoint = new THREE.Vector3().addVectors(startVec, endVec).multiplyScalar(0.5)
+
+      // Clone the scene
+      const clone = scene.clone(true)
+
+      // Get bounding box to understand model size
+      const box = new THREE.Box3().setFromObject(clone)
+      const size = box.getSize(new THREE.Vector3())
+      const center = box.getCenter(new THREE.Vector3())
+
+      // Find aluminum/frame meshes and extract them
+      const frameMeshes: THREE.Mesh[] = []
+      clone.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Check if this looks like aluminum/metal frame by material or name
+          const mat = child.material as THREE.MeshStandardMaterial
+          if (
+            mat &&
+            (mat.metalness > 0.3 ||
+              child.name.toLowerCase().includes("alu") ||
+              child.name.toLowerCase().includes("frame") ||
+              child.name.toLowerCase().includes("metal"))
+          ) {
+            frameMeshes.push(child.clone())
+          }
+        }
+      })
+
+      // If we found frame meshes, use them; otherwise create procedural aluminum
+      if (frameMeshes.length > 0) {
+        const group = new THREE.Group()
+        frameMeshes.forEach((mesh) => {
+          // Apply aluminum material
+          mesh.material = new THREE.MeshStandardMaterial({
+            color: "#d4d4d8",
+            metalness: 0.85,
+            roughness: 0.2,
+          })
+          group.add(mesh)
+        })
+
+        // Scale and orient
+        const frameBox = new THREE.Box3().setFromObject(group)
+        const frameSize = frameBox.getSize(new THREE.Vector3())
+        const maxDim = Math.max(frameSize.x, frameSize.y, frameSize.z)
+        const scale = (length / maxDim) * 0.08 // Scale to create thin profile
+
+        group.scale.set(scale, scale, scale)
+
+        // Orient along direction
+        direction.normalize()
+        const quaternion = new THREE.Quaternion()
+        quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction)
+        group.setRotationFromQuaternion(quaternion)
+
+        group.position.copy(midpoint)
+
+        return group
+      }
+
+      return null
+    } catch (error) {
+      console.error("[v0] Error processing frame GLB:", error)
+      return null
+    }
+  }, [scene, start, end])
+
+  // Fallback to procedural aluminum if GLB extraction fails
+  if (!frameSegment) {
+    return <AluminumExtrusion start={start} end={end} profileSize={0.025} />
+  }
+
+  return <primitive object={frameSegment} castShadow receiveShadow />
+}
+
+function AluminumExtrusion({
+  start,
+  end,
+  profileSize = 0.03,
+}: {
+  start: [number, number, number]
+  end: [number, number, number]
+  profileSize?: number
+}) {
+  const geometry = useMemo(() => {
+    const startVec = new THREE.Vector3(...start)
+    const endVec = new THREE.Vector3(...end)
+    const direction = new THREE.Vector3().subVectors(endVec, startVec)
+    const length = direction.length()
+
+    const shape = new THREE.Shape()
+    const w = profileSize / 2
+    const slot = profileSize * 0.15
+    const wall = profileSize * 0.08
+
+    shape.moveTo(-w, -w)
+    shape.lineTo(w, -w)
+    shape.lineTo(w, w)
+    shape.lineTo(-w, w)
+    shape.lineTo(-w, -w)
+
+    const hole1 = new THREE.Path()
+    const innerSize = w - wall
+    hole1.moveTo(-innerSize, -innerSize)
+    hole1.lineTo(innerSize, -innerSize)
+    hole1.lineTo(innerSize, innerSize)
+    hole1.lineTo(-innerSize, innerSize)
+    hole1.lineTo(-innerSize, -innerSize)
+    shape.holes.push(hole1)
+
+    const slotDepth = wall * 0.5
+    const slotWidth = slot
+
+    const topSlot = new THREE.Path()
+    topSlot.moveTo(-slotWidth / 2, w - slotDepth)
+    topSlot.lineTo(slotWidth / 2, w - slotDepth)
+    topSlot.lineTo(slotWidth / 2, w)
+    topSlot.lineTo(-slotWidth / 2, w)
+    topSlot.lineTo(-slotWidth / 2, w - slotDepth)
+    shape.holes.push(topSlot)
+
+    const bottomSlot = new THREE.Path()
+    bottomSlot.moveTo(-slotWidth / 2, -w + slotDepth)
+    bottomSlot.lineTo(slotWidth / 2, -w + slotDepth)
+    bottomSlot.lineTo(slotWidth / 2, -w)
+    bottomSlot.lineTo(-slotWidth / 2, -w)
+    bottomSlot.lineTo(-slotWidth / 2, -w + slotDepth)
+    shape.holes.push(bottomSlot)
+
+    const leftSlot = new THREE.Path()
+    leftSlot.moveTo(-w + slotDepth, -slotWidth / 2)
+    leftSlot.lineTo(-w, -slotWidth / 2)
+    leftSlot.lineTo(-w, slotWidth / 2)
+    leftSlot.lineTo(-w + slotDepth, slotWidth / 2)
+    leftSlot.lineTo(-w + slotDepth, -slotWidth / 2)
+    shape.holes.push(leftSlot)
+
+    const rightSlot = new THREE.Path()
+    rightSlot.moveTo(w - slotDepth, -slotWidth / 2)
+    rightSlot.lineTo(w, -slotWidth / 2)
+    rightSlot.lineTo(w, slotWidth / 2)
+    rightSlot.lineTo(w - slotDepth, slotWidth / 2)
+    rightSlot.lineTo(w - slotDepth, -slotWidth / 2)
+    shape.holes.push(rightSlot)
+
+    const extrudeSettings = {
+      steps: 1,
+      depth: length,
+      bevelEnabled: false,
+    }
+
+    const extrudeGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+
+    direction.normalize()
+    const quaternion = new THREE.Quaternion()
+    quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction)
+
+    extrudeGeometry.applyQuaternion(quaternion)
+    extrudeGeometry.translate(startVec.x, startVec.y, startVec.z)
+
+    return extrudeGeometry
+  }, [start, end, profileSize])
+
+  return (
+    <mesh geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial color="#d4d4d8" metalness={0.8} roughness={0.3} envMapIntensity={0.5} />
+    </mesh>
+  )
 }
 
 function ChromeTube({
@@ -295,35 +487,31 @@ export function ShelfScene({
       const columnTopY = columnHeight * cellHeight + offsetY
 
       els.push(
-        <ChromeTube
+        <FrameFromGLB
           key={`vpost-fl-${colIndex}`}
           start={[leftX, offsetY, offsetZ + depth]}
           end={[leftX, columnTopY, offsetZ + depth]}
-          radius={tubeRadius}
         />,
       )
       els.push(
-        <ChromeTube
+        <FrameFromGLB
           key={`vpost-fr-${colIndex}`}
           start={[rightX, offsetY, offsetZ + depth]}
           end={[rightX, columnTopY, offsetZ + depth]}
-          radius={tubeRadius}
         />,
       )
       els.push(
-        <ChromeTube
+        <FrameFromGLB
           key={`vpost-bl-${colIndex}`}
           start={[leftX, offsetY, offsetZ]}
           end={[leftX, columnTopY, offsetZ]}
-          radius={tubeRadius}
         />,
       )
       els.push(
-        <ChromeTube
+        <FrameFromGLB
           key={`vpost-br-${colIndex}`}
           start={[rightX, offsetY, offsetZ]}
           end={[rightX, columnTopY, offsetZ]}
-          radius={tubeRadius}
         />,
       )
 
@@ -359,70 +547,62 @@ export function ShelfScene({
         const cellCenterY = bottomY + cellHeight / 2
 
         els.push(
-          <ChromeTube
+          <FrameFromGLB
             key={`hrail-fb-${colIndex}-${stackIndex}`}
             start={[leftX, bottomY, offsetZ + depth]}
             end={[rightX, bottomY, offsetZ + depth]}
-            radius={tubeRadius}
           />,
         )
         els.push(
-          <ChromeTube
+          <FrameFromGLB
             key={`hrail-bb-${colIndex}-${stackIndex}`}
             start={[leftX, bottomY, offsetZ]}
             end={[rightX, bottomY, offsetZ]}
-            radius={tubeRadius}
           />,
         )
 
         els.push(
-          <ChromeTube
+          <FrameFromGLB
             key={`drail-lb-${colIndex}-${stackIndex}`}
             start={[leftX, bottomY, offsetZ]}
             end={[leftX, bottomY, offsetZ + depth]}
-            radius={tubeRadius}
           />,
         )
         els.push(
-          <ChromeTube
+          <FrameFromGLB
             key={`drail-rb-${colIndex}-${stackIndex}`}
             start={[rightX, bottomY, offsetZ]}
             end={[rightX, bottomY, offsetZ + depth]}
-            radius={tubeRadius}
           />,
         )
 
         if (stackIndex === columnHeight - 1) {
           els.push(
-            <ChromeTube
+            <FrameFromGLB
               key={`hrail-ft-${colIndex}-${stackIndex}`}
               start={[leftX, topY, offsetZ + depth]}
               end={[rightX, topY, offsetZ + depth]}
-              radius={tubeRadius}
             />,
           )
           els.push(
-            <ChromeTube
+            <FrameFromGLB
               key={`hrail-bt-${colIndex}-${stackIndex}`}
               start={[leftX, topY, offsetZ]}
               end={[rightX, topY, offsetZ]}
-              radius={tubeRadius}
             />,
           )
           els.push(
-            <ChromeTube
+            <FrameFromGLB
               key={`drail-lt-${colIndex}-${stackIndex}`}
               start={[leftX, topY, offsetZ]}
               end={[leftX, topY, offsetZ + depth]}
-              radius={tubeRadius}
             />,
           )
           els.push(
-            <ChromeTube
+            <FrameFromGLB
               key={`drail-rt-${colIndex}-${stackIndex}`}
               start={[rightX, topY, offsetZ]}
               end={[rightX, topY, offsetZ + depth]}
-              radius={tubeRadius}
             />,
           )
         }
@@ -442,18 +622,6 @@ export function ShelfScene({
               metalness={0.1}
               transmission={0.6}
             />
-          </mesh>,
-        )
-
-        const bottomPanelColor = colorMap[cell?.color || config.accentColor || "weiss"] || colorMap.weiss
-        els.push(
-          <mesh
-            key={`bottom-panel-${colIndex}-${stackIndex}`}
-            position={[cellCenterX, bottomY + 0.005, offsetZ + depth / 2]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
-            <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-            <meshStandardMaterial color={bottomPanelColor} side={THREE.DoubleSide} />
           </mesh>,
         )
 
@@ -974,3 +1142,6 @@ export function ShelfScene({
     </group>
   )
 }
+
+// Preload the frame GLB
+useGLTF.preload("/images/80x40x40-1-5-orange-optimized-20-281-29-opt.glb")

@@ -91,9 +91,11 @@ const moduleTypes = [
   { id: "mit-klapptuer" as const, label: "mit Klapptür", icon: PanelTopOpen },
   { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: Archive },
   { id: "abschliessbare-tueren" as const, label: "abschließbare Türen", icon: Lock },
-  { id: "leer" as const, label: "Leer", icon: Square },
+  // Added for 40cm width modules, though these might not be directly used here but in other components
+  { id: "leer" as const, label: "Leer", icon: Square }, // Assuming 'leer' is equivalent to 'empty' for filtering
   { id: "mit-tuer-links" as const, label: "Tür links", icon: DoorOpen },
   { id: "mit-tuer-rechts" as const, label: "Tür rechts", icon: DoorOpen },
+  { id: "mit-abschliessbarer-tuer-links" as const, label: "Abschließbare Tür links", icon: Lock },
 ] as const
 
 const baseColors = [
@@ -605,19 +607,17 @@ export function ShelfConfigurator() {
   }, [selectedCell, config.columns])
 
   const availableModuleTypes = useMemo(() => {
-    // NO drawers, NO double doors, NO flip doors for 38cm width
     if (selectedColumnWidth && selectedColumnWidth <= 40) {
-      const allowed38cmTypes = [
-        "ohne-seitenwaende", // Leer/Empty
-        "ohne-rueckwand", // Ohne Rückwand
-        "mit-rueckwand", // Mit Rückwand
-        "mit-tuer-links", // Tür links
-        "mit-tuer-rechts", // Tür rechts
+      const allowed40cmTypes = [
+        "ohne-seitenwaende",
+        "ohne-rueckwand",
+        "mit-rueckwand",
+        "mit-tuer-links",
+        "mit-tuer-rechts",
       ]
-      return moduleTypes.filter((m) => allowed38cmTypes.includes(m.id))
+      return moduleTypes.filter((m) => allowed40cmTypes.includes(m.id))
     }
-    // 75cm shelves get all module types except the 38cm-specific ones
-    return moduleTypes.filter((m) => !["leer", "mit-tuer-links", "mit-tuer-rechts"].includes(m.id))
+    return moduleTypes
   }, [selectedColumnWidth])
 
   const reset = useCallback(() => {
@@ -654,20 +654,20 @@ export function ShelfConfigurator() {
   }, [])
 
   return (
-    <div className="flex h-screen flex-col bg-background lg:flex-row">
+    <div className="flex h-screen flex-col bg-muted/30 lg:flex-row">
       {/* Mobile cart toggle only */}
       {isMobile && <LiveCart config={config} isOpen={isCartOpen} onToggle={() => setIsCartOpen(!isCartOpen)} />}
 
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-[320px] bg-card border-r border-border flex-col overflow-y-auto shadow-sm",
+          "fixed inset-y-0 left-0 z-40 w-[320px] bg-[#0a0a0a] border-r border-border/30 flex-col overflow-y-auto",
           "hidden lg:flex",
         )}
       >
         {selectedCell && selectedCellData && (
-          <div className="p-4 space-y-3 border-b border-accent-gold/20 bg-accent-gold/5">
+          <div className="p-4 space-y-3 border-t border-[#00b4d8]/30 bg-[#00b4d8]/5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-accent-gold">
+              <h3 className="text-sm font-semibold text-[#00b4d8]">
                 Zelle R{selectedCell.stackIndex + 1}C{selectedCell.col + 1}
               </h3>
               <button
@@ -675,17 +675,17 @@ export function ShelfConfigurator() {
                   setSelectedCell(null)
                   setEditMode("global")
                 }}
-                className="h-6 w-6 rounded flex items-center justify-center hover:bg-secondary transition-colors"
+                className="h-6 w-6 rounded flex items-center justify-center hover:bg-[#1a1a1a] transition-colors"
               >
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
 
-            <p className="text-xs text-muted-foreground">Bearbeiten Sie diese einzelne Zelle</p>
+            <p className="text-xs text-muted-foreground/80">Bearbeiten Sie diese einzelne Zelle</p>
 
             {/* Cell Module Type */}
             <div className="space-y-2">
-              <span className="text-xs font-medium text-foreground">Modul-Typ</span>
+              <span className="text-xs text-muted-foreground">Modul-Typ</span>
               <div className="grid grid-cols-2 gap-1.5">
                 {availableModuleTypes.map((module) => (
                   <button
@@ -694,8 +694,8 @@ export function ShelfConfigurator() {
                     className={cn(
                       "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
                       selectedCellData.type === module.id
-                        ? "border-accent-gold bg-accent-gold/10 text-accent-gold font-medium"
-                        : "border-border bg-secondary/50 text-muted-foreground hover:border-muted-foreground hover:text-foreground",
+                        ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                        : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
                     )}
                   >
                     <module.icon className="h-3.5 w-3.5 flex-shrink-0" />
@@ -707,17 +707,17 @@ export function ShelfConfigurator() {
 
             {/* Cell Color */}
             <div className="space-y-2">
-              <span className="text-xs font-medium text-foreground">Zellen-Farbe</span>
+              <span className="text-xs text-muted-foreground">Zellen-Farbe</span>
               <div className="flex gap-1.5 flex-wrap">
                 {[...baseColors, ...specialColorOptions].map((c) => (
                   <button
                     key={c.id}
                     onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
                     className={cn(
-                      "w-8 h-8 rounded-lg border-2 transition-all shadow-sm",
+                      "w-8 h-8 rounded-lg border-2 transition-all",
                       selectedCellData.color === c.id
-                        ? "border-accent-gold ring-2 ring-accent-gold/30"
-                        : "border-border hover:border-muted-foreground",
+                        ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                        : "border-border/50 hover:border-border",
                     )}
                     style={{ backgroundColor: c.hex }}
                     title={c.label}
@@ -729,7 +729,7 @@ export function ShelfConfigurator() {
             {/* Clear Cell Button */}
             <button
               onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
-              className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border bg-secondary/50 text-muted-foreground hover:border-destructive/50 hover:text-destructive transition-all"
+              className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400 transition-all"
             >
               <Eraser className="h-4 w-4" />
               <span className="text-xs">Zelle leeren</span>
@@ -747,10 +747,10 @@ export function ShelfConfigurator() {
                 key={c.id}
                 onClick={() => handleColorChange(c.id)}
                 className={cn(
-                  "w-12 h-12 rounded-xl border-2 transition-all shadow-sm",
+                  "w-12 h-12 rounded-lg border-2 transition-all",
                   config.accentColor === c.id
-                    ? "border-accent-gold ring-2 ring-accent-gold/30"
-                    : "border-border hover:border-muted-foreground",
+                    ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                    : "border-border/50 hover:border-border",
                 )}
                 style={{ backgroundColor: c.hex }}
                 title={c.label}
@@ -759,7 +759,7 @@ export function ShelfConfigurator() {
           </div>
         </div>
 
-        <div className="p-4 space-y-3 border-t border-border">
+        <div className="p-4 space-y-3 border-t border-border/20">
           <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
           <div className="flex gap-2 flex-wrap">
             {specialColorOptions.map((c) => (
@@ -767,10 +767,11 @@ export function ShelfConfigurator() {
                 key={c.id}
                 onClick={() => handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)}
                 className={cn(
-                  "w-12 h-12 rounded-xl border-2 transition-all shadow-sm",
+                  "w-12 h-12 rounded-lg border-2 transition-all",
+                  // Only highlight if the cell is selected and matches the color
                   selectedCell && selectedCellData?.color === c.id
-                    ? "border-accent-gold ring-2 ring-accent-gold/30"
-                    : "border-border hover:border-muted-foreground",
+                    ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                    : "border-border/50 hover:border-border",
                 )}
                 style={{ backgroundColor: c.hex }}
                 title={c.label}
@@ -780,7 +781,7 @@ export function ShelfConfigurator() {
         </div>
 
         {/* Bodenmaterial Section */}
-        <div className="p-4 space-y-3 border-t border-border">
+        <div className="p-4 space-y-3 border-t border-border/20">
           <h3 className="text-sm font-semibold text-foreground">Bodenmaterial</h3>
           <div className="flex gap-2">
             {materialOptions.map((m) => (
@@ -788,10 +789,10 @@ export function ShelfConfigurator() {
                 key={m.id}
                 onClick={() => handleMaterialChange(m.id)}
                 className={cn(
-                  "flex-1 py-2.5 text-sm rounded-xl border-2 transition-all font-medium",
+                  "flex-1 py-2.5 text-sm rounded-lg border transition-all",
                   config.material === m.id
-                    ? "bg-accent-gold/10 border-accent-gold text-accent-gold"
-                    : "bg-secondary/50 border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground",
+                    ? "bg-transparent border-[#00b4d8] text-[#00b4d8] font-medium"
+                    : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
                 {m.label}
@@ -800,10 +801,10 @@ export function ShelfConfigurator() {
           </div>
         </div>
 
-        <div className="p-4 space-y-3 border-t border-border">
+        <div className="p-4 space-y-3 border-t border-border/20">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-foreground">Regal-Größe</h3>
-            <span className="text-xs font-medium text-accent-gold bg-accent-gold/10 px-2 py-1 rounded-lg">
+            <span className="text-xs text-muted-foreground">
               {totalWidth} × {totalHeight} cm
             </span>
           </div>
@@ -813,15 +814,15 @@ export function ShelfConfigurator() {
               <button
                 onClick={handleRemoveRow}
                 disabled={rowCount <= 1}
-                className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
-              <span className="text-base font-bold w-5 text-center text-foreground">{rowCount}</span>
+              <span className="text-base font-bold w-5 text-center">{rowCount}</span>
               <button
                 onClick={handleAddRow}
                 disabled={rowCount >= 6}
-                className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -831,15 +832,15 @@ export function ShelfConfigurator() {
               <button
                 onClick={handleRemoveColumn}
                 disabled={colCount <= 1}
-                className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
-              <span className="text-base font-bold w-5 text-center text-foreground">{colCount}</span>
+              <span className="text-base font-bold w-5 text-center">{colCount}</span>
               <button
                 onClick={handleAddColumn}
                 disabled={colCount >= 6}
-                className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center disabled:opacity-30 hover:bg-muted transition-colors"
+                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -854,21 +855,21 @@ export function ShelfConfigurator() {
                   <button
                     onClick={() => setExpandedWidthSelector(expandedWidthSelector === idx ? null : idx)}
                     className={cn(
-                      "px-3 py-1.5 text-xs rounded-lg border-2 transition-all font-medium",
+                      "px-3 py-1.5 text-xs rounded-lg border transition-all",
                       col.width === 75
-                        ? "bg-accent-gold/10 border-accent-gold text-accent-gold"
-                        : "bg-secondary border-border text-muted-foreground hover:text-foreground",
+                        ? "bg-[#00b4d8]/10 border-[#00b4d8]/50 text-[#00b4d8]"
+                        : "bg-[#1a1a1a] border-border/50 text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {col.width}cm
                   </button>
                   {expandedWidthSelector === idx && (
-                    <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-border/50 rounded-lg shadow-lg z-10 overflow-hidden">
                       <button
                         onClick={() => handleColumnWidthChange(idx, 38)}
                         className={cn(
-                          "w-full px-4 py-2 text-xs text-left hover:bg-secondary transition-colors",
-                          col.width === 38 && "text-accent-gold font-medium",
+                          "w-full px-4 py-2 text-xs text-left hover:bg-[#252525] transition-colors",
+                          col.width === 38 && "text-[#00b4d8]",
                         )}
                       >
                         38 cm
@@ -876,8 +877,8 @@ export function ShelfConfigurator() {
                       <button
                         onClick={() => handleColumnWidthChange(idx, 75)}
                         className={cn(
-                          "w-full px-4 py-2 text-xs text-left hover:bg-secondary transition-colors",
-                          col.width === 75 && "text-accent-gold font-medium",
+                          "w-full px-4 py-2 text-xs text-left hover:bg-[#252525] transition-colors",
+                          col.width === 75 && "text-[#00b4d8]",
                         )}
                       >
                         75 cm
@@ -890,23 +891,24 @@ export function ShelfConfigurator() {
           </div>
         </div>
 
-        <div className="p-4 space-y-3 border-t border-border">
+        {/* Simpli-Elemente Section */}
+        <div className="p-4 space-y-3 border-t border-border/20">
           <h3 className="text-sm font-semibold text-foreground">
-            Simpli-Elemente <span className="text-muted-foreground font-normal text-xs">(Klicken oder Ziehen)</span>
+            Simpli-Elemente <span className="text-muted-foreground font-normal">(Klicken oder Ziehen)</span>
           </h3>
 
           {/* Eraser Tool */}
           <button
             onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
             className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all",
+              "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
               selectedTool === "empty"
-                ? "border-destructive bg-destructive/5 text-destructive"
-                : "border-border bg-secondary/50 text-muted-foreground hover:border-muted-foreground hover:text-foreground",
+                ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
             )}
           >
             <Eraser className="h-5 w-5" />
-            <span className="text-sm font-medium">Radierer (Zelle leeren)</span>
+            <span className="text-sm">Radierer (Zelle leeren)</span>
           </button>
 
           {/* Module Grid - 2 columns */}
@@ -916,17 +918,17 @@ export function ShelfConfigurator() {
                 key={module.id}
                 onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
                 className={cn(
-                  "relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all min-h-[90px]",
+                  "relative flex flex-col items-center justify-center gap-2 p-3 rounded-lg border transition-all min-h-[90px]",
                   selectedTool === module.id
-                    ? "border-accent-gold bg-accent-gold/5"
-                    : "border-border bg-secondary/30 hover:border-muted-foreground hover:bg-secondary/50",
+                    ? "border-[#00b4d8] bg-[#00b4d8]/10"
+                    : "border-border/30 bg-[#1a1a1a] hover:border-border",
                 )}
               >
                 <ModulePreviewIcon type={module.id} isSelected={selectedTool === module.id} />
                 <span
                   className={cn(
-                    "text-xs text-center leading-tight font-medium",
-                    selectedTool === module.id ? "text-accent-gold" : "text-muted-foreground",
+                    "text-xs text-center leading-tight",
+                    selectedTool === module.id ? "text-[#00b4d8]" : "text-muted-foreground",
                   )}
                 >
                   {module.label}
@@ -936,7 +938,8 @@ export function ShelfConfigurator() {
           </div>
         </div>
 
-        <div className="mt-auto p-4 border-t border-border bg-secondary/30">
+        {/* Toolbar at bottom */}
+        <div className="mt-auto p-4 border-t border-border/20">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
               <Button
@@ -944,7 +947,7 @@ export function ShelfConfigurator() {
                 size="sm"
                 onClick={undo}
                 disabled={!canUndo}
-                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30"
+                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
               >
                 <Undo2 className="h-4 w-4" />
               </Button>
@@ -953,7 +956,7 @@ export function ShelfConfigurator() {
                 size="sm"
                 onClick={redo}
                 disabled={!canRedo}
-                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30"
+                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
               >
                 <Redo2 className="h-4 w-4" />
               </Button>
@@ -962,7 +965,7 @@ export function ShelfConfigurator() {
               variant="ghost"
               size="sm"
               onClick={reset}
-              className="h-9 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+              className="h-9 px-3 text-muted-foreground hover:text-destructive"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Zurücksetzen
@@ -982,10 +985,10 @@ export function ShelfConfigurator() {
           className="w-full h-full"
           gl={{ antialias: true, alpha: true }}
         >
-          <color attach="background" args={["#f0ebe3"]} />
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
-          <directionalLight position={[-3, 4, -3]} intensity={0.5} />
+          <color attach="background" args={["#1a1a1a"]} />
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
+          <directionalLight position={[-3, 4, -3]} intensity={0.4} />
 
           <ShelfScene
             config={configWithDefaults}
@@ -1009,14 +1012,14 @@ export function ShelfConfigurator() {
             minPolarAngle={0}
             maxPolarAngle={Math.PI / 2}
           />
-          <Environment preset="apartment" />
+          <Environment preset="studio" />
         </Canvas>
 
         {/* Mobile toggle button */}
         {isMobile && (
           <button
             onClick={() => setShowMobilePanel(true)}
-            className="fixed bottom-4 left-4 z-30 bg-accent-gold text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+            className="fixed bottom-4 left-4 z-30 bg-[#00b4d8] text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2"
           >
             <Package className="h-5 w-5" />
             <span className="font-medium">Konfigurator</span>
@@ -1025,23 +1028,20 @@ export function ShelfConfigurator() {
 
         {/* Mobile Panel Overlay */}
         {isMobile && showMobilePanel && (
-          <div className="fixed inset-0 z-50 bg-card overflow-y-auto animate-slide-up">
-            <div className="sticky top-0 z-10 bg-card border-b border-border p-4 flex items-center justify-between shadow-sm">
-              <h2 className="text-lg font-semibold text-foreground">Konfigurator</h2>
-              <button
-                onClick={() => setShowMobilePanel(false)}
-                className="p-2 hover:bg-secondary rounded-xl transition-colors"
-              >
+          <div className="fixed inset-0 z-50 bg-[#0a0a0a] overflow-y-auto">
+            <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-border/30 p-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Konfigurator</h2>
+              <button onClick={() => setShowMobilePanel(false)} className="p-2 hover:bg-[#1a1a1a] rounded-lg">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Mobile panel content - same structure as desktop with updated styles */}
+            {/* Mobile panel content - same as desktop */}
             <div className="p-4 space-y-6">
               {selectedCell && selectedCellData && (
-                <div className="p-4 space-y-3 rounded-2xl border border-accent-gold/20 bg-accent-gold/5">
+                <div className="p-4 space-y-3 border-t border-[#00b4d8]/30 bg-[#00b4d8]/5">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-accent-gold">
+                    <h3 className="text-sm font-semibold text-[#00b4d8]">
                       Zelle R{selectedCell.stackIndex + 1}C{selectedCell.col + 1}
                     </h3>
                     <button
@@ -1049,17 +1049,17 @@ export function ShelfConfigurator() {
                         setSelectedCell(null)
                         setEditMode("global")
                       }}
-                      className="h-6 w-6 rounded flex items-center justify-center hover:bg-secondary transition-colors"
+                      className="h-6 w-6 rounded flex items-center justify-center hover:bg-[#1a1a1a] transition-colors"
                     >
                       <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">Bearbeiten Sie diese einzelne Zelle</p>
+                  <p className="text-xs text-muted-foreground/80">Bearbeiten Sie diese einzelne Zelle</p>
 
                   {/* Cell Module Type */}
                   <div className="space-y-2">
-                    <span className="text-xs font-medium text-foreground">Modul-Typ</span>
+                    <span className="text-xs text-muted-foreground">Modul-Typ</span>
                     <div className="grid grid-cols-2 gap-1.5">
                       {availableModuleTypes.map((module) => (
                         <button
@@ -1068,8 +1068,8 @@ export function ShelfConfigurator() {
                           className={cn(
                             "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
                             selectedCellData.type === module.id
-                              ? "border-accent-gold bg-accent-gold/10 text-accent-gold font-medium"
-                              : "border-border bg-secondary/50 text-muted-foreground hover:border-muted-foreground hover:text-foreground",
+                              ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                              : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
                           )}
                         >
                           <module.icon className="h-3.5 w-3.5 flex-shrink-0" />
@@ -1081,17 +1081,17 @@ export function ShelfConfigurator() {
 
                   {/* Cell Color */}
                   <div className="space-y-2">
-                    <span className="text-xs font-medium text-foreground">Zellen-Farbe</span>
+                    <span className="text-xs text-muted-foreground">Zellen-Farbe</span>
                     <div className="flex gap-1.5 flex-wrap">
                       {[...baseColors, ...specialColorOptions].map((c) => (
                         <button
                           key={c.id}
                           onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
                           className={cn(
-                            "w-8 h-8 rounded-lg border-2 transition-all shadow-sm",
+                            "w-8 h-8 rounded-lg border-2 transition-all",
                             selectedCellData.color === c.id
-                              ? "border-accent-gold ring-2 ring-accent-gold/30"
-                              : "border-border hover:border-muted-foreground",
+                              ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                              : "border-border/50 hover:border-border",
                           )}
                           style={{ backgroundColor: c.hex }}
                           title={c.label}
@@ -1099,22 +1099,33 @@ export function ShelfConfigurator() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Clear Cell Button */}
+                  <button
+                    onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
+                    className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400 transition-all"
+                  >
+                    <Eraser className="h-4 w-4" />
+                    <span className="text-xs">Zelle leeren</span>
+                  </button>
                 </div>
               )}
 
-              {/* Standard-Farbe section for mobile */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Standard-Farbe</h3>
-                <div className="flex gap-3 flex-wrap">
+              {/* Standard Farbe Section - rename from just "Farbe" */}
+              <div className="p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Standard-Farbe <span className="text-xs text-muted-foreground font-normal">(alle Zellen)</span>
+                </h3>
+                <div className="flex gap-2 flex-wrap">
                   {baseColors.map((c) => (
                     <button
                       key={c.id}
                       onClick={() => handleColorChange(c.id)}
                       className={cn(
-                        "w-14 h-14 rounded-xl border-2 transition-all shadow-sm",
+                        "w-12 h-12 rounded-lg border-2 transition-all",
                         config.accentColor === c.id
-                          ? "border-accent-gold ring-2 ring-accent-gold/30"
-                          : "border-border hover:border-muted-foreground",
+                          ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                          : "border-border/50 hover:border-border",
                       )}
                       style={{ backgroundColor: c.hex }}
                       title={c.label}
@@ -1123,8 +1134,31 @@ export function ShelfConfigurator() {
                 </div>
               </div>
 
-              {/* Material section for mobile */}
-              <div className="space-y-3">
+              {/* Sonderfarbe */}
+              <div className="p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
+                <div className="flex gap-2 flex-wrap">
+                  {specialColorOptions.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() =>
+                        handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)
+                      }
+                      className={cn(
+                        "w-12 h-12 rounded-lg border-2 transition-all",
+                        selectedCell && selectedCellData?.color === c.id
+                          ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                          : "border-border/50 hover:border-border",
+                      )}
+                      style={{ backgroundColor: c.hex }}
+                      title={c.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Bodenmaterial */}
+              <div className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Bodenmaterial</h3>
                 <div className="flex gap-2">
                   {materialOptions.map((m) => (
@@ -1132,10 +1166,10 @@ export function ShelfConfigurator() {
                       key={m.id}
                       onClick={() => handleMaterialChange(m.id)}
                       className={cn(
-                        "flex-1 py-3 text-sm rounded-xl border-2 transition-all font-medium",
+                        "flex-1 py-2.5 text-sm rounded-lg border transition-all",
                         config.material === m.id
-                          ? "bg-accent-gold/10 border-accent-gold text-accent-gold"
-                          : "bg-secondary/50 border-border text-muted-foreground hover:border-muted-foreground",
+                          ? "bg-transparent border-[#00b4d8] text-[#00b4d8] font-medium"
+                          : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
                       )}
                     >
                       {m.label}
@@ -1144,21 +1178,21 @@ export function ShelfConfigurator() {
                 </div>
               </div>
 
-              {/* Size section for mobile */}
-              <div className="space-y-3">
+              {/* Regal-Größe */}
+              <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-foreground">Regal-Größe</h3>
-                  <span className="text-xs font-medium text-accent-gold bg-accent-gold/10 px-2 py-1 rounded-lg">
+                  <span className="text-xs text-muted-foreground">
                     {totalWidth} × {totalHeight} cm
                   </span>
                 </div>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
                     <span className="text-sm text-muted-foreground">Reihen</span>
                     <button
                       onClick={handleRemoveRow}
                       disabled={rowCount <= 1}
-                      className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center disabled:opacity-30"
+                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
@@ -1166,17 +1200,17 @@ export function ShelfConfigurator() {
                     <button
                       onClick={handleAddRow}
                       disabled={rowCount >= 6}
-                      className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center disabled:opacity-30"
+                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className="text-sm text-muted-foreground">Spalten</span>
                     <button
                       onClick={handleRemoveColumn}
                       disabled={colCount <= 1}
-                      className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center disabled:opacity-30"
+                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
@@ -1184,7 +1218,7 @@ export function ShelfConfigurator() {
                     <button
                       onClick={handleAddColumn}
                       disabled={colCount >= 6}
-                      className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center disabled:opacity-30"
+                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -1192,38 +1226,41 @@ export function ShelfConfigurator() {
                 </div>
               </div>
 
-              {/* Module types for mobile */}
-              <div className="space-y-3">
+              {/* Simpli-Elemente */}
+              <div className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Simpli-Elemente</h3>
                 <button
                   onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
                   className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all",
+                    "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
                     selectedTool === "empty"
-                      ? "border-destructive bg-destructive/5 text-destructive"
-                      : "border-border bg-secondary/50 text-muted-foreground",
+                      ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                      : "border-border/30 bg-[#1a1a1a] text-muted-foreground",
                   )}
                 >
                   <Eraser className="h-5 w-5" />
-                  <span className="text-sm font-medium">Radierer</span>
+                  <span className="text-sm">Radierer</span>
                 </button>
                 <div className="grid grid-cols-2 gap-2">
                   {availableModuleTypes.map((module) => (
                     <button
                       key={module.id}
-                      onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
+                      onClick={() => {
+                        onSelectTool(selectedTool === module.id ? null : module.id)
+                        setShowMobilePanel(false)
+                      }}
                       className={cn(
-                        "relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all",
+                        "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all",
                         selectedTool === module.id
-                          ? "border-accent-gold bg-accent-gold/5"
-                          : "border-border bg-secondary/30",
+                          ? "border-[#00b4d8] bg-[#00b4d8]/10"
+                          : "border-border/30 bg-[#1a1a1a]",
                       )}
                     >
                       <ModulePreviewIcon type={module.id} isSelected={selectedTool === module.id} />
                       <span
                         className={cn(
-                          "text-xs text-center leading-tight font-medium",
-                          selectedTool === module.id ? "text-accent-gold" : "text-muted-foreground",
+                          "text-xs text-center",
+                          selectedTool === module.id ? "text-[#00b4d8]" : "text-muted-foreground",
                         )}
                       >
                         {module.label}
@@ -1231,18 +1268,6 @@ export function ShelfConfigurator() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Reset button for mobile */}
-              <div className="pt-4 border-t border-border">
-                <Button
-                  variant="outline"
-                  onClick={reset}
-                  className="w-full h-12 text-destructive border-destructive/30 hover:bg-destructive/5 bg-transparent"
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Zurücksetzen
-                </Button>
               </div>
             </div>
           </div>

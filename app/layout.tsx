@@ -1,13 +1,14 @@
 import type React from "react"
-import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+import type { Metadata } from "next"
+import { Geist_Mono, Inter } from "next/font/google"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const inter = Inter({ subsets: ["latin"] })
+const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SIMPLI Regal-Konfigurator",
-  description: "Gestalten Sie Ihr individuelles Regalsystem mit dem SIMPLI Konfigurator",
+  title: "Shelf Configurator",
+  description: "Design your perfect modular shelf system",
   generator: "v0.app",
   icons: {
     icon: [
@@ -26,13 +27,6 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
-}
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: "#f5f3ef",
 }
 
 export default function RootLayout({

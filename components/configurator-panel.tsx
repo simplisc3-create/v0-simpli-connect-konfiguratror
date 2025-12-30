@@ -66,9 +66,6 @@ const moduleTypes = [
   { id: "mit-klapptuer" as const, label: "Klappe", icon: "flip" },
   { id: "mit-doppelschublade" as const, label: "Schublade", icon: "drawer" },
   { id: "abschliessbare-tueren" as const, label: "Abschl.", icon: "lock" },
-  // 38cm specific modules
-  { id: "mit-tuer-links" as const, label: "Tür links", icon: "door-left" },
-  { id: "mit-tuer-rechts" as const, label: "Tür rechts", icon: "door-right" },
 ]
 
 const materialOptions = [
@@ -84,23 +81,6 @@ const categoryLabels: Record<string, string> = {
   holzboden: "Holzböden",
   "schublade-tuer": "Schubladen & Türen",
   funktionswand: "Funktionswände",
-}
-
-const getAvailableModulesForWidth = (width: number) => {
-  // 38cm shelves: only empty, ohne-rueckwand, mit-rueckwand, tuer-links, tuer-rechts
-  // NO drawers, NO double doors, NO flip doors
-  if (width <= 40) {
-    const allowed38cmTypes = [
-      "ohne-seitenwaende",
-      "ohne-rueckwand",
-      "mit-rueckwand",
-      "mit-tuer-links",
-      "mit-tuer-rechts",
-    ]
-    return moduleTypes.filter((m) => allowed38cmTypes.includes(m.id))
-  }
-  // 75cm shelves: all standard modules except 38cm-specific ones
-  return moduleTypes.filter((m) => !["mit-tuer-links", "mit-tuer-rechts"].includes(m.id))
 }
 
 export function ConfiguratorPanel({
@@ -191,7 +171,7 @@ export function ConfiguratorPanel({
         bezeichnung: item.product.name,
         kategorie: item.product.category,
         groesse: item.product.size,
-        farbe: item.product.color || "-",
+        farbe: item.product.color || null,
         variante: item.product.variant || null,
         einzelpreis: item.product.price,
         menge: item.quantity,
@@ -511,7 +491,7 @@ export function ConfiguratorPanel({
                     "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
                     config.accentColor === "none"
                       ? "border-accent-blue bg-accent-blue/5"
-                      : "border-transparent hover:border-muted-foreground",
+                      : "border-border hover:border-muted-foreground",
                   )}
                 >
                   <div className="h-8 w-8 rounded-lg border border-border flex items-center justify-center bg-secondary">
@@ -776,22 +756,6 @@ function ModulePreviewSVG({ type }: { type: string }) {
           <line x1="12" y1="4" x2="12" y2="20" />
           <rect x="8" y="10" width="3" height="4" rx="0.5" />
           <rect x="13" y="10" width="3" height="4" rx="0.5" />
-        </svg>
-      )
-    case "mit-tuer-links":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-          <line x1="4" y1="12" x2="12" y2="12" />
-          <rect x="4" y="10" width="3" height="4" rx="0.5" />
-        </svg>
-      )
-    case "mit-tuer-rechts":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-          <line x1="12" y1="12" x2="20" y2="12" />
-          <rect x="11" y="10" width="3" height="4" rx="0.5" />
         </svg>
       )
     default:
