@@ -45,9 +45,8 @@ export type GridCell = {
 
 export type ShelfConfig = {
   columns: ColumnData[]
-  material: "metall" | "glas" | "holz"
+  material: "metall" | "glas"
   accentColor: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange"
-  footType: "standard" | "rollen" | "keine"
 }
 
 export type ColumnData = {
@@ -72,7 +71,6 @@ const createInitialConfig = (): ShelfConfig => ({
   ],
   material: "metall",
   accentColor: "weiss",
-  footType: "standard",
 })
 
 const moduleTypes = [
@@ -98,10 +96,9 @@ const specialColorOptions = [
   { id: "rot" as const, label: "Rot", hex: "#7F1D1D" },
 ]
 
-const footTypeOptions = [
-  { id: "standard" as const, label: "Standard" },
-  { id: "rollen" as const, label: "Rollen" },
-  { id: "keine" as const, label: "Keine" },
+const materialOptions = [
+  { id: "metall" as const, label: "Metall" },
+  { id: "glas" as const, label: "Glas" },
 ]
 
 function ModulePreviewIcon({ type, isSelected }: { type: GridCell["type"] | "empty"; isSelected?: boolean }) {
@@ -212,12 +209,6 @@ const hasAnyModules = (config: ShelfConfig): boolean => {
   return config.columns.some((col) => col.cells.some((cell) => cell.type !== "empty"))
 }
 
-const materialOptions = [
-  { id: "metall" as const, label: "Metall" },
-  { id: "glas" as const, label: "Glas" },
-  { id: "holz" as const, label: "Holz" },
-]
-
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(createInitialConfig())
   const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>("ohne-rueckwand")
@@ -229,6 +220,7 @@ export function ShelfConfigurator() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragAction, setDragAction] = useState<"add" | "remove" | null>(null)
   const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false)
+  const [editMode, setEditMode] = useState<"global" | "cell">("global")
   const [dragState, setDragState] = useState<{
     active: boolean
     startCell: { col: number; stackIndex: number } | null
@@ -452,7 +444,7 @@ export function ShelfConfigurator() {
   }, [saveToHistory])
 
   const handleMaterialChange = useCallback(
-    (material: "metall" | "glas" | "holz") => {
+    (material: "metall" | "glas") => {
       setConfig((prev) => {
         const newConfig = { ...prev, material }
         setTimeout(() => saveToHistory(newConfig), 0)
@@ -481,16 +473,57 @@ export function ShelfConfigurator() {
     [saveToHistory],
   )
 
-  const handleFootTypeChange = useCallback(
-    (footType: ShelfConfig["footType"]) => {
+  const handleCellColorChange = useCallback(
+    (col: number, stackIndex: number, color: ShelfConfig["accentColor"]) => {
       setConfig((prev) => {
-        const newConfig = { ...prev, footType }
+        const newColumns = prev.columns.map((column, colIdx) => {
+          if (colIdx !== col) return column
+          return {
+            ...column,
+            cells: column.cells.map((cell, cellIdx) => {
+              if (cellIdx !== stackIndex) return cell
+              return { ...cell, color }
+            }),
+          }
+        })
+        const newConfig = { ...prev, columns: newColumns }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
     },
     [saveToHistory],
   )
+
+  const handleCellTypeChange = useCallback(
+    (col: number, stackIndex: number, type: ModuleType) => {
+      setConfig((prev) => {
+        const newColumns = prev.columns.map((column, colIdx) => {
+          if (colIdx !== col) return column
+          return {
+            ...column,
+            cells: column.cells.map((cell, cellIdx) => {
+              if (cellIdx !== stackIndex) return cell
+              return { ...cell, type }
+            }),
+          }
+        })
+        const newConfig = { ...prev, columns: newColumns }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const handleCellSelect = useCallback((col: number, stackIndex: number) => {
+    setSelectedCell((prev) => {
+      if (prev?.col === col && prev?.stackIndex === stackIndex) {
+        return null // Deselect if clicking the same cell
+      }
+      return { col, stackIndex }
+    })
+    setEditMode("cell")
+  }, [])
 
   const handleColumnWidthChange = useCallback(
     (colIndex: number, newWidth: 38 | 75) => {
@@ -507,6 +540,15 @@ export function ShelfConfigurator() {
     },
     [saveToHistory],
   )
+
+  const selectedCellData = useMemo(() => {
+    if (!selectedCell) return null
+    const column = config.columns[selectedCell.col]
+    if (!column) return null
+    const cell = column.cells[selectedCell.stackIndex]
+    if (!cell) return null
+    return cell
+  }, [selectedCell, config.columns])
 
   const reset = useCallback(() => {
     const newConfig = createInitialConfig()
@@ -552,9 +594,82 @@ export function ShelfConfigurator() {
           "hidden lg:flex",
         )}
       >
+        {selectedCell && selectedCellData && (
+          <div className="p-4 space-y-3 border-t border-[#00b4d8]/30 bg-[#00b4d8]/5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[#00b4d8]">
+                Zelle R{selectedCell.stackIndex + 1}C{selectedCell.col + 1}
+              </h3>
+              <button
+                onClick={() => {
+                  setSelectedCell(null)
+                  setEditMode("global")
+                }}
+                className="h-6 w-6 rounded flex items-center justify-center hover:bg-[#1a1a1a] transition-colors"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+
+            {/* Cell Module Type */}
+            <div className="space-y-2">
+              <span className="text-xs text-muted-foreground">Modul-Typ</span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {moduleTypes.map((module) => (
+                  <button
+                    key={module.id}
+                    onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, module.id)}
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
+                      selectedCellData.type === module.id
+                        ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                        : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
+                    )}
+                  >
+                    <module.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">{module.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cell Color */}
+            <div className="space-y-2">
+              <span className="text-xs text-muted-foreground">Zellen-Farbe</span>
+              <div className="flex gap-1.5 flex-wrap">
+                {[...baseColors, ...specialColorOptions].map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
+                    className={cn(
+                      "w-8 h-8 rounded-lg border-2 transition-all",
+                      selectedCellData.color === c.id
+                        ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                        : "border-border/50 hover:border-border",
+                    )}
+                    style={{ backgroundColor: c.hex }}
+                    title={c.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Clear Cell Button */}
+            <button
+              onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
+              className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400 transition-all"
+            >
+              <Eraser className="h-4 w-4" />
+              <span className="text-xs">Zelle leeren</span>
+            </button>
+          </div>
+        )}
+
         <div className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Farbe</h3>
-          <div className="flex gap-2">
+          <h3 className="text-sm font-semibold text-foreground">
+            Standard-Farbe <span className="text-xs text-muted-foreground font-normal">(alle Zellen)</span>
+          </h3>
+          <div className="flex gap-2 flex-wrap">
             {baseColors.map((c) => (
               <button
                 key={c.id}
@@ -608,26 +723,6 @@ export function ShelfConfigurator() {
                 )}
               >
                 {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">Regalfüße</h3>
-          <div className="flex gap-2">
-            {footTypeOptions.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => handleFootTypeChange(f.id)}
-                className={cn(
-                  "flex-1 py-2.5 text-sm rounded-lg border transition-all",
-                  config.footType === f.id
-                    ? "bg-transparent border-[#00b4d8] text-[#00b4d8] font-medium"
-                    : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-              >
-                {f.label}
               </button>
             ))}
           </div>
@@ -823,11 +918,13 @@ export function ShelfConfigurator() {
           <directionalLight position={[-3, 4, -3]} intensity={0.4} />
 
           <ShelfScene
-            config={config}
-            selectedCell={selectedCell}
+            config={configWithDefaults}
+            selectedTool={selectedTool}
             hoveredCell={hoveredCell}
+            selectedCell={selectedCell}
             onCellClick={handleCellClick}
             onCellHover={setHoveredCell}
+            onCellSelect={handleCellSelect}
             onExpandLeft={handleExpandLeft}
             onExpandRight={handleExpandRight}
             onExpandUp={handleExpandUp}
@@ -868,10 +965,83 @@ export function ShelfConfigurator() {
 
             {/* Mobile panel content - same as desktop */}
             <div className="p-4 space-y-6">
-              {/* Farbe */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Farbe</h3>
-                <div className="flex gap-2">
+              {selectedCell && selectedCellData && (
+                <div className="p-4 space-y-3 border-t border-[#00b4d8]/30 bg-[#00b4d8]/5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-[#00b4d8]">
+                      Zelle R{selectedCell.stackIndex + 1}C{selectedCell.col + 1}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setSelectedCell(null)
+                        setEditMode("global")
+                      }}
+                      className="h-6 w-6 rounded flex items-center justify-center hover:bg-[#1a1a1a] transition-colors"
+                    >
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </div>
+
+                  {/* Cell Module Type */}
+                  <div className="space-y-2">
+                    <span className="text-xs text-muted-foreground">Modul-Typ</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {moduleTypes.map((module) => (
+                        <button
+                          key={module.id}
+                          onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, module.id)}
+                          className={cn(
+                            "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
+                            selectedCellData.type === module.id
+                              ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                              : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
+                          )}
+                        >
+                          <module.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{module.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cell Color */}
+                  <div className="space-y-2">
+                    <span className="text-xs text-muted-foreground">Zellen-Farbe</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {[...baseColors, ...specialColorOptions].map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
+                          className={cn(
+                            "w-8 h-8 rounded-lg border-2 transition-all",
+                            selectedCellData.color === c.id
+                              ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                              : "border-border/50 hover:border-border",
+                          )}
+                          style={{ backgroundColor: c.hex }}
+                          title={c.label}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Clear Cell Button */}
+                  <button
+                    onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
+                    className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400 transition-all"
+                  >
+                    <Eraser className="h-4 w-4" />
+                    <span className="text-xs">Zelle leeren</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Standard Farbe Section - rename from just "Farbe" */}
+              <div className="p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Standard-Farbe <span className="text-xs text-muted-foreground font-normal">(alle Zellen)</span>
+                </h3>
+                <div className="flex gap-2 flex-wrap">
                   {baseColors.map((c) => (
                     <button
                       key={c.id}
@@ -890,7 +1060,7 @@ export function ShelfConfigurator() {
               </div>
 
               {/* Sonderfarbe */}
-              <div className="space-y-3">
+              <div className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Sonderfarbe</h3>
                 <div className="flex gap-2 flex-wrap">
                   {specialColorOptions.map((c) => (
@@ -911,7 +1081,7 @@ export function ShelfConfigurator() {
               </div>
 
               {/* Bodenmaterial */}
-              <div className="space-y-3">
+              <div className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Bodenmaterial</h3>
                 <div className="flex gap-2">
                   {materialOptions.map((m) => (
@@ -931,29 +1101,8 @@ export function ShelfConfigurator() {
                 </div>
               </div>
 
-              {/* Regalfüße */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Regalfüße</h3>
-                <div className="flex gap-2">
-                  {footTypeOptions.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => handleFootTypeChange(f.id)}
-                      className={cn(
-                        "flex-1 py-2.5 text-sm rounded-lg border transition-all",
-                        config.footType === f.id
-                          ? "bg-transparent border-[#00b4d8] text-[#00b4d8] font-medium"
-                          : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
-                      )}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Regal-Größe */}
-              <div className="space-y-3">
+              <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-foreground">Regal-Größe</h3>
                   <span className="text-xs text-muted-foreground">
@@ -1001,7 +1150,7 @@ export function ShelfConfigurator() {
               </div>
 
               {/* Simpli-Elemente */}
-              <div className="space-y-3">
+              <div className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Simpli-Elemente</h3>
                 <button
                   onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
