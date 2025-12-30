@@ -449,17 +449,10 @@ export function ShelfScene({
           const cellColor = cell.color || config.accentColor || "weiss"
           const panelColor = colorMap[cellColor] || colorMap.weiss
 
-          if (cell.type === "mit-rueckwand") {
-            els.push(
-              <mesh key={`backpanel-${colIndex}-${stackIndex}`} position={[cellCenterX, cellCenterY, offsetZ + 0.005]}>
-                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-          }
+          const isSmallCell = column.width === 38
 
           if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
-            const doorWidth = (cellWidth - 0.03) / 2
+            // Back panel
             els.push(
               <mesh
                 key={`backpanel-doors-${colIndex}-${stackIndex}`}
@@ -469,6 +462,8 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
               </mesh>,
             )
+
+            // Side walls
             els.push(
               <mesh
                 key={`sidewall-left-doors-${colIndex}-${stackIndex}`}
@@ -489,53 +484,8 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
               </mesh>,
             )
-            els.push(
-              <mesh
-                key={`door-left-${colIndex}-${stackIndex}`}
-                position={[leftX + doorWidth / 2 + 0.012, cellCenterY, offsetZ + depth + 0.005]}
-              >
-                <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
-              </mesh>,
-            )
-            els.push(
-              <mesh
-                key={`door-right-${colIndex}-${stackIndex}`}
-                position={[rightX - doorWidth / 2 - 0.012, cellCenterY, offsetZ + depth + 0.005]}
-              >
-                <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
-              </mesh>,
-            )
-            els.push(
-              <mesh
-                key={`door-handle-left-${colIndex}-${stackIndex}`}
-                position={[leftX + doorWidth + 0.005, cellCenterY, offsetZ + depth + 0.02]}
-              >
-                <cylinderGeometry args={[0.004, 0.004, cellHeight * 0.6, 8]} />
-                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
-              </mesh>,
-            )
-            els.push(
-              <mesh
-                key={`door-handle-right-${colIndex}-${stackIndex}`}
-                position={[rightX - doorWidth - 0.005, cellCenterY, offsetZ + depth + 0.02]}
-              >
-                <cylinderGeometry args={[0.004, 0.004, cellHeight * 0.6, 8]} />
-                <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
-              </mesh>,
-            )
-            if (cell.type === "abschliessbare-tueren") {
-              els.push(
-                <mesh
-                  key={`door-lock-${colIndex}-${stackIndex}`}
-                  position={[leftX + doorWidth + 0.005, cellCenterY + cellHeight * 0.2, offsetZ + depth + 0.025]}
-                >
-                  <sphereGeometry args={[0.012, 16, 16]} />
-                  <meshStandardMaterial color="#888" metalness={0.8} roughness={0.3} />
-                </mesh>,
-              )
-            }
+
+            // Top panel
             els.push(
               <mesh
                 key={`toppanel-doors-${colIndex}-${stackIndex}`}
@@ -546,6 +496,108 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
               </mesh>,
             )
+
+            if (isSmallCell) {
+              els.push(
+                <mesh
+                  key={`door-single-${colIndex}-${stackIndex}`}
+                  position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
+                >
+                  <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
+                  <meshStandardMaterial color={panelColor} />
+                </mesh>,
+              )
+
+              // Single door handle (vertical chrome bar on right side)
+              els.push(
+                <mesh
+                  key={`handle-single-${colIndex}-${stackIndex}`}
+                  position={[cellCenterX + cellWidth / 2 - 0.05, cellCenterY, offsetZ + depth + 0.015]}
+                >
+                  <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.5, 8]} />
+                  <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
+                </mesh>,
+              )
+
+              if (cell.type === "abschliessbare-tueren") {
+                // Lock indicator for single door
+                els.push(
+                  <mesh
+                    key={`lock-single-${colIndex}-${stackIndex}`}
+                    position={[cellCenterX + cellWidth / 2 - 0.05, cellCenterY - 0.05, offsetZ + depth + 0.02]}
+                  >
+                    <sphereGeometry args={[0.01, 16, 16]} />
+                    <meshStandardMaterial color="#888888" metalness={0.9} roughness={0.1} />
+                  </mesh>,
+                )
+              }
+            } else {
+              const doorWidth = (cellWidth - 0.03) / 2
+
+              // Left door
+              els.push(
+                <mesh
+                  key={`door-left-${colIndex}-${stackIndex}`}
+                  position={[leftX + doorWidth / 2 + 0.012, cellCenterY, offsetZ + depth + 0.005]}
+                >
+                  <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
+                  <meshStandardMaterial color={panelColor} />
+                </mesh>,
+              )
+
+              // Right door
+              els.push(
+                <mesh
+                  key={`door-right-${colIndex}-${stackIndex}`}
+                  position={[rightX - doorWidth / 2 - 0.012, cellCenterY, offsetZ + depth + 0.005]}
+                >
+                  <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
+                  <meshStandardMaterial color={panelColor} />
+                </mesh>,
+              )
+
+              // Handles for double doors
+              els.push(
+                <mesh
+                  key={`handle-left-${colIndex}-${stackIndex}`}
+                  position={[leftX + doorWidth - 0.03, cellCenterY, offsetZ + depth + 0.015]}
+                >
+                  <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.5, 8]} />
+                  <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
+                </mesh>,
+              )
+              els.push(
+                <mesh
+                  key={`handle-right-${colIndex}-${stackIndex}`}
+                  position={[rightX - doorWidth + 0.03, cellCenterY, offsetZ + depth + 0.015]}
+                >
+                  <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.5, 8]} />
+                  <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
+                </mesh>,
+              )
+
+              if (cell.type === "abschliessbare-tueren") {
+                // Lock indicators for double doors
+                els.push(
+                  <mesh
+                    key={`lock-left-${colIndex}-${stackIndex}`}
+                    position={[leftX + doorWidth - 0.03, cellCenterY - 0.05, offsetZ + depth + 0.02]}
+                  >
+                    <sphereGeometry args={[0.01, 16, 16]} />
+                    <meshStandardMaterial color="#888888" metalness={0.9} roughness={0.1} />
+                  </mesh>,
+                )
+                els.push(
+                  <mesh
+                    key={`lock-right-${colIndex}-${stackIndex}`}
+                    position={[rightX - doorWidth + 0.03, cellCenterY - 0.05, offsetZ + depth + 0.02]}
+                  >
+                    <sphereGeometry args={[0.01, 16, 16]} />
+                    <meshStandardMaterial color="#888888" metalness={0.9} roughness={0.1} />
+                  </mesh>,
+                )
+              }
+            }
           }
 
           if (cell.type === "mit-klapptuer") {
@@ -734,8 +786,14 @@ export function ShelfScene({
             depth={depth}
             isHovered={isHoveredCell}
             isSelected={selectedCell?.col === colIndex && selectedCell?.stackIndex === stackIndex}
-            onClick={() => onCellClick(colIndex, stackIndex)}
-            onRightClick={() => onCellSelect?.(colIndex, stackIndex)}
+            onClick={() => {
+              onCellClick(colIndex, stackIndex)
+              onCellSelect?.(colIndex, stackIndex)
+            }}
+            onRightClick={() => {
+              console.log("[v0] Right-click detected, selecting cell", colIndex, stackIndex)
+              onCellSelect?.(colIndex, stackIndex)
+            }}
             onPointerOver={() => onCellHover({ col: colIndex, stackIndex })}
             onPointerOut={() => onCellHover(null)}
           />,

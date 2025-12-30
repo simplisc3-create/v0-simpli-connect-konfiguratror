@@ -62,11 +62,17 @@ const createEmptyCell = (id: string, color: GridCell["color"] = "weiss"): GridCe
   color,
 })
 
+const createInitialCell = (id: string, color: GridCell["color"] = "weiss"): GridCell => ({
+  id,
+  type: "ohne-rueckwand",
+  color,
+})
+
 const createInitialConfig = (): ShelfConfig => ({
   columns: [
     {
       width: 75,
-      cells: [createEmptyCell("col-0-cell-0")],
+      cells: [createInitialCell("col-0-cell-0")],
     },
   ],
   material: "metall",
@@ -283,9 +289,25 @@ export function ShelfConfigurator() {
   const canUndo = historyIndex > 0
   const canRedo = historyIndex < history.length - 1
 
+  const handleCellSelect = useCallback((col: number, stackIndex: number) => {
+    console.log("[v0] Cell selected:", { col, stackIndex })
+    setSelectedCell((prev) => {
+      if (prev?.col === col && prev?.stackIndex === stackIndex) {
+        console.log("[v0] Deselecting cell")
+        return null // Deselect if clicking the same cell
+      }
+      console.log("[v0] Selecting new cell")
+      return { col, stackIndex }
+    })
+    setEditMode("cell")
+  }, [])
+
   const handleCellClick = useCallback(
     (col: number, stackIndex: number) => {
-      if (!selectedTool) return
+      if (!selectedTool) {
+        handleCellSelect(col, stackIndex)
+        return
+      }
 
       setConfig((prev) => {
         const newColumns = prev.columns.map((column, colIdx) => {
@@ -315,7 +337,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [selectedTool, saveToHistory],
+    [selectedTool, saveToHistory, handleCellSelect],
   )
 
   const handleExpandUp = useCallback(
@@ -475,7 +497,9 @@ export function ShelfConfigurator() {
 
   const handleCellColorChange = useCallback(
     (col: number, stackIndex: number, color: ShelfConfig["accentColor"]) => {
+      console.log("[v0] Changing cell color:", { col, stackIndex, color })
       setConfig((prev) => {
+        console.log("[v0] Previous config:", prev.columns[col]?.cells[stackIndex])
         const newColumns = prev.columns.map((column, colIdx) => {
           if (colIdx !== col) return column
           return {
@@ -486,6 +510,7 @@ export function ShelfConfigurator() {
             }),
           }
         })
+        console.log("[v0] New config:", newColumns[col]?.cells[stackIndex])
         const newConfig = { ...prev, columns: newColumns }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
@@ -514,16 +539,6 @@ export function ShelfConfigurator() {
     },
     [saveToHistory],
   )
-
-  const handleCellSelect = useCallback((col: number, stackIndex: number) => {
-    setSelectedCell((prev) => {
-      if (prev?.col === col && prev?.stackIndex === stackIndex) {
-        return null // Deselect if clicking the same cell
-      }
-      return { col, stackIndex }
-    })
-    setEditMode("cell")
-  }, [])
 
   const handleColumnWidthChange = useCallback(
     (colIndex: number, newWidth: 38 | 75) => {
@@ -610,6 +625,8 @@ export function ShelfConfigurator() {
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
+
+            <p className="text-xs text-muted-foreground/80">Bearbeiten Sie diese einzelne Zelle</p>
 
             {/* Cell Module Type */}
             <div className="space-y-2">
@@ -981,6 +998,8 @@ export function ShelfConfigurator() {
                       <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </div>
+
+                  <p className="text-xs text-muted-foreground/80">Bearbeiten Sie diese einzelne Zelle</p>
 
                   {/* Cell Module Type */}
                   <div className="space-y-2">
