@@ -481,6 +481,24 @@ export function ShelfConfigurator() {
     [saveToHistory],
   )
 
+  const handleCellColorChange = useCallback(
+    (col: number, stackIndex: number, color: GridCell["color"]) => {
+      setConfig((prev) => {
+        const newColumns = [...prev.columns]
+        if (newColumns[col] && newColumns[col].cells[stackIndex]) {
+          newColumns[col] = {
+            ...newColumns[col],
+            cells: newColumns[col].cells.map((cell, idx) => (idx === stackIndex ? { ...cell, color } : cell)),
+          }
+        }
+        const newConfig = { ...prev, columns: newColumns }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
   const handleFootTypeChange = useCallback(
     (footType: ShelfConfig["footType"]) => {
       setConfig((prev) => {
@@ -519,28 +537,6 @@ export function ShelfConfigurator() {
   const onSelectTool = useCallback((tool: ModuleType | "empty" | null) => {
     setSelectedTool(tool)
   }, [])
-
-  const handleUpdateCellColor = useCallback(
-    (row: number, col: number, color: GridCell["color"]) => {
-      setConfig((prev) => {
-        const newColumns = prev.columns.map((column, colIdx) => {
-          if (colIdx !== col) return column
-
-          const newCells = column.cells.map((cell, cellIdx) => {
-            if (cellIdx !== row) return cell
-            return { ...cell, color }
-          })
-
-          return { ...column, cells: newCells }
-        })
-
-        const newConfig = { ...prev, columns: newColumns }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
 
   const priceFormatted = useMemo(() => {
     return (0).toFixed(2).replace(".", ",")
@@ -751,6 +747,56 @@ export function ShelfConfigurator() {
             Simpli-Elemente <span className="text-muted-foreground font-normal">(Klicken oder Ziehen)</span>
           </h3>
 
+          {selectedCell && config.columns[selectedCell.col]?.cells[selectedCell.stackIndex]?.type !== "empty" && (
+            <div className="space-y-3 p-3 bg-[#252525] rounded-lg border border-border/30">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">
+                  Zelle S{selectedCell.col + 1} R{selectedCell.stackIndex + 1} Farbe
+                </span>
+                <button
+                  onClick={() => {
+                    handleCellClick(selectedCell.col, selectedCell.stackIndex)
+                    setSelectedCell(null)
+                  }}
+                  className="text-xs text-destructive hover:underline flex items-center gap-1"
+                >
+                  <X className="h-3 w-3" />
+                  Abwählen
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {baseColors.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
+                    className={cn(
+                      "h-8 w-8 rounded-lg border-2 transition-all",
+                      config.columns[selectedCell.col]?.cells[selectedCell.stackIndex]?.color === c.id
+                        ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                        : "border-transparent hover:border-border",
+                    )}
+                    style={{ backgroundColor: c.hex }}
+                    title={c.label}
+                  />
+                ))}
+                {specialColorOptions.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
+                    className={cn(
+                      "h-8 w-8 rounded-lg border-2 transition-all",
+                      config.columns[selectedCell.col]?.cells[selectedCell.stackIndex]?.color === c.id
+                        ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
+                        : "border-transparent hover:border-border",
+                    )}
+                    style={{ backgroundColor: c.hex }}
+                    title={c.label}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Eraser Tool */}
           <button
             onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
@@ -853,7 +899,7 @@ export function ShelfConfigurator() {
             onExpandLeft={handleExpandLeft}
             onExpandRight={handleExpandRight}
             onExpandUp={handleExpandUp}
-            onUpdateCellColor={handleUpdateCellColor}
+            onCellColorChange={handleCellColorChange}
           />
 
           <OrbitControls
