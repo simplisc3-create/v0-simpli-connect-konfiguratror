@@ -62,10 +62,6 @@ const typeLabels: Record<string, string> = {
   "mit-klapptuer": "Mit Klapptür",
   "mit-doppelschublade": "Mit Doppelschublade",
   schubladen: "Schublade",
-  leer: "Leer",
-  "mit-tuer-links": "Tür Links (mit Seitenwand)",
-  "mit-tuer-rechts": "Tür Rechts (mit Seitenwand)",
-  "mit-abschliessbarer-tuer-links": "Abschließbare Tür Links",
 }
 
 const basePrices: Record<string, number> = {
@@ -78,10 +74,6 @@ const basePrices: Record<string, number> = {
   "mit-klapptuer": 179,
   "mit-doppelschublade": 219,
   schubladen: 169,
-  leer: 69,
-  "mit-tuer-links": 159,
-  "mit-tuer-rechts": 159,
-  "mit-abschliessbarer-tuer-links": 189,
 }
 
 const colorSurcharges: Record<string, number> = {
@@ -271,9 +263,7 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
           cell.type === "abschliessbare-tueren" ||
           cell.type === "mit-klapptuer" ||
           cell.type === "mit-doppelschublade" ||
-          cell.type === "schubladen" ||
-          cell.type === "mit-tuer-links" ||
-          cell.type === "mit-tuer-rechts"
+          cell.type === "schubladen"
         ) {
           count += 2 // 2 side walls per closed module
         }
@@ -300,8 +290,7 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
           cell.type === "abschliessbare-tueren" ||
           cell.type === "mit-klapptuer" ||
           cell.type === "mit-doppelschublade" ||
-          cell.type === "schubladen" ||
-          cell.type === "mit-abschliessbarer-tuer-links"
+          cell.type === "schubladen"
         ) {
           count += 1
         }

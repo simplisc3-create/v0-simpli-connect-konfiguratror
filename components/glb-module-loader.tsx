@@ -17,7 +17,7 @@ type GLBModuleProps = {
 const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
   empty: "",
   "ohne-seitenwaende": "3",
-  "ohne-rueckwand": "8", // Changed from "3" to "8" to use the new ohne-rueckwand GLB
+  "ohne-rueckwand": "3",
   "mit-rueckwand": "4",
   "mit-tueren": "3",
   "mit-klapptuer": "4",
@@ -25,77 +25,42 @@ const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
   schubladen: "4",
   "abschliessbare-tueren": "3",
   "mit-seitenwaenden": "4",
-  // 40cm module types
-  leer: "",
-  "mit-tuer-links": "6",
-  "mit-tuer-rechts": "6",
-  "mit-abschliessbarer-tuer-links": "6",
 }
 
 const COLOR_TO_FILE_CODE: Record<string, string> = {
   weiss: "white",
-  schwarz: "gray",
+  schwarz: "gray", // Map schwarz to gray since we have gray models
   blau: "blue",
   gruen: "green",
   orange: "orange",
   rot: "red",
   gelb: "yellow",
-  grau: "gray",
+  grau: "gray", // Added gray color
 }
 
 const GLB_URLS: Record<string, string> = {
   // 80x40x40-1-3 models (mit-tueren style)
-  "80x40x40-1-3-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-white-opt.glb",
-  "80x40x40-1-3-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-yellow-opt.glb",
-  "80x40x40-1-3-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-red-opt.glb",
-  "80x40x40-1-3-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-blue-opt.glb",
-  "80x40x40-1-3-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-green-opt.glb",
-  "80x40x40-1-3-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-orange-opt.glb",
-  "80x40x40-1-3-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-gray-opt.glb",
+  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-opt.glb",
+  "80x40x40-1-3-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
+  "80x40x40-1-3-red": "/images/80x40x40-1-3-red-opt.glb",
   // 80x40x40-1-4 models (mit-klapptuer style)
-  "80x40x40-1-4-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-white-opt.glb",
-  "80x40x40-1-4-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-yellow-opt.glb",
-  "80x40x40-1-4-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-red-opt.glb",
-  "80x40x40-1-4-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-blue-opt.glb",
-  "80x40x40-1-4-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-green-opt.glb",
-  "80x40x40-1-4-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-orange-opt.glb",
-  "80x40x40-1-4-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-gray-opt.glb",
-  // 80x40x40-1-8 models (ohne-rueckwand style)
-  "80x40x40-1-8-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-white-opt.glb",
+  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
+  "80x40x40-1-4-green": "/images/80x40x40-1-4-green-opt.glb",
+  "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-opt.glb",
+
   "80x40x40-1-8-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-yellow.glb",
-  "80x40x40-1-8-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-red-opt.glb",
-  "80x40x40-1-8-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue-opt.glb",
-  "80x40x40-1-8-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-green-opt.glb",
-  "80x40x40-1-8-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-orange-opt.glb",
-  "80x40x40-1-8-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-gray-opt.glb",
+
   // 40x40x40-2-1 models (basic modules)
-  "40x40x40-2-1-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-white-opt.glb",
-  "40x40x40-2-1-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-yellow-opt.glb",
-  "40x40x40-2-1-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-red-opt.glb",
-  "40x40x40-2-1-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-blue-opt.glb",
-  "40x40x40-2-1-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-green-opt.glb",
-  "40x40x40-2-1-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-orange-opt.glb",
-  "40x40x40-2-1-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-gray-opt.glb",
-  // 40x40x40-2-4 models (mit-rueckwand/mit-klapptuer style)
-  "40x40x40-2-4-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-white-opt.glb",
-  "40x40x40-2-4-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-yellow-opt.glb",
-  "40x40x40-2-4-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-red-opt.glb",
-  "40x40x40-2-4-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-blue-opt.glb",
-  "40x40x40-2-4-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-green-opt.glb",
-  "40x40x40-2-4-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-orange-opt.glb",
-  "40x40x40-2-4-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-gray-opt.glb",
-  // 40x40x40-2-6 models (mit-tuer variant)
-  "40x40x40-2-6-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-white-opt.glb",
-  "40x40x40-2-6-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-yellow-opt.glb",
-  "40x40x40-2-6-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-red-opt.glb",
-  "40x40x40-2-6-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-blue-opt.glb",
-  "40x40x40-2-6-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-green-opt.glb",
-  "40x40x40-2-6-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-orange-opt.glb",
-  "40x40x40-2-6-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-gray-opt.glb",
+  "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
+  "40x40x40-2-1-orange": "/images/40x40x40-2-1-orange-opt.glb",
+  "40x40x40-2-1-green": "/images/40x40x40-2-1-green-opt.glb",
+  "40x40x40-2-1-gray": "/images/40x40x40-2-1-gray-opt.glb",
+  // 40x40x40-2-6 models (mit-tueren variant)
+  "40x40x40-2-6-red": "/images/40x40x40-2-6-red-opt.glb",
 }
 
 function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): string | null {
-  if (cellType === "empty" || cellType === "leer") return null
+  if (cellType === "empty") return null
 
   const moduleCode = MODULE_TYPE_TO_CODE[cellType]
   if (!moduleCode) return null
@@ -113,12 +78,17 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
     if (GLB_URLS[fallbackKey]) {
       return GLB_URLS[fallbackKey]
     }
+    if (moduleCode === "3" && colorCode === "yellow") {
+      return GLB_URLS["80x40x40-1-8-yellow"]
+    }
   } else {
     // For 40cm modules (38cm cells)
-    // First try specific module variant
-    const specialKey = `40x40x40-2-${moduleCode}-${colorCode}`
-    if (GLB_URLS[specialKey]) {
-      return GLB_URLS[specialKey]
+    // First try 2-6 variant for certain types (mit-tueren)
+    if (moduleCode === "3" && colorCode === "red") {
+      const specialKey = `40x40x40-2-6-${colorCode}`
+      if (GLB_URLS[specialKey]) {
+        return GLB_URLS[specialKey]
+      }
     }
 
     // Try 2-1 basic variant
@@ -140,7 +110,7 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
 export function GLBModule({ position, cellType, width, height, depth, color }: GLBModuleProps) {
   const modelUrl = getGLBUrl(cellType, width, color)
 
-  if (!modelUrl || cellType === "empty" || cellType === "leer") {
+  if (!modelUrl || cellType === "empty") {
     return null
   }
 
@@ -193,57 +163,6 @@ function GLBModelWithErrorBoundary({
     try {
       const clone = gltf.scene.clone(true)
 
-      console.log("[v0] Loading GLB model:", url)
-      let textureCount = 0
-      let materialCount = 0
-
-      clone.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh
-          materialCount++
-
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach((mat) => {
-              if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
-                console.log("[v0] Material:", mat.name, {
-                  hasMap: !!mat.map,
-                  hasNormalMap: !!mat.normalMap,
-                  hasRoughnessMap: !!mat.roughnessMap,
-                  hasMetalnessMap: !!mat.metalnessMap,
-                  color: mat.color.getHexString(),
-                })
-                if (mat.map) textureCount++
-                if (mat.normalMap) textureCount++
-                if (mat.roughnessMap) textureCount++
-                if (mat.metalnessMap) textureCount++
-              }
-            })
-          } else if (
-            mesh.material instanceof THREE.MeshStandardMaterial ||
-            mesh.material instanceof THREE.MeshPhysicalMaterial
-          ) {
-            const mat = mesh.material
-            console.log("[v0] Material:", mat.name, {
-              hasMap: !!mat.map,
-              hasNormalMap: !!mat.normalMap,
-              hasRoughnessMap: !!mat.roughnessMap,
-              hasMetalnessMap: !!mat.metalnessMap,
-              color: mat.color.getHexString(),
-            })
-            if (mat.map) textureCount++
-            if (mat.normalMap) textureCount++
-            if (mat.roughnessMap) textureCount++
-            if (mat.metalnessMap) textureCount++
-          }
-
-          // Enable shadows for better visual quality
-          mesh.castShadow = true
-          mesh.receiveShadow = true
-        }
-      })
-
-      console.log("[v0] Model loaded with", materialCount, "materials and", textureCount, "textures")
-
       // Calculate bounding box to determine original size
       const box = new THREE.Box3().setFromObject(clone)
       const size = box.getSize(new THREE.Vector3())
@@ -265,7 +184,7 @@ function GLBModelWithErrorBoundary({
       console.error("[v0] Error processing GLB model:", error)
       return null
     }
-  }, [gltf, widthCm, loadError, url])
+  }, [gltf, widthCm, loadError])
 
   if (hasError || isLoading || !clonedScene) {
     return null
