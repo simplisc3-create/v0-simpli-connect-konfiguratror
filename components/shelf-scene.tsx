@@ -1,7 +1,8 @@
 "use client"
 
 import { Html, useTexture } from "@react-three/drei"
-import { useMemo, useState } from "react"
+import { useFrame } from "@react-three/fiber"
+import { useMemo, useState, useRef } from "react"
 import * as THREE from "three"
 import type { ShelfConfig, ColumnData } from "@/components/shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
@@ -30,6 +31,9 @@ const colorMap: Record<string, string> = {
   gelb: colorHexMap.gelb,
   grau: colorHexMap.grau,
 }
+
+const PANEL_METALNESS = 0.05
+const PANEL_ROUGHNESS = 0.5
 
 function ChromeTube({
   start,
@@ -149,11 +153,26 @@ function ExpansionCell({
   onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
+  const sphereRef = useRef<THREE.Mesh>(null)
+  const groupRef = useRef<THREE.Group>(null)
+
+  // Floating animation
+  useFrame((state) => {
+    if (sphereRef.current) {
+      // Gentle floating motion
+      sphereRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.5 + position[0]) * 0.02
+      sphereRef.current.position.x = Math.sin(state.clock.elapsedTime * 0.8 + position[1]) * 0.01
+    }
+  })
+
+  // Sphere radius is 20% bigger than the plus sign
+  const sphereRadius = 0.06
+  const clickAreaRadius = 0.15
 
   return (
-    <group>
+    <group position={position} ref={groupRef}>
+      {/* Invisible larger click area */}
       <mesh
-        position={position}
         onPointerDown={(e) => {
           e.stopPropagation()
           onClick()
@@ -167,12 +186,24 @@ function ExpansionCell({
           document.body.style.cursor = "auto"
         }}
       >
-        <boxGeometry args={[width * 0.95, height * 0.95, depth * 0.95]} />
-        <meshBasicMaterial color="#22c55e" transparent opacity={hovered ? 0.6 : 0.2} depthWrite={false} />
+        <sphereGeometry args={[clickAreaRadius, 16, 16]} />
+        <meshBasicMaterial transparent opacity={0} />
       </mesh>
-      <Html position={position} center>
+      {/* Visible floating sphere */}
+      <mesh ref={sphereRef} scale={hovered ? 1.3 : 1}>
+        <sphereGeometry args={[sphereRadius, 32, 32]} />
+        <meshStandardMaterial
+          color={hovered ? "#4ade80" : "#22c55e"}
+          transparent
+          opacity={hovered ? 0.9 : 0.5}
+          emissive={hovered ? "#22c55e" : "#000000"}
+          emissiveIntensity={hovered ? 0.3 : 0}
+        />
+      </mesh>
+      <Html center>
         <div
-          className={`${hovered ? "bg-green-500 scale-110" : "bg-green-500/70"} text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold shadow-lg transition-all duration-150`}
+          className={`${hovered ? "scale-125 text-white" : "text-white/90"} text-xl font-bold transition-all duration-200 pointer-events-none select-none`}
+          style={{ textShadow: hovered ? "0 0 10px rgba(34, 197, 94, 0.8)" : "none" }}
         >
           +
         </div>
@@ -195,11 +226,29 @@ function StartingPlaceholder({
   onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
+  const sphereRef = useRef<THREE.Mesh>(null)
+
+  // Floating animation
+  useFrame((state) => {
+    if (sphereRef.current) {
+      // Gentle floating motion
+      sphereRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.2) * 0.03
+      sphereRef.current.position.x = Math.sin(state.clock.elapsedTime * 0.7) * 0.015
+    }
+  })
+
+  // Larger sphere for starting placeholder
+  const sphereRadius = 0.1
+  const clickAreaRadius = 0.25
 
   return (
     <group position={position}>
+      {/* Invisible larger click area */}
       <mesh
-        onClick={onClick}
+        onPointerDown={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
         onPointerOver={() => {
           setHovered(true)
           document.body.style.cursor = "pointer"
@@ -209,11 +258,27 @@ function StartingPlaceholder({
           document.body.style.cursor = "auto"
         }}
       >
-        <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial color={hovered ? "#22c55e" : "#d4a574"} transparent opacity={hovered ? 0.7 : 0.4} />
+        <sphereGeometry args={[clickAreaRadius, 16, 16]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+      {/* Visible floating sphere */}
+      <mesh ref={sphereRef} scale={hovered ? 1.3 : 1}>
+        <sphereGeometry args={[sphereRadius, 32, 32]} />
+        <meshStandardMaterial
+          color={hovered ? "#4ade80" : "#22c55e"}
+          transparent
+          opacity={hovered ? 0.9 : 0.5}
+          emissive={hovered ? "#22c55e" : "#000000"}
+          emissiveIntensity={hovered ? 0.4 : 0}
+        />
       </mesh>
       <Html center>
-        <div className="text-white font-bold text-lg">+</div>
+        <div
+          className={`${hovered ? "scale-125" : ""} text-white font-bold text-2xl transition-all duration-200 pointer-events-none select-none`}
+          style={{ textShadow: hovered ? "0 0 12px rgba(34, 197, 94, 0.9)" : "0 0 4px rgba(0,0,0,0.5)" }}
+        >
+          +
+        </div>
       </Html>
     </group>
   )
@@ -428,7 +493,10 @@ export function ShelfScene({
           )
         }
 
-        const bottomPanelColor = colorMap[cell?.color || config.accentColor || "weiss"] || colorMap.weiss
+        // All surfaces within a module get the same color from the cell's color setting
+        const cellColor = cell?.color || config.accentColor || "weiss"
+        const panelColor = colorMap[cellColor] || colorMap.weiss
+
         els.push(
           <mesh
             key={`bottompanel-${colIndex}-${stackIndex}`}
@@ -436,41 +504,50 @@ export function ShelfScene({
             rotation={[-Math.PI / 2, 0, 0]}
           >
             <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-            <meshStandardMaterial color={bottomPanelColor} side={THREE.DoubleSide} />
+            <meshStandardMaterial
+              color={panelColor}
+              side={THREE.DoubleSide}
+              metalness={PANEL_METALNESS}
+              roughness={PANEL_ROUGHNESS}
+            />
           </mesh>,
         )
 
-        const topPanelColor = colorMap[cell?.color || config.accentColor || "weiss"] || colorMap.weiss
         els.push(
           <mesh
-            key={`toppanel-always-${colIndex}-${stackIndex}`}
+            key={`toppanel-${colIndex}-${stackIndex}`}
             position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
             rotation={[-Math.PI / 2, 0, 0]}
           >
             <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-            <meshStandardMaterial color={topPanelColor} side={THREE.DoubleSide} />
+            <meshStandardMaterial
+              color={panelColor}
+              side={THREE.DoubleSide}
+              metalness={PANEL_METALNESS}
+              roughness={PANEL_ROUGHNESS}
+            />
           </mesh>,
         )
 
         if (cell && cell.type !== "empty") {
-          const cellColor = cell.color || config.accentColor || "weiss"
-          const panelColor = colorMap[cellColor] || colorMap.weiss
-
           const isSmallCell = column.width === 38
 
           if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
-            // Back panel
             els.push(
               <mesh
                 key={`backpanel-doors-${colIndex}-${stackIndex}`}
                 position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
                 <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
 
-            // Side walls
             els.push(
               <mesh
                 key={`sidewall-left-doors-${colIndex}-${stackIndex}`}
@@ -478,7 +555,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             els.push(
@@ -488,11 +570,15 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
 
-            // Top panel
             els.push(
               <mesh
                 key={`toppanel-doors-${colIndex}-${stackIndex}`}
@@ -500,7 +586,12 @@ export function ShelfScene({
                 rotation={[-Math.PI / 2, 0, 0]}
               >
                 <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
 
@@ -511,7 +602,7 @@ export function ShelfScene({
                   position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
                 >
                   <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
-                  <meshStandardMaterial color={panelColor} />
+                  <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
                 </mesh>,
               )
 
@@ -550,27 +641,23 @@ export function ShelfScene({
                 )
               }
             } else {
-              const doorWidth = (cellWidth - 0.03) / 2
-
-              // Left door
+              const doorWidth = (cellWidth - 0.03) / 2 - 0.005
               els.push(
                 <mesh
                   key={`door-left-${colIndex}-${stackIndex}`}
-                  position={[leftX + doorWidth / 2 + 0.012, cellCenterY, offsetZ + depth + 0.005]}
+                  position={[cellCenterX - doorWidth / 2 - 0.0025, cellCenterY, offsetZ + depth + 0.005]}
                 >
                   <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
-                  <meshStandardMaterial color={panelColor} />
+                  <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
                 </mesh>,
               )
-
-              // Right door
               els.push(
                 <mesh
                   key={`door-right-${colIndex}-${stackIndex}`}
-                  position={[rightX - doorWidth / 2 - 0.012, cellCenterY, offsetZ + depth + 0.005]}
+                  position={[cellCenterX + doorWidth / 2 + 0.0025, cellCenterY, offsetZ + depth + 0.005]}
                 >
                   <boxGeometry args={[doorWidth, cellHeight - 0.03, 0.01]} />
-                  <meshStandardMaterial color={panelColor} />
+                  <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
                 </mesh>,
               )
 
@@ -623,40 +710,70 @@ export function ShelfScene({
           if (cell.type === "mit-klapptuer") {
             els.push(
               <mesh
-                key={`backpanel-flap-${colIndex}-${stackIndex}`}
+                key={`backpanel-klapp-${colIndex}-${stackIndex}`}
                 position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
                 <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             els.push(
               <mesh
-                key={`sidewall-left-flap-${colIndex}-${stackIndex}`}
+                key={`sidewall-left-klapp-${colIndex}-${stackIndex}`}
                 position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             els.push(
               <mesh
-                key={`sidewall-right-flap-${colIndex}-${stackIndex}`}
+                key={`sidewall-right-klapp-${colIndex}-${stackIndex}`}
                 position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             els.push(
               <mesh
-                key={`flap-${colIndex}-${stackIndex}`}
+                key={`toppanel-klapp-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
+              </mesh>,
+            )
+            els.push(
+              <mesh
+                key={`klapptuer-${colIndex}-${stackIndex}`}
                 position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
               >
                 <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
+                <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
               </mesh>,
             )
             els.push(
@@ -669,29 +786,21 @@ export function ShelfScene({
                 <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
               </mesh>,
             )
-            els.push(
-              <mesh
-                key={`toppanel-flap-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
           }
 
           if (cell.type === "schubladen" || cell.type === "mit-doppelschublade") {
-            const drawerHeight = cell.type === "mit-doppelschublade" ? (cellHeight - 0.04) / 2 : cellHeight - 0.03
-            const drawerCount = cell.type === "mit-doppelschublade" ? 2 : 1
-
             els.push(
               <mesh
                 key={`backpanel-drawer-${colIndex}-${stackIndex}`}
                 position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
                 <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             els.push(
@@ -701,7 +810,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             els.push(
@@ -711,35 +825,14 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
-
-            for (let d = 0; d < drawerCount; d++) {
-              const drawerY =
-                cell.type === "mit-doppelschublade"
-                  ? bottomY + 0.02 + d * (drawerHeight + 0.01) + drawerHeight / 2
-                  : cellCenterY
-              els.push(
-                <mesh
-                  key={`drawer-${d}-${colIndex}-${stackIndex}`}
-                  position={[cellCenterX, drawerY, offsetZ + depth + 0.005]}
-                >
-                  <boxGeometry args={[cellWidth - 0.03, drawerHeight, 0.01]} />
-                  <meshStandardMaterial color={panelColor} />
-                </mesh>,
-              )
-              els.push(
-                <mesh
-                  key={`drawer-handle-${d}-${colIndex}-${stackIndex}`}
-                  position={[cellCenterX, drawerY, offsetZ + depth + 0.015]}
-                  rotation={[0, 0, Math.PI / 2]}
-                >
-                  <cylinderGeometry args={[0.004, 0.004, 0.1, 8]} />
-                  <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
-                </mesh>,
-              )
-            }
             els.push(
               <mesh
                 key={`toppanel-drawer-${colIndex}-${stackIndex}`}
@@ -747,101 +840,97 @@ export function ShelfScene({
                 rotation={[-Math.PI / 2, 0, 0]}
               >
                 <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
+              </mesh>,
+            )
+
+            const drawerHeight = (cellHeight - 0.06) / 2
+            els.push(
+              <mesh
+                key={`drawer-top-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY + drawerHeight / 2 + 0.015, offsetZ + depth + 0.01]}
+              >
+                <boxGeometry args={[cellWidth - 0.04, drawerHeight, 0.02]} />
+                <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
+              </mesh>,
+            )
+            els.push(
+              <mesh
+                key={`drawer-bottom-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY - drawerHeight / 2 - 0.015, offsetZ + depth + 0.01]}
+              >
+                <boxGeometry args={[cellWidth - 0.04, drawerHeight, 0.02]} />
+                <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
+              </mesh>,
+            )
+
+            // Original drawer handles for single drawer (removed as they are now part of double drawer logic)
+            // Original drawer handles for double drawer (kept for consistency)
+            els.push(
+              <mesh
+                key={`drawer-handle-top-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY + drawerHeight / 2 + 0.015, offsetZ + depth + 0.02]}
+                rotation={[0, 0, Math.PI / 2]}
+              >
+                <cylinderGeometry args={[0.004, 0.004, 0.1, 8]} />
+                <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
+              </mesh>,
+            )
+            els.push(
+              <mesh
+                key={`drawer-handle-bottom-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY - drawerHeight / 2 - 0.015, offsetZ + depth + 0.02]}
+                rotation={[0, 0, Math.PI / 2]}
+              >
+                <cylinderGeometry args={[0.004, 0.004, 0.1, 8]} />
+                <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
               </mesh>,
             )
           }
 
-          if (cell.type === "mit-seitenwaenden") {
+          if (cell.type === "mit-seitenwaende") {
+            // Left side panel - same color
             els.push(
               <mesh
-                key={`backpanel-sw-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
-              >
-                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-            els.push(
-              <mesh
-                key={`sidewall-left-${colIndex}-${stackIndex}`}
+                key={`sidewall-left-ms-${colIndex}-${stackIndex}`}
                 position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
+            // Right side panel - same color
             els.push(
               <mesh
-                key={`sidewall-right-${colIndex}-${stackIndex}`}
+                key={`sidewall-right-ms-${colIndex}-${stackIndex}`}
                 position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
-            els.push(
-              <mesh
-                key={`toppanel-sw-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-          }
-
-          if (cell.type === "mit-rueckwand") {
-            // Back panel (beige/tan color as shown in reference)
-            els.push(
-              <mesh
-                key={`backpanel-rw-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
-              >
-                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-            // Left side panel
-            els.push(
-              <mesh
-                key={`sidewall-left-rw-${colIndex}-${stackIndex}`}
-                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
-                rotation={[0, Math.PI / 2, 0]}
-              >
-                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-            // Right side panel
-            els.push(
-              <mesh
-                key={`sidewall-right-rw-${colIndex}-${stackIndex}`}
-                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
-                rotation={[0, Math.PI / 2, 0]}
-              >
-                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-            // Top panel
-            els.push(
-              <mesh
-                key={`toppanel-rw-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
+            // NOTE: Top/bottom panels already rendered with same panelColor, no back panel
           }
 
           if (cell.type === "ohne-rueckwand") {
-            // Left side panel
+            // Left side panel - same color
             els.push(
               <mesh
                 key={`sidewall-left-or-${colIndex}-${stackIndex}`}
@@ -849,10 +938,15 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
-            // Right side panel
+            // Right side panel - same color
             els.push(
               <mesh
                 key={`sidewall-right-or-${colIndex}-${stackIndex}`}
@@ -860,44 +954,121 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
-            // Top panel
+            // NOTE: Top panel (decke) and bottom panel (boden) already rendered with same panelColor
+          }
+
+          if (cell.type === "mit-seitenwaende") {
+            // Left side panel - same color
             els.push(
               <mesh
-                key={`toppanel-or-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
-                rotation={[-Math.PI / 2, 0, 0]}
+                key={`sidewall-left-ms-${colIndex}-${stackIndex}`}
+                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
               >
-                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
+            // Right side panel - same color
+            els.push(
+              <mesh
+                key={`sidewall-right-ms-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
+              </mesh>,
+            )
+            // NOTE: Top/bottom panels already rendered with same panelColor, no back panel
           }
 
           if (cell.type === "ohne-seitenwaende") {
-            // Back panel only
+            // Back panel only - same color
             els.push(
               <mesh
                 key={`backpanel-os-${colIndex}-${stackIndex}`}
                 position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
                 <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
-            // Top panel
+            // NOTE: Top/bottom panels already rendered with same panelColor, no side panels
+          }
+
+          if (cell.type === "mit-rueckwand") {
+            // Back panel (rückwand) - same color as all other panels
             els.push(
               <mesh
-                key={`toppanel-os-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
-                rotation={[-Math.PI / 2, 0, 0]}
+                key={`backpanel-rw-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
-                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
+            // Left side panel (seitenwand links) - same color
+            els.push(
+              <mesh
+                key={`sidewall-left-rw-${colIndex}-${stackIndex}`}
+                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
+              </mesh>,
+            )
+            // Right side panel (seitenwand rechts) - same color
+            els.push(
+              <mesh
+                key={`sidewall-right-rw-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
+              </mesh>,
+            )
+            // NOTE: Top panel (decke) is already rendered above with same panelColor
           }
 
           if (cell.type === "mit-tuer-links") {
@@ -908,7 +1079,12 @@ export function ShelfScene({
                 position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
                 <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Left side wall
@@ -919,7 +1095,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Right side wall
@@ -930,7 +1111,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Top panel
@@ -941,7 +1127,12 @@ export function ShelfScene({
                 rotation={[-Math.PI / 2, 0, 0]}
               >
                 <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Door (full width, hinged on left)
@@ -951,7 +1142,7 @@ export function ShelfScene({
                 position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
               >
                 <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
+                <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
               </mesh>,
             )
             // Handle on right side of door
@@ -974,7 +1165,12 @@ export function ShelfScene({
                 position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
                 <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Left side wall
@@ -985,7 +1181,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Right side wall
@@ -996,7 +1197,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Top panel
@@ -1007,7 +1213,12 @@ export function ShelfScene({
                 rotation={[-Math.PI / 2, 0, 0]}
               >
                 <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Door (full width, hinged on right)
@@ -1017,7 +1228,7 @@ export function ShelfScene({
                 position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
               >
                 <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
+                <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
               </mesh>,
             )
             // Handle on left side of door
@@ -1040,7 +1251,12 @@ export function ShelfScene({
                 position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
               >
                 <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Left side wall
@@ -1051,7 +1267,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Right side wall
@@ -1062,7 +1283,12 @@ export function ShelfScene({
                 rotation={[0, Math.PI / 2, 0]}
               >
                 <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Top panel
@@ -1073,7 +1299,12 @@ export function ShelfScene({
                 rotation={[-Math.PI / 2, 0, 0]}
               >
                 <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+                <meshStandardMaterial
+                  color={panelColor}
+                  side={THREE.DoubleSide}
+                  metalness={PANEL_METALNESS}
+                  roughness={PANEL_ROUGHNESS}
+                />
               </mesh>,
             )
             // Door (full width, hinged on left)
@@ -1083,7 +1314,7 @@ export function ShelfScene({
                 position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
               >
                 <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
-                <meshStandardMaterial color={panelColor} />
+                <meshStandardMaterial color={panelColor} metalness={PANEL_METALNESS} roughness={PANEL_ROUGHNESS} />
               </mesh>,
             )
             // Handle on right side of door
@@ -1108,10 +1339,7 @@ export function ShelfScene({
             )
           }
 
-          if (cell.type === "leer") {
-            // Just frame, no panels - open module
-            // Optional: add subtle edge lines or nothing at all
-          }
+          // Removed the "leer" specific logic as it's now handled by the generic panel drawing below.
         }
 
         const isHoveredCell = hoveredCell?.col === colIndex && hoveredCell?.stackIndex === stackIndex

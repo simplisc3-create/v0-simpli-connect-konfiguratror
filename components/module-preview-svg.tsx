@@ -16,6 +16,17 @@ export function ModulePreviewSVG({ type, className = "h-8 w-8", selected = false
         </svg>
       )
 
+    case "mit-seitenwaende":
+      return (
+        <svg viewBox="0 0 32 32" className={className} fill="none" stroke={strokeColor} strokeWidth="1.5">
+          <rect x="4" y="4" width="24" height="24" rx="2" />
+          {/* Left side wall - solid */}
+          <line x1="6" y1="6" x2="6" y2="26" strokeWidth="3" />
+          {/* Right side wall - solid */}
+          <line x1="26" y1="6" x2="26" y2="26" strokeWidth="3" />
+        </svg>
+      )
+
     case "ohne-rueckwand":
       return (
         <svg viewBox="0 0 32 32" className={className} fill="none" stroke={strokeColor} strokeWidth="2">
@@ -82,7 +93,8 @@ export function ModulePreviewSVG({ type, className = "h-8 w-8", selected = false
         <svg viewBox="0 0 32 32" className={className} fill="none" stroke={strokeColor} strokeWidth="1.5">
           <rect x="4" y="4" width="24" height="24" rx="2" />
           <rect x="6" y="6" width="20" height="20" fill={fillColor} fillOpacity="0.15" />
-          <line x1="9" y1="10" x2="9" y2="22" strokeWidth="2" />
+          {/* Handle on left side */}
+          <circle cx="10" cy="16" r="1.5" fill={fillColor} />
         </svg>
       )
 
@@ -91,7 +103,8 @@ export function ModulePreviewSVG({ type, className = "h-8 w-8", selected = false
         <svg viewBox="0 0 32 32" className={className} fill="none" stroke={strokeColor} strokeWidth="1.5">
           <rect x="4" y="4" width="24" height="24" rx="2" />
           <rect x="6" y="6" width="20" height="20" fill={fillColor} fillOpacity="0.15" />
-          <line x1="23" y1="10" x2="23" y2="22" strokeWidth="2" />
+          {/* Handle on right side */}
+          <circle cx="22" cy="16" r="1.5" fill={fillColor} />
         </svg>
       )
 
@@ -100,7 +113,21 @@ export function ModulePreviewSVG({ type, className = "h-8 w-8", selected = false
         <svg viewBox="0 0 32 32" className={className} fill="none" stroke={strokeColor} strokeWidth="1.5">
           <rect x="4" y="4" width="24" height="24" rx="2" />
           <rect x="6" y="6" width="20" height="20" fill={fillColor} fillOpacity="0.15" />
-          <line x1="9" y1="10" x2="9" y2="22" strokeWidth="2" />
+          {/* Handle on left side */}
+          <circle cx="10" cy="16" r="1.5" fill={fillColor} />
+          {/* Lock indicator */}
+          <circle cx="16" cy="8" r="2" fill={fillColor} />
+        </svg>
+      )
+
+    case "mit-abschliessbarer-tuer-rechts":
+      return (
+        <svg viewBox="0 0 32 32" className={className} fill="none" stroke={strokeColor} strokeWidth="1.5">
+          <rect x="4" y="4" width="24" height="24" rx="2" />
+          <rect x="6" y="6" width="20" height="20" fill={fillColor} fillOpacity="0.15" />
+          {/* Handle on right side */}
+          <circle cx="22" cy="16" r="1.5" fill={fillColor} />
+          {/* Lock indicator */}
           <circle cx="16" cy="8" r="2" fill={fillColor} />
         </svg>
       )

@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import type { ShoppingItem } from "@/lib/shopping-item"
 import { cn } from "@/lib/utils"
-import { ShoppingCart, X, Plus, Minus, Eraser, Download } from "lucide-react"
+import { ShoppingCart, X, Plus, Minus, Eraser, Download, Pin, PinOff, Paintbrush, Settings2 } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 import { ERPExportDialog } from "./erp-export-dialog"
 import { ModulePreviewSVG } from "./module-preview-svg"
@@ -45,6 +45,7 @@ const cellColors = [
 
 const moduleTypes75 = [
   { id: "ohne-seitenwaende" as const, label: "ohne Seitenwände" },
+  { id: "mit-seitenwaende" as const, label: "mit Seitenwände" },
   { id: "ohne-rueckwand" as const, label: "ohne Rückwand" },
   { id: "mit-rueckwand" as const, label: "mit Rückwand" },
   { id: "mit-tueren" as const, label: "mit Türen" },
@@ -57,7 +58,8 @@ const moduleTypes75 = [
 const moduleTypes38 = [
   { id: "mit-tuer-links" as const, label: "Tür links" },
   { id: "mit-tuer-rechts" as const, label: "Tür rechts" },
-  { id: "mit-abschliessbarer-tuer-links" as const, label: "abschließbare Tür" },
+  { id: "mit-abschliessbarer-tuer-links" as const, label: "abschließbar links" },
+  { id: "mit-abschliessbarer-tuer-rechts" as const, label: "abschließbar rechts" },
 ]
 
 const materialOptions = [
@@ -86,7 +88,9 @@ export function ConfiguratorPanel({
   onCollapseSidePanel,
 }: ConfiguratorPanelProps) {
   const [showERPExport, setShowERPExport] = useState(false)
-  const [isPinned, setIsPinned] = useState(true)
+  const [isModulePinned, setIsModulePinned] = useState(true)
+  const [isColorPinned, setIsColorPinned] = useState(false)
+  const [colorBrushActive, setColorBrushActive] = useState(false)
 
   const totalWidth = config.columnWidths.reduce((sum, w) => sum + w, 0)
   const totalHeight = config.rows * 38
@@ -123,9 +127,35 @@ export function ConfiguratorPanel({
           </div>
         </div>
 
-        {/* Cell Color */}
         <div className="space-y-3">
-          <span className="text-sm font-medium text-card-foreground">Zellenfarbe</span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-card-foreground">Zellenfarbe</span>
+            <button
+              onClick={() => {
+                setColorBrushActive(!colorBrushActive)
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+                colorBrushActive
+                  ? "bg-amber-500/20 text-amber-500 border border-amber-500/50"
+                  : "bg-secondary text-muted-foreground hover:text-card-foreground",
+              )}
+            >
+              <Paintbrush className="h-3.5 w-3.5" />
+              Pinsel
+              {colorBrushActive && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsColorPinned(!isColorPinned)
+                  }}
+                  className="ml-1"
+                >
+                  {isColorPinned ? <Pin className="h-3 w-3 text-amber-500" /> : <PinOff className="h-3 w-3" />}
+                </button>
+              )}
+            </button>
+          </div>
           <div className="flex gap-2">
             {cellColors.map((c) => (
               <button
@@ -142,6 +172,12 @@ export function ConfiguratorPanel({
               />
             ))}
           </div>
+          {colorBrushActive && (
+            <p className="text-xs text-muted-foreground">
+              Klicken Sie auf eine Zelle, um die Farbe anzuwenden
+              {isColorPinned && " (Sticky: bleibt aktiv)"}
+            </p>
+          )}
         </div>
 
         {/* Floor Material */}
@@ -236,11 +272,25 @@ export function ConfiguratorPanel({
           </div>
         </div>
 
-        {/* Module Elements */}
         <div className="space-y-3">
-          <span className="text-sm font-medium text-card-foreground">
-            Simpli-Elemente <span className="text-muted-foreground font-normal">(Klicken oder Ziehen)</span>
-          </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-card-foreground">Module</span>
+            </div>
+            <button
+              onClick={() => setIsModulePinned(!isModulePinned)}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+                isModulePinned
+                  ? "bg-amber-500/20 text-amber-500 border border-amber-500/50"
+                  : "bg-secondary text-muted-foreground hover:text-card-foreground",
+              )}
+            >
+              {isModulePinned ? <Pin className="h-3.5 w-3.5" /> : <PinOff className="h-3.5 w-3.5" />}
+              Sticky
+            </button>
+          </div>
 
           {/* Eraser */}
           <button
@@ -253,41 +303,53 @@ export function ConfiguratorPanel({
             )}
           >
             <Eraser className="h-5 w-5" />
-            <span className="text-sm">Radierer (Zelle leeren)</span>
+            <span className="text-sm">Radierer</span>
           </button>
 
-          {/* 75cm Modules */}
+          {/* 75cm Modules Header */}
+          <div className="pt-2">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">75cm Module</span>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             {moduleTypes75.map((module) => (
               <button
                 key={module.id}
                 onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-lg border p-3 transition-all min-h-[80px]",
+                  "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-3 transition-all min-h-[80px]",
                   selectedTool === module.id
-                    ? "border-accent-blue bg-accent-blue/10 text-accent-blue"
-                    : "border-border hover:bg-secondary",
+                    ? "border-accent-blue bg-slate-800 text-accent-blue"
+                    : "border-border hover:bg-secondary bg-secondary/50",
                 )}
               >
+                {selectedTool === module.id && isModulePinned && (
+                  <Pin className="absolute top-2 right-2 h-3 w-3 text-amber-500" />
+                )}
                 <ModulePreviewSVG type={module.id} selected={selectedTool === module.id} />
                 <span className="text-xs text-center leading-tight">{module.label}</span>
               </button>
             ))}
           </div>
 
-          {/* 38cm Modules */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
+          {/* 38cm Modules Header */}
+          <div className="pt-3">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">38cm Module</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             {moduleTypes38.map((module) => (
               <button
                 key={module.id}
                 onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-lg border p-3 transition-all min-h-[80px]",
+                  "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-3 transition-all min-h-[80px]",
                   selectedTool === module.id
-                    ? "border-accent-blue bg-accent-blue/10 text-accent-blue"
-                    : "border-border hover:bg-secondary",
+                    ? "border-accent-blue bg-slate-800 text-accent-blue"
+                    : "border-border hover:bg-secondary bg-secondary/50",
                 )}
               >
+                {selectedTool === module.id && isModulePinned && (
+                  <Pin className="absolute top-2 right-2 h-3 w-3 text-amber-500" />
+                )}
                 <ModulePreviewSVG type={module.id} selected={selectedTool === module.id} />
                 <span className="text-xs text-center leading-tight">{module.label}</span>
               </button>
