@@ -445,6 +445,18 @@ export function ShelfScene({
           </mesh>,
         )
 
+        const topPanelColor = colorMap[cell?.color || config.accentColor || "weiss"] || colorMap.weiss
+        els.push(
+          <mesh
+            key={`toppanel-always-${colIndex}-${stackIndex}`}
+            position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
+            rotation={[-Math.PI / 2, 0, 0]}
+          >
+            <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+            <meshStandardMaterial color={topPanelColor} side={THREE.DoubleSide} />
+          </mesh>,
+        )
+
         if (cell && cell.type !== "empty") {
           const cellColor = cell.color || config.accentColor || "weiss"
           const panelColor = colorMap[cellColor] || colorMap.weiss
@@ -786,6 +798,52 @@ export function ShelfScene({
               </mesh>,
             )
           }
+
+          if (cell.type === "mit-rueckwand") {
+            // Back panel (beige/tan color as shown in reference)
+            els.push(
+              <mesh
+                key={`backpanel-rw-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Left side panel
+            els.push(
+              <mesh
+                key={`sidewall-left-rw-${colIndex}-${stackIndex}`}
+                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Right side panel
+            els.push(
+              <mesh
+                key={`sidewall-right-rw-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Top panel
+            els.push(
+              <mesh
+                key={`toppanel-rw-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+          }
         }
 
         const isHoveredCell = hoveredCell?.col === colIndex && hoveredCell?.stackIndex === stackIndex
@@ -820,7 +878,7 @@ export function ShelfScene({
     expansionCells.push(
       <ExpansionCell
         key="expand-left"
-        position={[expandLeftX - firstColWidth / 2, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
+        position={[expandLeftX - firstColWidth / 2 - tubeRadius, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
         width={firstColWidth}
         height={cellHeight}
         depth={depth}
@@ -834,7 +892,7 @@ export function ShelfScene({
     expansionCells.push(
       <ExpansionCell
         key="expand-right"
-        position={[expandRightX + lastColWidth / 2, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
+        position={[expandRightX + lastColWidth / 2 + tubeRadius, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
         width={lastColWidth}
         height={cellHeight}
         depth={depth}
