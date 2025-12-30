@@ -609,14 +609,12 @@ export function ShelfConfigurator() {
   const availableModuleTypes = useMemo(() => {
     if (selectedColumnWidth && selectedColumnWidth <= 40) {
       const allowed40cmTypes = [
-        "leer", // Assuming 'leer' is the identifier for empty/default module in this context
-        "mit-seitenwaenden",
+        "ohne-seitenwaende",
+        "ohne-rueckwand",
         "mit-rueckwand",
         "mit-tuer-links",
         "mit-tuer-rechts",
-        "mit-abschliessbarer-tuer-links",
       ]
-      // Ensure that types present in moduleTypes are also checked against allowed40cmTypes
       return moduleTypes.filter((m) => allowed40cmTypes.includes(m.id))
     }
     return moduleTypes
