@@ -407,15 +407,15 @@ export function getAbschliessbareTuerPrice(color?: ShelfColor): number {
 // Color hex values for rendering
 export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar" | "glas-klar" | "glas-schwarz", string> = {
   schwarz: "#1a1a1a",
-  weiss: "#f5f5f5", // Clean white matching GLB white models
-  blau: "#4FC3F7", // Bright cyan/teal blue matching GLB blue models
-  orange: "#FF9800", // Warm orange matching GLB orange models
-  rot: "#EF5350", // Coral red matching GLB red models
-  gruen: "#4CAF50", // Medium green matching GLB green models
-  gelb: "#FFEB3B", // Bright yellow matching GLB yellow models
-  grau: "#9E9E9E", // Medium gray matching GLB gray models
-  satiniert: "#e8e8e0", // Frosted/satin glass
+  weiss: "#f5f5f5",
+  blau: "#0277A0", // Teal/petrol blue from product image
+  orange: "#F57C00", // Warm orange from product image
+  rot: "#C62828", // Deep red from product image
+  gruen: "#00896F", // Emerald green from product image
+  gelb: "#F9D71C", // Bright yellow from product image
+  grau: "#5A5A5A", // Dark gunmetal gray (schwarzgrau) from product image
+  satiniert: "#e8e8e0",
   makassar: "#3d2817",
-  "glas-klar": "#e8f4f8", // Clear glass
-  "glas-schwarz": "#1a1a1a", // Black tinted glass
+  "glas-klar": "#e8f4f8",
+  "glas-schwarz": "#1a1a1a",
 }

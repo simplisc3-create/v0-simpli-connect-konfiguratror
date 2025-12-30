@@ -23,6 +23,8 @@ import {
   Palette,
   Layers,
   Settings2,
+  Pin,
+  PinOff,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -59,6 +61,10 @@ export type ColumnData = {
 }
 
 type ModuleType = GridCell["type"]
+
+type ShelfConfiguratorProps = {
+  initialConfig?: ShelfConfig
+}
 
 const createEmptyCell = (id: string, color: GridCell["color"] = "weiss"): GridCell => ({
   id,
@@ -280,8 +286,8 @@ const hasAnyModules = (config: ShelfConfig): boolean => {
   return config.columns.some((col) => col.cells.some((cell) => cell.type !== "empty"))
 }
 
-export function ShelfConfigurator() {
-  const [config, setConfig] = useState<ShelfConfig>(createInitialConfig())
+export function ShelfConfigurator({ initialConfig }: ShelfConfiguratorProps) {
+  const [config, setConfig] = useState<ShelfConfig>(initialConfig ?? createInitialConfig())
   const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>("ohne-rueckwand")
   const [selectedCell, setSelectedCell] = useState<{ col: number; stackIndex: number } | null>(null)
   const [hoveredCell, setHoveredCell] = useState<{ col: number; stackIndex: number } | null>(null)
@@ -305,9 +311,14 @@ export function ShelfConfigurator() {
 
   const isConfiguratorStarted = hasAnyModules(config)
 
-  const [history, setHistory] = useState<ShelfConfig[]>([createInitialConfig()])
+  const [history, setHistory] = useState<ShelfConfig[]>([initialConfig ?? createInitialConfig()])
   const [historyIndex, setHistoryIndex] = useState(0)
   const isUndoRedo = useRef(false)
+
+  // Added pin/sticky toggle for eraser
+  const [isPinned, setIsPinned] = useState(true)
+  // Added grid toggle
+  const [showGrid, setShowGrid] = useState(true)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -654,7 +665,7 @@ export function ShelfConfigurator() {
     [config],
   )
 
-  const rowCount = Math.max(...config.columns.map((col) => col.cells.length))
+  const rowCount = Math.max(1, ...config.columns.map((col) => col.cells.length)) // Ensure at least 1 row
   const colCount = config.columns.length
 
   const totalWidth = config.columns.reduce((sum, col) => sum + col.width, 0)
@@ -677,8 +688,75 @@ export function ShelfConfigurator() {
       >
         {/* Logo/Brand Header */}
         <div className="p-6 border-b border-gray-100">
-          <h1 className="text-xl font-light tracking-wide text-gray-800">SIMPLI</h1>
-          <p className="text-xs text-gray-400 mt-1 tracking-widest uppercase">Konfigurator</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-light tracking-wide text-gray-800">SIMPLI</h1>
+              <p className="text-xs text-gray-400 mt-1 tracking-widest uppercase">Konfigurator</p>
+            </div>
+            <button
+              onClick={() => setShowGrid(!showGrid)}
+              className={cn(
+                "p-2 rounded-lg transition-all",
+                showGrid ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200",
+              )}
+              title={showGrid ? "Raster ausblenden" : "Raster einblenden"}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase block">Spalten</span>
+                <span className="text-sm font-semibold text-gray-700">{colCount}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase block">Reihen</span>
+                <span className="text-sm font-semibold text-gray-700">{rowCount}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase block">Zellen</span>
+                <span className="text-sm font-semibold text-gray-700">{colCount * rowCount}</span>
+              </div>
+            </div>
+
+            {/* Mini grid visualization */}
+            <div className="mt-3 flex justify-center">
+              <div
+                className="grid gap-0.5 p-1 bg-gray-200 rounded"
+                style={{
+                  gridTemplateColumns: `repeat(${Math.min(colCount, 6)}, minmax(0, 1fr))`,
+                  maxWidth: "120px",
+                }}
+              >
+                {Array.from({ length: Math.min(rowCount, 4) * Math.min(colCount, 6) }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-3 h-3 rounded-sm"
+                    style={{
+                      backgroundColor:
+                        config.columns[i % colCount]?.cells[Math.floor(i / colCount)]?.type !== "empty"
+                          ? config.accentColor === "schwarz"
+                            ? "#1a1a1a"
+                            : config.accentColor === "blau"
+                              ? "#0277A0"
+                              : config.accentColor === "gruen"
+                                ? "#00896F"
+                                : config.accentColor === "gelb"
+                                  ? "#F9D71C"
+                                  : config.accentColor === "orange"
+                                    ? "#F57C00"
+                                    : config.accentColor === "rot"
+                                      ? "#C62828"
+                                      : "#e5e7eb"
+                          : "#e5e7eb",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Selected Cell Editor */}
@@ -827,9 +905,22 @@ export function ShelfConfigurator() {
 
         {/* Module Tools */}
         <div className="p-5 space-y-4 flex-1">
-          <div className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4 text-gray-400" />
-            <h3 className="text-sm font-medium text-gray-700">Module</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-gray-400" />
+              <h3 className="text-sm font-medium text-gray-700">Module</h3>
+            </div>
+            <button
+              onClick={() => setIsPinned(!isPinned)}
+              className={cn(
+                "p-1.5 rounded transition-all text-xs flex items-center gap-1",
+                isPinned ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500 hover:bg-gray-200",
+              )}
+              title={isPinned ? "Tool-Auswahl bleibt aktiv" : "Tool-Auswahl nach Klick zurücksetzen"}
+            >
+              {isPinned ? <Pin className="h-3 w-3" /> : <PinOff className="h-3 w-3" />}
+              <span>{isPinned ? "Sticky" : "Single"}</span>
+            </button>
           </div>
 
           {/* Eraser Tool */}
@@ -837,11 +928,12 @@ export function ShelfConfigurator() {
             onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
             className={cn(
               "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
-              selectedTool === "empty" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+              selectedTool === "empty" ? "bg-red-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200",
             )}
           >
             <Eraser className="h-5 w-5" />
             <span className="text-sm font-medium">Radierer</span>
+            {isPinned && selectedTool === "empty" && <Pin className="h-3 w-3 ml-auto" />}
           </button>
 
           {/* Module Grid */}
@@ -857,6 +949,9 @@ export function ShelfConfigurator() {
               >
                 <ModulePreviewIcon type={module.id} isSelected={selectedTool === module.id} />
                 <span className="text-xs text-center leading-tight font-medium">{module.label}</span>
+                {isPinned && selectedTool === module.id && (
+                  <Pin className="h-3 w-3 absolute top-2 right-2 text-amber-400" />
+                )}
               </button>
             ))}
           </div>
@@ -909,17 +1004,22 @@ export function ShelfConfigurator() {
           className="w-full h-full"
           gl={{ antialias: true, alpha: true }}
         >
-          <color attach="background" args={["#f5f0e8"]} />
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[5, 8, 5]} intensity={0.9} castShadow />
-          <directionalLight position={[-3, 4, -3]} intensity={0.3} />
+          <color attach="background" args={["#f0ebe3"]} />
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[5, 8, 5]} intensity={0.6} castShadow />
+          <directionalLight position={[-3, 4, -3]} intensity={0.2} />
 
           <ShelfScene
             config={configWithDefaults}
             selectedTool={selectedTool}
             hoveredCell={hoveredCell}
             selectedCell={selectedCell}
-            onCellClick={handleCellClick}
+            onCellClick={(col, stackIndex) => {
+              handleCellClick(col, stackIndex)
+              if (!isPinned && selectedTool) {
+                setTimeout(() => onSelectTool(null), 100)
+              }
+            }}
             onCellHover={setHoveredCell}
             onCellSelect={handleCellSelect}
             onExpandLeft={handleExpandLeft}
@@ -939,21 +1039,28 @@ export function ShelfConfigurator() {
           <Environment preset="studio" />
         </Canvas>
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border border-gray-200">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">B</span>
-              <span className="font-medium text-gray-700">{totalWidth} cm</span>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border border-gray-200">
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">B</span>
+              <span className="font-medium text-gray-700">{totalWidth}cm</span>
             </div>
             <div className="w-px h-4 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">H</span>
-              <span className="font-medium text-gray-700">{totalHeight} cm</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">H</span>
+              <span className="font-medium text-gray-700">{totalHeight}cm</span>
             </div>
             <div className="w-px h-4 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">T</span>
-              <span className="font-medium text-gray-700">38 cm</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">T</span>
+              <span className="font-medium text-gray-700">38cm</span>
+            </div>
+            <div className="w-px h-4 bg-gray-200" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">Raster</span>
+              <span className="font-medium text-gray-700">
+                {colCount}×{rowCount}
+              </span>
             </div>
           </div>
         </div>
@@ -1102,7 +1209,7 @@ export function ShelfConfigurator() {
                   onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
                   className={cn(
                     "w-full flex items-center gap-3 p-3 rounded-lg transition-all",
-                    selectedTool === "empty" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                    selectedTool === "empty" ? "bg-red-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200",
                   )}
                 >
                   <Eraser className="h-5 w-5" />
