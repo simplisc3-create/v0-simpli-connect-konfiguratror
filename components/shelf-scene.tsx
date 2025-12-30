@@ -520,14 +520,25 @@ export function ShelfScene({
               )
 
               if (cell.type === "abschliessbare-tueren") {
-                // Lock indicator for single door
+                // Lock cylinder at top center
                 els.push(
                   <mesh
                     key={`lock-single-${colIndex}-${stackIndex}`}
-                    position={[cellCenterX + cellWidth / 2 - 0.05, cellCenterY - 0.05, offsetZ + depth + 0.02]}
+                    position={[cellCenterX, topY - 0.05, offsetZ + depth + 0.02]}
                   >
-                    <sphereGeometry args={[0.01, 16, 16]} />
-                    <meshStandardMaterial color="#888888" metalness={0.9} roughness={0.1} />
+                    <sphereGeometry args={[0.012, 16, 16]} />
+                    <meshStandardMaterial color="#c9a227" metalness={0.9} roughness={0.1} />
+                  </mesh>,
+                )
+                // Keyhole indicator (small triangle)
+                els.push(
+                  <mesh
+                    key={`keyhole-single-${colIndex}-${stackIndex}`}
+                    position={[cellCenterX, topY - 0.07, offsetZ + depth + 0.016]}
+                    rotation={[0, 0, Math.PI]}
+                  >
+                    <coneGeometry args={[0.006, 0.012, 3]} />
+                    <meshStandardMaterial color="#444444" metalness={0.5} roughness={0.3} />
                   </mesh>,
                 )
               }
@@ -556,11 +567,11 @@ export function ShelfScene({
                 </mesh>,
               )
 
-              // Handles for double doors
+              // Handles for double doors (vertical bars near center)
               els.push(
                 <mesh
                   key={`handle-left-${colIndex}-${stackIndex}`}
-                  position={[leftX + doorWidth - 0.03, cellCenterY, offsetZ + depth + 0.015]}
+                  position={[cellCenterX - 0.02, cellCenterY, offsetZ + depth + 0.015]}
                 >
                   <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.5, 8]} />
                   <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
@@ -569,7 +580,7 @@ export function ShelfScene({
               els.push(
                 <mesh
                   key={`handle-right-${colIndex}-${stackIndex}`}
-                  position={[rightX - doorWidth + 0.03, cellCenterY, offsetZ + depth + 0.015]}
+                  position={[cellCenterX + 0.02, cellCenterY, offsetZ + depth + 0.015]}
                 >
                   <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.5, 8]} />
                   <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
@@ -577,23 +588,25 @@ export function ShelfScene({
               )
 
               if (cell.type === "abschliessbare-tueren") {
-                // Lock indicators for double doors
+                // Lock cylinder at top center between doors
                 els.push(
                   <mesh
-                    key={`lock-left-${colIndex}-${stackIndex}`}
-                    position={[leftX + doorWidth - 0.03, cellCenterY - 0.05, offsetZ + depth + 0.02]}
+                    key={`lock-center-${colIndex}-${stackIndex}`}
+                    position={[cellCenterX, topY - 0.05, offsetZ + depth + 0.02]}
                   >
-                    <sphereGeometry args={[0.01, 16, 16]} />
-                    <meshStandardMaterial color="#888888" metalness={0.9} roughness={0.1} />
+                    <sphereGeometry args={[0.012, 16, 16]} />
+                    <meshStandardMaterial color="#c9a227" metalness={0.9} roughness={0.1} />
                   </mesh>,
                 )
+                // Keyhole indicator (small triangle pointing down)
                 els.push(
                   <mesh
-                    key={`lock-right-${colIndex}-${stackIndex}`}
-                    position={[rightX - doorWidth + 0.03, cellCenterY - 0.05, offsetZ + depth + 0.02]}
+                    key={`keyhole-center-${colIndex}-${stackIndex}`}
+                    position={[cellCenterX, topY - 0.07, offsetZ + depth + 0.016]}
+                    rotation={[0, 0, Math.PI]}
                   >
-                    <sphereGeometry args={[0.01, 16, 16]} />
-                    <meshStandardMaterial color="#888888" metalness={0.9} roughness={0.1} />
+                    <coneGeometry args={[0.006, 0.012, 3]} />
+                    <meshStandardMaterial color="#444444" metalness={0.5} roughness={0.3} />
                   </mesh>,
                 )
               }
@@ -828,6 +841,27 @@ export function ShelfScene({
         onClick={() => onExpandRight?.(75)}
       />,
     )
+
+    config.columns.forEach((column, colIndex) => {
+      const hasFilledCell = column.cells.some((c) => c.type !== "empty")
+      if (!hasFilledCell) return
+
+      const columnHeight = column.cells.length
+      const colWidth = column.width / 100
+      const cellCenterX = getColumnStartX(colIndex, config.columns, offsetX) + colWidth / 2
+      const topY = columnHeight * cellHeight + offsetY
+
+      expansionCells.push(
+        <ExpansionCell
+          key={`expand-up-${colIndex}`}
+          position={[cellCenterX, topY + cellHeight / 2, offsetZ + depth / 2]}
+          width={colWidth}
+          height={cellHeight}
+          depth={depth}
+          onClick={() => onExpandUp?.(colIndex)}
+        />,
+      )
+    })
 
     return { elements: els, interactiveCells: cells, expansionCells, hasAnyFilledCells }
   }, [

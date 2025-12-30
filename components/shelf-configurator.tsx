@@ -342,8 +342,6 @@ export function ShelfConfigurator() {
 
   const handleExpandUp = useCallback(
     (col: number) => {
-      if (!selectedTool || selectedTool === "empty" || selectedTool === "delete") return
-
       setConfig((prev) => {
         const newColumns = prev.columns.map((column, colIdx) => {
           if (colIdx !== col) return column
@@ -353,7 +351,8 @@ export function ShelfConfigurator() {
 
           const newCell: GridCell = {
             id: `col-${col}-cell-${column.cells.length}`,
-            type: selectedTool,
+            type:
+              selectedTool && selectedTool !== "empty" && selectedTool !== "delete" ? selectedTool : "ohne-rueckwand",
             color: prev.accentColor,
           }
 
