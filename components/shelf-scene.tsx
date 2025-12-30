@@ -559,13 +559,13 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} />
               </mesh>,
             )
-            // Flap door handle (vertical)
             els.push(
               <mesh
                 key={`flap-handle-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, cellCenterY, offsetZ + depth + 0.02]}
+                position={[cellCenterX, cellCenterY + cellHeight * 0.25, offsetZ + depth + 0.02]}
+                rotation={[0, 0, Math.PI / 2]}
               >
-                <cylinderGeometry args={[0.006, 0.006, cellHeight * 0.5, 8]} />
+                <cylinderGeometry args={[0.006, 0.006, cellWidth * 0.6, 8]} />
                 <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.15} />
               </mesh>,
             )
