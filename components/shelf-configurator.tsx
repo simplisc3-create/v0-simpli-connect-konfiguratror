@@ -40,6 +40,10 @@ export type GridCell = {
     | "schubladen"
     | "mit-doppelschublade"
     | "mit-klapptuer"
+    | "leer" // Added for 40cm width modules
+    | "mit-tuer-links" // Added for 40cm width modules
+    | "mit-tuer-rechts" // Added for 40cm width modules
+    | "mit-abschliessbarer-tuer-links" // Added for 40cm width modules
   color: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange"
 }
 
@@ -87,6 +91,11 @@ const moduleTypes = [
   { id: "mit-klapptuer" as const, label: "mit Klapptür", icon: PanelTopOpen },
   { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: Archive },
   { id: "abschliessbare-tueren" as const, label: "abschließbare Türen", icon: Lock },
+  // Added for 40cm width modules, though these might not be directly used here but in other components
+  { id: "leer" as const, label: "Leer", icon: Square }, // Assuming 'leer' is equivalent to 'empty' for filtering
+  { id: "mit-tuer-links" as const, label: "Tür links", icon: DoorOpen },
+  { id: "mit-tuer-rechts" as const, label: "Tür rechts", icon: DoorOpen },
+  { id: "mit-abschliessbarer-tuer-links" as const, label: "Abschließbare Tür links", icon: Lock },
 ] as const
 
 const baseColors = [
@@ -174,6 +183,35 @@ function ModulePreviewIcon({ type, isSelected }: { type: GridCell["type"] | "emp
           <rect x="26" y="16" width="6" height="8" rx="1" fill={strokeColor} />
         </svg>
       )
+    // Added icons for 40cm specific modules
+    case "leer":
+      return (
+        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
+          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
+        </svg>
+      )
+    case "mit-tuer-links":
+      return (
+        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
+          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
+          <rect x="16" y="16" width="10" height="8" rx="1" fill={strokeColor} />
+        </svg>
+      )
+    case "mit-tuer-rechts":
+      return (
+        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
+          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
+          <rect x="24" y="16" width="10" height="8" rx="1" fill={strokeColor} />
+        </svg>
+      )
+    case "mit-abschliessbarer-tuer-links":
+      return (
+        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
+          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
+          <rect x="16" y="16" width="6" height="8" rx="1" fill={strokeColor} />
+          <circle cx="25" cy="20" r="1.5" fill={strokeColor} />
+        </svg>
+      )
     default:
       return (
         <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
@@ -206,6 +244,15 @@ function ModuleIconSVG({ type }: { type: GridCell["type"] }) {
       return <Archive width={iconSize} height={iconSize} />
     case "delete":
       return <Trash2 width={iconSize} height={iconSize} />
+    // Added icons for 40cm specific modules
+    case "leer":
+      return <Square width={iconSize} height={iconSize} />
+    case "mit-tuer-links":
+      return <DoorOpen width={iconSize} height={iconSize} />
+    case "mit-tuer-rechts":
+      return <DoorOpen width={iconSize} height={iconSize} />
+    case "mit-abschliessbarer-tuer-links":
+      return <Lock width={iconSize} height={iconSize} />
     default:
       return null
   }
@@ -478,15 +525,7 @@ export function ShelfConfigurator() {
   const handleColorChange = useCallback(
     (color: ShelfConfig["accentColor"]) => {
       setConfig((prev) => {
-        // Update all cells to new color
-        const newColumns = prev.columns.map((column) => ({
-          ...column,
-          cells: column.cells.map((cell) => ({
-            ...cell,
-            color: color,
-          })),
-        }))
-        const newConfig = { ...prev, accentColor: color, columns: newColumns }
+        const newConfig = { ...prev, accentColor: color }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
@@ -496,9 +535,7 @@ export function ShelfConfigurator() {
 
   const handleCellColorChange = useCallback(
     (col: number, stackIndex: number, color: ShelfConfig["accentColor"]) => {
-      console.log("[v0] Changing cell color:", { col, stackIndex, color })
       setConfig((prev) => {
-        console.log("[v0] Previous config:", prev.columns[col]?.cells[stackIndex])
         const newColumns = prev.columns.map((column, colIdx) => {
           if (colIdx !== col) return column
           return {
@@ -509,7 +546,6 @@ export function ShelfConfigurator() {
             }),
           }
         })
-        console.log("[v0] New config:", newColumns[col]?.cells[stackIndex])
         const newConfig = { ...prev, columns: newColumns }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
@@ -563,6 +599,28 @@ export function ShelfConfigurator() {
     if (!cell) return null
     return cell
   }, [selectedCell, config.columns])
+
+  const selectedColumnWidth = useMemo(() => {
+    if (!selectedCell) return null
+    const column = config.columns[selectedCell.col]
+    return column?.width ?? null
+  }, [selectedCell, config.columns])
+
+  const availableModuleTypes = useMemo(() => {
+    if (selectedColumnWidth && selectedColumnWidth <= 40) {
+      const allowed40cmTypes = [
+        "leer", // Assuming 'leer' is the identifier for empty/default module in this context
+        "mit-seitenwaenden",
+        "mit-rueckwand",
+        "mit-tuer-links",
+        "mit-tuer-rechts",
+        "mit-abschliessbarer-tuer-links",
+      ]
+      // Ensure that types present in moduleTypes are also checked against allowed40cmTypes
+      return moduleTypes.filter((m) => allowed40cmTypes.includes(m.id))
+    }
+    return moduleTypes
+  }, [selectedColumnWidth])
 
   const reset = useCallback(() => {
     const newConfig = createInitialConfig()
@@ -631,7 +689,7 @@ export function ShelfConfigurator() {
             <div className="space-y-2">
               <span className="text-xs text-muted-foreground">Modul-Typ</span>
               <div className="grid grid-cols-2 gap-1.5">
-                {moduleTypes.map((module) => (
+                {availableModuleTypes.map((module) => (
                   <button
                     key={module.id}
                     onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, module.id)}
@@ -704,15 +762,16 @@ export function ShelfConfigurator() {
         </div>
 
         <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">Sonderfarbe</h3>
+          <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
           <div className="flex gap-2 flex-wrap">
             {specialColorOptions.map((c) => (
               <button
                 key={c.id}
-                onClick={() => handleColorChange(c.id)}
+                onClick={() => handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)}
                 className={cn(
                   "w-12 h-12 rounded-lg border-2 transition-all",
-                  config.accentColor === c.id
+                  // Only highlight if the cell is selected and matches the color
+                  selectedCell && selectedCellData?.color === c.id
                     ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
                     : "border-border/50 hover:border-border",
                 )}
@@ -856,7 +915,7 @@ export function ShelfConfigurator() {
 
           {/* Module Grid - 2 columns */}
           <div className="grid grid-cols-2 gap-2">
-            {moduleTypes.map((module) => (
+            {availableModuleTypes.map((module) => (
               <button
                 key={module.id}
                 onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
@@ -1004,7 +1063,7 @@ export function ShelfConfigurator() {
                   <div className="space-y-2">
                     <span className="text-xs text-muted-foreground">Modul-Typ</span>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {moduleTypes.map((module) => (
+                      {availableModuleTypes.map((module) => (
                         <button
                           key={module.id}
                           onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, module.id)}
@@ -1079,15 +1138,17 @@ export function ShelfConfigurator() {
 
               {/* Sonderfarbe */}
               <div className="p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Sonderfarbe</h3>
+                <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
                 <div className="flex gap-2 flex-wrap">
                   {specialColorOptions.map((c) => (
                     <button
                       key={c.id}
-                      onClick={() => handleColorChange(c.id)}
+                      onClick={() =>
+                        handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)
+                      }
                       className={cn(
                         "w-12 h-12 rounded-lg border-2 transition-all",
-                        config.accentColor === c.id
+                        selectedCell && selectedCellData?.color === c.id
                           ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
                           : "border-border/50 hover:border-border",
                       )}
@@ -1183,7 +1244,7 @@ export function ShelfConfigurator() {
                   <span className="text-sm">Radierer</span>
                 </button>
                 <div className="grid grid-cols-2 gap-2">
-                  {moduleTypes.map((module) => (
+                  {availableModuleTypes.map((module) => (
                     <button
                       key={module.id}
                       onClick={() => {

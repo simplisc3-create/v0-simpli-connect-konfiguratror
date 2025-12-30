@@ -878,7 +878,7 @@ export function ShelfScene({
     expansionCells.push(
       <ExpansionCell
         key="expand-left"
-        position={[expandLeftX - firstColWidth / 2 - tubeRadius, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
+        position={[expandLeftX - firstColWidth / 2, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
         width={firstColWidth}
         height={cellHeight}
         depth={depth}
@@ -892,7 +892,7 @@ export function ShelfScene({
     expansionCells.push(
       <ExpansionCell
         key="expand-right"
-        position={[expandRightX + lastColWidth / 2 + tubeRadius, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
+        position={[expandRightX + lastColWidth / 2, cellHeight / 2 + offsetY, offsetZ + depth / 2]}
         width={lastColWidth}
         height={cellHeight}
         depth={depth}
