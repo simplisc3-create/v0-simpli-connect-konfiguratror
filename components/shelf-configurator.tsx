@@ -54,7 +54,7 @@ export type ShelfConfig = {
 }
 
 export type ColumnData = {
-  width: 38 | 75
+  width: 38 | 40 | 75
   cells: GridCell[]
 }
 
@@ -83,6 +83,25 @@ const createInitialConfig = (): ShelfConfig => ({
   accentColor: "weiss",
 })
 
+const moduleTypes75 = [
+  { id: "ohne-seitenwaende" as const, label: "ohne Seitenwände", icon: Square },
+  { id: "ohne-rueckwand" as const, label: "ohne Rückwand", icon: LayoutGrid },
+  { id: "mit-rueckwand" as const, label: "mit Rückwand", icon: PanelTop },
+  { id: "mit-tueren" as const, label: "mit Türen", icon: DoorOpen },
+  { id: "mit-klapptuer" as const, label: "mit Klapptür", icon: PanelTopOpen },
+  { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: Archive },
+  { id: "abschliessbare-tueren" as const, label: "abschließbare Türen", icon: Lock },
+] as const
+
+const moduleTypes40 = [
+  { id: "leer" as const, label: "Leer (offen)", icon: Square },
+  { id: "mit-rueckwand" as const, label: "mit Rückwand", icon: PanelTop },
+  { id: "mit-tuer-links" as const, label: "Tür links", icon: DoorOpen },
+  { id: "mit-tuer-rechts" as const, label: "Tür rechts", icon: DoorOpen },
+  { id: "mit-abschliessbarer-tuer-links" as const, label: "Abschließbare Tür links", icon: Lock },
+  { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: Archive },
+] as const
+
 const moduleTypes = [
   { id: "ohne-seitenwaende" as const, label: "ohne Seitenwände", icon: Square },
   { id: "ohne-rueckwand" as const, label: "ohne Rückwand", icon: LayoutGrid },
@@ -91,8 +110,7 @@ const moduleTypes = [
   { id: "mit-klapptuer" as const, label: "mit Klapptür", icon: PanelTopOpen },
   { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: Archive },
   { id: "abschliessbare-tueren" as const, label: "abschließbare Türen", icon: Lock },
-  // Added for 40cm width modules, though these might not be directly used here but in other components
-  { id: "leer" as const, label: "Leer", icon: Square }, // Assuming 'leer' is equivalent to 'empty' for filtering
+  { id: "leer" as const, label: "Leer", icon: Square },
   { id: "mit-tuer-links" as const, label: "Tür links", icon: DoorOpen },
   { id: "mit-tuer-rechts" as const, label: "Tür rechts", icon: DoorOpen },
   { id: "mit-abschliessbarer-tuer-links" as const, label: "Abschließbare Tür links", icon: Lock },
@@ -415,7 +433,7 @@ export function ShelfConfigurator() {
   )
 
   const handleExpandLeft = useCallback(
-    (width: 38 | 75 = 75) => {
+    (width: 38 | 40 | 75 = 75) => {
       setConfig((prev) => {
         const newCell: GridCell = {
           id: `col-0-cell-0`,
@@ -445,7 +463,7 @@ export function ShelfConfigurator() {
   )
 
   const handleExpandRight = useCallback(
-    (width: 38 | 75 = 75) => {
+    (width: 38 | 40 | 75 = 75) => {
       setConfig((prev) => {
         const newColIndex = prev.columns.length
         const newCell: GridCell = {
@@ -576,7 +594,7 @@ export function ShelfConfigurator() {
   )
 
   const handleColumnWidthChange = useCallback(
-    (colIndex: number, newWidth: 38 | 75) => {
+    (colIndex: number, newWidth: 38 | 40 | 75) => {
       setConfig((prev) => {
         const newColumns = prev.columns.map((col, idx) => {
           if (idx !== colIndex) return col
@@ -608,16 +626,9 @@ export function ShelfConfigurator() {
 
   const availableModuleTypes = useMemo(() => {
     if (selectedColumnWidth && selectedColumnWidth <= 40) {
-      const allowed40cmTypes = [
-        "ohne-seitenwaende",
-        "ohne-rueckwand",
-        "mit-rueckwand",
-        "mit-tuer-links",
-        "mit-tuer-rechts",
-      ]
-      return moduleTypes.filter((m) => allowed40cmTypes.includes(m.id))
+      return moduleTypes40
     }
-    return moduleTypes
+    return moduleTypes75
   }, [selectedColumnWidth])
 
   const reset = useCallback(() => {
@@ -781,7 +792,7 @@ export function ShelfConfigurator() {
                       "w-11 h-11 rounded-full border-2 transition-all shadow-sm",
                       config.accentColor === c.id
                         ? "border-gray-900 ring-2 ring-gray-900/20 scale-110"
-                        : "border-gray-200 hover:border-gray-400 hover:scale-105",
+                        : "border-gray-200 hover:border-gray-400",
                     )}
                     style={{ backgroundColor: c.hex }}
                     title={c.label}

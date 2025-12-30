@@ -92,8 +92,8 @@ export const metallboeden: Product[] = [
 
 // Glasböden (Glass shelves - 2 pieces per package)
 export const glasboeden: Product[] = [
-  { artNr: "sim012", name: "Glas Schwarz 40", category: "glasboden", size: 40, price: 26.0, color: "schwarz" },
-  { artNr: "sim013", name: "Glas Schwarz 80", category: "glasboden", size: 80, price: 35.0, color: "schwarz" },
+  { artNr: "sim012", name: "Glas Schwarz 40", category: "glasboden", size: 40, price: 26.0, color: "glas-schwarz" },
+  { artNr: "sim013", name: "Glas Schwarz 80", category: "glasboden", size: 80, price: 35.0, color: "glas-schwarz" },
   {
     artNr: "sim014",
     name: "Glas Satiniert 40",
@@ -132,6 +132,151 @@ export const schubladenTueren: Product[] = [
   { artNr: "sim019s", name: "Tür 40 Schwarz", category: "tuer", size: 40, price: 32.5, color: "schwarz" },
   { artNr: "sim019w", name: "Tür 40 Weiß", category: "tuer", size: 40, price: 32.5, color: "weiss" },
   { artNr: "sim020c", name: "Jalousie 80 Chrom", category: "jalousie", size: 80, price: 68.0, variant: "chrom" },
+  {
+    artNr: "sim030s",
+    name: "Tür Links 40 Schwarz",
+    category: "tuer",
+    size: 40,
+    price: 45.0,
+    color: "schwarz",
+    variant: "links",
+  },
+  {
+    artNr: "sim030w",
+    name: "Tür Links 40 Weiß",
+    category: "tuer",
+    size: 40,
+    price: 45.0,
+    color: "weiss",
+    variant: "links",
+  },
+  {
+    artNr: "sim031s",
+    name: "Tür Rechts 40 Schwarz",
+    category: "tuer",
+    size: 40,
+    price: 45.0,
+    color: "schwarz",
+    variant: "rechts",
+  },
+  {
+    artNr: "sim031w",
+    name: "Tür Rechts 40 Weiß",
+    category: "tuer",
+    size: 40,
+    price: 45.0,
+    color: "weiss",
+    variant: "rechts",
+  },
+  {
+    artNr: "sim032s",
+    name: "Abschließbare Tür Links 40 Schwarz",
+    category: "tuer",
+    size: 40,
+    price: 65.0,
+    color: "schwarz",
+    variant: "links-abschliessbar",
+  },
+  {
+    artNr: "sim032w",
+    name: "Abschließbare Tür Links 40 Weiß",
+    category: "tuer",
+    size: 40,
+    price: 65.0,
+    color: "weiss",
+    variant: "links-abschliessbar",
+  },
+  // Color variants for door modules
+  {
+    artNr: "sim030bl",
+    name: "Tür Links 40 Blau",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "blau",
+    variant: "links",
+  },
+  {
+    artNr: "sim031bl",
+    name: "Tür Rechts 40 Blau",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "blau",
+    variant: "rechts",
+  },
+  {
+    artNr: "sim030or",
+    name: "Tür Links 40 Orange",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "orange",
+    variant: "links",
+  },
+  {
+    artNr: "sim031or",
+    name: "Tür Rechts 40 Orange",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "orange",
+    variant: "rechts",
+  },
+  {
+    artNr: "sim030rt",
+    name: "Tür Links 40 Rot",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "rot",
+    variant: "links",
+  },
+  {
+    artNr: "sim031rt",
+    name: "Tür Rechts 40 Rot",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "rot",
+    variant: "rechts",
+  },
+  {
+    artNr: "sim030gr",
+    name: "Tür Links 40 Grün",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "gruen",
+    variant: "links",
+  },
+  {
+    artNr: "sim031gr",
+    name: "Tür Rechts 40 Grün",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "gruen",
+    variant: "rechts",
+  },
+  {
+    artNr: "sim030ge",
+    name: "Tür Links 40 Gelb",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "gelb",
+    variant: "links",
+  },
+  {
+    artNr: "sim031ge",
+    name: "Tür Rechts 40 Gelb",
+    category: "tuer",
+    size: 40,
+    price: 52.0,
+    color: "gelb",
+    variant: "rechts",
+  },
 ]
 
 // Funktionswände (Function walls / Back panels)
@@ -220,7 +365,13 @@ export function getSchubladePrice(): number {
   return 88.5 // Doppelschublade 80
 }
 
-export function getTuerPrice(width: number): number {
+export function getTuerPrice(width: number, variant?: string): number {
+  if (variant === "links" || variant === "rechts") {
+    return width === 40 ? getTuerLinksRechtsPrice() : 0
+  }
+  if (variant === "links-abschliessbar") {
+    return width === 40 ? getAbschliessbareTuerPrice() : 0
+  }
   return width === 40 ? 32.5 : 32.5 // Only 40 cm available
 }
 
@@ -236,16 +387,35 @@ export function getLedPrice(stripes: 2 | 4): number {
   return stripes === 2 ? 75.0 : 99.5
 }
 
+// Helper functions for door prices
+export function getTuerLinksRechtsPrice(color?: ShelfColor): number {
+  // Base colors (schwarz/weiss) are 45€, special colors are 52€
+  if (!color || color === "schwarz" || color === "weiss") {
+    return 45.0
+  }
+  return 52.0
+}
+
+export function getAbschliessbareTuerPrice(color?: ShelfColor): number {
+  // Lockable doors: base colors 65€, special colors 72€
+  if (!color || color === "schwarz" || color === "weiss") {
+    return 65.0
+  }
+  return 72.0
+}
+
 // Color hex values for rendering
-export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar", string> = {
+export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar" | "glas-klar" | "glas-schwarz", string> = {
   schwarz: "#1a1a1a",
-  weiss: "#f5f5f5",
-  blau: "#00b4d8",
-  orange: "#f97316",
-  rot: "#dc2626",
-  gruen: "#228B22",
-  gelb: "#eab308",
-  grau: "#6b7280",
-  satiniert: "#e8e8e8",
+  weiss: "#f5f5f5", // Clean white matching GLB white models
+  blau: "#4FC3F7", // Bright cyan/teal blue matching GLB blue models
+  orange: "#FF9800", // Warm orange matching GLB orange models
+  rot: "#EF5350", // Coral red matching GLB red models
+  gruen: "#4CAF50", // Medium green matching GLB green models
+  gelb: "#FFEB3B", // Bright yellow matching GLB yellow models
+  grau: "#9E9E9E", // Medium gray matching GLB gray models
+  satiniert: "#e8e8e0", // Frosted/satin glass
   makassar: "#3d2817",
+  "glas-klar": "#e8f4f8", // Clear glass
+  "glas-schwarz": "#1a1a1a", // Black tinted glass
 }

@@ -28,6 +28,7 @@ const colorMap: Record<string, string> = {
   orange: colorHexMap.orange,
   rot: colorHexMap.rot,
   gelb: colorHexMap.gelb,
+  grau: colorHexMap.grau,
 }
 
 function ChromeTube({
@@ -837,6 +838,219 @@ export function ShelfScene({
                 <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
               </mesh>,
             )
+          }
+
+          if (cell.type === "mit-tuer-links") {
+            // Back panel
+            els.push(
+              <mesh
+                key={`backpanel-tl-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Left side wall
+            els.push(
+              <mesh
+                key={`sidewall-left-tl-${colIndex}-${stackIndex}`}
+                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Right side wall
+            els.push(
+              <mesh
+                key={`sidewall-right-tl-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Top panel
+            els.push(
+              <mesh
+                key={`toppanel-tl-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Door (full width, hinged on left)
+            els.push(
+              <mesh
+                key={`door-tl-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
+              >
+                <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+            // Handle on right side of door
+            els.push(
+              <mesh
+                key={`handle-tl-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.04, cellCenterY, offsetZ + depth + 0.015]}
+              >
+                <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.4, 8]} />
+                <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
+              </mesh>,
+            )
+          }
+
+          if (cell.type === "mit-tuer-rechts") {
+            // Back panel
+            els.push(
+              <mesh
+                key={`backpanel-tr-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Left side wall
+            els.push(
+              <mesh
+                key={`sidewall-left-tr-${colIndex}-${stackIndex}`}
+                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Right side wall
+            els.push(
+              <mesh
+                key={`sidewall-right-tr-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Top panel
+            els.push(
+              <mesh
+                key={`toppanel-tr-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Door (full width, hinged on right)
+            els.push(
+              <mesh
+                key={`door-tr-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
+              >
+                <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+            // Handle on left side of door
+            els.push(
+              <mesh
+                key={`handle-tr-${colIndex}-${stackIndex}`}
+                position={[leftX + 0.04, cellCenterY, offsetZ + depth + 0.015]}
+              >
+                <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.4, 8]} />
+                <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
+              </mesh>,
+            )
+          }
+
+          if (cell.type === "mit-abschliessbarer-tuer-links") {
+            // Back panel
+            els.push(
+              <mesh
+                key={`backpanel-atl-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + 0.005]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Left side wall
+            els.push(
+              <mesh
+                key={`sidewall-left-atl-${colIndex}-${stackIndex}`}
+                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Right side wall
+            els.push(
+              <mesh
+                key={`sidewall-right-atl-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
+                rotation={[0, Math.PI / 2, 0]}
+              >
+                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Top panel
+            els.push(
+              <mesh
+                key={`toppanel-atl-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
+              </mesh>,
+            )
+            // Door (full width, hinged on left)
+            els.push(
+              <mesh
+                key={`door-atl-${colIndex}-${stackIndex}`}
+                position={[cellCenterX, cellCenterY, offsetZ + depth + 0.005]}
+              >
+                <boxGeometry args={[cellWidth - 0.03, cellHeight - 0.03, 0.01]} />
+                <meshStandardMaterial color={panelColor} />
+              </mesh>,
+            )
+            // Handle on right side of door
+            els.push(
+              <mesh
+                key={`handle-atl-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.04, cellCenterY, offsetZ + depth + 0.015]}
+              >
+                <cylinderGeometry args={[0.005, 0.005, cellHeight * 0.4, 8]} />
+                <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.2} />
+              </mesh>,
+            )
+            // Lock cylinder
+            els.push(
+              <mesh
+                key={`lock-atl-${colIndex}-${stackIndex}`}
+                position={[rightX - 0.04, cellCenterY + cellHeight * 0.25, offsetZ + depth + 0.02]}
+              >
+                <sphereGeometry args={[0.01, 16, 16]} />
+                <meshStandardMaterial color="#c9a227" metalness={0.9} roughness={0.1} />
+              </mesh>,
+            )
+          }
+
+          if (cell.type === "leer") {
+            // Just frame, no panels - open module
+            // Optional: add subtle edge lines or nothing at all
           }
         }
 

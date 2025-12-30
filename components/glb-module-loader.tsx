@@ -45,22 +45,53 @@ const COLOR_TO_FILE_CODE: Record<string, string> = {
 
 const GLB_URLS: Record<string, string> = {
   // 80x40x40-1-3 models (mit-tueren style)
-  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-opt.glb",
-  "80x40x40-1-3-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
-  "80x40x40-1-3-red": "/images/80x40x40-1-3-red-opt.glb",
+  "80x40x40-1-3-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-white-opt.glb",
+  "80x40x40-1-3-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-yellow-opt.glb",
+  "80x40x40-1-3-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-red-opt.glb",
+  "80x40x40-1-3-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-blue-opt.glb",
+  "80x40x40-1-3-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-green-opt.glb",
+  "80x40x40-1-3-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-orange-opt.glb",
+  "80x40x40-1-3-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-3-gray-opt.glb",
   // 80x40x40-1-4 models (mit-klapptuer style)
-  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
-  "80x40x40-1-4-green": "/images/80x40x40-1-4-green-opt.glb",
-  "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-opt.glb",
+  "80x40x40-1-4-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-white-opt.glb",
+  "80x40x40-1-4-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-yellow-opt.glb",
+  "80x40x40-1-4-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-red-opt.glb",
+  "80x40x40-1-4-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-blue-opt.glb",
+  "80x40x40-1-4-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-green-opt.glb",
+  "80x40x40-1-4-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-orange-opt.glb",
+  "80x40x40-1-4-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-4-gray-opt.glb",
+  // 80x40x40-1-8 models (ohne-rueckwand style)
+  "80x40x40-1-8-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-white-opt.glb",
   "80x40x40-1-8-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-yellow.glb",
+  "80x40x40-1-8-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-red-opt.glb",
+  "80x40x40-1-8-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue-opt.glb",
+  "80x40x40-1-8-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-green-opt.glb",
+  "80x40x40-1-8-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-orange-opt.glb",
+  "80x40x40-1-8-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-gray-opt.glb",
   // 40x40x40-2-1 models (basic modules)
-  "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
-  "40x40x40-2-1-orange": "/images/40x40x40-2-1-orange-opt.glb",
-  "40x40x40-2-1-green": "/images/40x40x40-2-1-green-opt.glb",
-  "40x40x40-2-1-gray": "/images/40x40x40-2-1-gray-opt.glb",
-  "40x40x40-2-4-blue": "/images/40x40x40-2-4-blue-opt-20-282-29.glb",
-  // 40x40x40-2-6 models (mit-tueren variant)
-  "40x40x40-2-6-red": "/images/40x40x40-2-6-red-opt.glb",
+  "40x40x40-2-1-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-white-opt.glb",
+  "40x40x40-2-1-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-yellow-opt.glb",
+  "40x40x40-2-1-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-red-opt.glb",
+  "40x40x40-2-1-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-blue-opt.glb",
+  "40x40x40-2-1-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-green-opt.glb",
+  "40x40x40-2-1-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-orange-opt.glb",
+  "40x40x40-2-1-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-gray-opt.glb",
+  // 40x40x40-2-4 models (mit-rueckwand/mit-klapptuer style)
+  "40x40x40-2-4-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-white-opt.glb",
+  "40x40x40-2-4-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-yellow-opt.glb",
+  "40x40x40-2-4-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-red-opt.glb",
+  "40x40x40-2-4-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-blue-opt.glb",
+  "40x40x40-2-4-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-green-opt.glb",
+  "40x40x40-2-4-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-orange-opt.glb",
+  "40x40x40-2-4-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-4-gray-opt.glb",
+  // 40x40x40-2-6 models (mit-tuer variant)
+  "40x40x40-2-6-white": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-white-opt.glb",
+  "40x40x40-2-6-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-yellow-opt.glb",
+  "40x40x40-2-6-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-red-opt.glb",
+  "40x40x40-2-6-blue": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-blue-opt.glb",
+  "40x40x40-2-6-green": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-green-opt.glb",
+  "40x40x40-2-6-orange": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-orange-opt.glb",
+  "40x40x40-2-6-gray": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-6-gray-opt.glb",
 }
 
 function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): string | null {
