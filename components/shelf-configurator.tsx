@@ -1,6 +1,5 @@
 "use client"
-
-import { useState, useCallback, useMemo, useRef, useEffect } from "react"
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, Environment } from "@react-three/drei"
 import { ShelfScene } from "./shelf-scene"
@@ -23,6 +22,8 @@ import {
   Minus,
   Package,
   X,
+  Paintbrush,
+  MousePointer,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -104,11 +105,11 @@ const baseColors = [
 ]
 
 const specialColorOptions = [
-  { id: "blau" as const, label: "Blau", hex: "#00566B" },
+  { id: "blau" as const, label: "Blau", hex: "#00b4d8" },
   { id: "gruen" as const, label: "Grün", hex: "#228B22" },
-  { id: "gelb" as const, label: "Gelb", hex: "#9A8700" },
-  { id: "orange" as const, label: "Orange", hex: "#B45309" },
-  { id: "rot" as const, label: "Rot", hex: "#7F1D1D" },
+  { id: "gelb" as const, label: "Gelb", hex: "#FFD700" },
+  { id: "orange" as const, label: "Orange", hex: "#f97316" },
+  { id: "rot" as const, label: "Rot", hex: "#dc2626" },
 ]
 
 const materialOptions = [
@@ -264,7 +265,8 @@ const hasAnyModules = (config: ShelfConfig): boolean => {
 
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(createInitialConfig())
-  const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>("ohne-rueckwand")
+  // Remove selectedTool state, use brushMode.tool instead
+  // const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>("ohne-rueckwand")
   const [selectedCell, setSelectedCell] = useState<{ col: number; stackIndex: number } | null>(null)
   const [hoveredCell, setHoveredCell] = useState<{ col: number; stackIndex: number } | null>(null)
   const [showShoppingList, setShowShoppingList] = useState(false)
@@ -351,11 +353,13 @@ export function ShelfConfigurator() {
 
   const handleCellClick = useCallback(
     (col: number, stackIndex: number) => {
-      if (!selectedTool) {
+      // Select mode - just select the cell
+      if (brushMode.tool === "select" || brushMode.tool === null) {
         handleCellSelect(col, stackIndex)
         return
       }
 
+      // Apply brush tool to cell
       setConfig((prev) => {
         const newColumns = prev.columns.map((column, colIdx) => {
           if (colIdx !== col) return column
@@ -363,7 +367,8 @@ export function ShelfConfigurator() {
           const newCells = column.cells.map((cell, cellIdx) => {
             if (cellIdx !== stackIndex) return cell
 
-            if (selectedTool === "empty" || selectedTool === "delete") {
+            // Delete/empty tool
+            if (brushMode.tool === "empty") {
               if (
                 cellIdx === column.cells.length - 1 ||
                 column.cells.slice(cellIdx + 1).every((c) => c.type === "empty")
@@ -373,7 +378,12 @@ export function ShelfConfigurator() {
               return cell
             }
 
-            return { ...cell, type: selectedTool, color: cell.color || prev.accentColor }
+            // Apply module type AND color from brush
+            return {
+              ...cell,
+              type: brushMode.tool,
+              color: brushMode.color,
+            }
           })
 
           return { ...column, cells: newCells }
@@ -383,8 +393,10 @@ export function ShelfConfigurator() {
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
+
+      // Keep brush mode active (don't reset selection)
     },
-    [selectedTool, saveToHistory, handleCellSelect],
+    [brushMode, saveToHistory, handleCellSelect],
   )
 
   const handleExpandUp = useCallback(
@@ -399,7 +411,10 @@ export function ShelfConfigurator() {
           const newCell: GridCell = {
             id: `col-${col}-cell-${column.cells.length}`,
             type:
-              selectedTool && selectedTool !== "empty" && selectedTool !== "delete" ? selectedTool : "ohne-rueckwand",
+              // Use brushMode.tool instead of selectedTool
+              brushMode.tool && brushMode.tool !== "empty" && brushMode.tool !== "select"
+                ? brushMode.tool
+                : "ohne-rueckwand",
             color: prev.accentColor,
           }
 
@@ -411,7 +426,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [selectedTool, saveToHistory],
+    [brushMode, saveToHistory], // Removed selectedTool dependency
   )
 
   const handleExpandLeft = useCallback(
@@ -419,7 +434,8 @@ export function ShelfConfigurator() {
       setConfig((prev) => {
         const newCell: GridCell = {
           id: `col-0-cell-0`,
-          type: selectedTool && selectedTool !== "empty" && selectedTool !== "delete" ? selectedTool : "empty",
+          // Use brushMode.tool instead of selectedTool
+          type: brushMode.tool && brushMode.tool !== "empty" && brushMode.tool !== "select" ? brushMode.tool : "empty",
           color: prev.accentColor,
         }
 
@@ -441,7 +457,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [selectedTool, saveToHistory],
+    [brushMode, saveToHistory], // Removed selectedTool dependency
   )
 
   const handleExpandRight = useCallback(
@@ -450,7 +466,8 @@ export function ShelfConfigurator() {
         const newColIndex = prev.columns.length
         const newCell: GridCell = {
           id: `col-${newColIndex}-cell-0`,
-          type: selectedTool && selectedTool !== "empty" && selectedTool !== "delete" ? selectedTool : "empty",
+          // Use brushMode.tool instead of selectedTool
+          type: brushMode.tool && brushMode.tool !== "empty" && brushMode.tool !== "select" ? brushMode.tool : "empty",
           color: prev.accentColor,
         }
 
@@ -464,7 +481,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [selectedTool, saveToHistory],
+    [brushMode, saveToHistory], // Removed selectedTool dependency
   )
 
   const handleAddRow = useCallback(() => {
@@ -487,7 +504,6 @@ export function ShelfConfigurator() {
     setConfig((prev) => {
       const maxCells = Math.max(...prev.columns.map((col) => col.cells.length))
       if (maxCells <= 1) return prev
-
       const newColumns = prev.columns.map((column) => {
         if (column.cells.length <= 1) return column
         return { ...column, cells: column.cells.slice(0, -1) }
@@ -502,14 +518,18 @@ export function ShelfConfigurator() {
     handleExpandRight(38)
   }, [handleExpandRight])
 
-  const handleRemoveColumn = useCallback(() => {
-    setConfig((prev) => {
-      if (prev.columns.length <= 1) return prev
-      const newConfig = { ...prev, columns: prev.columns.slice(0, -1) }
-      setTimeout(() => saveToHistory(newConfig), 0)
-      return newConfig
-    })
-  }, [saveToHistory])
+  const handleRemoveColumn = useCallback(
+    (indexToRemove: number) => {
+      setConfig((prev) => {
+        if (prev.columns.length <= 1) return prev
+        const newColumns = prev.columns.filter((_, idx) => idx !== indexToRemove)
+        const newConfig = { ...prev, columns: newColumns }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
 
   const handleMaterialChange = useCallback(
     (material: "metall" | "glas") => {
@@ -625,12 +645,15 @@ export function ShelfConfigurator() {
     setConfig(newConfig)
     setHistory([newConfig])
     setHistoryIndex(0)
-    setSelectedTool("ohne-rueckwand")
+    // Reset to select mode instead of a specific tool
+    // setSelectedTool("ohne-rueckwand")
+    setBrushMode({ tool: "select", color: "weiss" })
   }, [])
 
-  const onSelectTool = useCallback((tool: ModuleType | "empty" | null) => {
-    setSelectedTool(tool)
-  }, [])
+  // Remove onSelectTool, manage tool selection via brushMode state
+  // const onSelectTool = useCallback((tool: ModuleType | "empty" | null) => {
+  //   setSelectedTool(tool)
+  // }, [])
 
   const priceFormatted = useMemo(() => {
     return (0).toFixed(2).replace(".", ",")
@@ -643,341 +666,316 @@ export function ShelfConfigurator() {
     [config],
   )
 
-  const rowCount = Math.max(...config.columns.map((col) => col.cells.length))
+  const rowCount = Math.max(0, ...config.columns.map((col) => col.cells.length))
   const colCount = config.columns.length
 
   const totalWidth = config.columns.reduce((sum, col) => sum + col.width, 0)
-  const totalHeight = rowCount * 38 // Each row is 38cm
+  // Use maxStackHeight instead of hardcoded rowCount * 38
+  const maxStackHeight = Math.max(1, ...config.columns.map((col) => col.cells.length))
+  const totalHeight = maxStackHeight * 38 // Each row is 38cm
 
   const resetCamera = useCallback(() => {
     // Reset camera logic here
   }, [])
 
-  return (
-    <div className="flex h-screen flex-col bg-muted/30 lg:flex-row">
-      {/* Mobile cart toggle only */}
-      {isMobile && <LiveCart config={config} isOpen={isCartOpen} onToggle={() => setIsCartOpen(!isCartOpen)} />}
+  const [brushMode, setBrushMode] = useState<{
+    tool: ModuleType | "empty" | "select" | null
+    color: ShelfConfig["accentColor"]
+  }>({
+    tool: "select", // Default to select mode
+    color: "weiss",
+  })
 
-      <div
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 w-[320px] bg-[#0a0a0a] border-r border-border/30 flex-col overflow-y-auto",
-          "hidden lg:flex",
-        )}
-      >
-        {selectedCell && selectedCellData && (
-          <div className="p-4 space-y-3 border-t border-[#00b4d8]/30 bg-[#00b4d8]/5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[#00b4d8]">
-                Zelle R{selectedCell.stackIndex + 1}C{selectedCell.col + 1}
-              </h3>
+  const handleUndo = undo
+  const handleRedo = redo
+
+  return (
+    // Adjusted main container classes for better layout management
+    <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-background lg:flex-row">
+      {/* Left Panel - Optimized Brush Panel */}
+      <div className="hidden lg:flex flex-col w-[280px] bg-card border-r border-border overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 border-b border-border">
+          <h2 className="font-semibold text-sm">Konfigurator</h2>
+          <div className="flex gap-1">
+            <button
+              onClick={handleUndo}
+              disabled={historyIndex <= 0}
+              className="p-1.5 rounded hover:bg-secondary disabled:opacity-30"
+              title="Rückgängig"
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-1.5 rounded hover:bg-secondary disabled:opacity-30"
+              title="Wiederholen"
+            >
+              <Redo2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {/* Mode Selection - Select or Brush */}
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Modus</span>
+            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setSelectedCell(null)
-                  setEditMode("global")
-                }}
-                className="h-6 w-6 rounded flex items-center justify-center hover:bg-[#1a1a1a] transition-colors"
+                onClick={() => setBrushMode((prev) => ({ ...prev, tool: "select" }))}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border transition-all",
+                  brushMode.tool === "select"
+                    ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                    : "border-border bg-secondary/50 hover:bg-secondary",
+                )}
               >
-                <X className="h-4 w-4 text-muted-foreground" />
+                <MousePointer className="h-4 w-4" />
+                <span className="text-xs font-medium">Auswählen</span>
+              </button>
+              <button
+                onClick={() =>
+                  setBrushMode((prev) => ({ ...prev, tool: prev.tool === "select" ? "ohne-rueckwand" : prev.tool }))
+                }
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border transition-all",
+                  brushMode.tool !== "select" && brushMode.tool !== null
+                    ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                    : "border-border bg-secondary/50 hover:bg-secondary",
+                )}
+              >
+                <Paintbrush className="h-4 w-4" />
+                <span className="text-xs font-medium">Pinsel</span>
               </button>
             </div>
+          </div>
 
-            <p className="text-xs text-muted-foreground/80">Bearbeiten Sie diese einzelne Zelle</p>
+          {/* Brush Settings - Only show when in brush mode */}
+          {brushMode.tool !== "select" && (
+            <>
+              {/* Color Selection */}
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Farbe</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...baseColors, ...specialColorOptions].map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setBrushMode((prev) => ({ ...prev, color: c.id }))}
+                      className={cn(
+                        "w-9 h-9 rounded-lg border-2 transition-all",
+                        brushMode.color === c.id
+                          ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30 scale-110"
+                          : "border-border/50 hover:border-border hover:scale-105",
+                      )}
+                      style={{ backgroundColor: c.hex }}
+                      title={c.label}
+                    />
+                  ))}
+                </div>
+              </div>
 
-            {/* Cell Module Type */}
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground">Modul-Typ</span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {availableModuleTypes.map((module) => (
+              {/* Module Type Selection */}
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Modultyp</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {/* Delete button */}
+                  <button
+                    onClick={() => setBrushMode((prev) => ({ ...prev, tool: "empty" }))}
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
+                      brushMode.tool === "empty"
+                        ? "border-red-500 bg-red-500/10 text-red-400"
+                        : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400",
+                    )}
+                  >
+                    <Eraser className="h-4 w-4" />
+                    <span>Löschen</span>
+                  </button>
+
+                  {/* Module types */}
+                  {moduleTypes
+                    .filter((m) => m.id !== "leer")
+                    .slice(0, 7)
+                    .map((module) => (
+                      <button
+                        key={module.id}
+                        onClick={() => setBrushMode((prev) => ({ ...prev, tool: module.id }))}
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
+                          brushMode.tool === module.id
+                            ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                            : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
+                        )}
+                      >
+                        <module.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{module.label.replace("mit ", "").replace("ohne ", "")}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+
+              {/* Active Brush Preview */}
+              <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-lg border-2 border-[#00b4d8]"
+                    style={{
+                      backgroundColor: brushMode.color
+                        ? specialColorOptions.find((c) => c.id === brushMode.color)?.hex ||
+                          baseColors.find((c) => c.id === brushMode.color)?.hex ||
+                          "#F5F5F5"
+                        : "#F5F5F5",
+                    }}
+                  />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium">Aktiver Pinsel</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {brushMode.tool === "empty"
+                        ? "Löschen"
+                        : moduleTypes.find((m) => m.id === brushMode.tool)?.label || "Kein Modul"}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Klicken Sie auf Zellen, um dieses Modul anzuwenden
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Grid Size */}
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Regal-Größe</span>
+            <div className="text-xs text-muted-foreground mb-2">
+              {totalWidth} × {maxStackHeight * 38} cm
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-12">Spalten</span>
+                <button
+                  onClick={() => handleRemoveColumn(config.columns.length - 1)}
+                  disabled={config.columns.length <= 1}
+                  className="p-1 rounded bg-secondary hover:bg-secondary/80 disabled:opacity-30"
+                >
+                  <Minus className="h-3 w-3" />
+                </button>
+                <span className="text-sm font-medium w-6 text-center">{config.columns.length}</span>
+                <button onClick={handleAddColumn} className="p-1 rounded bg-secondary hover:bg-secondary/80">
+                  <Plus className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+
+            {/* Column Widths */}
+            <div className="flex flex-wrap gap-1 mt-2">
+              {config.columns.map((col, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleColumnWidthChange(idx, col.width === 75 ? 38 : 75)}
+                  className={cn(
+                    "px-2 py-1 text-xs rounded border transition-all",
+                    col.width === 75
+                      ? "bg-[#00b4d8]/10 border-[#00b4d8] text-[#00b4d8]"
+                      : "bg-secondary border-border text-muted-foreground hover:border-[#00b4d8]/50",
+                  )}
+                >
+                  {col.width}cm
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Material */}
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Material</span>
+            <div className="flex gap-2">
+              {materialOptions.map((mat) => (
+                <button
+                  key={mat.id}
+                  onClick={() => setConfig((prev) => ({ ...prev, material: mat.id }))}
+                  className={cn(
+                    "flex-1 p-2 rounded-lg border text-xs transition-all",
+                    config.material === mat.id
+                      ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                      : "border-border bg-secondary/50 hover:bg-secondary",
+                  )}
+                >
+                  {mat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Selected Cell Info (when in select mode and cell is selected) */}
+          {brushMode.tool === "select" && selectedCell && selectedCellData && selectedCellData.type !== "empty" && (
+            <div className="space-y-3 p-3 rounded-lg bg-[#00b4d8]/5 border border-[#00b4d8]/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">
+                  Zelle S{selectedCell.col + 1} R{selectedCell.stackIndex + 1}
+                </span>
+                <button
+                  onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  Löschen
+                </button>
+              </div>
+
+              {/* Quick type change */}
+              <div className="grid grid-cols-2 gap-1">
+                {availableModuleTypes.slice(0, 4).map((module) => (
                   <button
                     key={module.id}
                     onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, module.id)}
                     className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
+                      "p-1.5 rounded border text-[10px] transition-all",
                       selectedCellData.type === module.id
                         ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
-                        : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
+                        : "border-border/30 bg-[#1a1a1a] hover:border-border",
                     )}
                   >
-                    <module.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">{module.label}</span>
+                    {module.label.replace("mit ", "").replace("ohne ", "")}
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Cell Color */}
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground">Zellen-Farbe</span>
-              <div className="flex gap-1.5 flex-wrap">
+              {/* Quick color change */}
+              <div className="flex gap-1">
                 {[...baseColors, ...specialColorOptions].map((c) => (
                   <button
                     key={c.id}
                     onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
                     className={cn(
-                      "w-8 h-8 rounded-lg border-2 transition-all",
+                      "w-6 h-6 rounded border transition-all",
                       selectedCellData.color === c.id
-                        ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                        : "border-border/50 hover:border-border",
+                        ? "border-[#00b4d8] ring-1 ring-[#00b4d8]/30"
+                        : "border-border/50 hover:scale-110",
                     )}
                     style={{ backgroundColor: c.hex }}
-                    title={c.label}
                   />
                 ))}
               </div>
             </div>
-
-            {/* Clear Cell Button */}
-            <button
-              onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
-              className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400 transition-all"
-            >
-              <Eraser className="h-4 w-4" />
-              <span className="text-xs">Zelle leeren</span>
-            </button>
-          </div>
-        )}
-
-        <div className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            Standard-Farbe <span className="text-xs text-muted-foreground font-normal">(alle Zellen)</span>
-          </h3>
-          <div className="flex gap-2 flex-wrap">
-            {baseColors.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handleColorChange(c.id)}
-                className={cn(
-                  "w-12 h-12 rounded-lg border-2 transition-all",
-                  config.accentColor === c.id
-                    ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                    : "border-border/50 hover:border-border",
-                )}
-                style={{ backgroundColor: c.hex }}
-                title={c.label}
-              />
-            ))}
-          </div>
+          )}
         </div>
-
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
-          <div className="flex gap-2 flex-wrap">
-            {specialColorOptions.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)}
-                className={cn(
-                  "w-12 h-12 rounded-lg border-2 transition-all",
-                  // Only highlight if the cell is selected and matches the color
-                  selectedCell && selectedCellData?.color === c.id
-                    ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                    : "border-border/50 hover:border-border",
-                )}
-                style={{ backgroundColor: c.hex }}
-                title={c.label}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Bodenmaterial Section */}
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">Bodenmaterial</h3>
-          <div className="flex gap-2">
-            {materialOptions.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => handleMaterialChange(m.id)}
-                className={cn(
-                  "flex-1 py-2.5 text-sm rounded-lg border transition-all",
-                  config.material === m.id
-                    ? "bg-transparent border-[#00b4d8] text-[#00b4d8] font-medium"
-                    : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Regal-Größe</h3>
-            <span className="text-xs text-muted-foreground">
-              {totalWidth} × {totalHeight} cm
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-muted-foreground">Reihen</span>
-              <button
-                onClick={handleRemoveRow}
-                disabled={rowCount <= 1}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-base font-bold w-5 text-center">{rowCount}</span>
-              <button
-                onClick={handleAddRow}
-                disabled={rowCount >= 6}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-muted-foreground">Spalten</span>
-              <button
-                onClick={handleRemoveColumn}
-                disabled={colCount <= 1}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-base font-bold w-5 text-center">{colCount}</span>
-              <button
-                onClick={handleAddColumn}
-                disabled={colCount >= 6}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <span className="text-xs text-muted-foreground">Spaltenbreiten (klicken zum Ändern)</span>
-            <div className="flex gap-2">
-              {config.columns.map((col, idx) => (
-                <div key={idx} className="relative">
-                  <button
-                    onClick={() => setExpandedWidthSelector(expandedWidthSelector === idx ? null : idx)}
-                    className={cn(
-                      "px-3 py-1.5 text-xs rounded-lg border transition-all",
-                      col.width === 75
-                        ? "bg-[#00b4d8]/10 border-[#00b4d8]/50 text-[#00b4d8]"
-                        : "bg-[#1a1a1a] border-border/50 text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {col.width}cm
-                  </button>
-                  {expandedWidthSelector === idx && (
-                    <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-border/50 rounded-lg shadow-lg z-10 overflow-hidden">
-                      <button
-                        onClick={() => handleColumnWidthChange(idx, 38)}
-                        className={cn(
-                          "w-full px-4 py-2 text-xs text-left hover:bg-[#252525] transition-colors",
-                          col.width === 38 && "text-[#00b4d8]",
-                        )}
-                      >
-                        38 cm
-                      </button>
-                      <button
-                        onClick={() => handleColumnWidthChange(idx, 75)}
-                        className={cn(
-                          "w-full px-4 py-2 text-xs text-left hover:bg-[#252525] transition-colors",
-                          col.width === 75 && "text-[#00b4d8]",
-                        )}
-                      >
-                        75 cm
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Simpli-Elemente Section */}
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">
-            Simpli-Elemente <span className="text-muted-foreground font-normal">(Klicken oder Ziehen)</span>
-          </h3>
-
-          {/* Eraser Tool */}
-          <button
-            onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
-            className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
-              selectedTool === "empty"
-                ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
-                : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
-            )}
+        {/* Footer Actions - Moved from original bottom toolbar */}
+        <div className="mt-auto p-3 border-t border-border">
+          <Button
+            variant="outline"
+            onClick={reset}
+            className="w-full text-destructive hover:text-destructive/80 bg-transparent"
           >
-            <Eraser className="h-5 w-5" />
-            <span className="text-sm">Radierer (Zelle leeren)</span>
-          </button>
-
-          {/* Module Grid - 2 columns */}
-          <div className="grid grid-cols-2 gap-2">
-            {availableModuleTypes.map((module) => (
-              <button
-                key={module.id}
-                onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
-                className={cn(
-                  "relative flex flex-col items-center justify-center gap-2 p-3 rounded-lg border transition-all min-h-[90px]",
-                  selectedTool === module.id
-                    ? "border-[#00b4d8] bg-[#00b4d8]/10"
-                    : "border-border/30 bg-[#1a1a1a] hover:border-border",
-                )}
-              >
-                <ModulePreviewIcon type={module.id} isSelected={selectedTool === module.id} />
-                <span
-                  className={cn(
-                    "text-xs text-center leading-tight",
-                    selectedTool === module.id ? "text-[#00b4d8]" : "text-muted-foreground",
-                  )}
-                >
-                  {module.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Toolbar at bottom */}
-        <div className="mt-auto p-4 border-t border-border/20">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={undo}
-                disabled={!canUndo}
-                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <Undo2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={redo}
-                disabled={!canRedo}
-                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <Redo2 className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={reset}
-              className="h-9 px-3 text-muted-foreground hover:text-destructive"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Zurücksetzen
-            </Button>
-          </div>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Zurücksetzen
+          </Button>
         </div>
       </div>
 
       {/* Main 3D Viewer Area */}
-      <div className="flex-1 relative lg:ml-[320px]">
-        {/* Desktop cart */}
-        {!isMobile && <LiveCart config={config} isOpen={isCartOpen} onToggle={() => setIsCartOpen(!isCartOpen)} />}
+      <div className="relative flex-1 min-h-0">
+        {/* Mobile cart toggle only */}
+        {isMobile && <LiveCart config={config} isOpen={isCartOpen} onToggle={() => setIsCartOpen(!isCartOpen)} />}
 
         <Canvas
           camera={{ position: [2, 1.5, 2], fov: 45 }}
@@ -992,7 +990,10 @@ export function ShelfConfigurator() {
 
           <ShelfScene
             config={configWithDefaults}
-            selectedTool={selectedTool}
+            // Pass brushMode.tool and brushMode.color instead of selectedTool
+            // selectedTool={selectedTool}
+            selectedTool={brushMode.tool === "select" ? null : brushMode.tool}
+            selectedColor={brushMode.tool === "select" ? undefined : brushMode.color}
             hoveredCell={hoveredCell}
             selectedCell={selectedCell}
             onCellClick={handleCellClick}
@@ -1208,7 +1209,7 @@ export function ShelfConfigurator() {
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm text-muted-foreground">Spalten</span>
                     <button
-                      onClick={handleRemoveColumn}
+                      onClick={() => handleRemoveColumn(config.columns.length - 1)}
                       disabled={colCount <= 1}
                       className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
                     >
@@ -1230,11 +1231,13 @@ export function ShelfConfigurator() {
               <div className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Simpli-Elemente</h3>
                 <button
-                  onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
+                  onClick={() =>
+                    setBrushMode((prev) => ({ ...prev, tool: prev.tool === "empty" ? "select" : "empty" }))
+                  }
                   className={cn(
                     "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
-                    selectedTool === "empty"
-                      ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
+                    brushMode.tool === "empty"
+                      ? "border-red-500 bg-red-500/10 text-red-400"
                       : "border-border/30 bg-[#1a1a1a] text-muted-foreground",
                   )}
                 >
@@ -1246,21 +1249,21 @@ export function ShelfConfigurator() {
                     <button
                       key={module.id}
                       onClick={() => {
-                        onSelectTool(selectedTool === module.id ? null : module.id)
+                        setBrushMode((prev) => ({ ...prev, tool: module.id }))
                         setShowMobilePanel(false)
                       }}
                       className={cn(
                         "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all",
-                        selectedTool === module.id
+                        brushMode.tool === module.id
                           ? "border-[#00b4d8] bg-[#00b4d8]/10"
                           : "border-border/30 bg-[#1a1a1a]",
                       )}
                     >
-                      <ModulePreviewIcon type={module.id} isSelected={selectedTool === module.id} />
+                      <ModulePreviewIcon type={module.id} isSelected={brushMode.tool === module.id} />
                       <span
                         className={cn(
                           "text-xs text-center",
-                          selectedTool === module.id ? "text-[#00b4d8]" : "text-muted-foreground",
+                          brushMode.tool === module.id ? "text-[#00b4d8]" : "text-muted-foreground",
                         )}
                       >
                         {module.label}

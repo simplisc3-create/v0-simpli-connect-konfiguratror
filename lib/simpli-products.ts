@@ -244,7 +244,7 @@ export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar", string> 
   orange: "#f97316",
   rot: "#dc2626",
   gruen: "#228B22",
-  gelb: "#eab308",
+  gelb: "#FFD700", // Brighter gold-yellow like Original Simpli
   grau: "#6b7280",
   satiniert: "#e8e8e8",
   makassar: "#3d2817",

@@ -29,32 +29,27 @@ const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
 
 const COLOR_TO_FILE_CODE: Record<string, string> = {
   weiss: "white",
-  schwarz: "gray", // Map schwarz to gray since we have gray models
+  schwarz: "gray",
   blau: "blue",
   gruen: "green",
   orange: "orange",
   rot: "red",
   gelb: "yellow",
-  grau: "gray", // Added gray color
+  grau: "gray",
 }
 
 const GLB_URLS: Record<string, string> = {
-  // 80x40x40-1-3 models (mit-tueren style)
-  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-opt.glb",
-  "80x40x40-1-3-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
-  "80x40x40-1-3-red": "/images/80x40x40-1-3-red-opt.glb",
-  // 80x40x40-1-4 models (mit-klapptuer style)
-  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
-  "80x40x40-1-4-green": "/images/80x40x40-1-4-green-opt.glb",
-  "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-opt.glb",
-
-  // 40x40x40-2-1 models (basic modules)
+  // 40x40x40-2-1 models (basic modules) - from Blob Storage
   "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
   "40x40x40-2-1-orange": "/images/40x40x40-2-1-orange-opt.glb",
   "40x40x40-2-1-green": "/images/40x40x40-2-1-green-opt.glb",
   "40x40x40-2-1-gray": "/images/40x40x40-2-1-gray-opt.glb",
+
   // 40x40x40-2-6 models (mit-tueren variant)
   "40x40x40-2-6-red": "/images/40x40x40-2-6-red-opt.glb",
+
+  // 80x40x40-1-4 models (mit-klapptuer style)
+  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
 }
 
 function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): string | null {
@@ -133,7 +128,7 @@ function GLBModelWithErrorBoundary({
     setHasError(false)
 
     // For blob URLs, we trust they exist - just try to load
-    if (url.includes("blob.vercel-storage.com")) {
+    if (url.includes("blob.v0.app")) {
       setIsLoading(false)
       return
     }
