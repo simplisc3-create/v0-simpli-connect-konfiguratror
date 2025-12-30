@@ -19,7 +19,7 @@ interface ConfiguratorPanelProps {
   onPlaceModule: (row: number, col: number, type: GridCell["type"]) => void
   onClearCell: (row: number, col: number) => void
   onResizeGrid: (rows: number, cols: number) => void
-  onSetColumnWidth: (col: number, width: 75 | 38) => void
+  onSetColumnWidth: (col: number, width: 75 | 37.5 | 38) => void
   onUpdateConfig: (updates: Partial<ShelfConfig>) => void
   shoppingList: ShoppingItem[]
   price: string
@@ -258,7 +258,17 @@ export function ConfiguratorPanel({
             {config.columnWidths.map((width, idx) => (
               <button
                 key={idx}
-                onClick={() => onSetColumnWidth(idx, width === 75 ? 38 : 75)}
+                onClick={() => {
+                  let nextWidth: 75 | 37.5 | 38
+                  if (width === 75) {
+                    nextWidth = 37.5
+                  } else if (width === 37.5) {
+                    nextWidth = 38
+                  } else {
+                    nextWidth = 75
+                  }
+                  onSetColumnWidth(idx, nextWidth)
+                }}
                 className={cn(
                   "px-3 py-1.5 text-sm rounded-lg border transition-all",
                   width === 75

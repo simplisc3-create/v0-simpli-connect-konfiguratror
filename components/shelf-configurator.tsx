@@ -56,7 +56,7 @@ export type ShelfConfig = {
 }
 
 export type ColumnData = {
-  width: 38 | 40 | 75
+  width: 37.5 | 38 | 40 | 75
   cells: GridCell[]
 }
 
@@ -444,7 +444,7 @@ export function ShelfConfigurator({ initialConfig }: ShelfConfiguratorProps) {
   )
 
   const handleExpandLeft = useCallback(
-    (width: 38 | 40 | 75 = 75) => {
+    (width?: 37.5 | 38 | 40 | 75) => {
       setConfig((prev) => {
         const newCell: GridCell = {
           id: `col-0-cell-0`,
@@ -453,7 +453,7 @@ export function ShelfConfigurator({ initialConfig }: ShelfConfiguratorProps) {
         }
 
         const newColumn: ColumnData = {
-          width,
+          width: width || 37.5,
           cells: [newCell],
         }
 
@@ -474,7 +474,7 @@ export function ShelfConfigurator({ initialConfig }: ShelfConfiguratorProps) {
   )
 
   const handleExpandRight = useCallback(
-    (width: 38 | 40 | 75 = 75) => {
+    (width?: 37.5 | 38 | 40 | 75) => {
       setConfig((prev) => {
         const newColIndex = prev.columns.length
         const newCell: GridCell = {
@@ -484,7 +484,7 @@ export function ShelfConfigurator({ initialConfig }: ShelfConfiguratorProps) {
         }
 
         const newColumn: ColumnData = {
-          width,
+          width: width || 37.5,
           cells: [newCell],
         }
 
@@ -605,7 +605,7 @@ export function ShelfConfigurator({ initialConfig }: ShelfConfiguratorProps) {
   )
 
   const handleColumnWidthChange = useCallback(
-    (colIndex: number, newWidth: 38 | 40 | 75) => {
+    (colIndex: number, newWidth: 37.5 | 38 | 40 | 75) => {
       setConfig((prev) => {
         const newColumns = prev.columns.map((col, idx) => {
           if (idx !== colIndex) return col
