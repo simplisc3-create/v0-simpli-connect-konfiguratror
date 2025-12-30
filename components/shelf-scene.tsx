@@ -430,7 +430,7 @@ export function ShelfScene({
         const bottomPanelColor = colorMap[cell?.color || config.accentColor || "weiss"] || colorMap.weiss
         els.push(
           <mesh
-            key={`glass-${colIndex}-${stackIndex}`}
+            key={`bottompanel-${colIndex}-${stackIndex}`}
             position={[cellCenterX, bottomY + 0.005, offsetZ + depth / 2]}
             rotation={[-Math.PI / 2, 0, 0]}
           >
@@ -831,54 +831,6 @@ export function ShelfScene({
               <mesh
                 key={`toppanel-rw-${colIndex}-${stackIndex}`}
                 position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-          }
-
-          if (cell.type === "ohne-rueckwand") {
-            // NO back panel - this is the key difference
-            // Left side panel in accent color
-            els.push(
-              <mesh
-                key={`sidewall-left-or-${colIndex}-${stackIndex}`}
-                position={[leftX + 0.005, cellCenterY, offsetZ + depth / 2]}
-                rotation={[0, Math.PI / 2, 0]}
-              >
-                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-            // Right side panel in accent color
-            els.push(
-              <mesh
-                key={`sidewall-right-or-${colIndex}-${stackIndex}`}
-                position={[rightX - 0.005, cellCenterY, offsetZ + depth / 2]}
-                rotation={[0, Math.PI / 2, 0]}
-              >
-                <planeGeometry args={[depth - 0.024, cellHeight - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-            // Top panel in accent color
-            els.push(
-              <mesh
-                key={`toppanel-or-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, topY - 0.005, offsetZ + depth / 2]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-                <meshStandardMaterial color={panelColor} side={THREE.DoubleSide} />
-              </mesh>,
-            )
-            // Bottom/floor panel in accent color
-            els.push(
-              <mesh
-                key={`floorpanel-or-${colIndex}-${stackIndex}`}
-                position={[cellCenterX, bottomY + 0.005, offsetZ + depth / 2]}
                 rotation={[-Math.PI / 2, 0, 0]}
               >
                 <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />

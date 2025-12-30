@@ -17,7 +17,7 @@ type GLBModuleProps = {
 const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
   empty: "",
   "ohne-seitenwaende": "3",
-  "ohne-rueckwand": "3",
+  "ohne-rueckwand": "8", // Changed from "3" to "8" to use the new ohne-rueckwand GLB
   "mit-rueckwand": "4",
   "mit-tueren": "3",
   "mit-klapptuer": "4",
@@ -25,6 +25,11 @@ const MODULE_TYPE_TO_CODE: Record<GridCell["type"], string> = {
   schubladen: "4",
   "abschliessbare-tueren": "3",
   "mit-seitenwaenden": "4",
+  // 40cm module types
+  leer: "",
+  "mit-tuer-links": "6",
+  "mit-tuer-rechts": "6",
+  "mit-abschliessbarer-tuer-links": "6",
 }
 
 const COLOR_TO_FILE_CODE: Record<string, string> = {
@@ -39,21 +44,27 @@ const COLOR_TO_FILE_CODE: Record<string, string> = {
 }
 
 const GLB_URLS: Record<string, string> = {
-  // 40x40x40-2-1 models (basic modules) - from Blob Storage
+  // 80x40x40-1-3 models (mit-tueren style)
+  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-opt.glb",
+  "80x40x40-1-3-yellow": "/images/80x40x40-1-3-yellow-opt.glb",
+  "80x40x40-1-3-red": "/images/80x40x40-1-3-red-opt.glb",
+  // 80x40x40-1-4 models (mit-klapptuer style)
+  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
+  "80x40x40-1-4-green": "/images/80x40x40-1-4-green-opt.glb",
+  "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-opt.glb",
+  "80x40x40-1-8-yellow": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-yellow.glb",
+  // 40x40x40-2-1 models (basic modules)
   "40x40x40-2-1-white": "/images/40x40x40-2-1-white-opt.glb",
   "40x40x40-2-1-orange": "/images/40x40x40-2-1-orange-opt.glb",
   "40x40x40-2-1-green": "/images/40x40x40-2-1-green-opt.glb",
   "40x40x40-2-1-gray": "/images/40x40x40-2-1-gray-opt.glb",
-
+  "40x40x40-2-4-blue": "/images/40x40x40-2-4-blue-opt-20-282-29.glb",
   // 40x40x40-2-6 models (mit-tueren variant)
   "40x40x40-2-6-red": "/images/40x40x40-2-6-red-opt.glb",
-
-  // 80x40x40-1-4 models (mit-klapptuer style)
-  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-opt.glb",
 }
 
 function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): string | null {
-  if (cellType === "empty") return null
+  if (cellType === "empty" || cellType === "leer") return null
 
   const moduleCode = MODULE_TYPE_TO_CODE[cellType]
   if (!moduleCode) return null
@@ -73,12 +84,10 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
     }
   } else {
     // For 40cm modules (38cm cells)
-    // First try 2-6 variant for certain types (mit-tueren)
-    if (moduleCode === "3" && colorCode === "red") {
-      const specialKey = `40x40x40-2-6-${colorCode}`
-      if (GLB_URLS[specialKey]) {
-        return GLB_URLS[specialKey]
-      }
+    // First try specific module variant
+    const specialKey = `40x40x40-2-${moduleCode}-${colorCode}`
+    if (GLB_URLS[specialKey]) {
+      return GLB_URLS[specialKey]
     }
 
     // Try 2-1 basic variant
@@ -100,7 +109,7 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
 export function GLBModule({ position, cellType, width, height, depth, color }: GLBModuleProps) {
   const modelUrl = getGLBUrl(cellType, width, color)
 
-  if (!modelUrl || cellType === "empty") {
+  if (!modelUrl || cellType === "empty" || cellType === "leer") {
     return null
   }
 
@@ -128,7 +137,7 @@ function GLBModelWithErrorBoundary({
     setHasError(false)
 
     // For blob URLs, we trust they exist - just try to load
-    if (url.includes("blob.v0.app")) {
+    if (url.includes("blob.vercel-storage.com")) {
       setIsLoading(false)
       return
     }
