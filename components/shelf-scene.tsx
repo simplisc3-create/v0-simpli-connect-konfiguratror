@@ -28,7 +28,6 @@ const colorMap: Record<string, string> = {
   orange: colorHexMap.orange,
   rot: colorHexMap.rot,
   gelb: colorHexMap.gelb,
-  grau: colorHexMap.grau,
 }
 
 function ChromeTube({

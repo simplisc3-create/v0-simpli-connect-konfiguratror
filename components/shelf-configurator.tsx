@@ -44,13 +44,13 @@ export type GridCell = {
     | "mit-tuer-links" // Added for 40cm width modules
     | "mit-tuer-rechts" // Added for 40cm width modules
     | "mit-abschliessbarer-tuer-links" // Added for 40cm width modules
-  color: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange" | "grau"
+  color: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange"
 }
 
 export type ShelfConfig = {
   columns: ColumnData[]
   material: "metall" | "glas"
-  accentColor: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange" | "grau"
+  accentColor: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange"
 }
 
 export type ColumnData = {
@@ -109,7 +109,6 @@ const specialColorOptions = [
   { id: "gelb" as const, label: "Gelb", hex: "#9A8700" },
   { id: "orange" as const, label: "Orange", hex: "#B45309" },
   { id: "rot" as const, label: "Rot", hex: "#7F1D1D" },
-  { id: "grau" as const, label: "Grau", hex: "#6b7280" },
 ]
 
 const materialOptions = [
@@ -338,10 +337,13 @@ export function ShelfConfigurator() {
   const canRedo = historyIndex < history.length - 1
 
   const handleCellSelect = useCallback((col: number, stackIndex: number) => {
+    console.log("[v0] Cell selected:", { col, stackIndex })
     setSelectedCell((prev) => {
       if (prev?.col === col && prev?.stackIndex === stackIndex) {
+        console.log("[v0] Deselecting cell")
         return null // Deselect if clicking the same cell
       }
+      console.log("[v0] Selecting new cell")
       return { col, stackIndex }
     })
     setEditMode("cell")
@@ -485,6 +487,7 @@ export function ShelfConfigurator() {
     setConfig((prev) => {
       const maxCells = Math.max(...prev.columns.map((col) => col.cells.length))
       if (maxCells <= 1) return prev
+
       const newColumns = prev.columns.map((column) => {
         if (column.cells.length <= 1) return column
         return { ...column, cells: column.cells.slice(0, -1) }
@@ -759,7 +762,7 @@ export function ShelfConfigurator() {
         <div className="p-4 space-y-3 border-t border-border/20">
           <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
           <div className="flex gap-2 flex-wrap">
-            {[...baseColors, ...specialColorOptions].map((c) => (
+            {specialColorOptions.map((c) => (
               <button
                 key={c.id}
                 onClick={() => handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)}
@@ -1135,7 +1138,7 @@ export function ShelfConfigurator() {
               <div className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
                 <div className="flex gap-2 flex-wrap">
-                  {[...baseColors, ...specialColorOptions].map((c) => (
+                  {specialColorOptions.map((c) => (
                     <button
                       key={c.id}
                       onClick={() =>

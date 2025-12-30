@@ -54,7 +54,6 @@ const specialColors = [
   { id: "gelb" as const, label: "Gelb", color: colorHexMap.gelb },
   { id: "orange" as const, label: "Orange", color: colorHexMap.orange },
   { id: "rot" as const, label: "Rot", color: colorHexMap.rot },
-  { id: "grau" as const, label: "Grau", color: colorHexMap.grau },
 ]
 
 const allColors = [...baseColors, ...specialColors]
