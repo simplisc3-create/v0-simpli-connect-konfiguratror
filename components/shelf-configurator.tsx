@@ -520,6 +520,28 @@ export function ShelfConfigurator() {
     setSelectedTool(tool)
   }, [])
 
+  const handleUpdateCellColor = useCallback(
+    (row: number, col: number, color: GridCell["color"]) => {
+      setConfig((prev) => {
+        const newColumns = prev.columns.map((column, colIdx) => {
+          if (colIdx !== col) return column
+
+          const newCells = column.cells.map((cell, cellIdx) => {
+            if (cellIdx !== row) return cell
+            return { ...cell, color }
+          })
+
+          return { ...column, cells: newCells }
+        })
+
+        const newConfig = { ...prev, columns: newColumns }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
   const priceFormatted = useMemo(() => {
     return (0).toFixed(2).replace(".", ",")
   }, [config])
@@ -831,6 +853,7 @@ export function ShelfConfigurator() {
             onExpandLeft={handleExpandLeft}
             onExpandRight={handleExpandRight}
             onExpandUp={handleExpandUp}
+            onUpdateCellColor={handleUpdateCellColor}
           />
 
           <OrbitControls
