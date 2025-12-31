@@ -14,12 +14,10 @@ import {
   ChevronDown,
   ChevronUp,
   Grid3X3,
-  Truck,
-  Ruler,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ShelfConfig } from "./shelf-configurator"
-import { getStangensetPrice, getLeiterPrice } from "@/lib/simpli-products"
+import { getStangensetPrice } from "@/lib/simpli-products"
 
 interface CartItem {
   id: string
@@ -110,19 +108,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
     modules: true,
     stangensets: true,
     configuration: true,
-    partsList: true,
-    shipping: false,
-  })
-
-  const [customerInfo, setCustomerInfo] = useState({
-    company: "",
-    contact: "",
-    email: "",
-    phone: "",
-    street: "",
-    postalCode: "",
-    city: "",
-    country: "Deutschland",
   })
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -222,98 +207,15 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
     return Array.from(stangensetMap.values())
   }, [config])
 
-  const leitern = useMemo(() => {
-    const maxHeight = Math.max(
-      ...config.columns.map((col) => {
-        const filledCells = col.cells.filter((c) => c.type !== "empty" && c.type !== "delete")
-        return filledCells.length * 38 // Each cell is 38cm high
-      }),
-    )
-
-    // Round up to nearest standard Leiter size (40, 80, 120, 160, 200)
-    const leiterSizes = [40, 80, 120, 160, 200]
-    const leiterHeight = leiterSizes.find((s) => s >= maxHeight) || 200
-
-    // We need 4 Leitern per shelf unit (one at each corner)
-    const filledColumns = config.columns.filter((col) =>
-      col.cells.some((c) => c.type !== "empty" && c.type !== "delete"),
-    ).length
-
-    // For multiple columns, we share corner posts, so: 2 + (columns * 2)
-    const leiterCount = filledColumns > 0 ? 2 + filledColumns * 2 : 0
-    const unitPrice = getLeiterPrice(leiterHeight)
-
-    return {
-      height: leiterHeight,
-      count: leiterCount,
-      unitPrice,
-      totalPrice: leiterCount * unitPrice,
-    }
-  }, [config])
-
-  const zwischenwaende = useMemo(() => {
-    let count = 0
-
-    config.columns.forEach((col) => {
-      col.cells.forEach((cell) => {
-        // Modules with side walls need Zwischenwände
-        if (
-          cell.type === "mit-seitenwaenden" ||
-          cell.type === "mit-tueren" ||
-          cell.type === "abschliessbare-tueren" ||
-          cell.type === "mit-klapptuer" ||
-          cell.type === "mit-doppelschublade" ||
-          cell.type === "schubladen"
-        ) {
-          count += 2 // 2 side walls per closed module
-        }
-      })
-    })
-
-    const unitPrice = 14.5 // Funktionswand 2-seitig price
-    return {
-      count,
-      unitPrice,
-      totalPrice: count * unitPrice,
-    }
-  }, [config])
-
-  const rueckwaende = useMemo(() => {
-    let count = 0
-
-    config.columns.forEach((col) => {
-      col.cells.forEach((cell) => {
-        if (
-          cell.type === "mit-rueckwand" ||
-          cell.type === "mit-seitenwaenden" ||
-          cell.type === "mit-tueren" ||
-          cell.type === "abschliessbare-tueren" ||
-          cell.type === "mit-klapptuer" ||
-          cell.type === "mit-doppelschublade" ||
-          cell.type === "schubladen"
-        ) {
-          count += 1
-        }
-      })
-    })
-
-    const unitPrice = 12.5 // Funktionswand 1-seitig price
-    return {
-      count,
-      unitPrice,
-      totalPrice: count * unitPrice,
-    }
-  }, [config])
-
-  const partsSubtotal = leitern.totalPrice + zwischenwaende.totalPrice + rueckwaende.totalPrice
+  // Totals
   const totalModules = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const totalStangensets = stangensets.reduce((sum, item) => sum + item.count, 0)
   const modulesSubtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0)
   const stangensetsSubtotal = stangensets.reduce((sum, item) => sum + item.count * item.unitPrice, 0)
-  const subtotal = modulesSubtotal + stangensetsSubtotal + partsSubtotal
+  const subtotal = modulesSubtotal + stangensetsSubtotal
   const tax = Math.round(subtotal * 0.19)
   const total = subtotal + tax
-  const totalItems = totalModules + totalStangensets + leitern.count + zwischenwaende.count + rueckwaende.count
+  const totalItems = totalModules + totalStangensets
 
   // Export functions
   const exportAsJSON = () => {
@@ -333,13 +235,7 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
         price: item.unitPrice,
       })),
       stangensets,
-      parts: {
-        leitern,
-        zwischenwaende,
-        rueckwaende,
-      },
       summary: { subtotal, tax, total, currency: "EUR" },
-      customerInfo,
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
@@ -375,45 +271,6 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
       ])
     })
 
-    // Add Leitern
-    if (leitern.count > 0) {
-      rows.push([
-        detailedItems.length + stangensets.length + 1,
-        "-",
-        `Leiter ${leitern.height}cm`,
-        "-",
-        "-",
-        `${leitern.unitPrice.toFixed(2)}€`,
-        `${leitern.totalPrice.toFixed(2)}€`,
-      ])
-    }
-
-    // Add Zwischenwände
-    if (zwischenwaende.count > 0) {
-      rows.push([
-        detailedItems.length + stangensets.length + (leitern.count > 0 ? 2 : 1),
-        "-",
-        `Seitenwände`,
-        "-",
-        "-",
-        `${zwischenwaende.unitPrice.toFixed(2)}€`,
-        `${zwischenwaende.totalPrice.toFixed(2)}€`,
-      ])
-    }
-
-    // Add Rückwände
-    if (rueckwaende.count > 0) {
-      rows.push([
-        detailedItems.length + stangensets.length + (leitern.count > 0 ? 2 : 1) + (zwischenwaende.count > 0 ? 1 : 0),
-        "-",
-        `Rückwände`,
-        "-",
-        "-",
-        `${rueckwaende.unitPrice.toFixed(2)}€`,
-        `${rueckwaende.totalPrice.toFixed(2)}€`,
-      ])
-    }
-
     const csv = [headers.join(";"), ...rows.map((row) => row.join(";"))].join("\n")
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
@@ -436,21 +293,8 @@ export function LiveCart({ config, isOpen, onToggle, alwaysVisible = false }: Li
   <Items>
 ${cartItems.map((item) => `    <Item sku="${item.sku}" qty="${item.quantity}" price="${item.totalPrice.toFixed(2)}"/>`).join("\n")}
 ${stangensets.map((item) => `    <Item sku="STG-${item.width}-${item.variant.toUpperCase()}" qty="${item.count}" price="${(item.count * item.unitPrice).toFixed(2)}"/>`).join("\n")}
-${leitern.count > 0 ? `    <Item sku="LEITER-${leitern.height}" qty="${leitern.count}" price="${leitern.totalPrice.toFixed(2)}"/>` : ""}
-${zwischenwaende.count > 0 ? `    <Item sku="ZWISCHENWAND-2S" qty="${zwischenwaende.count}" price="${zwischenwaende.totalPrice.toFixed(2)}"/>` : ""}
-${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count}" price="${rueckwaende.totalPrice.toFixed(2)}"/>` : ""}
   </Items>
   <Total>${total.toFixed(2)}</Total>
-  <CustomerInfo>
-    <Company>${customerInfo.company}</Company>
-    <Contact>${customerInfo.contact}</Contact>
-    <Email>${customerInfo.email}</Email>
-    <Phone>${customerInfo.phone}</Phone>
-    <Street>${customerInfo.street}</Street>
-    <PostalCode>${customerInfo.postalCode}</PostalCode>
-    <City>${customerInfo.city}</City>
-    <Country>${customerInfo.country}</Country>
-  </CustomerInfo>
 </Order>`
     const blob = new Blob([xml], { type: "application/xml" })
     const url = URL.createObjectURL(blob)
@@ -491,233 +335,6 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
             </div>
           ) : (
             <div className="p-4 space-y-4">
-              <div className="rounded-lg border border-border/30 overflow-hidden">
-                <button
-                  onClick={() => toggleSection("shipping")}
-                  className="w-full flex items-center justify-between p-3 bg-green-900/20 hover:bg-green-900/30 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-green-400" />
-                    <span className="text-sm font-medium text-white">Versanddaten</span>
-                  </div>
-                  {expandedSections.shipping ? (
-                    <ChevronUp className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-                <AnimatePresence>
-                  {expandedSections.shipping && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-3 space-y-3 bg-gray-900/20">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Firma</label>
-                            <input
-                              type="text"
-                              value={customerInfo.company}
-                              onChange={(e) => setCustomerInfo((prev) => ({ ...prev, company: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
-                              placeholder="Firmenname"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Ansprechpartner</label>
-                            <input
-                              type="text"
-                              value={customerInfo.contact}
-                              onChange={(e) => setCustomerInfo((prev) => ({ ...prev, contact: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
-                              placeholder="Name"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">E-Mail</label>
-                            <input
-                              type="email"
-                              value={customerInfo.email}
-                              onChange={(e) => setCustomerInfo((prev) => ({ ...prev, email: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
-                              placeholder="email@firma.de"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Telefon</label>
-                            <input
-                              type="tel"
-                              value={customerInfo.phone}
-                              onChange={(e) => setCustomerInfo((prev) => ({ ...prev, phone: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
-                              placeholder="+49..."
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-500 block mb-1">Straße</label>
-                          <input
-                            type="text"
-                            value={customerInfo.street}
-                            onChange={(e) => setCustomerInfo((prev) => ({ ...prev, street: e.target.value }))}
-                            className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
-                            placeholder="Straße + Hausnummer"
-                          />
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">PLZ</label>
-                            <input
-                              type="text"
-                              value={customerInfo.postalCode}
-                              onChange={(e) => setCustomerInfo((prev) => ({ ...prev, postalCode: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
-                              placeholder="12345"
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-[10px] text-gray-500 block mb-1">Ort</label>
-                            <input
-                              type="text"
-                              value={customerInfo.city}
-                              onChange={(e) => setCustomerInfo((prev) => ({ ...prev, city: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
-                              placeholder="Stadt"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-500 block mb-1">Land</label>
-                          <select
-                            value={customerInfo.country}
-                            onChange={(e) => setCustomerInfo((prev) => ({ ...prev, country: e.target.value }))}
-                            className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-white"
-                          >
-                            <option value="Deutschland">Deutschland</option>
-                            <option value="Österreich">Österreich</option>
-                            <option value="Schweiz">Schweiz</option>
-                          </select>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <div className="rounded-lg border border-border/30 overflow-hidden">
-                <button
-                  onClick={() => toggleSection("partsList")}
-                  className="w-full flex items-center justify-between p-3 bg-amber-900/20 hover:bg-amber-900/30 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Ruler className="h-4 w-4 text-amber-400" />
-                    <span className="text-sm font-medium text-white">Teile-Übersicht</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-amber-400 font-semibold">{partsSubtotal.toFixed(0)} €</span>
-                    {expandedSections.partsList ? (
-                      <ChevronUp className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    )}
-                  </div>
-                </button>
-                <AnimatePresence>
-                  {expandedSections.partsList && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-2 space-y-1.5">
-                        {/* Leitern */}
-                        {leitern.count > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20">
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Ruler className="h-4 w-4 text-amber-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">Leiter {leitern.height}cm</div>
-                              <div className="text-[10px] text-gray-400">
-                                {leitern.count}x à {leitern.unitPrice.toFixed(2)} €
-                              </div>
-                            </div>
-                            <div className="text-sm font-semibold text-amber-400">
-                              {leitern.totalPrice.toFixed(0)} €
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Stangensets */}
-                        {stangensets.map((item) => (
-                          <div
-                            key={`stg-${item.width}-${item.variant}`}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20"
-                          >
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Cylinder className="h-4 w-4 text-amber-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">
-                                Stangenset {item.variant === "glas" ? "Glas" : "Metall"} {item.width}cm
-                              </div>
-                              <div className="text-[10px] text-gray-400">
-                                {item.count}x à {item.unitPrice.toFixed(2)} €
-                              </div>
-                            </div>
-                            <div className="text-sm font-semibold text-amber-400">
-                              {(item.count * item.unitPrice).toFixed(0)} €
-                            </div>
-                          </div>
-                        ))}
-
-                        {/* Zwischenwände */}
-                        {zwischenwaende.count > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20">
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Package className="h-4 w-4 text-amber-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">Seitenwände</div>
-                              <div className="text-[10px] text-gray-400">
-                                {zwischenwaende.count}x à {zwischenwaende.unitPrice.toFixed(2)} €
-                              </div>
-                            </div>
-                            <div className="text-sm font-semibold text-amber-400">
-                              {zwischenwaende.totalPrice.toFixed(0)} €
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Rückwände */}
-                        {rueckwaende.count > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-900/20">
-                            <div className="h-8 w-8 rounded bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                              <Grid3X3 className="h-4 w-4 text-amber-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-white">Rückwände</div>
-                              <div className="text-[10px] text-gray-400">
-                                {rueckwaende.count}x à {rueckwaende.unitPrice.toFixed(2)} €
-                              </div>
-                            </div>
-                            <div className="text-sm font-semibold text-amber-400">
-                              {rueckwaende.totalPrice.toFixed(0)} €
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
               <div className="rounded-lg border border-border/30 overflow-hidden">
                 <button
                   onClick={() => toggleSection("configuration")}
@@ -835,7 +452,61 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
                 </AnimatePresence>
               </div>
 
-              {/* Remove standalone Stangensets section since it's now in Teile-Übersicht */}
+              {stangensets.length > 0 && (
+                <div className="rounded-lg border border-border/30 overflow-hidden">
+                  <button
+                    onClick={() => toggleSection("stangensets")}
+                    className="w-full flex items-center justify-between p-3 bg-purple-900/20 hover:bg-purple-900/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Cylinder className="h-4 w-4 text-purple-400" />
+                      <span className="text-sm font-medium text-white">Stangensets ({totalStangensets})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-purple-400 font-semibold">{stangensetsSubtotal.toFixed(0)} €</span>
+                      {expandedSections.stangensets ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                      )}
+                    </div>
+                  </button>
+                  <AnimatePresence>
+                    {expandedSections.stangensets && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-2 space-y-1.5">
+                          {stangensets.map((item) => (
+                            <div
+                              key={`stg-${item.width}-${item.variant}`}
+                              className="flex items-center gap-2 p-2 rounded-lg bg-purple-900/20"
+                            >
+                              <div className="h-8 w-8 rounded bg-purple-900/50 flex items-center justify-center flex-shrink-0">
+                                <Cylinder className="h-4 w-4 text-purple-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-white">
+                                  Stangenset {item.variant === "glas" ? "Glas" : "Metall"}
+                                </div>
+                                <div className="text-[10px] text-gray-400">
+                                  {item.width}cm · {item.count}x à {item.unitPrice.toFixed(2)} €
+                                </div>
+                              </div>
+                              <div className="text-sm font-semibold text-purple-400">
+                                {(item.count * item.unitPrice).toFixed(0)} €
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -843,15 +514,8 @@ ${rueckwaende.count > 0 ? `    <Item sku="RUECKWAND-1S" qty="${rueckwaende.count
         {/* Footer with price summary */}
         {totalModules > 0 && (
           <div className="border-t border-border/30 bg-gray-900/50 p-4 space-y-4">
+            {/* Price Summary */}
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Module</span>
-                <span className="text-white">{modulesSubtotal.toFixed(2)} €</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Teile (Leitern, Stangen, etc.)</span>
-                <span className="text-white">{(stangensetsSubtotal + partsSubtotal).toFixed(2)} €</span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Netto</span>
                 <span className="text-white">{subtotal.toFixed(2)} €</span>

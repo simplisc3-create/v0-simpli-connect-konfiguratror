@@ -71,6 +71,7 @@ const moduleTypes = [
 const materialOptions = [
   { id: "metall" as const, label: "Metall" },
   { id: "glas" as const, label: "Glas" },
+  { id: "holz" as const, label: "Holz" },
 ]
 
 const categoryLabels: Record<string, string> = {
@@ -507,7 +508,7 @@ export function ConfiguratorPanel({
                       "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
                       config.accentColor === c.id
                         ? "border-accent-blue bg-accent-blue/5"
-                        : "border-transparent hover:border-muted-foreground",
+                        : "border-border hover:border-muted-foreground",
                     )}
                   >
                     <div className="h-8 w-8 rounded-lg border border-border" style={{ backgroundColor: c.color }} />
