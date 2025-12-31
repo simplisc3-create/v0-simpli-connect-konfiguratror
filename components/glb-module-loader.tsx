@@ -156,6 +156,8 @@ function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): 
 export function GLBModule({ position, cellType, width, height, depth, color }: GLBModuleProps) {
   const modelUrl = getGLBUrl(cellType, width, color)
 
+  console.log("[v0] GLBModule rendering:", { cellType, width, color, modelUrl })
+
   if (!modelUrl || cellType === "empty") {
     return null
   }
