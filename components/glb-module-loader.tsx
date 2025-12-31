@@ -40,39 +40,69 @@ const COLOR_TO_FILE_CODE: Record<string, string> = {
 
 const GLB_URLS: Record<string, string> = {
   // 80x40x40-1-3 models (basic open style)
-  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-optimized-optimized.glb",
-  "80x40x40-1-3-yellow": "/images/80x40x40-1-3-yellow-optimized-optimized.glb",
-  "80x40x40-1-3-red": "/images/80x40x40-1-3-red-optimized-optimized.glb",
+  "80x40x40-1-3-white":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-3-white_optimized.glb",
+  "80x40x40-1-3-yellow":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-3-yellow_optimized.glb",
+  "80x40x40-1-3-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-3-red_optimized.glb",
+
   // 80x40x40-1-4 models (with back panel style)
-  "80x40x40-1-4-orange": "/images/80x40x40-1-4-orange-optimized-optimized.glb",
-  "80x40x40-1-4-green": "/images/80x40x40-1-4-green-optimized-optimized.glb",
-  "80x40x40-1-4-blue": "/images/80x40x40-1-4-blue-optimized-optimized.glb",
-  "80x40x40-1-4-white": "/images/80x40x40-1-3-white-optimized-optimized.glb",
-  "80x40x40-1-4-yellow": "/images/80x40x40-1-3-yellow-optimized-optimized.glb",
-  "80x40x40-1-4-red": "/images/80x40x40-1-3-red-optimized-optimized.glb",
-  "80x40x40-1-5-gray": "/images/80x40x40-1-5-gray-optimized-optimized.glb",
+  "80x40x40-1-4-orange":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-4-orange_optimized.glb",
+  "80x40x40-1-4-green":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-4-green_optimized.glb",
+  "80x40x40-1-4-blue":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-4-blue_optimized.glb",
+  "80x40x40-1-4-white":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-3-white_optimized.glb",
+  "80x40x40-1-4-yellow":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-3-yellow_optimized.glb",
+  "80x40x40-1-4-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-3-red_optimized.glb",
+
+  // 80x40x40-1-5 models (drawer style)
+  "80x40x40-1-5-gray":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-5-gray_optimized.glb",
   "80x40x40-1-5-white": "/images/80x40x40-1-5-white-optimized-optimized.glb",
-  "80x40x40-1-5-blue": "/images/80x40x40-1-5-blue-optimized-optimized.glb",
-  "80x40x40-1-5-green": "/images/80x40x40-1-5-green-optimized-optimized.glb",
-  "80x40x40-1-5-orange": "/images/80x40x40-1-5-orange-optimized-optimized.glb",
+  "80x40x40-1-5-blue":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-5-blue_optimized.glb",
+  "80x40x40-1-5-green":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-5-green_optimized.glb",
+  "80x40x40-1-5-orange":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-5-orange_optimized.glb",
   "80x40x40-1-5-red": "/images/80x40x40-1-5-red-optimized-optimized.glb",
-  "80x40x40-1-5-yellow": "/images/80x40x40-1-5-yellow-optimized-optimized.glb",
+  "80x40x40-1-5-yellow":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-5-yellow_optimized.glb",
+
   // 80x40x40-1-6 models (door style)
-  "80x40x40-1-6-green": "/images/80x40x40-1-6-green-optimized-optimized.glb",
-  "80x40x40-1-6-white": "/images/80x40x40-1-6-green-optimized-optimized.glb",
-  "80x40x40-1-6-blue": "/images/80x40x40-1-6-green-optimized-optimized.glb",
-  "80x40x40-1-6-gray": "/images/80x40x40-1-6-green-optimized-optimized.glb",
-  "80x40x40-1-6-orange": "/images/80x40x40-1-6-green-optimized-optimized.glb",
-  "80x40x40-1-6-red": "/images/80x40x40-1-6-green-optimized-optimized.glb",
-  "80x40x40-1-6-yellow": "/images/80x40x40-1-6-green-optimized-optimized.glb",
+  "80x40x40-1-6-green":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-6-green_optimized.glb",
+  "80x40x40-1-6-white":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-6-white_optimized.glb",
+  "80x40x40-1-6-blue":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-6-blue_optimized.glb",
+  "80x40x40-1-6-gray":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-6-gray_optimized.glb",
+  "80x40x40-1-6-orange":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-6-orange_optimized.glb",
+  "80x40x40-1-6-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-6-red_optimized.glb",
+  "80x40x40-1-6-yellow":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-6-yellow_optimized.glb",
+
+  // 80x40x40-1-7 models (new variant - drawer style)
+  "80x40x40-1-7-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-7-red_optimized.glb",
 
   // 40x40x40-2-1 models (basic modules)
-  "40x40x40-2-1-white": "/images/40x40x40-2-1-white-optimized.glb",
-  "40x40x40-2-1-orange": "/images/40x40x40-2-1-orange-optimized.glb",
-  "40x40x40-2-1-green": "/images/40x40x40-2-1-green-optimized.glb",
-  "40x40x40-2-1-gray": "/images/40x40x40-2-1-gray-optimized.glb",
+  "40x40x40-2-1-white":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/40x40x40-2-1-white_optimized.glb",
+  "40x40x40-2-1-orange":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/40x40x40-2-1-orange_optimized.glb",
+  "40x40x40-2-1-green":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/40x40x40-2-1-green_optimized.glb",
+  "40x40x40-2-1-gray":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/40x40x40-2-1-gray_optimized.glb",
+
   // 40x40x40-2-6 models (mit-tueren variant)
-  "40x40x40-2-6-red": "/images/40x40x40-2-6-red-optimized.glb",
+  "40x40x40-2-6-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/40x40x40-2-6-red_optimized.glb",
 }
 
 function getGLBUrl(cellType: GridCell["type"], widthCm: number, color: string): string | null {
