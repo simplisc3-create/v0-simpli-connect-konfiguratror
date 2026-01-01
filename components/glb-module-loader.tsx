@@ -92,6 +92,7 @@ const GLB_URLS: Record<string, string> = {
 
   // 80x40x40-1-7 models (new variant - drawer style)
   "80x40x40-1-7-red": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-7-red_optimized.glb",
+  "80x40x40-1-7-yellow": "/images/80x40x40-1-7-yellow01-opt.glb",
 
   // 40x40x40-2-1 models (basic modules)
   "40x40x40-2-1-white":
