@@ -32,12 +32,26 @@ const colorMap: Record<string, string> = {
   grau: "#808080",
 }
 
-function Frame80er({
+function Frame40er({
   position,
   height,
 }: {
   position: [number, number, number]
+  height: number
+}) {
+  // For 40cm columns, we'll use a scaled version of the frame or fallback to ChromeTube
+  // This is a placeholder - we can add a specific 40er frame GLB later
+  return null
+}
+
+function Frame80er({
+  position,
+  height,
+  columnWidth,
+}: {
+  position: [number, number, number]
   height: number // number of cells high
+  columnWidth: number // width in cm (80)
 }) {
   const { scene } = useGLTF(FRAME_80ER_URL)
 
@@ -60,14 +74,12 @@ function Frame80er({
     return clone
   }, [scene])
 
-  // Scale based on height (1 unit = 1 cell height of 0.4m)
+  // The GLB frame needs to be scaled vertically for multi-cell columns
+  const cellHeightM = 0.4 // 40cm per cell
   const scaleY = height
 
   return <primitive object={clonedScene} position={position} scale={[1, scaleY, 1]} />
 }
-
-// Preload the frame80er GLB
-useGLTF.preload(FRAME_80ER_URL)
 
 function ChromeTube({
   start,
@@ -318,163 +330,185 @@ export function ShelfScene({
 
       const columnTopY = columnHeight * cellHeight + offsetY
 
-      // Vertical posts for this column
-      els.push(
-        <ChromeTube
-          key={`vpost-fl-${colIndex}`}
-          start={[leftX, offsetY, offsetZ + depth]}
-          end={[leftX, columnTopY, offsetZ + depth]}
-          radius={tubeRadius}
-        />,
-      )
-      els.push(
-        <ChromeTube
-          key={`vpost-fr-${colIndex}`}
-          start={[rightX, offsetY, offsetZ + depth]}
-          end={[rightX, columnTopY, offsetZ + depth]}
-          radius={tubeRadius}
-        />,
-      )
-      els.push(
-        <ChromeTube
-          key={`vpost-bl-${colIndex}`}
-          start={[leftX, offsetY, offsetZ]}
-          end={[leftX, columnTopY, offsetZ]}
-          radius={tubeRadius}
-        />,
-      )
-      els.push(
-        <ChromeTube
-          key={`vpost-br-${colIndex}`}
-          start={[rightX, offsetY, offsetZ]}
-          end={[rightX, columnTopY, offsetZ]}
-          radius={tubeRadius}
-        />,
-      )
+      const is80erColumn = column.width === 80
 
-      // Feet
-      els.push(
-        <mesh key={`foot-fl-${colIndex}`} position={[leftX, offsetY - 0.01, offsetZ + depth]}>
-          <sphereGeometry args={[0.015, 16, 16]} />
-          <meshStandardMaterial color="#111" />
-        </mesh>,
-      )
-      els.push(
-        <mesh key={`foot-fr-${colIndex}`} position={[rightX, offsetY - 0.01, offsetZ + depth]}>
-          <sphereGeometry args={[0.015, 16, 16]} />
-          <meshStandardMaterial color="#111" />
-        </mesh>,
-      )
-      els.push(
-        <mesh key={`foot-bl-${colIndex}`} position={[leftX, offsetY - 0.01, offsetZ]}>
-          <sphereGeometry args={[0.015, 16, 16]} />
-          <meshStandardMaterial color="#111" />
-        </mesh>,
-      )
-      els.push(
-        <mesh key={`foot-br-${colIndex}`} position={[rightX, offsetY - 0.01, offsetZ]}>
-          <sphereGeometry args={[0.015, 16, 16]} />
-          <meshStandardMaterial color="#111" />
-        </mesh>,
-      )
+      if (is80erColumn) {
+        // Use the Frame80er GLB model for 80cm columns
+        els.push(
+          <Frame80er
+            key={`frame80er-${colIndex}`}
+            position={[cellCenterX, offsetY, offsetZ + depth / 2]}
+            height={columnHeight}
+            columnWidth={column.width}
+          />,
+        )
+      } else {
+        // Fallback to procedural ChromeTube for non-80cm columns (40cm, etc.)
+        // Vertical posts for this column
+        els.push(
+          <ChromeTube
+            key={`vpost-fl-${colIndex}`}
+            start={[leftX, offsetY, offsetZ + depth]}
+            end={[leftX, columnTopY, offsetZ + depth]}
+            radius={tubeRadius}
+          />,
+        )
+        els.push(
+          <ChromeTube
+            key={`vpost-fr-${colIndex}`}
+            start={[rightX, offsetY, offsetZ + depth]}
+            end={[rightX, columnTopY, offsetZ + depth]}
+            radius={tubeRadius}
+          />,
+        )
+        els.push(
+          <ChromeTube
+            key={`vpost-bl-${colIndex}`}
+            start={[leftX, offsetY, offsetZ]}
+            end={[leftX, columnTopY, offsetZ]}
+            radius={tubeRadius}
+          />,
+        )
+        els.push(
+          <ChromeTube
+            key={`vpost-br-${colIndex}`}
+            start={[rightX, offsetY, offsetZ]}
+            end={[rightX, columnTopY, offsetZ]}
+            radius={tubeRadius}
+          />,
+        )
 
-      // This prevents the "double height" visual bug where empty cells have no separation
+        // Feet for non-80er columns
+        els.push(
+          <mesh key={`foot-fl-${colIndex}`} position={[leftX, offsetY - 0.01, offsetZ + depth]}>
+            <sphereGeometry args={[0.015, 16, 16]} />
+            <meshStandardMaterial color="#111" />
+          </mesh>,
+        )
+        els.push(
+          <mesh key={`foot-fr-${colIndex}`} position={[rightX, offsetY - 0.01, offsetZ + depth]}>
+            <sphereGeometry args={[0.015, 16, 16]} />
+            <meshStandardMaterial color="#111" />
+          </mesh>,
+        )
+        els.push(
+          <mesh key={`foot-bl-${colIndex}`} position={[leftX, offsetY - 0.01, offsetZ]}>
+            <sphereGeometry args={[0.015, 16, 16]} />
+            <meshStandardMaterial color="#111" />
+          </mesh>,
+        )
+        els.push(
+          <mesh key={`foot-br-${colIndex}`} position={[rightX, offsetY - 0.01, offsetZ]}>
+            <sphereGeometry args={[0.015, 16, 16]} />
+            <meshStandardMaterial color="#111" />
+          </mesh>,
+        )
+
+        // Horizontal rails for non-80er columns
+        for (let stackIndex = 0; stackIndex < columnHeight; stackIndex++) {
+          const bottomY = stackIndex * cellHeight + offsetY
+          const topY = (stackIndex + 1) * cellHeight + offsetY
+
+          // Horizontal rails at bottom of each cell position
+          els.push(
+            <ChromeTube
+              key={`hrail-fb-${colIndex}-${stackIndex}`}
+              start={[leftX, bottomY, offsetZ + depth]}
+              end={[rightX, bottomY, offsetZ + depth]}
+              radius={tubeRadius}
+            />,
+          )
+          els.push(
+            <ChromeTube
+              key={`hrail-bb-${colIndex}-${stackIndex}`}
+              start={[leftX, bottomY, offsetZ]}
+              end={[rightX, bottomY, offsetZ]}
+              radius={tubeRadius}
+            />,
+          )
+
+          // Depth rails at bottom
+          els.push(
+            <ChromeTube
+              key={`drail-lb-${colIndex}-${stackIndex}`}
+              start={[leftX, bottomY, offsetZ]}
+              end={[leftX, bottomY, offsetZ + depth]}
+              radius={tubeRadius}
+            />,
+          )
+          els.push(
+            <ChromeTube
+              key={`drail-rb-${colIndex}-${stackIndex}`}
+              start={[rightX, bottomY, offsetZ]}
+              end={[rightX, bottomY, offsetZ + depth]}
+              radius={tubeRadius}
+            />,
+          )
+
+          // Top rails only for the topmost cell
+          if (stackIndex === columnHeight - 1) {
+            els.push(
+              <ChromeTube
+                key={`hrail-ft-${colIndex}-${stackIndex}`}
+                start={[leftX, topY, offsetZ + depth]}
+                end={[rightX, topY, offsetZ + depth]}
+                radius={tubeRadius}
+              />,
+            )
+            els.push(
+              <ChromeTube
+                key={`hrail-bt-${colIndex}-${stackIndex}`}
+                start={[leftX, topY, offsetZ]}
+                end={[rightX, topY, offsetZ]}
+                radius={tubeRadius}
+              />,
+            )
+            els.push(
+              <ChromeTube
+                key={`drail-lt-${colIndex}-${stackIndex}`}
+                start={[leftX, topY, offsetZ]}
+                end={[leftX, topY, offsetZ + depth]}
+                radius={tubeRadius}
+              />,
+            )
+            els.push(
+              <ChromeTube
+                key={`drail-rt-${colIndex}-${stackIndex}`}
+                start={[rightX, topY, offsetZ]}
+                end={[rightX, topY, offsetZ + depth]}
+                radius={tubeRadius}
+              />,
+            )
+          }
+        }
+      }
+
+      // Glass shelf and module rendering continues for ALL columns (both 80er and others)
       for (let stackIndex = 0; stackIndex < columnHeight; stackIndex++) {
         const cell = column.cells[stackIndex]
         const bottomY = stackIndex * cellHeight + offsetY
         const topY = (stackIndex + 1) * cellHeight + offsetY
         const cellCenterY = bottomY + cellHeight / 2
 
-        // Horizontal rails at bottom of each cell position
-        els.push(
-          <ChromeTube
-            key={`hrail-fb-${colIndex}-${stackIndex}`}
-            start={[leftX, bottomY, offsetZ + depth]}
-            end={[rightX, bottomY, offsetZ + depth]}
-            radius={tubeRadius}
-          />,
-        )
-        els.push(
-          <ChromeTube
-            key={`hrail-bb-${colIndex}-${stackIndex}`}
-            start={[leftX, bottomY, offsetZ]}
-            end={[rightX, bottomY, offsetZ]}
-            radius={tubeRadius}
-          />,
-        )
-
-        // Depth rails at bottom
-        els.push(
-          <ChromeTube
-            key={`drail-lb-${colIndex}-${stackIndex}`}
-            start={[leftX, bottomY, offsetZ]}
-            end={[leftX, bottomY, offsetZ + depth]}
-            radius={tubeRadius}
-          />,
-        )
-        els.push(
-          <ChromeTube
-            key={`drail-rb-${colIndex}-${stackIndex}`}
-            start={[rightX, bottomY, offsetZ]}
-            end={[rightX, bottomY, offsetZ + depth]}
-            radius={tubeRadius}
-          />,
-        )
-
-        // Top rails only for the topmost cell
-        if (stackIndex === columnHeight - 1) {
+        if (!is80erColumn) {
           els.push(
-            <ChromeTube
-              key={`hrail-ft-${colIndex}-${stackIndex}`}
-              start={[leftX, topY, offsetZ + depth]}
-              end={[rightX, topY, offsetZ + depth]}
-              radius={tubeRadius}
-            />,
-          )
-          els.push(
-            <ChromeTube
-              key={`hrail-bt-${colIndex}-${stackIndex}`}
-              start={[leftX, topY, offsetZ]}
-              end={[rightX, topY, offsetZ]}
-              radius={tubeRadius}
-            />,
-          )
-          els.push(
-            <ChromeTube
-              key={`drail-lt-${colIndex}-${stackIndex}`}
-              start={[leftX, topY, offsetZ]}
-              end={[leftX, topY, offsetZ + depth]}
-              radius={tubeRadius}
-            />,
-          )
-          els.push(
-            <ChromeTube
-              key={`drail-rt-${colIndex}-${stackIndex}`}
-              start={[rightX, topY, offsetZ]}
-              end={[rightX, topY, offsetZ + depth]}
-              radius={tubeRadius}
-            />,
+            <mesh
+              key={`glass-${colIndex}-${stackIndex}`}
+              position={[cellCenterX, bottomY + 0.005, offsetZ + depth / 2]}
+              rotation={[-Math.PI / 2, 0, 0]}
+            >
+              <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
+              <meshPhysicalMaterial
+                color="#e8f4f8"
+                transparent
+                opacity={0.4}
+                roughness={0.05}
+                metalness={0.1}
+                transmission={0.6}
+              />
+            </mesh>,
           )
         }
-
-        // Glass shelf for all cells
-        els.push(
-          <mesh
-            key={`glass-${colIndex}-${stackIndex}`}
-            position={[cellCenterX, bottomY + 0.005, offsetZ + depth / 2]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
-            <planeGeometry args={[cellWidth - 0.024, depth - 0.024]} />
-            <meshPhysicalMaterial
-              color="#e8f4f8"
-              transparent
-              opacity={0.4}
-              roughness={0.05}
-              metalness={0.1}
-              transmission={0.6}
-            />
-          </mesh>,
-        )
 
         // Only render module-specific elements for filled cells
         if (cell && cell.type !== "empty") {
