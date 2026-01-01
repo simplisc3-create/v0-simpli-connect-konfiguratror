@@ -1,11 +1,13 @@
 "use client"
 
-import { Html, useTexture } from "@react-three/drei"
+import { Html, useTexture, useGLTF } from "@react-three/drei"
 import { useMemo, useState } from "react"
 import * as THREE from "three"
 import type { ShelfConfig, ColumnData } from "@/components/shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import type { JSX } from "react/jsx-runtime"
+
+const FRAME_80ER_URL = "/images/frame80er.glb"
 
 interface ShelfSceneProps {
   config: ShelfConfig
@@ -27,8 +29,45 @@ const colorMap: Record<string, string> = {
   orange: colorHexMap.orange,
   rot: colorHexMap.rot,
   gelb: colorHexMap.gelb,
-  grau: "#808080", // Added grau color
+  grau: "#808080",
 }
+
+function Frame80er({
+  position,
+  height,
+}: {
+  position: [number, number, number]
+  height: number // number of cells high
+}) {
+  const { scene } = useGLTF(FRAME_80ER_URL)
+
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone(true)
+    clone.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+        // Enhance material for better appearance
+        if (child.material) {
+          const mat = child.material as THREE.MeshStandardMaterial
+          if (mat.metalness !== undefined) {
+            mat.metalness = 0.85
+            mat.roughness = 0.15
+          }
+        }
+      }
+    })
+    return clone
+  }, [scene])
+
+  // Scale based on height (1 unit = 1 cell height of 0.4m)
+  const scaleY = height
+
+  return <primitive object={clonedScene} position={position} scale={[1, scaleY, 1]} />
+}
+
+// Preload the frame80er GLB
+useGLTF.preload(FRAME_80ER_URL)
 
 function ChromeTube({
   start,

@@ -39,6 +39,8 @@ const COLOR_TO_FILE_CODE: Record<string, string> = {
 }
 
 const GLB_URLS: Record<string, string> = {
+  frame80er: "/images/frame80er.glb",
+
   // 80x40x40-1-3 models (basic open style)
   "80x40x40-1-3-white":
     "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/clonegbl/80x40x40-1-3-white_optimized.glb",
