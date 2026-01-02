@@ -6,18 +6,26 @@ import type { ShoppingItem } from "@/lib/shopping-item"
 import { cn } from "@/lib/utils"
 import {
   ShoppingCart,
+  ChevronDown,
+  ChevronRight,
   X,
   Plus,
   Minus,
   Eraser,
+  List,
   Download,
   FileJson,
   FileSpreadsheet,
-  Database,
-  Grid3X3,
+  Package,
+  Ruler,
   Palette,
-  Pin,
-  PinOff,
+  Info,
+  Sparkles,
+  Tag,
+  ArrowRight,
+  ArrowLeft,
+  Database,
+  Hash,
 } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 import { ERPExportDialog } from "./erp-export-dialog"
@@ -33,6 +41,7 @@ interface ConfiguratorPanelProps {
   onClearCell: (row: number, col: number) => void
   onResizeGrid: (rows: number, cols: number) => void
   onSetColumnWidth: (col: number, width: 75 | 38) => void
+  // onSetRowHeight is removed, row heights are always 38cm
   onUpdateConfig: (updates: Partial<ShelfConfig>) => void
   shoppingList: ShoppingItem[]
   price: string
@@ -40,7 +49,7 @@ interface ConfiguratorPanelProps {
   onToggleShoppingList: () => void
   showMobilePanel?: boolean
   onCloseMobilePanel?: () => void
-  onCollapseSidePanel?: () => void
+  onCollapseSidePanel?: () => void // Added prop for collapsing side panel
 }
 
 const baseColors = [
@@ -59,18 +68,19 @@ const specialColors = [
 const allColors = [...baseColors, ...specialColors]
 
 const moduleTypes = [
-  { id: "ohne-seitenwaende" as const, label: "Ohne Seiten", icon: "open" },
-  { id: "ohne-rueckwand" as const, label: "Ohne Rück", icon: "shelf" },
-  { id: "mit-rueckwand" as const, label: "Mit Rück", icon: "back" },
-  { id: "mit-tueren" as const, label: "Türen", icon: "doors" },
-  { id: "mit-klapptuer" as const, label: "Klappe", icon: "flip" },
-  { id: "mit-doppelschublade" as const, label: "Schublade", icon: "drawer" },
-  { id: "abschliessbare-tueren" as const, label: "Abschl.", icon: "lock" },
+  { id: "ohne-seitenwaende" as const, label: "ohne Seitenwände", icon: "open" },
+  { id: "ohne-rueckwand" as const, label: "ohne Rückwand", icon: "shelf" },
+  { id: "mit-rueckwand" as const, label: "mit Rückwand", icon: "back" },
+  { id: "mit-tueren" as const, label: "mit Türen", icon: "doors" },
+  { id: "mit-klapptuer" as const, label: "mit Klapptür", icon: "flip" },
+  { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: "drawer" },
+  { id: "abschliessbare-tueren" as const, label: "abschließbare Türen", icon: "lock" },
 ]
 
 const materialOptions = [
   { id: "metall" as const, label: "Metall" },
   { id: "glas" as const, label: "Glas" },
+  { id: "holz" as const, label: "Holz" },
 ]
 
 const categoryLabels: Record<string, string> = {
@@ -94,6 +104,7 @@ export function ConfiguratorPanel({
   onClearCell,
   onResizeGrid,
   onSetColumnWidth,
+  // onSetRowHeight removed from destructuring
   onUpdateConfig,
   shoppingList,
   price,
@@ -101,12 +112,18 @@ export function ConfiguratorPanel({
   onToggleShoppingList,
   showMobilePanel = false,
   onCloseMobilePanel,
-  onCollapseSidePanel,
+  onCollapseSidePanel, // Destructure the new prop
 }: ConfiguratorPanelProps) {
-  const [activeTab, setActiveTab] = useState<"raster" | "farben" | "warenkorb">("raster")
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    dimensions: true,
+    colors: true,
+    details: false,
+  })
   const [showExportOptions, setShowExportOptions] = useState(false)
+  const [hoveredArticle, setHoveredArticle] = useState<string | null>(null)
+  const [showConfigDetails, setShowConfigDetails] = useState(false)
   const [showERPExport, setShowERPExport] = useState(false)
-  const [isPinned, setIsPinned] = useState(false)
+  const [showQuantitySummary, setShowQuantitySummary] = useState(true)
 
   const generateConfigId = () => {
     const timestamp = Date.now().toString(36)
@@ -117,6 +134,17 @@ export function ConfiguratorPanel({
   const totalWidth = config.colWidths?.reduce((sum, w) => sum + w, 0) ?? 0
   const totalHeight = config.rowHeights?.reduce((sum, h) => sum + h, 0) ?? 0
   const filledCells = config.grid?.flat().filter((c) => c.type !== "empty") ?? []
+
+  const groupedByCategory = shoppingList.reduce(
+    (acc, item) => {
+      const cat = item.product.category
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(item)
+      return acc
+    },
+    {} as Record<string, ShoppingItem[]>,
+  )
+
   const moduleCount = filledCells.length
 
   const nettoPrice = shoppingList.reduce((sum, item) => sum + item.subtotal, 0)
@@ -124,12 +152,43 @@ export function ConfiguratorPanel({
   const bruttoPrice = nettoPrice + mwstPrice
   const totalItems = shoppingList.reduce((sum, item) => sum + item.quantity, 0)
 
+  const quantitySummary = shoppingList.reduce(
+    (acc, item) => {
+      const key = `${item.product.category}-${item.product.size || "standard"}`
+      if (!acc[key]) {
+        acc[key] = {
+          category: item.product.category,
+          categoryLabel: categoryLabels[item.product.category] || item.product.category,
+          size: item.product.size,
+          totalQuantity: 0,
+          totalPrice: 0,
+          items: [],
+        }
+      }
+      acc[key].totalQuantity += item.quantity
+      acc[key].totalPrice += item.subtotal
+      acc[key].items.push(item)
+      return acc
+    },
+    {} as Record<
+      string,
+      {
+        category: string
+        categoryLabel: string
+        size: string | undefined
+        totalQuantity: number
+        totalPrice: number
+        items: ShoppingItem[]
+      }
+    >,
+  )
+
   const configMetadata = {
     configurationId: generateConfigId(),
     shelfDimensions: {
       width: totalWidth,
       height: totalHeight,
-      depth: 40,
+      depth: 40, // Assuming a standard depth for the shelf
       unit: "cm" as const,
     },
   }
@@ -165,11 +224,20 @@ export function ConfiguratorPanel({
           breite: config.colWidths[cell.col],
           hoehe: config.rowHeights[cell.row],
         })),
+        rasterDaten: config.grid.map((row, rowIdx) =>
+          row.map((cell, colIdx) => ({
+            id: cell.id,
+            typ: cell.type,
+            farbe: cell.color,
+            position: { reihe: rowIdx + 1, spalte: colIdx + 1 },
+          })),
+        ),
       },
       artikelliste: shoppingList.map((item) => ({
         artikelNummer: item.product.artNr,
         bezeichnung: item.product.name,
         kategorie: item.product.category,
+        kategorieBezeichnung: categoryLabels[item.product.category] || item.product.category,
         groesse: item.product.size,
         farbe: item.product.color || null,
         variante: item.product.variant || null,
@@ -183,6 +251,11 @@ export function ConfiguratorPanel({
         mwstBetrag: mwstPrice,
         gesamtpreis: bruttoPrice,
         waehrung: "EUR",
+      },
+      statistik: {
+        anzahlArtikel: shoppingList.length,
+        anzahlEinzelteile: totalItems,
+        anzahlModule: moduleCount,
       },
     }
 
@@ -199,27 +272,45 @@ export function ConfiguratorPanel({
     const configId = generateConfigId()
     const timestamp = new Date().toLocaleString("de-DE")
 
-    let csv = "SIMPLI CONNECT KONFIGURATION\n"
+    let csv = "SIMPLI CONNECT KONFIGURATION - WARENWIRTSCHAFT EXPORT\n"
     csv += `Konfigurations-ID;${configId}\n`
     csv += `Erstellt am;${timestamp}\n`
     csv += `Gesamtbreite;${totalWidth} cm\n`
     csv += `Gesamthöhe;${totalHeight} cm\n`
-    csv += "\nARTIKELLISTE\n"
-    csv += "Art.Nr;Bezeichnung;Größe;Farbe;Einzelpreis;Menge;Gesamtpreis\n"
+    csv += `Raster;${config.rows}x${config.columns}\n`
+    csv += `Bodenmaterial;${config.shelfMaterial}\n`
+    csv += `Grundfarbe;${config.baseColor}\n`
+    csv += `Akzentfarbe;${config.accentColor}\n`
+    csv += "\n"
+
+    csv += "ARTIKELLISTE\n"
+    csv += "Art.Nr;Bezeichnung;Kategorie;Größe;Farbe;Variante;Einzelpreis;Menge;Gesamtpreis\n"
 
     shoppingList.forEach((item) => {
       csv += `${item.product.artNr};`
       csv += `${item.product.name};`
+      csv += `${categoryLabels[item.product.category] || item.product.category};`
       csv += `${item.product.size};`
       csv += `${item.product.color || "-"};`
+      csv += `${item.product.variant || "-"};`
       csv += `${item.product.price.toFixed(2).replace(".", ",")};`
       csv += `${item.quantity};`
       csv += `${item.subtotal.toFixed(2).replace(".", ",")}\n`
     })
 
-    csv += `\nNetto;${nettoPrice.toFixed(2).replace(".", ",")} EUR\n`
+    csv += "\n"
+    csv += "PREISÜBERSICHT\n"
+    csv += `Netto;${nettoPrice.toFixed(2).replace(".", ",")} EUR\n`
     csv += `MwSt. (19%);${mwstPrice.toFixed(2).replace(".", ",")} EUR\n`
     csv += `Brutto;${bruttoPrice.toFixed(2).replace(".", ",")} EUR\n`
+
+    csv += "\n"
+    csv += "MODULÜBERSICHT\n"
+    csv += "Position;Typ;Farbe;Breite;Höhe\n"
+    filledCells.forEach((cell) => {
+      const cellColor = cell.color || (config.accentColor !== "none" ? config.accentColor : config.baseColor)
+      csv += `R${cell.row + 1}C${cell.col + 1};${cell.type};${cellColor};${config.colWidths[cell.col]} cm;${config.rowHeights[cell.row]} cm\n`
+    })
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
@@ -230,178 +321,242 @@ export function ConfiguratorPanel({
     URL.revokeObjectURL(url)
   }
 
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }))
+  }
+
   const selectedCellData = selectedCell ? config.grid[selectedCell.row]?.[selectedCell.col] : null
 
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-col bg-card lg:w-[360px]",
+        "flex h-full w-full flex-col bg-card lg:w-[380px]",
         "fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-auto",
         showMobilePanel ? "flex" : "hidden lg:flex",
       )}
     >
-      {/* Header with Pin */}
-      <div className="flex items-center justify-between border-b border-border p-3">
-        <h2 className="font-semibold text-card-foreground">Konfigurator</h2>
-        <div className="flex items-center gap-2">
+      {/* Mobile header */}
+      <div className="flex items-center justify-between border-b border-border p-4 lg:hidden">
+        <h2 className="font-semibold text-card-foreground">Konfiguration</h2>
+        <button
+          onClick={onCloseMobilePanel}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-control-hover"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        {onCollapseSidePanel && ( // Button to collapse side panel
           <button
-            onClick={() => setIsPinned(!isPinned)}
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-              isPinned ? "bg-accent-blue/10 text-accent-blue" : "text-muted-foreground hover:bg-secondary",
-            )}
-            title={isPinned ? "Panel lösen" : "Panel fixieren"}
+            onClick={onCollapseSidePanel}
+            className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-control-hover"
           >
-            {isPinned ? <Pin className="h-4 w-4" /> : <PinOff className="h-4 w-4" />}
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <button
-            onClick={onCloseMobilePanel}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary lg:hidden"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex border-b border-border">
-        <button
-          onClick={() => setActiveTab("raster")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
-            activeTab === "raster"
-              ? "border-b-2 border-accent-blue text-accent-blue"
-              : "text-muted-foreground hover:text-card-foreground",
-          )}
-        >
-          <Grid3X3 className="h-4 w-4" />
-          Raster
-        </button>
-        <button
-          onClick={() => setActiveTab("farben")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
-            activeTab === "farben"
-              ? "border-b-2 border-accent-blue text-accent-blue"
-              : "text-muted-foreground hover:text-card-foreground",
-          )}
-        >
-          <Palette className="h-4 w-4" />
-          Farben
-        </button>
-        <button
-          onClick={() => setActiveTab("warenkorb")}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative",
-            activeTab === "warenkorb"
-              ? "border-b-2 border-accent-blue text-accent-blue"
-              : "text-muted-foreground hover:text-card-foreground",
-          )}
-        >
-          <ShoppingCart className="h-4 w-4" />
-          Liste
-          {totalItems > 0 && (
-            <span className="absolute -top-1 right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-blue px-1 text-[10px] font-bold text-white">
-              {totalItems}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Tab Content */}
+      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-        {/* RASTER TAB */}
-        {activeTab === "raster" && (
-          <div className="p-4 space-y-6">
-            {/* Quick Size Info */}
-            <div className="flex items-center justify-center gap-4 p-3 bg-secondary/50 rounded-xl">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-card-foreground">{totalWidth}</div>
-                <div className="text-xs text-muted-foreground">cm breit</div>
-              </div>
-              <div className="text-2xl text-muted-foreground">×</div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-card-foreground">{totalHeight}</div>
-                <div className="text-xs text-muted-foreground">cm hoch</div>
-              </div>
-            </div>
+        {/* Grid Size Section */}
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("dimensions")}
+            className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
+          >
+            {expandedSections.dimensions ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <span className="font-medium">Rastergröße</span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {config.rows}×{config.columns}
+            </span>
+          </button>
 
-            {/* Columns Control */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-card-foreground">Spalten</span>
-                <div className="flex items-center gap-3">
+          {expandedSections.dimensions && (
+            <div className="px-4 pb-4 space-y-4">
+              {/* Columns */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Spalten ({config.columns})
+                </label>
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => config.columns > 1 && onResizeGrid(config.rows, config.columns - 1)}
                     disabled={config.columns <= 1}
-                    className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="text-xl font-bold w-8 text-center">{config.columns}</span>
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-bold">{config.columns}</span>
+                    <span className="text-sm text-muted-foreground ml-1">Spalten</span>
+                  </div>
                   <button
                     onClick={() => config.columns < 6 && onResizeGrid(config.rows, config.columns + 1)}
                     disabled={config.columns >= 6}
-                    className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
+
+                {/* Column widths */}
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {config.colWidths?.map((width, idx) => {
+                    const hasModules = config.grid?.some((row) => row[idx]?.type && row[idx].type !== "empty")
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => !hasModules && onSetColumnWidth(idx, width === 75 ? 38 : 75)}
+                        disabled={hasModules}
+                        title={
+                          hasModules
+                            ? "Module entfernen um Breite zu ändern"
+                            : `Spalte ${idx + 1}: Klicken um auf ${width === 75 ? 38 : 75}cm zu wechseln`
+                        }
+                        className={cn(
+                          "min-w-[42px] py-1.5 px-2 text-xs rounded-md border transition-colors",
+                          hasModules
+                            ? "opacity-50 cursor-not-allowed bg-secondary/30 border-border/50 text-muted-foreground/50"
+                            : width === 75
+                              ? "bg-accent-gold/10 border-accent-gold text-accent-gold hover:bg-accent-gold/20"
+                              : "bg-secondary border-border text-muted-foreground hover:bg-control-hover",
+                        )}
+                      >
+                        {width}cm
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* Column Widths */}
-              <div className="flex gap-2">
-                {config.colWidths?.map((width, idx) => {
-                  const hasModules = config.grid?.some((row) => row[idx]?.type && row[idx].type !== "empty")
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => !hasModules && onSetColumnWidth(idx, width === 75 ? 38 : 75)}
-                      disabled={hasModules}
-                      className={cn(
-                        "flex-1 py-2 text-xs rounded-lg border transition-all",
-                        hasModules
-                          ? "opacity-40 cursor-not-allowed bg-secondary/30 border-border"
-                          : width === 75
-                            ? "bg-accent-gold/10 border-accent-gold text-accent-gold"
-                            : "bg-secondary border-border hover:bg-control-hover",
-                      )}
-                    >
-                      {width}cm
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Rows Control */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-card-foreground">Reihen</span>
-                <div className="flex items-center gap-3">
+              {/* Rows */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Reihen ({config.rows})
+                </label>
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => config.rows > 1 && onResizeGrid(config.rows - 1, config.columns)}
                     disabled={config.rows <= 1}
-                    className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
-                  <span className="text-xl font-bold w-8 text-center">{config.rows}</span>
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-bold">{config.rows}</span>
+                    <span className="text-sm text-muted-foreground ml-1">Reihen</span>
+                  </div>
                   <button
                     onClick={() => config.rows < 6 && onResizeGrid(config.rows + 1, config.columns)}
                     disabled={config.rows >= 6}
-                    className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center disabled:opacity-30"
+                    className="p-2 rounded-lg bg-secondary/50 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
+                <div className="text-xs text-muted-foreground mt-1">Alle Reihen: 38cm (Standard)</div>
               </div>
-              <div className="text-xs text-muted-foreground text-center">Alle Reihen: 38cm Höhe</div>
             </div>
+          )}
+        </div>
 
-            {/* Material */}
-            <div className="space-y-3">
-              <span className="text-sm font-medium text-card-foreground">Material</span>
+        {/* Colors Section */}
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("colors")}
+            className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
+          >
+            {expandedSections.colors ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <span className="font-medium">Farben</span>
+            <div className="ml-auto flex gap-1">
+              <div
+                className="h-4 w-4 rounded-full border border-border"
+                style={{ backgroundColor: colorHexMap[config.baseColor] }}
+              />
+              {config.accentColor !== "none" && (
+                <div
+                  className="h-4 w-4 rounded-full border border-border"
+                  style={{ backgroundColor: colorHexMap[config.accentColor] }}
+                />
+              )}
+            </div>
+          </button>
+
+          {expandedSections.colors && (
+            <div className="px-4 pb-4 space-y-4">
+              {/* Base Color */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Grundfarbe</label>
+                <div className="flex gap-2">
+                  {baseColors.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => onUpdateConfig({ baseColor: c.id })}
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all",
+                        config.baseColor === c.id
+                          ? "border-accent-gold ring-2 ring-accent-gold/30"
+                          : "border-border hover:border-muted-foreground",
+                      )}
+                      title={c.label}
+                    >
+                      <div className="h-6 w-6 rounded-md" style={{ backgroundColor: c.color }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accent Color */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Akzentfarbe</label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => onUpdateConfig({ accentColor: "none" })}
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all",
+                      config.accentColor === "none"
+                        ? "border-accent-gold ring-2 ring-accent-gold/30"
+                        : "border-border hover:border-muted-foreground",
+                    )}
+                    title="Keine"
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  {specialColors.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => onUpdateConfig({ accentColor: c.id })}
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all",
+                        config.accentColor === c.id
+                          ? "border-accent-gold ring-2 ring-accent-gold/30"
+                          : "border-border hover:border-muted-foreground",
+                      )}
+                      title={c.label}
+                    >
+                      <div className="h-6 w-6 rounded-md" style={{ backgroundColor: c.color }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Material Section */}
+        <div className="border-b border-border">
+          <button
+            onClick={() => toggleSection("material")}
+            className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
+          >
+            {expandedSections.material ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <span className="font-medium">Material</span>
+            <span className="ml-auto text-xs text-muted-foreground capitalize">{config.shelfMaterial}</span>
+          </button>
+
+          {expandedSections.material && (
+            <div className="px-4 pb-4">
               <div className="flex gap-2">
                 {materialOptions.map((m) => (
                   <button
@@ -411,7 +566,7 @@ export function ConfiguratorPanel({
                       "flex-1 py-2.5 text-sm rounded-lg border transition-all",
                       config.shelfMaterial === m.id
                         ? "bg-accent-blue/10 border-accent-blue text-accent-blue font-medium"
-                        : "bg-secondary border-border hover:bg-control-hover",
+                        : "bg-secondary border-border text-muted-foreground hover:bg-control-hover",
                     )}
                   >
                     {m.label}
@@ -419,18 +574,29 @@ export function ConfiguratorPanel({
                 ))}
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Module Types (for Mobile) */}
-            <div className="space-y-3 lg:hidden">
-              <span className="text-sm font-medium text-card-foreground">Module</span>
+        {/* Module Types (Mobile) */}
+        <div className="border-b border-border lg:hidden">
+          <button
+            onClick={() => toggleSection("modules")}
+            className="flex w-full items-center gap-2 p-4 text-left text-card-foreground transition-colors hover:bg-secondary/50"
+          >
+            {expandedSections.modules ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <span className="font-medium">Module</span>
+          </button>
+
+          {expandedSections.modules && (
+            <div className="px-4 pb-4">
               <div className="grid grid-cols-4 gap-2">
                 <button
                   onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 rounded-lg border p-2",
+                    "flex flex-col items-center justify-center gap-1 rounded-lg border p-2 transition-colors",
                     selectedTool === "empty"
                       ? "border-destructive bg-destructive/10 text-destructive"
-                      : "border-border hover:bg-secondary",
+                      : "border-border text-muted-foreground hover:bg-control-hover",
                   )}
                 >
                   <Eraser className="h-5 w-5" />
@@ -441,108 +607,67 @@ export function ConfiguratorPanel({
                     key={module.id}
                     onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1 rounded-lg border p-2",
+                      "flex flex-col items-center justify-center gap-1 rounded-lg border p-2 transition-colors",
                       selectedTool === module.id
                         ? "border-accent-blue bg-accent-blue/10 text-accent-blue"
-                        : "border-border hover:bg-secondary",
+                        : "border-border text-muted-foreground hover:bg-control-hover",
                     )}
                   >
                     <ModulePreviewSVG type={module.id} />
-                    <span className="text-[10px] leading-tight text-center">{module.label}</span>
+                    <span className="text-[10px] leading-tight text-center">{module.label.split(" ")[0]}</span>
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* FARBEN TAB */}
-        {activeTab === "farben" && (
-          <div className="p-4 space-y-6">
-            {/* Base Color */}
+        {/* Selected Cell Editor */}
+        {selectedCellData && selectedCellData.type !== "empty" && (
+          <div className="border-b border-border p-4 bg-secondary/30">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-card-foreground">
+                Modul R{selectedCell!.row + 1}C{selectedCell!.col + 1}
+              </h4>
+              <button
+                onClick={() => {
+                  onClearCell(selectedCell!.row, selectedCell!.col)
+                  onSelectCell(null)
+                }}
+                className="flex items-center gap-1 text-xs text-destructive hover:underline"
+              >
+                <Eraser className="h-3 w-3" />
+                Entfernen
+              </button>
+            </div>
+
             <div className="space-y-3">
-              <span className="text-sm font-medium text-card-foreground">Grundfarbe</span>
-              <div className="flex gap-3">
-                {baseColors.map((c) => (
+              <div className="flex gap-1.5 flex-wrap">
+                {moduleTypes.map((module) => (
                   <button
-                    key={c.id}
-                    onClick={() => onUpdateConfig({ baseColor: c.id })}
+                    key={module.id}
+                    onClick={() => onPlaceModule(selectedCell!.row, selectedCell!.col, module.id)}
                     className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all flex-1",
-                      config.baseColor === c.id
-                        ? "border-accent-blue bg-accent-blue/5"
-                        : "border-border hover:border-muted-foreground",
+                      "px-2 py-1 text-xs rounded-md border transition-colors",
+                      selectedCellData.type === module.id
+                        ? "bg-accent-blue/10 border-accent-blue text-accent-blue"
+                        : "border-border text-muted-foreground hover:bg-control-hover",
                     )}
                   >
-                    <div className="h-10 w-10 rounded-lg border border-border" style={{ backgroundColor: c.color }} />
-                    <span className="text-xs">{c.label}</span>
+                    {module.label}
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Accent Color */}
-            <div className="space-y-3">
-              <span className="text-sm font-medium text-card-foreground">Akzentfarbe</span>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => onUpdateConfig({ accentColor: "none" })}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                    config.accentColor === "none"
-                      ? "border-accent-blue bg-accent-blue/5"
-                      : "border-border hover:border-muted-foreground",
-                  )}
-                >
-                  <div className="h-8 w-8 rounded-lg border border-border flex items-center justify-center bg-secondary">
-                    <X className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <span className="text-xs">Keine</span>
-                </button>
-                {specialColors.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => onUpdateConfig({ accentColor: c.id })}
-                    className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                      config.accentColor === c.id
-                        ? "border-accent-blue bg-accent-blue/5"
-                        : "border-transparent hover:border-muted-foreground",
-                    )}
-                  >
-                    <div className="h-8 w-8 rounded-lg border border-border" style={{ backgroundColor: c.color }} />
-                    <span className="text-xs">{c.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Selected Cell Color Editor */}
-            {selectedCellData && selectedCellData.type !== "empty" && (
-              <div className="space-y-3 p-4 bg-secondary/30 rounded-xl">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-card-foreground">
-                    Modul R{selectedCell!.row + 1}C{selectedCell!.col + 1}
-                  </span>
-                  <button
-                    onClick={() => {
-                      onClearCell(selectedCell!.row, selectedCell!.col)
-                      onSelectCell(null)
-                    }}
-                    className="text-xs text-destructive hover:underline flex items-center gap-1"
-                  >
-                    <Eraser className="h-3 w-3" />
-                    Entfernen
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Modulfarbe</label>
+                <div className="flex gap-1.5 flex-wrap">
                   {allColors.map((c) => (
                     <button
                       key={c.id}
                       onClick={() => onUpdateCellColor(selectedCell!.row, selectedCell!.col, c.id)}
                       className={cn(
-                        "h-9 w-9 rounded-lg border-2 transition-all",
+                        "h-7 w-7 rounded-md border-2 transition-all",
                         selectedCellData.color === c.id
                           ? "border-accent-blue ring-2 ring-accent-blue/30"
                           : "border-transparent hover:border-muted-foreground",
@@ -553,141 +678,421 @@ export function ConfiguratorPanel({
                   ))}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* WARENKORB TAB */}
-        {activeTab === "warenkorb" && (
-          <div className="p-4 space-y-4">
-            {shoppingList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <ShoppingCart className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                <p className="text-sm text-muted-foreground">Noch keine Artikel</p>
-                <p className="text-xs text-muted-foreground/70">Klicke auf das Regal um Module hinzuzufügen</p>
-              </div>
+        <div className="border-b border-border">
+          <button
+            onClick={onToggleShoppingList}
+            className="group flex w-full items-center gap-3 p-4 text-left text-card-foreground transition-all hover:bg-gradient-to-r hover:from-secondary/80 hover:to-transparent"
+          >
+            {showShoppingList ? (
+              <ChevronDown className="h-4 w-4 transition-transform" />
             ) : (
-              <>
-                {/* Compact Product List */}
-                <div className="space-y-1">
-                  <div className="grid grid-cols-12 gap-2 px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase">
-                    <div className="col-span-6">Artikel</div>
-                    <div className="col-span-2 text-center">Anz.</div>
-                    <div className="col-span-4 text-right">Preis</div>
-                  </div>
-
-                  {shoppingList.map((item, index) => (
-                    <div
-                      key={item.product.artNr}
-                      className={cn(
-                        "grid grid-cols-12 gap-2 px-2 py-2 rounded-lg text-sm",
-                        index % 2 === 0 ? "bg-secondary/30" : "",
-                      )}
-                    >
-                      <div className="col-span-6 flex items-center gap-2 min-w-0">
-                        {item.product.color && (
-                          <span
-                            className="h-3 w-3 rounded-full ring-1 ring-border shrink-0"
-                            style={{ backgroundColor: colorHexMap[item.product.color] }}
-                          />
-                        )}
-                        <span className="truncate text-card-foreground">{item.product.name}</span>
-                        {item.product.size && (
-                          <span className="text-[10px] text-muted-foreground shrink-0">{item.product.size}cm</span>
-                        )}
-                      </div>
-                      <div className="col-span-2 text-center">
-                        <span className="inline-flex items-center justify-center h-5 min-w-5 rounded bg-accent-blue/10 text-accent-blue text-xs font-bold px-1">
-                          {item.quantity}
-                        </span>
-                      </div>
-                      <div className="col-span-4 text-right font-medium text-card-foreground">
-                        {item.subtotal.toFixed(2).replace(".", ",")} €
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Price Summary */}
-                <div className="border-t border-border pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Netto</span>
-                    <span className="text-card-foreground">{nettoPrice.toFixed(2).replace(".", ",")} €</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">MwSt. 19%</span>
-                    <span className="text-card-foreground">{mwstPrice.toFixed(2).replace(".", ",")} €</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-border">
-                    <span className="font-medium text-card-foreground">Brutto</span>
-                    <span className="text-xl font-bold text-accent-blue">
-                      {bruttoPrice.toFixed(2).replace(".", ",")} €
-                    </span>
-                  </div>
-                </div>
-
-                {/* Export */}
-                <div className="pt-2">
-                  <button
-                    onClick={() => setShowExportOptions(!showExportOptions)}
-                    className="flex w-full items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Download className="h-4 w-4 text-accent-blue" />
-                      <span className="text-sm font-medium">Export</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{showExportOptions ? "▲" : "▼"}</span>
-                  </button>
-
-                  {showExportOptions && (
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      <button
-                        onClick={exportToJSON}
-                        className="flex flex-col items-center gap-1 p-3 rounded-lg border border-border hover:border-accent-blue hover:bg-accent-blue/5 transition-all"
-                      >
-                        <FileJson className="h-5 w-5 text-accent-blue" />
-                        <span className="text-xs">JSON</span>
-                      </button>
-                      <button
-                        onClick={exportToCSV}
-                        className="flex flex-col items-center gap-1 p-3 rounded-lg border border-border hover:border-accent-blue hover:bg-accent-blue/5 transition-all"
-                      >
-                        <FileSpreadsheet className="h-5 w-5 text-accent-blue" />
-                        <span className="text-xs">CSV</span>
-                      </button>
-                      <button
-                        onClick={() => setShowERPExport(true)}
-                        className="flex flex-col items-center gap-1 p-3 rounded-lg border border-border hover:border-accent-blue hover:bg-accent-blue/5 transition-all"
-                      >
-                        <Database className="h-5 w-5 text-accent-blue" />
-                        <span className="text-xs">ERP</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             )}
-          </div>
-        )}
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-blue/10 text-accent-blue transition-all group-hover:bg-accent-blue group-hover:text-white group-hover:shadow-lg group-hover:shadow-accent-blue/25">
+              <ShoppingCart className="h-4 w-4" />
+            </div>
+            <div className="flex-1">
+              <span className="font-semibold">Warenkorb</span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                {shoppingList.length} {shoppingList.length === 1 ? "Artikel" : "Artikel"} · {totalItems} Teile
+              </span>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-card-foreground">{price} €</div>
+              <div className="text-xs text-muted-foreground">{bruttoPrice.toFixed(2).replace(".", ",")} € brutto</div>
+            </div>
+          </button>
+
+          {showShoppingList && (
+            <div className="px-4 pb-4 space-y-4">
+              {shoppingList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/50 mb-4">
+                    <ShoppingCart className="h-8 w-8 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-1">Dein Warenkorb ist leer</p>
+                  <p className="text-xs text-muted-foreground/70">Klicke auf das Regal um Module hinzuzufügen</p>
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-xl border border-accent-blue/30 bg-gradient-to-br from-accent-blue/5 to-transparent overflow-hidden">
+                    <button
+                      onClick={() => setShowQuantitySummary(!showQuantitySummary)}
+                      className="flex w-full items-center gap-3 p-4 text-left hover:bg-accent-blue/5 transition-colors"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-blue/10 text-accent-blue">
+                        <Hash className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm font-semibold text-card-foreground">Stückzahlen-Übersicht</span>
+                        <div className="text-[10px] text-muted-foreground">
+                          {shoppingList.length} Positionen · {totalItems} Teile gesamt
+                        </div>
+                      </div>
+                      {showQuantitySummary ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+
+                    {showQuantitySummary && (
+                      <div className="border-t border-accent-blue/20">
+                        {/* Summary Table Header */}
+                        <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-secondary/30 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          <div className="col-span-5">Artikel</div>
+                          <div className="col-span-2 text-center">Größe</div>
+                          <div className="col-span-2 text-center">Menge</div>
+                          <div className="col-span-3 text-right">Summe</div>
+                        </div>
+
+                        {/* Summary Table Rows */}
+                        <div className="divide-y divide-border/50">
+                          {shoppingList.map((item, index) => (
+                            <div
+                              key={item.product.artNr}
+                              className={cn(
+                                "grid grid-cols-12 gap-2 px-4 py-2.5 text-xs transition-colors",
+                                index % 2 === 0 ? "bg-background/30" : "bg-transparent",
+                              )}
+                            >
+                              <div className="col-span-5 flex items-center gap-2">
+                                {item.product.color && (
+                                  <span
+                                    className="h-3 w-3 rounded-full ring-1 ring-border shrink-0"
+                                    style={{ backgroundColor: colorHexMap[item.product.color] }}
+                                  />
+                                )}
+                                <span className="font-medium text-card-foreground truncate">{item.product.name}</span>
+                              </div>
+                              <div className="col-span-2 text-center text-muted-foreground">
+                                {item.product.size ? `${item.product.size} cm` : "-"}
+                              </div>
+                              <div className="col-span-2 text-center">
+                                <span className="inline-flex items-center justify-center min-w-6 h-6 rounded-full bg-accent-blue/10 text-accent-blue font-bold text-[11px]">
+                                  {item.quantity}×
+                                </span>
+                              </div>
+                              <div className="col-span-3 text-right font-semibold text-card-foreground">
+                                {item.subtotal.toFixed(2).replace(".", ",")} €
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Summary Table Footer */}
+                        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-accent-blue/10 border-t border-accent-blue/20">
+                          <div className="col-span-5 font-semibold text-sm text-card-foreground">Gesamt</div>
+                          <div className="col-span-2 text-center text-sm text-muted-foreground">-</div>
+                          <div className="col-span-2 text-center">
+                            <span className="inline-flex items-center justify-center min-w-8 h-6 rounded-full bg-accent-blue text-white font-bold text-xs">
+                              {totalItems}
+                            </span>
+                          </div>
+                          <div className="col-span-3 text-right font-bold text-sm text-accent-blue">
+                            {nettoPrice.toFixed(2).replace(".", ",")} €
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Configuration Summary Card */}
+                  <div className="group rounded-xl border border-border bg-gradient-to-br from-secondary/50 to-secondary/20 p-4 transition-all hover:border-accent-blue/30 hover:shadow-lg hover:shadow-accent-blue/5">
+                    <button
+                      onClick={() => setShowConfigDetails(!showConfigDetails)}
+                      className="flex w-full items-center gap-3 text-left"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-blue/10 text-accent-blue transition-colors group-hover:bg-accent-blue/20">
+                        <Info className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium text-card-foreground flex-1">Konfigurationsdetails</span>
+                      {showConfigDetails ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+
+                    {showConfigDetails && (
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2.5">
+                          <Ruler className="h-4 w-4 text-accent-blue" />
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Abmessungen</div>
+                            <div className="text-sm font-medium text-card-foreground">
+                              {totalWidth} × {totalHeight} cm
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2.5">
+                          <Package className="h-4 w-4 text-accent-blue" />
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Raster</div>
+                            <div className="text-sm font-medium text-card-foreground">
+                              {config.rows} × {config.columns}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2.5">
+                          <Palette className="h-4 w-4 text-accent-blue" />
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Material</div>
+                            <div className="text-sm font-medium text-card-foreground capitalize">
+                              {config.shelfMaterial}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg bg-background/50 p-2.5">
+                          <List className="h-4 w-4 text-accent-blue" />
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Module</div>
+                            <div className="text-sm font-medium text-card-foreground">{moduleCount} Stück</div>
+                          </div>
+                        </div>
+                        <div className="col-span-2 flex items-center gap-3 rounded-lg bg-background/50 p-2.5">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-5 w-5 rounded-md border border-border"
+                              style={{ backgroundColor: colorHexMap[config.baseColor] }}
+                            />
+                            <span className="text-xs text-muted-foreground">Basis</span>
+                          </div>
+                          {config.accentColor !== "none" && (
+                            <>
+                              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-5 w-5 rounded-md border border-border"
+                                  style={{ backgroundColor: colorHexMap[config.accentColor] }}
+                                />
+                                <span className="text-xs text-muted-foreground">Akzent</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Grouped Articles by Category */}
+                  <div className="space-y-4">
+                    {Object.entries(groupedByCategory).map(([category, items]) => (
+                      <div key={category}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Tag className="h-3 w-3 text-accent-blue" />
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            {categoryLabels[category] || category}
+                          </h4>
+                          <div className="flex-1 h-px bg-border" />
+                          <span className="text-xs text-muted-foreground">{items.length}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {items.map((item) => (
+                            <div
+                              key={item.product.artNr}
+                              onMouseEnter={() => setHoveredArticle(item.product.artNr)}
+                              onMouseLeave={() => setHoveredArticle(null)}
+                              className={cn(
+                                "group relative rounded-xl border p-3 transition-all duration-200 cursor-default",
+                                hoveredArticle === item.product.artNr
+                                  ? "border-accent-blue/50 bg-gradient-to-r from-accent-blue/5 to-transparent shadow-lg shadow-accent-blue/10 scale-[1.01]"
+                                  : "border-border bg-secondary/30 hover:border-border/80",
+                              )}
+                            >
+                              {/* Hover indicator line */}
+                              <div
+                                className={cn(
+                                  "absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-200",
+                                  hoveredArticle === item.product.artNr ? "h-8 bg-accent-blue" : "h-0 bg-transparent",
+                                )}
+                              />
+
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0 pl-1">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={cn(
+                                        "font-medium transition-colors",
+                                        hoveredArticle === item.product.artNr
+                                          ? "text-accent-blue"
+                                          : "text-card-foreground",
+                                      )}
+                                    >
+                                      {item.product.name}
+                                    </span>
+                                    {item.quantity > 1 && (
+                                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-blue/10 px-1.5 text-[10px] font-bold text-accent-blue">
+                                        ×{item.quantity}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-[10px]">
+                                      {item.product.artNr}
+                                    </span>
+                                    {item.product.size && (
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-background/80 px-1.5 py-0.5">
+                                        {item.product.size} cm
+                                      </span>
+                                    )}
+                                    {item.product.color && (
+                                      <span className="inline-flex items-center gap-1.5 rounded-md bg-background/80 px-1.5 py-0.5">
+                                        <span
+                                          className="h-2.5 w-2.5 rounded-full ring-1 ring-border"
+                                          style={{ backgroundColor: colorHexMap[item.product.color] }}
+                                        />
+                                        {item.product.color}
+                                      </span>
+                                    )}
+                                    {item.product.variant && (
+                                      <span className="rounded-md bg-background/80 px-1.5 py-0.5">
+                                        {item.product.variant}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <div
+                                    className={cn(
+                                      "text-sm font-bold transition-colors",
+                                      hoveredArticle === item.product.artNr
+                                        ? "text-accent-blue"
+                                        : "text-card-foreground",
+                                    )}
+                                  >
+                                    {item.subtotal.toFixed(2).replace(".", ",")} €
+                                  </div>
+                                  {item.quantity > 1 && (
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                      je {item.product.price.toFixed(2).replace(".", ",")} €
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Premium Price Summary */}
+                  <div className="rounded-xl border border-dashed border-border bg-secondary/20 p-4 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Zwischensumme</span>
+                      <span className="text-card-foreground font-medium">
+                        {nettoPrice.toFixed(2).replace(".", ",")} €
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">MwSt. (19%)</span>
+                      <span className="text-card-foreground">{mwstPrice.toFixed(2).replace(".", ",")} €</span>
+                    </div>
+                    <div className="h-px bg-border" />
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-sm font-medium text-card-foreground">Gesamtpreis</span>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-accent-blue">
+                          {bruttoPrice.toFixed(2).replace(".", ",")} €
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">inkl. MwSt.</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Export Options for Warenwirtschaft - Enhanced */}
+                  <div className="rounded-xl border border-dashed border-border bg-secondary/20 p-4 transition-all hover:border-accent-blue/30 hover:bg-secondary/30">
+                    <button
+                      onClick={() => setShowExportOptions(!showExportOptions)}
+                      className="flex w-full items-center gap-3 text-left"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-blue/10 text-accent-blue">
+                        <Download className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-card-foreground">Export für Warenwirtschaft</span>
+                        <p className="text-[10px] text-muted-foreground">JSON, CSV oder ERP-Systeme</p>
+                      </div>
+                      {showExportOptions ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+
+                    {showExportOptions && (
+                      <div className="mt-4 space-y-3">
+                        {/* Quick Export Buttons */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            onClick={exportToJSON}
+                            className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 transition-all hover:border-accent-blue hover:shadow-lg hover:shadow-accent-blue/10 hover:scale-[1.02]"
+                          >
+                            <FileJson className="h-6 w-6 text-accent-blue transition-transform group-hover:scale-110" />
+                            <span className="text-sm font-medium text-card-foreground">JSON</span>
+                            <span className="text-[10px] text-muted-foreground">Strukturiert</span>
+                          </button>
+                          <button
+                            onClick={exportToCSV}
+                            className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 transition-all hover:border-accent-blue hover:shadow-lg hover:shadow-accent-blue/10 hover:scale-[1.02]"
+                          >
+                            <FileSpreadsheet className="h-6 w-6 text-accent-blue transition-transform group-hover:scale-110" />
+                            <span className="text-sm font-medium text-card-foreground">CSV</span>
+                            <span className="text-[10px] text-muted-foreground">Excel-kompatibel</span>
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => setShowERPExport(true)}
+                          className="group flex w-full items-center gap-3 rounded-xl border border-accent-blue/30 bg-accent-blue/5 p-4 transition-all hover:border-accent-blue hover:bg-accent-blue/10"
+                        >
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-blue/10 text-accent-blue transition-colors group-hover:bg-accent-blue group-hover:text-white">
+                            <Database className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 text-left">
+                            <span className="text-sm font-semibold text-card-foreground block">
+                              ERP-System Integration
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              SAP, Lexware, JTL-Wawi, DATEV, weclapp, Billbee, Xentral
+                            </span>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-accent-blue transition-transform group-hover:translate-x-1" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-border bg-card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-xs text-muted-foreground">
-            {moduleCount} Module · {totalItems} Teile
+      <div className="border-t border-border bg-gradient-to-t from-card to-card/95 p-4">
+        <div className="mb-4 flex items-baseline justify-between">
+          <div>
+            <span className="text-xs text-muted-foreground">Gesamtpreis</span>
+            <div className="text-sm text-muted-foreground">(netto)</div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-card-foreground">{price} €</div>
-            <div className="text-xs text-muted-foreground">netto</div>
+            <div className="text-3xl font-bold text-card-foreground">{price} €</div>
+            <div className="text-xs text-muted-foreground">{bruttoPrice.toFixed(2).replace(".", ",")} € brutto</div>
           </div>
         </div>
         <button
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent-blue py-3 font-semibold text-white transition-all hover:bg-accent-blue/90 disabled:opacity-50"
+          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent-blue py-4 font-semibold uppercase tracking-wide text-white transition-all hover:shadow-xl hover:shadow-accent-blue/30 hover:scale-[1.02] active:scale-[0.98] md:py-3.5"
           disabled={shoppingList.length === 0}
         >
-          <ShoppingCart className="h-5 w-5" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <ShoppingCart className="h-5 w-5 transition-transform group-hover:scale-110" />
           <span>In den Warenkorb</span>
+          <Sparkles className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
         </button>
       </div>
 
@@ -719,8 +1124,7 @@ function ModulePreviewSVG({ type }: { type: string }) {
     case "mit-rueckwand":
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-          <line x1="4" y1="12" x2="20" y2="12" />
+          <rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor" fillOpacity="0.2" />
         </svg>
       )
     case "mit-tueren":
@@ -737,7 +1141,7 @@ function ModulePreviewSVG({ type }: { type: string }) {
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="4" y="4" width="16" height="16" rx="1" />
           <line x1="4" y1="14" x2="20" y2="14" />
-          <circle cx="12" cy="17" r="1" fill="currentColor" />
+          <circle cx="12" cy="9" r="1" fill="currentColor" />
         </svg>
       )
     case "mit-doppelschublade":
@@ -754,15 +1158,10 @@ function ModulePreviewSVG({ type }: { type: string }) {
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="4" y="4" width="16" height="16" rx="1" />
           <line x1="12" y1="4" x2="12" y2="20" />
-          <rect x="8" y="10" width="3" height="4" rx="0.5" />
-          <rect x="13" y="10" width="3" height="4" rx="0.5" />
+          <rect x="10" y="10" width="4" height="4" rx="1" fill="currentColor" />
         </svg>
       )
     default:
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="1" />
-        </svg>
-      )
+      return null
   }
 }

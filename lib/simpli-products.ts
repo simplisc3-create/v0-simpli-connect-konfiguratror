@@ -12,7 +12,7 @@ export type ProductCategory =
   | "funktionswand"
   | "led"
 
-export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb" | "grau"
+export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb"
 
 export interface Product {
   artNr: string
@@ -86,8 +86,6 @@ export const metallboeden: Product[] = [
   { artNr: "sim009-gr", name: "Metallboden Grün 80", category: "metallboden", size: 80, price: 33.5, color: "gruen" },
   { artNr: "sim008-ge", name: "Metallboden Gelb 40", category: "metallboden", size: 40, price: 19.5, color: "gelb" },
   { artNr: "sim009-ge", name: "Metallboden Gelb 80", category: "metallboden", size: 80, price: 33.5, color: "gelb" },
-  { artNr: "sim008-grau", name: "Metallboden Grau 40", category: "metallboden", size: 40, price: 19.5, color: "grau" },
-  { artNr: "sim009-grau", name: "Metallboden Grau 80", category: "metallboden", size: 80, price: 33.5, color: "grau" },
 ]
 
 // Glasböden (Glass shelves - 2 pieces per package)
@@ -203,7 +201,7 @@ export function getStangensetPrice(width: number, variant: "metall" | "glas" = "
   return stange?.price ?? 0
 }
 
-export function getMetallbodenPrice(width: number, color?: ShelfColor): number {
+export function getMetallbodenPrice(width: number): number {
   // All colors same price, just check by size
   return width === 40 ? 19.5 : width === 80 ? 33.5 : 0
 }
@@ -245,7 +243,6 @@ export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar", string> 
   rot: "#dc2626",
   gruen: "#228B22",
   gelb: "#eab308",
-  grau: "#6b7280",
   satiniert: "#e8e8e8",
   makassar: "#3d2817",
 }
