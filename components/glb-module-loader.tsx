@@ -55,17 +55,32 @@ export function GLBModule({
         let selectedUrl: string | null = null
 
         if (cellType === "abschliessbare-tueren" && width > 0.6) {
-          if (data.specificModels && data.specificModels["abschliessbare-tueren-75"]) {
-            selectedUrl = data.specificModels["abschliessbare-tueren-75"]
-            console.log("[v0] Using lockable doors 75cm module:", selectedUrl)
-          }
-        }
-
-        if (cellType === "ohne-rueckwand" && width > 0.6 && color.includes("blue")) {
-          if (data.specificModels && data.specificModels["ohne-rueckwand-blue-75"]) {
-            selectedUrl = data.specificModels["ohne-rueckwand-blue-75"]
-            console.log("[v0] Using specific blue 75cm module:", selectedUrl)
-          }
+          selectedUrl = data.specificModels?.["abschliessbare-tueren-75"]
+          if (selectedUrl) console.log("[v0] Using lockable doors 75cm module:", selectedUrl)
+        } else if (cellType === "ohne-rueckwand" && width > 0.6 && color.includes("blue")) {
+          selectedUrl = data.specificModels?.["ohne-rueckwand-blue-75"]
+          if (selectedUrl) console.log("[v0] Using specific blue 75cm module:", selectedUrl)
+        } else if (cellType === "doors40") {
+          selectedUrl = data.specificModels?.["doors40"]
+          if (selectedUrl) console.log("[v0] Using doors40 module:", selectedUrl)
+        } else if (cellType === "lockableDoors40") {
+          selectedUrl = data.specificModels?.["lockableDoors40"]
+          if (selectedUrl) console.log("[v0] Using lockableDoors40 module:", selectedUrl)
+        } else if (cellType === "flapDoors") {
+          selectedUrl = data.specificModels?.["flapDoors"]
+          if (selectedUrl) console.log("[v0] Using flapDoors module:", selectedUrl)
+        } else if (cellType === "doubleDrawers80") {
+          selectedUrl = data.specificModels?.["doubleDrawers80"]
+          if (selectedUrl) console.log("[v0] Using doubleDrawers80 module:", selectedUrl)
+        } else if (cellType === "jalousie80") {
+          selectedUrl = data.specificModels?.["jalousie80"]
+          if (selectedUrl) console.log("[v0] Using jalousie80 module:", selectedUrl)
+        } else if (cellType === "functionalWall1") {
+          selectedUrl = data.specificModels?.["functionalWall1"]
+          if (selectedUrl) console.log("[v0] Using functionalWall1 module:", selectedUrl)
+        } else if (cellType === "functionalWall2") {
+          selectedUrl = data.specificModels?.["functionalWall2"]
+          if (selectedUrl) console.log("[v0] Using functionalWall2 module:", selectedUrl)
         }
 
         if (!selectedUrl) {
@@ -140,7 +155,7 @@ function LoadedGLBModel({
   const [scaleFactor, setScaleFactor] = useState<[number, number, number]>([1, 1, 1])
   const [yOffset, setYOffset] = useState(0)
   const [xOffset, setXOffset] = useState(0)
-  const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]) // add rotation state
+  const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0])
 
   useEffect(() => {
     if (!gltf?.scene || loadError) return
@@ -200,7 +215,7 @@ function LoadedGLBModel({
       console.error("[v0] Error processing GLB model:", error)
       setLoadError(true)
     }
-  }, [gltf?.scene, color, width, height, depth, loadError, row, col, gridConfig, cellType]) // add cellType dependency
+  }, [gltf?.scene, color, width, height, depth, loadError, row, col, gridConfig, cellType])
 
   if (loadError || !clonedScene) {
     return null
@@ -217,5 +232,5 @@ function LoadedGLBModel({
       castShadow
       receiveShadow
     />
-  ) // add rotation prop
+  )
 }
