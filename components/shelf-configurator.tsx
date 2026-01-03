@@ -18,7 +18,7 @@ import {
   schubladenTueren,
   funktionswaende,
 } from "@/lib/simpli-products"
-import type { ShoppingItem } from "@/types/shopping-item" // Import ShoppingItem
+import type { ShoppingItem } from "@/types/shopping-item"
 
 export type GridCell = {
   id: string
@@ -40,45 +40,22 @@ export type ShelfConfig = {
   columns: number
   rows: number
   columnWidths: (75 | 38)[]
-  rowHeights: number[] // changed from (38 | 76)[] to flexible number[]
+  rowHeights: number[]
   footType: "standard" | "adjustable"
   baseColor: "weiss" | "schwarz"
   accentColor: "none" | "blau" | "gruen" | "gelb" | "orange" | "rot" | "lila"
   shelfMaterial: "metall" | "glas" | "holz"
 }
 
-const createEmptyGrid = (rows: number, cols: number): GridCell[][] => {
-  return Array.from({ length: rows }, (_, rowIndex) =>
-    Array.from({ length: cols }, (_, colIndex) => {
-      if (rowIndex === 0 && colIndex === Math.floor(cols / 2)) {
-        return {
-          id: `cell-${rowIndex}-${colIndex}`,
-          type: "ohne-seitenwaende" as const,
-          row: rowIndex,
-          col: colIndex,
-        }
-      }
-      return {
-        id: `cell-${rowIndex}-${colIndex}`,
-        type: "empty" as const,
-        row: rowIndex,
-        col: colIndex,
-      }
-    }),
-  )
+const createInitialGrid = (): GridCell[][] => {
+  return [[{ id: "cell-0-0", type: "empty", row: 0, col: 0 }]]
 }
 
 const initialConfig: ShelfConfig = {
-  grid: [
-    [
-      { id: "cell-0-0", type: "empty", row: 0, col: 0 },
-      { id: "cell-0-1", type: "ohne-seitenwaende", row: 0, col: 1 },
-      { id: "cell-0-2", type: "empty", row: 0, col: 2 },
-    ],
-  ],
-  columns: 3,
+  grid: createInitialGrid(),
+  columns: 1,
   rows: 1,
-  columnWidths: [75, 75, 75],
+  columnWidths: [75],
   rowHeights: [38],
   footType: "standard",
   baseColor: "weiss",
@@ -103,9 +80,7 @@ export function ShelfConfigurator() {
         return
       }
       setHistory((prev) => {
-        // Remove any future states if we're in the middle of history
         const newHistory = prev.slice(0, historyIndex + 1)
-        // Add new state and limit history to 50 entries
         return [...newHistory, newConfig].slice(-50)
       })
       setHistoryIndex((prev) => Math.min(prev + 1, 49))
@@ -134,25 +109,83 @@ export function ShelfConfigurator() {
   const canUndo = historyIndex > 0
   const canRedo = historyIndex < history.length - 1
 
-  const getColumnHeights = (grid: GridCell[][]): number[] => {
-    const heights: number[] = []
-    grid[0]?.forEach((_, colIndex) => {
-      let maxHeight = 0
-      for (let row = grid.length - 1; row >= 0; row--) {
-        if (grid[row]?.[colIndex]?.type !== "empty") {
-          maxHeight = grid.length - row
-          break
-        }
-      }
-      heights[colIndex] = maxHeight
-    })
-    return heights
-  }
+  const expandGridIfNeeded = useCallback((grid: GridCell[][], row: number, col: number): GridCell[][] => {
+    let newGrid = grid.map((r) => [...r])
+
+    // Define positions to potentially add ghost shelves
+    const positionsToCheck = [
+      { row: row - 1, col, direction: "top" },
+      { row: row + 1, col, direction: "bottom" },
+      { row, col: col - 1, direction: "left" },
+      { row, col: col + 1, direction: "right" },
+    ]
+
+    let gridChanged = false
+
+    // Expand top
+    if (row === 0) {
+      newGrid.unshift(
+        Array.from({ length: newGrid[0].length }, (_, i) => ({
+          id: `cell-${-1}-${i}`,
+          type: "empty" as const,
+          row: -1,
+          col: i,
+        })),
+      )
+      // Renumber all rows
+      newGrid = newGrid.map((r, newRowIdx) => r.map((cell) => ({ ...cell, row: newRowIdx })))
+      gridChanged = true
+    }
+
+    // Expand bottom
+    if (row === newGrid.length - 1) {
+      const newRowIdx = newGrid.length
+      newGrid.push(
+        Array.from({ length: newGrid[0].length }, (_, i) => ({
+          id: `cell-${newRowIdx}-${i}`,
+          type: "empty" as const,
+          row: newRowIdx,
+          col: i,
+        })),
+      )
+      gridChanged = true
+    }
+
+    // Expand left
+    if (col === 0) {
+      newGrid = newGrid.map((r, rowIdx) => [
+        {
+          id: `cell-${rowIdx}-${-1}`,
+          type: "empty" as const,
+          row: rowIdx,
+          col: -1,
+        },
+        ...r.map((cell) => ({ ...cell, col: cell.col + 1 })),
+      ])
+      gridChanged = true
+    }
+
+    // Expand right
+    if (col === newGrid[0].length - 1) {
+      newGrid = newGrid.map((r, rowIdx) => [
+        ...r,
+        {
+          id: `cell-${rowIdx}-${newGrid[0].length}`,
+          type: "empty" as const,
+          row: rowIdx,
+          col: newGrid[0].length,
+        },
+      ])
+      gridChanged = true
+    }
+
+    return newGrid
+  }, [])
 
   const placeModule = useCallback(
     (row: number, col: number, type: GridCell["type"]) => {
       setConfig((prev) => {
-        const newGrid = prev.grid.map((r, ri) =>
+        let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
               return { ...cell, type }
@@ -161,36 +194,35 @@ export function ShelfConfigurator() {
           }),
         )
 
+        if (type !== "empty") {
+          newGrid = expandGridIfNeeded(newGrid, row, col)
+        }
+
         const newConfig = {
           ...prev,
           grid: newGrid,
+          columns: newGrid[0]?.length || prev.columns,
+          rows: newGrid.length,
+          columnWidths: Array(newGrid[0]?.length || prev.columns).fill(75) as (75 | 38)[],
+          rowHeights: Array(newGrid.length).fill(38),
         }
+
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
     },
-    [saveToHistory],
+    [expandGridIfNeeded, saveToHistory],
   )
 
   const handleCellClick3D = useCallback(
     (row: number, col: number) => {
-      if (row > 0 && config.grid[row - 1]?.[col]?.type === "empty") {
-        // No support below, don't allow placement
-        console.log("[v0] Cell has no support below")
-        return
-      }
+      const cell = config.grid[row]?.[col]
+      if (!cell || cell.type !== "empty") return
 
       if (selectedTool === "empty") {
         placeModule(row, col, "empty")
       } else if (selectedTool) {
         placeModule(row, col, selectedTool)
-      } else {
-        const currentType = config.grid[row]?.[col]?.type
-        if (currentType === "empty") {
-          placeModule(row, col, "ohne-seitenwaende")
-        } else {
-          placeModule(row, col, "empty")
-        }
       }
     },
     [selectedTool, placeModule, config.grid],
@@ -205,21 +237,15 @@ export function ShelfConfigurator() {
 
   const resizeGrid = useCallback(
     (newRows: number, newCols: number) => {
+      // Limit resizing to not break dynamic expansion
       const limitedRows = Math.min(Math.max(1, newRows), 8)
+      const limitedCols = Math.min(Math.max(1, newCols), 12)
 
       setConfig((prev) => {
         const newGrid = Array.from({ length: limitedRows }, (_, rowIndex) =>
-          Array.from({ length: newCols }, (_, colIndex) => {
-            if (rowIndex < prev.rows && colIndex < prev.columns) {
+          Array.from({ length: limitedCols }, (_, colIndex) => {
+            if (rowIndex < prev.grid.length && colIndex < prev.grid[0].length) {
               return prev.grid[rowIndex][colIndex]
-            }
-            if (rowIndex === 0) {
-              return {
-                id: `cell-${rowIndex}-${colIndex}`,
-                type: "empty" as const,
-                row: rowIndex,
-                col: colIndex,
-              }
             }
             return {
               id: `cell-${rowIndex}-${colIndex}`,
@@ -230,20 +256,15 @@ export function ShelfConfigurator() {
           }),
         )
 
-        const newColumnWidths = [...prev.columnWidths]
-        while (newColumnWidths.length < newCols) newColumnWidths.push(75)
-        while (newColumnWidths.length > newCols) newColumnWidths.pop()
-
-        const newRowHeights = [...prev.rowHeights]
-        while (newRowHeights.length < limitedRows) newRowHeights.push(38)
-        while (newRowHeights.length > limitedRows) newRowHeights.pop()
+        const newColumnWidths = Array(limitedCols).fill(75) as (75 | 38)[]
+        const newRowHeights = Array(limitedRows).fill(38)
 
         const newConfig = {
           ...prev,
           grid: newGrid,
-          columns: newCols,
+          columns: limitedCols,
           rows: limitedRows,
-          columnWidths: newColumnWidths as (75 | 38)[],
+          columnWidths: newColumnWidths,
           rowHeights: newRowHeights,
         }
         setTimeout(() => saveToHistory(newConfig), 0)
@@ -255,10 +276,9 @@ export function ShelfConfigurator() {
 
   const setRowHeight = useCallback(
     (rowIndex: number, height: number) => {
-      // accept any number, not just 38 | 76
       setConfig((prev) => {
         const newHeights = [...prev.rowHeights]
-        newHeights[rowIndex] = Math.max(20, Math.min(120, height)) // Clamp between 20 and 120
+        newHeights[rowIndex] = Math.max(20, Math.min(120, height))
         const newConfig = { ...prev, rowHeights: newHeights }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
@@ -292,23 +312,7 @@ export function ShelfConfigurator() {
   )
 
   const reset = useCallback(() => {
-    const newConfig = {
-      grid: [
-        [
-          { id: "cell-0-0", type: "empty", row: 0, col: 0 },
-          { id: "cell-0-1", type: "ohne-seitenwaende", row: 0, col: 1 },
-          { id: "cell-0-2", type: "empty", row: 0, col: 2 },
-        ],
-      ],
-      columns: 3,
-      rows: 1,
-      columnWidths: [75, 75, 75] as (75 | 38)[],
-      rowHeights: [38] as number[],
-      footType: "standard" as const,
-      baseColor: "weiss" as const,
-      accentColor: "none" as const,
-      shelfMaterial: "metall" as const,
-    }
+    const newConfig = initialConfig
     setConfig(newConfig)
     setHistory([newConfig])
     setHistoryIndex(0)
