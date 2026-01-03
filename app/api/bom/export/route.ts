@@ -40,11 +40,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Export as CSV
+// Export as CSV or Excel
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const configParam = searchParams.get("config")
+    const format = searchParams.get("format") || "csv"
 
     if (!configParam) {
       return NextResponse.json({ error: "Missing config parameter" }, { status: 400 })
@@ -53,7 +54,47 @@ export async function GET(request: NextRequest) {
     const config: BomConfig = JSON.parse(decodeURIComponent(configParam))
     const bom = generateBOM(config)
 
-    // Generate CSV
+    if (format === "excel" || format === "xlsx") {
+      const html = `
+        <html>
+          <head>
+            <meta charset="utf-8">
+          </head>
+          <body>
+            <table>
+              <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Menge</th>
+                <th>Einheit</th>
+                <th>Notiz</th>
+              </tr>
+              ${bom
+                .map(
+                  (line) => `
+                <tr>
+                  <td>${line.sku}</td>
+                  <td>${line.name}</td>
+                  <td>${line.qty}</td>
+                  <td>${line.unit}</td>
+                  <td>${line.note || ""}</td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </table>
+          </body>
+        </html>
+      `
+
+      return new NextResponse(html, {
+        headers: {
+          "Content-Type": "application/vnd.ms-excel",
+          "Content-Disposition": `attachment; filename="BOM-${new Date().toISOString().split("T")[0]}.xls"`,
+        },
+      })
+    }
+
     const csv = [
       "SKU,Name,Quantity,Unit,Note",
       ...bom.map((line) => `${line.sku},"${line.name}",${line.qty},${line.unit},"${line.note || ""}"`),
@@ -66,7 +107,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("[v0] Error exporting BOM CSV:", error)
+    console.error("[v0] Error exporting BOM:", error)
     return NextResponse.json(
       {
         error: "Failed to export BOM",

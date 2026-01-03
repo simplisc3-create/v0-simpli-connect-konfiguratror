@@ -92,6 +92,25 @@ export function BomPanel({ config }: BomPanelProps) {
     }
   }
 
+  const handleExportExcel = async () => {
+    setIsExporting(true)
+    try {
+      const configParam = encodeURIComponent(JSON.stringify(bomConfig))
+      const response = await fetch(`/api/bom/export?config=${configParam}&format=excel`)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `BOM-${new Date().toISOString().split("T")[0]}.xls`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Export failed:", error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -160,6 +179,16 @@ export function BomPanel({ config }: BomPanelProps) {
             <Button onClick={handleExportCSV} disabled={isExporting} size="sm" className="flex-1">
               <Download className="mr-2 h-4 w-4" />
               CSV Export
+            </Button>
+            <Button
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              size="sm"
+              variant="outline"
+              className="flex-1 bg-transparent"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Excel Export
             </Button>
             <Button
               onClick={handleExportJSON}
