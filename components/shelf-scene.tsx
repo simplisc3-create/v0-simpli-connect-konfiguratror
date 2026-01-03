@@ -5,6 +5,7 @@ import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
+import { ShelfFrame } from "./shelf-frame"
 import type { JSX } from "react/jsx-runtime"
 
 type Props = {
@@ -90,9 +91,10 @@ function InteractiveCell({
 }
 
 export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onCellHover }: Props) {
-  const { glbModules, interactiveCells } = useMemo(() => {
+  const { glbModules, interactiveCells, frameElements } = useMemo(() => {
     const glbs: JSX.Element[] = []
     const cells: JSX.Element[] = []
+    const frames: JSX.Element[] = [] // added frame array
     const effectiveColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
     const panelColor = colorMap[effectiveColor] || colorMap.weiss
 
@@ -156,6 +158,16 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
 
         if (isEmpty || isGhost) return
 
+        // Render frame at this position
+        frames.push(
+          <ShelfFrame
+            key={`frame-${gridRow}-${gridCol}`}
+            position={[cellX, cellY, offsetZ_adjusted + depth / 2]}
+            scale={[cellWidth, cellHeight, depth]}
+            color={panelColor}
+          />,
+        )
+
         glbs.push(
           <GLBModule
             key={`glb-${gridRow}-${gridCol}`}
@@ -173,11 +185,12 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
       })
     })
 
-    return { glbModules: glbs, interactiveCells: cells }
+    return { glbModules: glbs, interactiveCells: cells, frameElements: frames }
   }, [config, selectedTool, hoveredCell, onCellClick, onCellHover])
 
   return (
     <group>
+      {frameElements}
       {glbModules}
       {interactiveCells}
     </group>

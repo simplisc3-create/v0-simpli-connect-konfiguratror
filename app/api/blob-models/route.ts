@@ -8,6 +8,7 @@ export async function GET() {
     console.log("[v0] Total blobs in storage:", blobs.length)
 
     const specificModels: Record<string, string> = {
+      "frame-blue-75": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
       "ohne-rueckwand-blue-75":
         "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
     }
