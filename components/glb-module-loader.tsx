@@ -18,31 +18,29 @@ type GLBModuleProps = {
   gridConfig: ShelfConfig
 }
 
-const GLB_MODEL_PATHS: Record<GridCell["type"], string> = {
-  empty: "",
-  "ohne-seitenwaende": "",
-  "ohne-rueckwand": "",
-  "mit-rueckwand": "",
-  "mit-tueren": "",
-  "mit-klapptuer": "",
-  "mit-doppelschublade": "",
-  "abschliessbare-tueren": "",
-}
-
 export function GLBModule({ position, cellType, width, height, depth, color, row, col, gridConfig }: GLBModuleProps) {
   const [blobModels, setBlobModels] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const modelUrl = blobModels[cellType]
+  const gltf = useGLTF(modelUrl, undefined, undefined, (xhr: ProgressEvent) => {
+    console.log("[v0] GLB loading progress:", (xhr.loaded / xhr.total) * 100 + "%")
+  })
 
   useEffect(() => {
     const fetchBlobModels = async () => {
       try {
         const response = await fetch("/api/blob-models")
-        if (response.ok) {
-          const models = await response.json()
-          setBlobModels(models)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch models: ${response.statusText}`)
         }
-      } catch (error) {
-        console.error("[v0] Error fetching Blob models:", error)
+        const models = await response.json()
+        console.log("[v0] Blob models fetched successfully:", models)
+        setBlobModels(models)
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Unknown error"
+        console.error("[v0] Error fetching Blob models:", errorMsg)
+        setError(errorMsg)
       } finally {
         setLoading(false)
       }
@@ -51,69 +49,8 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
     fetchBlobModels()
   }, [])
 
-  const modelPath = blobModels[cellType] || GLB_MODEL_PATHS[cellType]
-
-  if (!modelPath || cellType === "empty" || loading) {
-    return null
-  }
-
-  return (
-    <GLBModelWithErrorBoundary
-      path={modelPath}
-      cellType={cellType}
-      position={position}
-      width={width}
-      height={height}
-      depth={depth}
-      color={color}
-      row={row}
-      col={col}
-      gridConfig={gridConfig}
-    />
-  )
-}
-
-function GLBModelWithErrorBoundary({
-  path,
-  cellType,
-  position,
-  width,
-  height,
-  depth,
-  color,
-  row,
-  col,
-  gridConfig,
-}: {
-  path: string
-  cellType: GridCell["type"]
-  position: [number, number, number]
-  width: number
-  height: number
-  depth: number
-  color: string
-  row: number
-  col: number
-  gridConfig: ShelfConfig
-}) {
-  const [hasError, setHasError] = useState(false)
-  const gltf = useGLTF(path)
-
-  useEffect(() => {
-    fetch(path, { method: "HEAD" })
-      .then((res) => {
-        if (!res.ok) {
-          console.error(`[v0] GLB file not found: ${path}`)
-          setHasError(true)
-        }
-      })
-      .catch((error) => {
-        console.error(`[v0] Error fetching GLB: ${path}`, error)
-        setHasError(true)
-      })
-  }, [path])
-
-  if (hasError) {
+  // Only render when we have models and it's not an empty cell
+  if (cellType === "empty" || loading || !blobModels[cellType]) {
     return null
   }
 
@@ -197,7 +134,6 @@ function LoadedGLBModel({
           const mesh = child as any
           const meshName = mesh.name.toLowerCase()
 
-          // Check if mesh is a board/shelf surface by name pattern
           if (
             meshName.includes("board") ||
             meshName.includes("shelf") ||
@@ -209,13 +145,12 @@ function LoadedGLBModel({
               mesh.material.color.set(color)
             }
           }
-          // All other meshes (frame, rods, sides) keep their original chrome/material
         }
       })
 
       setClonedScene(clone)
     } catch (error) {
-      console.log("[v0] Error processing GLB model:", error)
+      console.error("[v0] Error processing GLB model:", error)
       setLoadError(true)
     }
   }, [gltf?.scene, color, width, height, depth, loadError, row, col, gridConfig])
