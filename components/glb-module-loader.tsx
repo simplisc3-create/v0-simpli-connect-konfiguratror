@@ -43,16 +43,25 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
           }
         }
 
-        // If no specific model, use the dimension-based selection
+        // If no specific model, use dimension-based selection
         if (!selectedUrl) {
-          // Determine cell dimensions from width and height
           const cellDim = width > 0.6 ? "80x40x40" : "40x40x40"
 
+          console.log("[v0] Selecting model for:", {
+            cellType,
+            width,
+            cellDim,
+            availableModels: data.modelMap?.[cellDim]?.length || 0,
+          })
+
           if (data.modelMap && data.modelMap[cellDim] && data.modelMap[cellDim].length > 0) {
-            // Select a random model from the matching dimension set to get color variety
+            // Select a model from the matching dimension set
             const models = data.modelMap[cellDim]
-            selectedUrl = models[Math.floor(Math.random() * models.length)]
-            console.log("[v0] Selected model for cell type:", cellType, "dim:", cellDim, "url:", selectedUrl)
+
+            const colorMatch = models.find((url: string) => url.toLowerCase().includes(color.toLowerCase()))
+
+            selectedUrl = colorMatch || models[Math.floor(Math.random() * models.length)]
+            console.log("[v0] Selected model:", selectedUrl)
           } else if (data.models && data.models.length > 0) {
             // Fallback to first available model
             selectedUrl = data.models[0]

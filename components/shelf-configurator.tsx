@@ -131,7 +131,6 @@ export function ShelfConfigurator() {
     const hasAnyFilledModule = grid.some((r) => r.some((c) => c.type !== "empty" && c.type !== "ghost"))
 
     if (!hasAnyFilledModule) {
-      // First module placement - always allow
       return true
     }
 
@@ -148,6 +147,9 @@ export function ShelfConfigurator() {
   }
 
   const hasSupportBelow = (row: number, col: number, grid: GridCell[][]): boolean => {
+    const hasAnyFilledModule = grid.some((r) => r.some((c) => c.type !== "empty" && c.type !== "ghost"))
+    if (!hasAnyFilledModule) return true // First placement
+
     if (row === 0) return true // Ground level always has support
     const belowCell = grid[row - 1]?.[col]
     return belowCell !== undefined && belowCell.type !== "empty" && belowCell.type !== "ghost"
