@@ -173,7 +173,7 @@ function LoadedGLBModel({
       setXOffset(xAdjustment)
 
       if (cellType === "abschliessbare-tueren") {
-        setRotation([0, Math.PI / 2, 0])
+        setRotation([0, Math.PI, 0])
       }
 
       clone.traverse((child) => {
