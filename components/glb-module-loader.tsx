@@ -140,6 +140,7 @@ function LoadedGLBModel({
   const [scaleFactor, setScaleFactor] = useState<[number, number, number]>([1, 1, 1])
   const [yOffset, setYOffset] = useState(0)
   const [xOffset, setXOffset] = useState(0)
+  const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]) // add rotation state
 
   useEffect(() => {
     if (!gltf?.scene || loadError) return
@@ -171,6 +172,10 @@ function LoadedGLBModel({
 
       setXOffset(xAdjustment)
 
+      if (cellType === "abschliessbare-tueren") {
+        setRotation([0, Math.PI / 2, 0])
+      }
+
       clone.traverse((child) => {
         if ((child as any).isMesh) {
           const mesh = child as any
@@ -195,7 +200,7 @@ function LoadedGLBModel({
       console.error("[v0] Error processing GLB model:", error)
       setLoadError(true)
     }
-  }, [gltf?.scene, color, width, height, depth, loadError, row, col, gridConfig])
+  }, [gltf?.scene, color, width, height, depth, loadError, row, col, gridConfig, cellType]) // add cellType dependency
 
   if (loadError || !clonedScene) {
     return null
@@ -203,5 +208,14 @@ function LoadedGLBModel({
 
   const adjustedPosition: [number, number, number] = [position[0] + xOffset, position[1] + yOffset, position[2]]
 
-  return <primitive object={clonedScene} position={adjustedPosition} scale={scaleFactor} castShadow receiveShadow />
+  return (
+    <primitive
+      object={clonedScene}
+      position={adjustedPosition}
+      scale={scaleFactor}
+      rotation={rotation}
+      castShadow
+      receiveShadow
+    />
+  ) // add rotation prop
 }
