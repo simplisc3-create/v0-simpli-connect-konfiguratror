@@ -37,15 +37,12 @@ export type GridCell = {
 }
 
 export type ShelfConfig = {
-  grid: GridCell[][]
-  columns: number
-  rows: number
-  columnWidths: (75 | 38)[]
-  rowHeights: (40 | 80 | 120 | 160 | 200)[]
-  footType: "standard" | "adjustable"
-  baseColor: "black" | "white" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
-  accentColor: "none" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
-  shelfMaterial: "metal" | "glass"
+  width: 38 | 75
+  height: 40 | 80 | 120 | 160 | 200
+  sections: number
+  levels: number
+  material: "metal" | "glass"
+  finish: "black" | "white" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
   panels?: {
     shelves?: number
     sideWalls?: number
@@ -60,6 +57,11 @@ export type ShelfConfig = {
     functionalWall1?: number
     functionalWall2?: number
   }
+  grid: GridCell[][]
+  columns: number
+  rows: number
+  columnWidths: (75 | 38)[]
+  rowHeights: (40 | 80 | 120 | 160 | 200)[]
 }
 
 const createInitialGrid = (): GridCell[][] => {
@@ -67,15 +69,17 @@ const createInitialGrid = (): GridCell[][] => {
 }
 
 const initialConfig: ShelfConfig = {
+  width: 75,
+  height: 38,
+  sections: 1,
+  levels: 1,
+  material: "metal",
+  finish: "white",
   grid: createInitialGrid(),
   columns: 1,
   rows: 1,
   columnWidths: [75] as (75 | 38)[],
   rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
-  footType: "standard" as const,
-  baseColor: "white" as const,
-  accentColor: "none" as const,
-  shelfMaterial: "metal" as const,
 }
 
 export function ShelfConfigurator() {
@@ -410,15 +414,17 @@ export function ShelfConfigurator() {
 
   const reset = useCallback(() => {
     const newConfig = {
+      width: 75,
+      height: 38,
+      sections: 1,
+      levels: 1,
+      material: "metal",
+      finish: "white",
       grid: createInitialGrid(),
       columns: 1,
       rows: 1,
       columnWidths: [75] as (75 | 38)[],
       rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
-      footType: "standard" as const,
-      baseColor: "white" as const,
-      accentColor: "none" as const,
-      shelfMaterial: "metal" as const,
     }
     setConfig(newConfig)
     setHistory([newConfig])
@@ -479,11 +485,11 @@ export function ShelfConfigurator() {
       const bodenSize = cellWidth === 75 ? 80 : 40
 
       let shelfProduct: Product | undefined
-      if (config.shelfMaterial === "metal") {
+      if (config.material === "metal") {
         shelfProduct =
           metallboeden.find((p) => p.size === bodenSize && p.color === getToolLabel(cell.type)) ||
           metallboeden.find((p) => p.size === bodenSize && p.color === "white")
-      } else if (config.shelfMaterial === "glass") {
+      } else if (config.material === "glass") {
         shelfProduct = glasboeden.find((p) => p.size === bodenSize)
       } else {
         shelfProduct = holzboeden.find((p) => p.size === bodenSize)
@@ -612,8 +618,7 @@ export function ShelfConfigurator() {
                 <div
                   className="h-6 w-6 rounded"
                   style={{
-                    backgroundColor:
-                      config.accentColor !== "none" ? getColorHex(config.accentColor) : getColorHex(config.baseColor),
+                    backgroundColor: config.finish !== "none" ? getColorHex(config.finish) : getColorHex("white"),
                   }}
                 />
                 <span className="text-sm text-white">{getToolLabel(selectedTool)}</span>

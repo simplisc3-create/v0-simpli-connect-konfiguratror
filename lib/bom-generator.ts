@@ -240,26 +240,6 @@ export function generateBOM(config: BomConfig): BomLine[] {
     })
   }
 
-  // LED
-
-  if ((config.led2 || 0) > 0) {
-    bom.push({
-      sku: "SIM-LED-2",
-      name: "LED-Leiste 2",
-      qty: config.led2!,
-      unit: "pcs",
-    })
-  }
-
-  if ((config.led4 || 0) > 0) {
-    bom.push({
-      sku: "SIM-LED-4",
-      name: "LED-Leiste 4",
-      qty: config.led4!,
-      unit: "pcs",
-    })
-  }
-
   // Filter out zero-qty lines and return
   return bom.filter((line) => line.qty > 0)
 }
