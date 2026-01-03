@@ -41,11 +41,25 @@ export type ShelfConfig = {
   columns: number
   rows: number
   columnWidths: (75 | 38)[]
-  rowHeights: number[] // changed from (38 | 76)[] to flexible number[]
+  rowHeights: (40 | 80 | 120 | 160 | 200)[]
   footType: "standard" | "adjustable"
-  baseColor: "weiss" | "schwarz"
-  accentColor: "none" | "blau" | "gruen" | "gelb" | "orange" | "rot" | "lila"
-  shelfMaterial: "metall" | "glas" | "holz"
+  baseColor: "black" | "white" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
+  accentColor: "none" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
+  shelfMaterial: "metal" | "glass"
+  panels?: {
+    shelves?: number
+    sideWalls?: number
+    backWalls?: number
+  }
+  modules?: {
+    doors40?: number
+    lockableDoors40?: number
+    flapDoors?: number
+    doubleDrawers80?: number
+    jalousie80?: number
+    functionalWall1?: number
+    functionalWall2?: number
+  }
 }
 
 const createInitialGrid = (): GridCell[][] => {
@@ -57,11 +71,11 @@ const initialConfig: ShelfConfig = {
   columns: 1,
   rows: 1,
   columnWidths: [75] as (75 | 38)[],
-  rowHeights: [38] as number[],
+  rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
   footType: "standard" as const,
-  baseColor: "weiss" as const,
+  baseColor: "white" as const,
   accentColor: "none" as const,
-  shelfMaterial: "metall" as const,
+  shelfMaterial: "metal" as const,
 }
 
 export function ShelfConfigurator() {
@@ -400,11 +414,11 @@ export function ShelfConfigurator() {
       columns: 1,
       rows: 1,
       columnWidths: [75] as (75 | 38)[],
-      rowHeights: [38] as number[],
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
       footType: "standard" as const,
-      baseColor: "weiss" as const,
+      baseColor: "white" as const,
       accentColor: "none" as const,
-      shelfMaterial: "metall" as const,
+      shelfMaterial: "metal" as const,
     }
     setConfig(newConfig)
     setHistory([newConfig])
@@ -453,8 +467,8 @@ export function ShelfConfigurator() {
     const col80Count = config.columnWidths.filter((w) => w === 75).length
     const col40Count = config.columnWidths.filter((w) => w === 38).length
 
-    const stange80 = stangensets.find((s) => s.size === 80 && s.variant === "metall")
-    const stange40 = stangensets.find((s) => s.size === 40 && s.variant === "metall")
+    const stange80 = stangensets.find((s) => s.size === 80 && s.variant === "metal")
+    const stange40 = stangensets.find((s) => s.size === 40 && s.variant === "metal")
 
     if (stange80 && col80Count > 0) addItem(stange80, col80Count * levels)
     if (stange40 && col40Count > 0) addItem(stange40, col40Count * levels)
@@ -465,11 +479,11 @@ export function ShelfConfigurator() {
       const bodenSize = cellWidth === 75 ? 80 : 40
 
       let shelfProduct: Product | undefined
-      if (config.shelfMaterial === "metall") {
+      if (config.shelfMaterial === "metal") {
         shelfProduct =
           metallboeden.find((p) => p.size === bodenSize && p.color === getToolLabel(cell.type)) ||
-          metallboeden.find((p) => p.size === bodenSize && p.color === "weiss")
-      } else if (config.shelfMaterial === "glas") {
+          metallboeden.find((p) => p.size === bodenSize && p.color === "white")
+      } else if (config.shelfMaterial === "glass") {
         shelfProduct = glasboeden.find((p) => p.size === bodenSize)
       } else {
         shelfProduct = holzboeden.find((p) => p.size === bodenSize)
@@ -645,14 +659,14 @@ function getToolLabel(tool: GridCell["type"]): string {
 
 function getColorHex(color: string): string {
   const colors: Record<string, string> = {
-    weiss: "#F5F5F5",
-    schwarz: "#1A1A1A",
-    blau: "#00A0D6",
-    gruen: "#228B22",
-    gelb: "#FFD700",
+    white: "#FFFFFF",
+    black: "#000000",
+    blue: "#00A0D6",
+    green: "#228B22",
+    yellow: "#FFFF00",
     orange: "#FF8C00",
-    rot: "#DC143C",
-    lila: "#8B008B",
+    red: "#DC143C",
+    satin: "#F0F8FF",
   }
-  return colors[color] || "#F5F5F5"
+  return colors[color] || "#FFFFFF"
 }

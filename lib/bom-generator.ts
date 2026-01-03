@@ -12,20 +12,26 @@ export type BomLine = {
 }
 
 export type BomConfig = {
-  sections: number // modules horizontally (width count)
-  levels: number // shelf levels/rows
-  height: number // total height in cm (40, 80, 120, 160, 200)
-  width: 38 | 75 // module width in cm
-  material: "metall" | "glas"
-  panelFinish: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
-  shelves?: number // explicit shelf count (auto-calculated if not set)
-  sideWalls?: number
-  backWalls?: number
-  doors40?: number
-  lockableDoors40?: number
-  flapDoors?: number
-  doubleDrawers80?: number
-  jalousie80?: number
+  width: 38 | 75
+  height: 40 | 80 | 120 | 160 | 200
+  sections: number
+  levels: number
+  material: "metal" | "glass"
+  finish: "black" | "white" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
+  panels?: {
+    shelves?: number
+    sideWalls?: number
+    backWalls?: number
+  }
+  modules?: {
+    doors40?: number
+    lockableDoors40?: number
+    flapDoors?: number
+    doubleDrawers80?: number
+    jalousie80?: number
+    functionalWall1?: number
+    functionalWall2?: number
+  }
 }
 
 /**
@@ -38,21 +44,21 @@ export function validateConfig(config: BomConfig): { valid: boolean; errors: str
   const compartments = config.sections * config.levels
 
   const frontsTotal =
-    (config.doors40 || 0) +
-    (config.lockableDoors40 || 0) +
-    (config.flapDoors || 0) +
-    (config.doubleDrawers80 || 0) +
-    (config.jalousie80 || 0)
+    (config.modules?.doors40 || 0) +
+    (config.modules?.lockableDoors40 || 0) +
+    (config.modules?.flapDoors || 0) +
+    (config.modules?.doubleDrawers80 || 0) +
+    (config.modules?.jalousie80 || 0)
 
   if (frontsTotal > compartments) {
     errors.push(`Zu viele Frontmodule. Maximal ${compartments} erlaubt, ${frontsTotal} konfiguriert`)
   }
 
-  if ((config.doors40 || 0) % 2 !== 0) {
+  if ((config.modules?.doors40 || 0) % 2 !== 0) {
     warnings.push("Türmodule 40 cm werden üblicherweise paarweise eingesetzt.")
   }
 
-  if ((config.doubleDrawers80 || 0) > compartments) {
+  if ((config.modules?.doubleDrawers80 || 0) > compartments) {
     errors.push(`Zu viele Doppelschubladen. Maximal ${compartments} erlaubt`)
   }
 
@@ -79,10 +85,10 @@ export function generateBOM(config: BomConfig): BomLine[] {
   const sections = config.sections
   const levels = config.levels
 
-  const shelves = config.shelves && config.shelves > 0 ? config.shelves : sections * levels
+  const shelves = config.panels?.shelves && config.panels.shelves > 0 ? config.panels.shelves : sections * levels
 
-  const sideWalls = config.sideWalls || 0
-  const backWalls = config.backWalls || 0
+  const sideWalls = config.panels?.sideWalls || 0
+  const backWalls = config.panels?.backWalls || 0
 
   const totalPanels = shelves + sideWalls + backWalls
   const tubeSetQty = sections * levels
@@ -98,20 +104,20 @@ export function generateBOM(config: BomConfig): BomLine[] {
   })
 
   // STANGENSETS (Tube Sets)
-  const tubeSetSku = config.material === "glas" ? `SIM-S-${config.width}-G` : `SIM-S-${config.width}-M`
+  const tubeSetSku = config.material === "glass" ? `SIM-S-${config.width}-G` : `SIM-S-${config.width}-M`
 
   bom.push({
     sku: tubeSetSku,
-    name: `Stangenset ${config.width} ${config.material === "glas" ? "Glas" : "Metall"}`,
+    name: `Stangenset ${config.width} ${config.material === "glass" ? "Glas" : "Metall"}`,
     qty: tubeSetQty,
     unit: "set",
   })
 
   // FLÄCHEN (Panels/Shelves)
   const panelSku =
-    config.material === "glas"
-      ? `SIM-P-G-${config.width}-${config.panelFinish}`
-      : `SIM-P-M-${config.width}-${config.panelFinish}`
+    config.material === "glass"
+      ? `SIM-P-G-${config.width}-${config.finish}`
+      : `SIM-P-M-${config.width}-${config.finish}`
 
   bom.push({
     sku: panelSku,
@@ -140,7 +146,7 @@ export function generateBOM(config: BomConfig): BomLine[] {
   })
 
   // Extra screws for metal 75cm
-  if (config.material === "metall" && config.width === 75) {
+  if (config.material === "metal" && config.width === 75) {
     bom.push({
       sku: "SIM-SCR-80",
       name: "Zusatzschrauben 80",
@@ -150,7 +156,7 @@ export function generateBOM(config: BomConfig): BomLine[] {
   }
 
   // Glass protection
-  if (config.material === "glas") {
+  if (config.material === "glass") {
     bom.push({
       sku: "SIM-CP-G",
       name: "Eckschutz Glas",
@@ -171,47 +177,65 @@ export function generateBOM(config: BomConfig): BomLine[] {
 
   // MODULES
 
-  if ((config.doors40 || 0) > 0) {
+  if ((config.modules?.doors40 || 0) > 0) {
     bom.push({
       sku: "SIM-DOOR-40",
       name: "Tür 40 cm",
-      qty: config.doors40!,
+      qty: config.modules?.doors40!,
       unit: "pcs",
     })
   }
 
-  if ((config.lockableDoors40 || 0) > 0) {
+  if ((config.modules?.lockableDoors40 || 0) > 0) {
     bom.push({
       sku: "SIM-DOOR-40-LOCK",
       name: "Abschließbare Tür 40 cm",
-      qty: config.lockableDoors40!,
+      qty: config.modules?.lockableDoors40!,
       unit: "pcs",
     })
   }
 
-  if ((config.flapDoors || 0) > 0) {
+  if ((config.modules?.flapDoors || 0) > 0) {
     bom.push({
       sku: "SIM-FLAP-DOOR",
       name: "Klapprahmen",
-      qty: config.flapDoors!,
+      qty: config.modules?.flapDoors!,
       unit: "pcs",
     })
   }
 
-  if ((config.doubleDrawers80 || 0) > 0) {
+  if ((config.modules?.doubleDrawers80 || 0) > 0) {
     bom.push({
       sku: "SIM-DRAWER-80",
       name: "Doppelschublade 80 cm",
-      qty: config.doubleDrawers80!,
+      qty: config.modules?.doubleDrawers80!,
       unit: "pcs",
     })
   }
 
-  if ((config.jalousie80 || 0) > 0) {
+  if ((config.modules?.jalousie80 || 0) > 0) {
     bom.push({
       sku: "SIM-JAL-80",
       name: "Jalousie 80 cm",
-      qty: config.jalousie80!,
+      qty: config.modules?.jalousie80!,
+      unit: "pcs",
+    })
+  }
+
+  if ((config.modules?.functionalWall1 || 0) > 0) {
+    bom.push({
+      sku: "SIM-FW1",
+      name: "Funktionswand 1",
+      qty: config.modules?.functionalWall1!,
+      unit: "pcs",
+    })
+  }
+
+  if ((config.modules?.functionalWall2 || 0) > 0) {
+    bom.push({
+      sku: "SIM-FW2",
+      name: "Funktionswand 2",
+      qty: config.modules?.functionalWall2!,
       unit: "pcs",
     })
   }
