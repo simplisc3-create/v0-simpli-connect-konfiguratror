@@ -97,13 +97,12 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const panelColor = colorMap[effectiveColor] || colorMap.weiss
 
     const depth = 0.38
-    const columnGap = 0.15
 
     const columnPositions: number[] = [0]
     let currentX = 0
     for (let col = 0; col < config.columns; col++) {
       const width = config.columnWidths[col] / 100
-      currentX += width + columnGap
+      currentX += width
       columnPositions.push(currentX)
     }
     const totalWidth = currentX
@@ -118,7 +117,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const totalHeight = currentY
 
     const offsetX = -totalWidth / 2
-    const offsetY = 0.025 + 0.2 - 0.3
+    const offsetY = -0.075
     const offsetZ = -depth / 2
 
     config.grid.forEach((rowCells, gridRow) => {
