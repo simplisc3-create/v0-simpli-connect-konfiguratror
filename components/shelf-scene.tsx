@@ -117,7 +117,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const totalHeight = currentY
 
     const offsetX = -totalWidth / 2
-    const offsetY = 0.025
+    const offsetY = 0.025 + 0.2
     const offsetZ = -depth / 2
 
     config.grid.forEach((rowCells, gridRow) => {
