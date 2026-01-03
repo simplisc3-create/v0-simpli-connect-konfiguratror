@@ -136,7 +136,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
         const isEmpty = cell.type === "empty"
         const isHovered = hoveredCell?.row === gridRow && hoveredCell?.col === gridCol
 
-        if (isGhost || isEmpty) {
+        if (isGhost && selectedTool) {
           cells.push(
             <InteractiveCell
               key={`interactive-${gridRow}-${gridCol}`}
@@ -146,7 +146,24 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
               depth={depth}
               row={gridRow}
               col={gridCol}
-              isEmpty={isEmpty}
+              isEmpty={false}
+              isHovered={isHovered}
+              selectedTool={selectedTool}
+              onClick={onCellClick}
+              onHover={onCellHover}
+            />,
+          )
+        } else if (isEmpty && (isHovered || selectedTool)) {
+          cells.push(
+            <InteractiveCell
+              key={`interactive-${gridRow}-${gridCol}`}
+              position={[cellX, cellY, offsetZ_adjusted + depth / 2]}
+              width={cellWidth}
+              height={cellHeight}
+              depth={depth}
+              row={gridRow}
+              col={gridCol}
+              isEmpty={true}
               isHovered={isHovered}
               selectedTool={selectedTool}
               onClick={onCellClick}

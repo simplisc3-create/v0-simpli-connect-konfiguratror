@@ -16,14 +16,32 @@ type GLBModuleProps = {
   row: number
   col: number
   gridConfig: ShelfConfig
+  modelUrl?: string // Accept explicit model URL from parent
 }
 
-export function GLBModule({ position, cellType, width, height, depth, color, row, col, gridConfig }: GLBModuleProps) {
-  const [modelUrl, setModelUrl] = useState<string | null>(null)
+export function GLBModule({
+  position,
+  cellType,
+  width,
+  height,
+  depth,
+  color,
+  row,
+  col,
+  gridConfig,
+  modelUrl: explicitModelUrl,
+}: GLBModuleProps) {
+  const [modelUrl, setModelUrl] = useState<string | null>(explicitModelUrl || null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (explicitModelUrl) {
+      setModelUrl(explicitModelUrl)
+      setLoading(false)
+      return
+    }
+
     const fetchBlobModels = async () => {
       try {
         setLoading(true)
@@ -43,25 +61,11 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
           }
         }
 
-        // If no specific model, use dimension-based selection
         if (!selectedUrl) {
-          const cellDim = width > 0.6 ? "80x40x40" : "40x40x40"
-
-          console.log("[v0] Selecting model for:", {
-            cellType,
-            width,
-            cellDim,
-            availableModels: data.modelMap?.[cellDim]?.length || 0,
-          })
-
-          if (data.modelMap && data.modelMap[cellDim] && data.modelMap[cellDim].length > 0) {
-            const models = data.modelMap[cellDim]
-            const colorMatch = models.find((url: string) => url.toLowerCase().includes(color.toLowerCase()))
-            selectedUrl = colorMatch || models[Math.floor(Math.random() * models.length)]
-            console.log("[v0] Selected model:", selectedUrl)
-          } else {
-            throw new Error("No GLB files found for the selected dimension")
-          }
+          console.warn("[v0] No specific model URL found for:", { cellType, width, color })
+          setError("No model URL specified for this configuration")
+          setLoading(false)
+          return
         }
 
         setModelUrl(selectedUrl)
@@ -75,10 +79,9 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
     }
 
     fetchBlobModels()
-  }, [width, cellType, color])
+  }, [width, cellType, color, explicitModelUrl])
 
-  // Only render when we have a model URL and it's not an empty cell
-  if (cellType === "empty" || loading || !modelUrl) {
+  if (cellType === "empty" || loading || !modelUrl || error) {
     return null
   }
 

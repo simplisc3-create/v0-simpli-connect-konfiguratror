@@ -160,6 +160,24 @@ export function ShelfConfigurator() {
     const rows = newGrid.length
     const cols = newGrid[0]?.length || 0
 
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = newGrid[r][c]
+        if (cell.type === "empty") {
+          // Check if adjacent to any filled cell
+          const hasFilledAdjacent =
+            (newGrid[r - 1]?.[c] && newGrid[r - 1][c].type !== "empty" && newGrid[r - 1][c].type !== "ghost") ||
+            (newGrid[r + 1]?.[c] && newGrid[r + 1][c].type !== "empty" && newGrid[r + 1][c].type !== "ghost") ||
+            (newGrid[r]?.[c - 1] && newGrid[r][c - 1].type !== "empty" && newGrid[r][c - 1].type !== "ghost") ||
+            (newGrid[r]?.[c + 1] && newGrid[r][c + 1].type !== "empty" && newGrid[r][c + 1].type !== "ghost")
+
+          if (hasFilledAdjacent) {
+            newGrid[r][c] = { ...cell, type: "ghost" }
+          }
+        }
+      }
+    }
+
     // Add ghost cells to the left if needed
     if (placedCol === 0) {
       newGrid = newGrid.map((row, ri) => {

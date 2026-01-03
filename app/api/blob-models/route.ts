@@ -12,45 +12,13 @@ export async function GET() {
         "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
     }
 
-    const modelMap: Record<string, string[]> = {
-      "40x40x40": [],
-      "80x40x40": [],
-    }
-    const glbFiles: string[] = []
-
-    blobs.forEach((blob) => {
-      const pathname = blob.pathname.toLowerCase()
-
-      if (pathname.endsWith(".glb") && !pathname.includes("rahmung")) {
-        glbFiles.push(blob.url)
-
-        if (pathname.includes("40x40x40")) {
-          modelMap["40x40x40"].push(blob.url)
-        } else if (pathname.includes("80x40x40")) {
-          modelMap["80x40x40"].push(blob.url)
-        }
-
-        console.log("[v0] Found GLB file:", pathname, "URL:", blob.url)
-      }
-    })
-
-    console.log("[v0] Total GLB files found:", glbFiles.length)
-    console.log("[v0] Model map:", {
-      "40x40x40": modelMap["40x40x40"].length,
-      "80x40x40": modelMap["80x40x40"].length,
-    })
-
+    // Return only the specific models, no model map for random selection
     return NextResponse.json({
-      modelMap: modelMap,
       specificModels: specificModels,
-      count: glbFiles.length,
+      count: Object.keys(specificModels).length,
     })
   } catch (error) {
     console.error("[v0] Error fetching Blob models:", error)
-    console.error("[v0] Error details:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
     return NextResponse.json(
       {
         error: "Failed to fetch models",
