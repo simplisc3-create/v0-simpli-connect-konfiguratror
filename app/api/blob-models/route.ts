@@ -10,6 +10,8 @@ export async function GET() {
     const specificModels: Record<string, string> = {
       "ohne-rueckwand-blue-75":
         "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
+      "abschliessbare-tueren-75":
+        "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-7-white_optimized.glb",
     }
 
     // Return only the specific models, no model map for random selection

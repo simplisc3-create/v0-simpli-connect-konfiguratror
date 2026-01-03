@@ -54,6 +54,13 @@ export function GLBModule({
 
         let selectedUrl: string | null = null
 
+        if (cellType === "abschliessbare-tueren" && width > 0.6) {
+          if (data.specificModels && data.specificModels["abschliessbare-tueren-75"]) {
+            selectedUrl = data.specificModels["abschliessbare-tueren-75"]
+            console.log("[v0] Using lockable doors 75cm module:", selectedUrl)
+          }
+        }
+
         if (cellType === "ohne-rueckwand" && width > 0.6 && color.includes("blue")) {
           if (data.specificModels && data.specificModels["ohne-rueckwand-blue-75"]) {
             selectedUrl = data.specificModels["ohne-rueckwand-blue-75"]
