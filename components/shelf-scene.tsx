@@ -127,7 +127,8 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
 
         const invertedRow = config.rows - 1 - gridRow
         const cellX = columnPositions[gridCol] + cellWidth / 2 + offsetX
-        const cellY = rowPositions[invertedRow] + cellHeight / 2 + offsetY
+        const baseModuleYOffset = gridRow === 0 ? cellHeight / 3 : 0
+        const cellY = rowPositions[invertedRow] + cellHeight / 2 + offsetY + baseModuleYOffset
         const offsetZ_adjusted = -depth / 2
 
         const isEmpty = cell.type === "empty"
