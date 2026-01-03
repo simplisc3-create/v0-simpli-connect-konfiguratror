@@ -32,14 +32,27 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
           throw new Error(`Failed to fetch models: ${response.statusText}`)
         }
         const data = await response.json()
-        console.log("[v0] API Response:", data)
+        console.log("[v0] API Response received")
 
-        if (data.models && data.models.length > 0) {
-          setModelUrl(data.models[0])
-          console.log("[v0] Model URL set to:", data.models[0])
+        let selectedUrl: string | null = null
+
+        // Determine cell dimensions from width and height
+        const cellDim = width > 0.6 ? "80x40x40" : "40x40x40"
+
+        if (data.modelMap && data.modelMap[cellDim] && data.modelMap[cellDim].length > 0) {
+          // Select a random model from the matching dimension set to get color variety
+          const models = data.modelMap[cellDim]
+          selectedUrl = models[Math.floor(Math.random() * models.length)]
+          console.log("[v0] Selected model for cell type:", cellType, "dim:", cellDim, "url:", selectedUrl)
+        } else if (data.models && data.models.length > 0) {
+          // Fallback to first available model
+          selectedUrl = data.models[0]
+          console.log("[v0] Fallback to first model:", selectedUrl)
         } else {
           throw new Error("No GLB files found in Blob storage")
         }
+
+        setModelUrl(selectedUrl)
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Unknown error"
         console.error("[v0] Error fetching Blob models:", errorMsg)
@@ -50,7 +63,7 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
     }
 
     fetchBlobModels()
-  }, [])
+  }, [width])
 
   // Only render when we have a model URL and it's not an empty cell
   if (cellType === "empty" || loading || !modelUrl) {
