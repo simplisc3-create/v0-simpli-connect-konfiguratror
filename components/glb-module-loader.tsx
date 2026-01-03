@@ -20,19 +20,40 @@ type GLBModuleProps = {
 
 const GLB_MODEL_PATHS: Record<GridCell["type"], string> = {
   empty: "",
-  "ohne-seitenwaende": "/images/40x40x40-2-1-red.glb",
-  "ohne-rueckwand": "/images/40x40x40-2-2-red.glb",
-  "mit-rueckwand": "/images/40x40x40-2-3-red.glb",
-  "mit-tueren": "/images/40x40x40-2-4-red.glb",
-  "mit-klapptuer": "/images/40x40x40-2-5-red.glb",
-  "mit-doppelschublade": "/images/40x40x40-2-6-red.glb",
-  "abschliessbare-tueren": "/images/40x40x40-2-7-red.glb",
+  "ohne-seitenwaende": "",
+  "ohne-rueckwand": "",
+  "mit-rueckwand": "",
+  "mit-tueren": "",
+  "mit-klapptuer": "",
+  "mit-doppelschublade": "",
+  "abschliessbare-tueren": "",
 }
 
 export function GLBModule({ position, cellType, width, height, depth, color, row, col, gridConfig }: GLBModuleProps) {
-  const modelPath = GLB_MODEL_PATHS[cellType]
+  const [blobModels, setBlobModels] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(true)
 
-  if (!modelPath || cellType === "empty") {
+  useEffect(() => {
+    const fetchBlobModels = async () => {
+      try {
+        const response = await fetch("/api/blob-models")
+        if (response.ok) {
+          const models = await response.json()
+          setBlobModels(models)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching Blob models:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBlobModels()
+  }, [])
+
+  const modelPath = blobModels[cellType] || GLB_MODEL_PATHS[cellType]
+
+  if (!modelPath || cellType === "empty" || loading) {
     return null
   }
 
@@ -82,10 +103,12 @@ function GLBModelWithErrorBoundary({
     fetch(path, { method: "HEAD" })
       .then((res) => {
         if (!res.ok) {
+          console.error(`[v0] GLB file not found: ${path}`)
           setHasError(true)
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error(`[v0] Error fetching GLB: ${path}`, error)
         setHasError(true)
       })
   }, [path])
