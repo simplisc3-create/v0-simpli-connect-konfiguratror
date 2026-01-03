@@ -16,7 +16,7 @@ export type BomConfig = {
   levels: number // shelf levels/rows
   height: number // total height in cm (40, 80, 120, 160, 200)
   width: 38 | 75 // module width in cm
-  material: "metall" | "glas" | "holz"
+  material: "metall" | "glas"
   panelFinish: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
   shelves?: number // explicit shelf count (auto-calculated if not set)
   sideWalls?: number
@@ -26,18 +26,17 @@ export type BomConfig = {
   flapDoors?: number
   doubleDrawers80?: number
   jalousie80?: number
-  led2?: number
-  led4?: number
 }
 
 /**
  * Validate configuration before BOM generation
+ * Implements Rules J, K, L from specification
  */
-export function validateConfig(config: BomConfig): { valid: boolean; errors: string[] } {
+export function validateConfig(config: BomConfig): { valid: boolean; errors: string[]; warnings: string[] } {
   const errors: string[] = []
+  const warnings: string[] = []
   const compartments = config.sections * config.levels
 
-  // Module limits
   const frontsTotal =
     (config.doors40 || 0) +
     (config.lockableDoors40 || 0) +
@@ -46,23 +45,21 @@ export function validateConfig(config: BomConfig): { valid: boolean; errors: str
     (config.jalousie80 || 0)
 
   if (frontsTotal > compartments) {
-    errors.push(`Zu viele Front-Module: maximal ${compartments} erlaubt, ${frontsTotal} konfiguriert`)
+    errors.push(`Zu viele Frontmodule. Maximal ${compartments} erlaubt, ${frontsTotal} konfiguriert`)
   }
 
-  // Door 40 should be even
   if ((config.doors40 || 0) % 2 !== 0) {
-    errors.push("Tür 40 Module sollten in geraden Anzahlen verwendet werden (paarweise)")
+    warnings.push("Türmodule 40 cm werden üblicherweise paarweise eingesetzt.")
   }
 
-  // LED limit
-  const ledTotal = (config.led2 || 0) + (config.led4 || 0)
-  if (ledTotal > config.sections) {
-    errors.push(`LED-Units (${ledTotal}) sollten nicht mehr als Sektionen (${config.sections}) sein`)
+  if ((config.doubleDrawers80 || 0) > compartments) {
+    errors.push(`Zu viele Doppelschubladen. Maximal ${compartments} erlaubt`)
   }
 
   return {
     valid: errors.length === 0,
     errors,
+    warnings,
   }
 }
 
@@ -72,115 +69,102 @@ export function validateConfig(config: BomConfig): { valid: boolean; errors: str
 export function generateBOM(config: BomConfig): BomLine[] {
   const validation = validateConfig(config)
   if (!validation.valid) {
-    console.warn("[v0] BOM Validation warnings:", validation.errors)
+    console.warn("[v0] BOM Validation errors:", validation.errors)
+    return []
+  }
+  if (validation.warnings.length > 0) {
+    console.warn("[v0] BOM Validation warnings:", validation.warnings)
   }
 
-  const compartments = config.sections * config.levels
+  const sections = config.sections
+  const levels = config.levels
 
-  const shelves = config.shelves && config.shelves > 0 ? config.shelves : compartments
+  const shelves = config.shelves && config.shelves > 0 ? config.shelves : sections * levels
+
   const sideWalls = config.sideWalls || 0
   const backWalls = config.backWalls || 0
 
   const totalPanels = shelves + sideWalls + backWalls
-  const panelPacks = Math.ceil(totalPanels / 2)
-
-  const uprightsQty = config.sections + 1
-  const tubeSetQty = config.sections * config.levels
+  const tubeSetQty = sections * levels
 
   const bom: BomLine[] = []
 
-  // STRUCTURE PARTS
-
-  // Uprights/Leitern
+  // LEITERN (Uprights)
   bom.push({
     sku: `SIM-UP-${config.height}`,
     name: `Leiter ${config.height} cm`,
-    qty: uprightsQty,
+    qty: sections + 1,
     unit: "pcs",
-    note: `${config.sections} Module benötigen ${uprightsQty} Leitern`,
   })
 
-  // Tube Sets
-  const tubeSetName =
-    config.material === "glas"
-      ? `Stangenset ${config.width} cm (Glas)`
-      : config.material === "holz"
-        ? `Stangenset ${config.width} cm (Holz)`
-        : `Stangenset ${config.width} cm (Metall)`
+  // STANGENSETS (Tube Sets)
+  const tubeSetSku = config.material === "glas" ? `SIM-S-${config.width}-G` : `SIM-S-${config.width}-M`
 
   bom.push({
-    sku: `SIM-TUBE-${config.width}-${config.material}`,
-    name: tubeSetName,
+    sku: tubeSetSku,
+    name: `Stangenset ${config.width} ${config.material === "glas" ? "Glas" : "Metall"}`,
     qty: tubeSetQty,
     unit: "set",
-    note: `${config.sections} Sektionen × ${config.levels} Ebenen`,
   })
 
-  // Panels
-  const panelDescription =
+  // FLÄCHEN (Panels/Shelves)
+  const panelSku =
     config.material === "glas"
-      ? `Glasfläche ${config.width} cm`
-      : config.material === "holz"
-        ? `Holzfläche ${config.width} cm`
-        : `Metallfläche ${config.width} cm`
+      ? `SIM-P-G-${config.width}-${config.panelFinish}`
+      : `SIM-P-M-${config.width}-${config.panelFinish}`
 
   bom.push({
-    sku: `SIM-PAN-${config.width}-${config.material}-${config.panelFinish}`,
-    name: panelDescription,
-    qty: panelPacks,
+    sku: panelSku,
+    name: `Flächen-Set ${config.material}`,
+    qty: Math.ceil(totalPanels / 2),
     unit: "pack",
-    note: `2 Stück pro Pack. Gesamt: ${totalPanels} Flächen (${shelves} Böden, ${sideWalls} Seitenwände, ${backWalls} Rückwände)`,
+    note: "2 Stück pro Pack",
   })
 
-  // ACCESSORIES
+  // ZUBEHÖR (Accessories)
 
-  // Adapters
+  // Adapter
   bom.push({
-    sku: "SIM-AD-4",
-    name: "Adapter-Set (4er)",
-    qty: tubeSetQty,
-    unit: "set",
-    note: "4 Adapter pro Stangenset",
+    sku: "SIM-AD",
+    name: "Adapter",
+    qty: tubeSetQty * 4,
+    unit: "pcs",
   })
 
-  // Screw Sets
-  const screwSetQty = Math.max(1, Math.ceil(tubeSetQty / 4))
+  // Screwset
   bom.push({
     sku: "SIM-SCR-SET",
     name: "Schraubenset",
-    qty: screwSetQty,
+    qty: Math.max(1, Math.ceil(tubeSetQty / 4)),
     unit: "set",
   })
 
-  // Extra metal screws for 80cm (75) width
-  if ((config.material === "metall" || config.material === "holz") && config.width === 75) {
+  // Extra screws for metal 75cm
+  if (config.material === "metall" && config.width === 75) {
     bom.push({
-      sku: "SIM-SCR-80-EX",
-      name: "Zusatzschrauben für 80er Breite",
+      sku: "SIM-SCR-80",
+      name: "Zusatzschrauben 80",
       qty: totalPanels,
       unit: "pcs",
-      note: "Pro Metallfläche erforderlich",
     })
   }
 
   // Glass protection
   if (config.material === "glas") {
     bom.push({
-      sku: "SIM-CP-4",
-      name: "Eckschutz Glas (4er)",
-      qty: totalPanels,
-      unit: "set",
-      note: "4 Eckschützer pro Glasfläche",
+      sku: "SIM-CP-G",
+      name: "Eckschutz Glas",
+      qty: totalPanels * 4,
+      unit: "pcs",
     })
 
-    // Stabilizer rod for large glass
+    // Stabilizer rod for 75cm glass
     if (config.width === 75) {
       bom.push({
-        sku: "SIM-STAB-80-ROD",
-        name: "Stabilisierungsstab für 80cm Glas",
+        sku: "SIM-STAB-80",
+        name: "Stabilisierungsstab 80",
         qty: tubeSetQty,
         unit: "pcs",
-        note: "Pro Ebene/Sektion",
       })
     }
   }
