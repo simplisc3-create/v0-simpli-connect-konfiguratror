@@ -97,13 +97,13 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const panelColor = colorMap[effectiveColor] || colorMap.weiss
 
     const depth = 0.38
-    const columnGap = 0.15 // Added spacing between columns
+    const columnGap = 0.15
 
     const columnPositions: number[] = [0]
     let currentX = 0
     for (let col = 0; col < config.columns; col++) {
       const width = config.columnWidths[col] / 100
-      currentX += width + columnGap // Add gap after each column
+      currentX += width + columnGap
       columnPositions.push(currentX)
     }
     const totalWidth = currentX
@@ -118,7 +118,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const totalHeight = currentY
 
     const offsetX = -totalWidth / 2
-    const offsetY = 0.025 + 0.2
+    const offsetY = 0.025 + 0.2 - 0.3
     const offsetZ = -depth / 2
 
     config.grid.forEach((rowCells, gridRow) => {
@@ -164,7 +164,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
             depth={depth}
             color={panelColor}
             row={gridRow}
-            col={gridCol} // Pass column index to GLBModule
+            col={gridCol}
             gridConfig={config}
           />,
         )
