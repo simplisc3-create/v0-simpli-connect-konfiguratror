@@ -7,6 +7,11 @@ export async function GET() {
 
     console.log("[v0] Total blobs in storage:", blobs.length)
 
+    const specificModels: Record<string, string> = {
+      "ohne-rueckwand-blue-75":
+        "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
+    }
+
     const modelMap: Record<string, string[]> = {
       "40x40x40": [],
       "80x40x40": [],
@@ -39,6 +44,7 @@ export async function GET() {
     return NextResponse.json({
       models: glbFiles,
       modelMap: modelMap,
+      specificModels: specificModels,
       count: glbFiles.length,
     })
   } catch (error) {

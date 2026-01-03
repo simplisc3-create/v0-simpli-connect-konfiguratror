@@ -127,13 +127,14 @@ export function ShelfConfigurator() {
     return heights
   }
 
-  const hasSupportBelow = (row: number, col: number, grid: GridCell[][]): boolean => {
-    if (row === 0) return true // Ground level always has support
-    const belowCell = grid[row - 1]?.[col]
-    return belowCell !== undefined && belowCell.type !== "empty" && belowCell.type !== "ghost"
-  }
-
   const isConnectedToExisting = (row: number, col: number, grid: GridCell[][]): boolean => {
+    const hasAnyFilledModule = grid.some((r) => r.some((c) => c.type !== "empty" && c.type !== "ghost"))
+
+    if (!hasAnyFilledModule) {
+      // First module placement - always allow
+      return true
+    }
+
     // Check if there's a filled module adjacent (left, right, below)
     const below = grid[row - 1]?.[col]
     const left = grid[row]?.[col - 1]
@@ -144,6 +145,12 @@ export function ShelfConfigurator() {
     const hasFilledRight = right && right.type !== "empty" && right.type !== "ghost"
 
     return !!(hasFilledBelow || hasFilledLeft || hasFilledRight)
+  }
+
+  const hasSupportBelow = (row: number, col: number, grid: GridCell[][]): boolean => {
+    if (row === 0) return true // Ground level always has support
+    const belowCell = grid[row - 1]?.[col]
+    return belowCell !== undefined && belowCell.type !== "empty" && belowCell.type !== "ghost"
   }
 
   const expandGridAroundPlacement = (grid: GridCell[][], placedRow: number, placedCol: number): GridCell[][] => {
@@ -170,7 +177,7 @@ export function ShelfConfigurator() {
       newGrid = newGrid.map((row, ri) => {
         const newCell: GridCell = {
           id: `cell-${ri}-${row.length}`,
-          type: "ghost",
+          type: "ghost" as const,
           row: ri,
           col: row.length,
         }
