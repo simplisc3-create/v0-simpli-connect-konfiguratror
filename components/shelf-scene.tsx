@@ -97,12 +97,13 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const panelColor = colorMap[effectiveColor] || colorMap.weiss
 
     const depth = 0.38
+    const columnGap = 0.15 // Added spacing between columns
 
     const columnPositions: number[] = [0]
     let currentX = 0
     for (let col = 0; col < config.columns; col++) {
       const width = config.columnWidths[col] / 100
-      currentX += width
+      currentX += width + columnGap // Add gap after each column
       columnPositions.push(currentX)
     }
     const totalWidth = currentX
