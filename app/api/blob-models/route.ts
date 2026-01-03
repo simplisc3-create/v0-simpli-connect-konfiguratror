@@ -8,7 +8,6 @@ export async function GET() {
     console.log("[v0] Total blobs in storage:", blobs.length)
 
     const specificModels: Record<string, string> = {
-      "frame-blue-75": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
       "ohne-rueckwand-blue-75":
         "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
     }
@@ -41,9 +40,7 @@ export async function GET() {
       "80x40x40": modelMap["80x40x40"].length,
     })
 
-    // Return mapped models and all URLs for fallback
     return NextResponse.json({
-      models: glbFiles,
       modelMap: modelMap,
       specificModels: specificModels,
       count: glbFiles.length,

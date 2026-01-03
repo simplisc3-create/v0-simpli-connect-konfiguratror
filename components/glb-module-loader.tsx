@@ -55,19 +55,12 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
           })
 
           if (data.modelMap && data.modelMap[cellDim] && data.modelMap[cellDim].length > 0) {
-            // Select a model from the matching dimension set
             const models = data.modelMap[cellDim]
-
             const colorMatch = models.find((url: string) => url.toLowerCase().includes(color.toLowerCase()))
-
             selectedUrl = colorMatch || models[Math.floor(Math.random() * models.length)]
             console.log("[v0] Selected model:", selectedUrl)
-          } else if (data.models && data.models.length > 0) {
-            // Fallback to first available model
-            selectedUrl = data.models[0]
-            console.log("[v0] Fallback to first model:", selectedUrl)
           } else {
-            throw new Error("No GLB files found in Blob storage")
+            throw new Error("No GLB files found for the selected dimension")
           }
         }
 
