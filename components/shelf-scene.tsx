@@ -196,6 +196,10 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
 
   return (
     <group>
+      <mesh position={[0, 1, -2]} receiveShadow>
+        <planeGeometry args={[8, 4]} />
+        <meshStandardMaterial color="#ffffff" />
+      </mesh>
       {glbModules}
       {interactiveCells}
     </group>
