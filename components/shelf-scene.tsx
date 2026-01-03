@@ -131,27 +131,30 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
         const cellY = rowPositions[invertedRow] + cellHeight / 2 + offsetY + baseModuleYOffset
         const offsetZ_adjusted = -depth / 2
 
+        const isGhost = cell.type === "ghost"
         const isEmpty = cell.type === "empty"
         const isHovered = hoveredCell?.row === gridRow && hoveredCell?.col === gridCol
 
-        cells.push(
-          <InteractiveCell
-            key={`interactive-${gridRow}-${gridCol}`}
-            position={[cellX, cellY, offsetZ_adjusted + depth / 2]}
-            width={cellWidth}
-            height={cellHeight}
-            depth={depth}
-            row={gridRow}
-            col={gridCol}
-            isEmpty={isEmpty}
-            isHovered={isHovered}
-            selectedTool={selectedTool}
-            onClick={onCellClick}
-            onHover={onCellHover}
-          />,
-        )
+        if (isGhost || isEmpty) {
+          cells.push(
+            <InteractiveCell
+              key={`interactive-${gridRow}-${gridCol}`}
+              position={[cellX, cellY, offsetZ_adjusted + depth / 2]}
+              width={cellWidth}
+              height={cellHeight}
+              depth={depth}
+              row={gridRow}
+              col={gridCol}
+              isEmpty={isEmpty}
+              isHovered={isHovered}
+              selectedTool={selectedTool}
+              onClick={onCellClick}
+              onHover={onCellHover}
+            />,
+          )
+        }
 
-        if (isEmpty) return
+        if (isEmpty || isGhost) return
 
         glbs.push(
           <GLBModule

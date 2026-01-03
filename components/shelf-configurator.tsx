@@ -18,12 +18,13 @@ import {
   schubladenTueren,
   funktionswaende,
 } from "@/lib/simpli-products"
-import type { ShoppingItem } from "@/types/shopping-item"
+import type { ShoppingItem } from "@/types/shopping-item" // Import ShoppingItem
 
 export type GridCell = {
   id: string
   type:
     | "empty"
+    | "ghost"
     | "ohne-seitenwaende"
     | "ohne-rueckwand"
     | "mit-rueckwand"
@@ -40,7 +41,7 @@ export type ShelfConfig = {
   columns: number
   rows: number
   columnWidths: (75 | 38)[]
-  rowHeights: number[]
+  rowHeights: number[] // changed from (38 | 76)[] to flexible number[]
   footType: "standard" | "adjustable"
   baseColor: "weiss" | "schwarz"
   accentColor: "none" | "blau" | "gruen" | "gelb" | "orange" | "rot" | "lila"
@@ -48,19 +49,19 @@ export type ShelfConfig = {
 }
 
 const createInitialGrid = (): GridCell[][] => {
-  return [[{ id: "cell-0-0", type: "empty", row: 0, col: 0 }]]
+  return [[{ id: "cell-0-0", type: "ghost", row: 0, col: 0 }]]
 }
 
 const initialConfig: ShelfConfig = {
   grid: createInitialGrid(),
   columns: 1,
   rows: 1,
-  columnWidths: [75],
-  rowHeights: [38],
-  footType: "standard",
-  baseColor: "weiss",
-  accentColor: "none",
-  shelfMaterial: "metall",
+  columnWidths: [75] as (75 | 38)[],
+  rowHeights: [38] as number[],
+  footType: "standard" as const,
+  baseColor: "weiss" as const,
+  accentColor: "none" as const,
+  shelfMaterial: "metall" as const,
 }
 
 export function ShelfConfigurator() {
@@ -80,7 +81,9 @@ export function ShelfConfigurator() {
         return
       }
       setHistory((prev) => {
+        // Remove any future states if we're in the middle of history
         const newHistory = prev.slice(0, historyIndex + 1)
+        // Add new state and limit history to 50 entries
         return [...newHistory, newConfig].slice(-50)
       })
       setHistoryIndex((prev) => Math.min(prev + 1, 49))
@@ -109,82 +112,112 @@ export function ShelfConfigurator() {
   const canUndo = historyIndex > 0
   const canRedo = historyIndex < history.length - 1
 
-  const expandGridIfNeeded = useCallback((grid: GridCell[][], row: number, col: number): GridCell[][] => {
-    let newGrid = grid.map((r) => [...r])
+  const getColumnHeights = (grid: GridCell[][]): number[] => {
+    const heights: number[] = []
+    grid[0]?.forEach((_, colIndex) => {
+      let maxHeight = 0
+      for (let row = grid.length - 1; row >= 0; row--) {
+        if (grid[row]?.[colIndex]?.type !== "empty" && grid[row]?.[colIndex]?.type !== "ghost") {
+          maxHeight = grid.length - row
+          break
+        }
+      }
+      heights[colIndex] = maxHeight
+    })
+    return heights
+  }
 
-    // Define positions to potentially add ghost shelves
-    const positionsToCheck = [
-      { row: row - 1, col, direction: "top" },
-      { row: row + 1, col, direction: "bottom" },
-      { row, col: col - 1, direction: "left" },
-      { row, col: col + 1, direction: "right" },
-    ]
+  const hasSupportBelow = (row: number, col: number, grid: GridCell[][]): boolean => {
+    if (row === 0) return true // Ground level always has support
+    const belowCell = grid[row - 1]?.[col]
+    return belowCell !== undefined && belowCell.type !== "empty" && belowCell.type !== "ghost"
+  }
 
-    let gridChanged = false
+  const isConnectedToExisting = (row: number, col: number, grid: GridCell[][]): boolean => {
+    // Check if there's a filled module adjacent (left, right, below)
+    const below = grid[row - 1]?.[col]
+    const left = grid[row]?.[col - 1]
+    const right = grid[row]?.[col + 1]
 
-    // Expand top
-    if (row === 0) {
-      newGrid.unshift(
-        Array.from({ length: newGrid[0].length }, (_, i) => ({
-          id: `cell-${-1}-${i}`,
-          type: "empty" as const,
-          row: -1,
-          col: i,
-        })),
-      )
-      // Renumber all rows
-      newGrid = newGrid.map((r, newRowIdx) => r.map((cell) => ({ ...cell, row: newRowIdx })))
-      gridChanged = true
-    }
+    const hasFilledBelow = below && below.type !== "empty" && below.type !== "ghost"
+    const hasFilledLeft = left && left.type !== "empty" && left.type !== "ghost"
+    const hasFilledRight = right && right.type !== "empty" && right.type !== "ghost"
 
-    // Expand bottom
-    if (row === newGrid.length - 1) {
-      const newRowIdx = newGrid.length
-      newGrid.push(
-        Array.from({ length: newGrid[0].length }, (_, i) => ({
-          id: `cell-${newRowIdx}-${i}`,
-          type: "empty" as const,
-          row: newRowIdx,
-          col: i,
-        })),
-      )
-      gridChanged = true
-    }
+    return !!(hasFilledBelow || hasFilledLeft || hasFilledRight)
+  }
 
-    // Expand left
-    if (col === 0) {
-      newGrid = newGrid.map((r, rowIdx) => [
-        {
-          id: `cell-${rowIdx}-${-1}`,
-          type: "empty" as const,
-          row: rowIdx,
+  const expandGridAroundPlacement = (grid: GridCell[][], placedRow: number, placedCol: number): GridCell[][] => {
+    let newGrid = grid.map((row) => [...row])
+    const rows = newGrid.length
+    const cols = newGrid[0]?.length || 0
+
+    // Add ghost cells to the left if needed
+    if (placedCol === 0) {
+      newGrid = newGrid.map((row, ri) => {
+        const newCell: GridCell = {
+          id: `cell-${ri}--1`,
+          type: "ghost",
+          row: ri,
           col: -1,
-        },
-        ...r.map((cell) => ({ ...cell, col: cell.col + 1 })),
-      ])
-      gridChanged = true
+        }
+        return [newCell, ...row.map((c) => ({ ...c, col: c.col + 1 }))]
+      })
+      placedCol += 1
     }
 
-    // Expand right
-    if (col === newGrid[0].length - 1) {
-      newGrid = newGrid.map((r, rowIdx) => [
-        ...r,
-        {
-          id: `cell-${rowIdx}-${newGrid[0].length}`,
-          type: "empty" as const,
-          row: rowIdx,
-          col: newGrid[0].length,
-        },
-      ])
-      gridChanged = true
+    // Add ghost cells to the right if needed
+    if (placedCol === newGrid[0].length - 1) {
+      newGrid = newGrid.map((row, ri) => {
+        const newCell: GridCell = {
+          id: `cell-${ri}-${row.length}`,
+          type: "ghost",
+          row: ri,
+          col: row.length,
+        }
+        return [...row, newCell]
+      })
+    }
+
+    // Add ghost row above if needed
+    if (placedRow === rows - 1) {
+      const newRow = newGrid[0].map((_, ci) => ({
+        id: `cell-${rows}-${ci}`,
+        type: "ghost" as const,
+        row: rows,
+        col: ci,
+      }))
+      newGrid.push(newRow)
     }
 
     return newGrid
-  }, [])
+  }
 
   const placeModule = useCallback(
     (row: number, col: number, type: GridCell["type"]) => {
+      console.log("[v0] Placing module at", row, col, type)
+
       setConfig((prev) => {
+        const currentCell = prev.grid[row]?.[col]
+
+        // Don't allow placement if not a ghost cell
+        if (!currentCell || (currentCell.type !== "ghost" && currentCell.type !== "empty")) {
+          console.log("[v0] Cannot place - cell is not ghost or empty")
+          return prev
+        }
+
+        // Check if cell is connected to existing modules
+        if (!isConnectedToExisting(row, col, prev.grid)) {
+          console.log("[v0] Cannot place - not connected to existing modules")
+          return prev
+        }
+
+        // Check if has support below (for non-ground level)
+        if (!hasSupportBelow(row, col, prev.grid)) {
+          console.log("[v0] Cannot place - no support below")
+          return prev
+        }
+
+        // Place the module
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
@@ -194,38 +227,49 @@ export function ShelfConfigurator() {
           }),
         )
 
-        if (type !== "empty") {
-          newGrid = expandGridIfNeeded(newGrid, row, col)
-        }
+        // Expand grid with new ghost cells around the placement
+        newGrid = expandGridAroundPlacement(newGrid, row, col)
+
+        // Update column widths and row heights based on new grid size
+        const newColumns = newGrid[0]?.length || 1
+        const newRows = newGrid.length
+
+        const newColumnWidths = [...prev.columnWidths]
+        while (newColumnWidths.length < newColumns) newColumnWidths.push(75)
+
+        const newRowHeights = [...prev.rowHeights]
+        while (newRowHeights.length < newRows) newRowHeights.push(38)
 
         const newConfig = {
           ...prev,
           grid: newGrid,
-          columns: newGrid[0]?.length || prev.columns,
-          rows: newGrid.length,
-          columnWidths: Array(newGrid[0]?.length || prev.columns).fill(75) as (75 | 38)[],
-          rowHeights: Array(newGrid.length).fill(38),
+          columns: newColumns,
+          rows: newRows,
+          columnWidths: newColumnWidths as (75 | 38)[],
+          rowHeights: newRowHeights,
         }
 
+        console.log("[v0] New grid size:", newRows, "x", newColumns)
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
     },
-    [expandGridIfNeeded, saveToHistory],
+    [saveToHistory],
   )
 
   const handleCellClick3D = useCallback(
     (row: number, col: number) => {
-      const cell = config.grid[row]?.[col]
-      if (!cell || cell.type !== "empty") return
+      console.log("[v0] Cell clicked:", row, col)
 
-      if (selectedTool === "empty") {
-        placeModule(row, col, "empty")
-      } else if (selectedTool) {
+      if (!selectedTool || selectedTool === "empty") {
+        // Clear the cell
+        placeModule(row, col, "ghost")
+      } else {
+        // Place the selected module
         placeModule(row, col, selectedTool)
       }
     },
-    [selectedTool, placeModule, config.grid],
+    [selectedTool, placeModule],
   )
 
   const clearCell = useCallback(
@@ -237,15 +281,21 @@ export function ShelfConfigurator() {
 
   const resizeGrid = useCallback(
     (newRows: number, newCols: number) => {
-      // Limit resizing to not break dynamic expansion
       const limitedRows = Math.min(Math.max(1, newRows), 8)
-      const limitedCols = Math.min(Math.max(1, newCols), 12)
 
       setConfig((prev) => {
         const newGrid = Array.from({ length: limitedRows }, (_, rowIndex) =>
-          Array.from({ length: limitedCols }, (_, colIndex) => {
-            if (rowIndex < prev.grid.length && colIndex < prev.grid[0].length) {
+          Array.from({ length: newCols }, (_, colIndex) => {
+            if (rowIndex < prev.rows && colIndex < prev.columns) {
               return prev.grid[rowIndex][colIndex]
+            }
+            if (rowIndex === 0) {
+              return {
+                id: `cell-${rowIndex}-${colIndex}`,
+                type: "empty" as const,
+                row: rowIndex,
+                col: colIndex,
+              }
             }
             return {
               id: `cell-${rowIndex}-${colIndex}`,
@@ -256,15 +306,20 @@ export function ShelfConfigurator() {
           }),
         )
 
-        const newColumnWidths = Array(limitedCols).fill(75) as (75 | 38)[]
-        const newRowHeights = Array(limitedRows).fill(38)
+        const newColumnWidths = [...prev.columnWidths]
+        while (newColumnWidths.length < newCols) newColumnWidths.push(75)
+        while (newColumnWidths.length > newCols) newColumnWidths.pop()
+
+        const newRowHeights = [...prev.rowHeights]
+        while (newRowHeights.length < limitedRows) newRowHeights.push(38)
+        while (newRowHeights.length > limitedRows) newRowHeights.pop()
 
         const newConfig = {
           ...prev,
           grid: newGrid,
-          columns: limitedCols,
+          columns: newCols,
           rows: limitedRows,
-          columnWidths: newColumnWidths,
+          columnWidths: newColumnWidths as (75 | 38)[],
           rowHeights: newRowHeights,
         }
         setTimeout(() => saveToHistory(newConfig), 0)
@@ -276,9 +331,10 @@ export function ShelfConfigurator() {
 
   const setRowHeight = useCallback(
     (rowIndex: number, height: number) => {
+      // accept any number, not just 38 | 76
       setConfig((prev) => {
         const newHeights = [...prev.rowHeights]
-        newHeights[rowIndex] = Math.max(20, Math.min(120, height))
+        newHeights[rowIndex] = Math.max(20, Math.min(120, height)) // Clamp between 20 and 120
         const newConfig = { ...prev, rowHeights: newHeights }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
@@ -312,7 +368,17 @@ export function ShelfConfigurator() {
   )
 
   const reset = useCallback(() => {
-    const newConfig = initialConfig
+    const newConfig = {
+      grid: createInitialGrid(),
+      columns: 1,
+      rows: 1,
+      columnWidths: [75] as (75 | 38)[],
+      rowHeights: [38] as number[],
+      footType: "standard" as const,
+      baseColor: "weiss" as const,
+      accentColor: "none" as const,
+      shelfMaterial: "metall" as const,
+    }
     setConfig(newConfig)
     setHistory([newConfig])
     setHistoryIndex(0)
@@ -336,7 +402,7 @@ export function ShelfConfigurator() {
       }
     }
 
-    const filledCells = config.grid.flat().filter((c) => c.type !== "empty")
+    const filledCells = config.grid.flat().filter((c) => c.type !== "empty" && c.type !== "ghost")
     if (filledCells.length === 0) {
       return { shoppingList: [], totalPrice: 0 }
     }
@@ -538,6 +604,7 @@ export function ShelfConfigurator() {
 function getToolLabel(tool: GridCell["type"]): string {
   const labels: Record<GridCell["type"], string> = {
     empty: "Leer",
+    ghost: "Geisterzelle",
     "ohne-seitenwaende": "Offenes Fach",
     "ohne-rueckwand": "Ohne Rückwand",
     "mit-rueckwand": "Mit Rückwand",

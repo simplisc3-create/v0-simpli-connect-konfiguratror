@@ -321,7 +321,8 @@ export function ConfiguratorPanel({
                 .reverse()
                 .flat()
                 .map((cell) => {
-                  const isEmpty = cell.type === "empty"
+                  const isEmpty = cell.type === "empty" || cell.type === "ghost"
+                  const isGhost = cell.type === "ghost"
                   const effectiveColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
                   const bgColor = isEmpty ? "transparent" : colorHexMap[effectiveColor]
 
@@ -332,14 +333,23 @@ export function ConfiguratorPanel({
                       className={cn(
                         "relative flex items-center justify-center rounded border-2 text-[9px] font-medium transition-all",
                         isEmpty
-                          ? "border-dashed border-neutral-600 hover:border-neutral-400 hover:bg-neutral-700/30"
+                          ? isGhost
+                            ? "border-dashed border-blue-400/50 hover:border-blue-400 hover:bg-blue-500/10"
+                            : "border-dashed border-neutral-600 hover:border-neutral-400 hover:bg-neutral-700/30"
                           : "border-solid border-neutral-500",
                         selectedTool && "cursor-pointer",
                       )}
                       style={{ backgroundColor: isEmpty ? undefined : bgColor }}
+                      title={
+                        isGhost
+                          ? "Geister-Zelle: Klicken zum Platzieren"
+                          : isEmpty
+                            ? "Leere Zelle"
+                            : getModuleLabel(cell.type)
+                      }
                     >
                       {isEmpty ? (
-                        <Plus className="h-4 w-4 text-neutral-500" />
+                        <Plus className={cn("h-4 w-4", isGhost ? "text-blue-400" : "text-neutral-500")} />
                       ) : (
                         <>
                           <span
@@ -368,7 +378,7 @@ export function ConfiguratorPanel({
           </div>
 
           <p className="mt-2 text-[10px] text-neutral-500">
-            Tipp: Klicke auf Spalten-/Reihen-Buttons um Größe zu ändern (38/75/76 cm)
+            Tipp: Blaue Zellen sind Geister-Zellen - platziere Module dort um das Regal zu erweitern
           </p>
         </div>
 
