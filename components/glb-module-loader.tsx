@@ -19,25 +19,26 @@ type GLBModuleProps = {
 }
 
 export function GLBModule({ position, cellType, width, height, depth, color, row, col, gridConfig }: GLBModuleProps) {
-  const [blobModels, setBlobModels] = useState<Record<string, string>>({})
+  const [modelUrl, setModelUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const gltf = useGLTF("", undefined, undefined, (xhr: ProgressEvent) => {
-    console.log("[v0] GLB loading progress:", (xhr.loaded / xhr.total) * 100 + "%")
-  })
 
   useEffect(() => {
     const fetchBlobModels = async () => {
       try {
+        setLoading(true)
         const response = await fetch("/api/blob-models")
         if (!response.ok) {
           throw new Error(`Failed to fetch models: ${response.statusText}`)
         }
-        const models = await response.json()
-        console.log("[v0] Blob models fetched successfully:", models)
-        setBlobModels(models)
-        if (models[cellType]) {
-          gltf.load(models[cellType])
+        const data = await response.json()
+        console.log("[v0] API Response:", data)
+
+        if (data.models && data.models.length > 0) {
+          setModelUrl(data.models[0])
+          console.log("[v0] Model URL set to:", data.models[0])
+        } else {
+          throw new Error("No GLB files found in Blob storage")
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Unknown error"
@@ -49,16 +50,16 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
     }
 
     fetchBlobModels()
-  }, [cellType])
+  }, [])
 
-  // Only render when we have models and it's not an empty cell
-  if (cellType === "empty" || loading || !blobModels[cellType] || !gltf.scene) {
+  // Only render when we have a model URL and it's not an empty cell
+  if (cellType === "empty" || loading || !modelUrl) {
     return null
   }
 
   return (
     <LoadedGLBModel
-      gltf={gltf}
+      modelUrl={modelUrl}
       cellType={cellType}
       position={position}
       width={width}
@@ -73,7 +74,7 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
 }
 
 function LoadedGLBModel({
-  gltf,
+  modelUrl,
   cellType,
   position,
   width,
@@ -84,7 +85,7 @@ function LoadedGLBModel({
   col,
   gridConfig,
 }: {
-  gltf: any
+  modelUrl: string
   cellType: GridCell["type"]
   position: [number, number, number]
   width: number
@@ -95,6 +96,10 @@ function LoadedGLBModel({
   col: number
   gridConfig: ShelfConfig
 }) {
+  const gltf = useGLTF(modelUrl, undefined, undefined, (xhr: ProgressEvent) => {
+    console.log("[v0] GLB loading progress:", ((xhr.loaded / xhr.total) * 100).toFixed(2) + "%")
+  })
+
   const [clonedScene, setClonedScene] = useState<any>(null)
   const [loadError, setLoadError] = useState(false)
   const [scaleFactor, setScaleFactor] = useState<[number, number, number]>([1, 1, 1])
