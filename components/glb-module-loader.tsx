@@ -22,8 +22,7 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
   const [blobModels, setBlobModels] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const modelUrl = blobModels[cellType]
-  const gltf = useGLTF(modelUrl, undefined, undefined, (xhr: ProgressEvent) => {
+  const gltf = useGLTF("", undefined, undefined, (xhr: ProgressEvent) => {
     console.log("[v0] GLB loading progress:", (xhr.loaded / xhr.total) * 100 + "%")
   })
 
@@ -37,6 +36,9 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
         const models = await response.json()
         console.log("[v0] Blob models fetched successfully:", models)
         setBlobModels(models)
+        if (models[cellType]) {
+          gltf.load(models[cellType])
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Unknown error"
         console.error("[v0] Error fetching Blob models:", errorMsg)
@@ -47,10 +49,10 @@ export function GLBModule({ position, cellType, width, height, depth, color, row
     }
 
     fetchBlobModels()
-  }, [])
+  }, [cellType])
 
   // Only render when we have models and it's not an empty cell
-  if (cellType === "empty" || loading || !blobModels[cellType]) {
+  if (cellType === "empty" || loading || !blobModels[cellType] || !gltf.scene) {
     return null
   }
 
