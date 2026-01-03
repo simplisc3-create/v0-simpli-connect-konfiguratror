@@ -12,10 +12,11 @@ export async function GET() {
       "ohne-rueckwand-blue-75":
         "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-8-blue_optimized.glb",
       "abschliessbare-tueren-75": "/images/80x40x40-1-7-white-optimized.glb",
-      "mit-tueren-75": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-7-white_optimized.glb",
-      "mit-klapptuer-75": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-7-white_optimized.glb",
-      "mit-doppelschublade-75":
-        "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-7-white_optimized.glb",
+      "abschliessbare-tueren-yellow-75":
+        "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/80x40x40-1-7-yellow_optimized.glb",
+      "mit-tueren-75": "/images/80x40x40-1-7-white-optimized.glb",
+      "mit-klapptuer-75": "/images/80x40x40-1-7-white-optimized.glb",
+      "mit-doppelschublade-75": "/images/80x40x40-1-7-white-optimized.glb",
 
       // 38cm modules (40x40x40)
       "orange-38": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/40x40x40-2-1-Orange_optimized.glb",
