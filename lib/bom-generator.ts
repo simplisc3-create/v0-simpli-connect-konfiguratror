@@ -37,11 +37,16 @@ export type BomConfig = {
 /**
  * Validate configuration before BOM generation
  * Implements Rules J, K, L from specification
+ * Enhanced validation to ensure complete and order-ready configurations
  */
 export function validateConfig(config: BomConfig): { valid: boolean; errors: string[]; warnings: string[] } {
   const errors: string[] = []
   const warnings: string[] = []
   const compartments = config.sections * config.levels
+
+  if (config.sections < 1 || config.levels < 1) {
+    errors.push("Mindestens 1 Sektion und 1 Ebene erforderlich")
+  }
 
   const frontsTotal =
     (config.modules?.doors40 || 0) +
@@ -60,6 +65,10 @@ export function validateConfig(config: BomConfig): { valid: boolean; errors: str
 
   if ((config.modules?.doubleDrawers80 || 0) > compartments) {
     errors.push(`Zu viele Doppelschubladen. Maximal ${compartments} erlaubt`)
+  }
+
+  if (!config.panels || Object.keys(config.panels).length === 0) {
+    errors.push("Flächen (Shelves) erforderlich - BOM unvollständig")
   }
 
   return {
