@@ -1,78 +1,11 @@
-import type { Config, BomLine, RuleMessage, Derived } from "./bom-types"
+import type { Config, BomLine, Derived } from "./bom-types"
 import { derive } from "./derive"
+import { validateConfig } from "./validate-config"
 
 /**
  * Validate configuration before BOM generation
  * Implements comprehensive validation rules
  */
-export function validateConfig(config: Config): {
-  valid: boolean
-  messages: RuleMessage[]
-} {
-  const messages: RuleMessage[] = []
-  const compartments = config.sections * config.levels
-
-  // Calculate total fronts
-  const frontsTotal =
-    (config.modules?.doors40 || 0) +
-    (config.modules?.lockableDoors40 || 0) +
-    (config.modules?.flapDoors || 0) +
-    (config.modules?.doubleDrawers80 || 0) +
-    (config.modules?.jalousie80 || 0)
-
-  // Rule J: Max fronts <= compartments
-  if (frontsTotal > compartments) {
-    messages.push({
-      code: "RULE_J",
-      severity: "error",
-      message: `Zu viele Frontmodule. Maximal ${compartments} erlaubt, ${frontsTotal} konfiguriert`,
-    })
-  }
-
-  // Rule K: Doors in pairs warning
-  if ((config.modules?.doors40 || 0) % 2 !== 0) {
-    messages.push({
-      code: "RULE_K",
-      severity: "warning",
-      message: "Türmodule 40 cm werden üblicherweise paarweise eingesetzt.",
-    })
-  }
-
-  // Rule L: Double drawers limit
-  if ((config.modules?.doubleDrawers80 || 0) > compartments) {
-    messages.push({
-      code: "RULE_L",
-      severity: "error",
-      message: `Zu viele Doppelschubladen. Maximal ${compartments} erlaubt`,
-    })
-  }
-
-  // Additional validation: Width must be 38 or 75
-  if (config.width !== 38 && config.width !== 75) {
-    messages.push({
-      code: "INVALID_WIDTH",
-      severity: "error",
-      message: `Ungültige Breite: ${config.width}. Erlaubt sind nur 38 oder 75 cm`,
-    })
-  }
-
-  // Additional validation: Height must be valid
-  const validHeights = [40, 80, 120, 160, 200]
-  if (!validHeights.includes(config.height)) {
-    messages.push({
-      code: "INVALID_HEIGHT",
-      severity: "error",
-      message: `Ungültige Höhe: ${config.height}. Erlaubt sind: ${validHeights.join(", ")} cm`,
-    })
-  }
-
-  const hasErrors = messages.some((m) => m.severity === "error")
-
-  return {
-    valid: !hasErrors,
-    messages,
-  }
-}
 
 /**
  * Calculate derived values from configuration
@@ -85,9 +18,14 @@ export function calculateDerived(config: Config): Derived {
  * Generate complete BOM from configuration
  */
 export function generateBOM(config: Config): BomLine[] {
-  const validation = validateConfig(config)
-  if (!validation.valid) {
-    console.warn("[v0] BOM Validation errors:", validation.messages)
+  const messages = validateConfig(config)
+  const hasErrors = messages.some((m) => m.severity === "error")
+
+  if (hasErrors) {
+    console.warn(
+      "[v0] BOM Validation errors:",
+      messages.filter((m) => m.severity === "error"),
+    )
     return []
   }
 
@@ -259,3 +197,4 @@ export function generateBOM(config: Config): BomLine[] {
 }
 
 export type { Config as BomConfig, BomLine }
+export { validateConfig }

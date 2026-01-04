@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Download, FileText, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { Download, FileText, AlertTriangle, CheckCircle2, AlertCircle, Info } from "lucide-react"
 import { generateBOM, validateConfig, type BomConfig, type BomLine } from "@/lib/bom-generator"
 import type { ShelfConfig } from "./shelf-configurator"
 
@@ -42,7 +42,10 @@ export function BomPanel({ config }: BomPanelProps) {
     },
   }
 
-  const validation = validateConfig(bomConfig)
+  const validationMessages = validateConfig(bomConfig)
+  const errors = validationMessages.filter((m) => m.severity === "error")
+  const warnings = validationMessages.filter((m) => m.severity === "warning")
+  const infos = validationMessages.filter((m) => m.severity === "info")
 
   const handleGenerateBOM = () => {
     const generatedBom = generateBOM(bomConfig)
@@ -115,32 +118,45 @@ export function BomPanel({ config }: BomPanelProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Stückliste (BOM)</h3>
-        <Button onClick={handleGenerateBOM} size="sm" variant="outline">
+        <Button onClick={handleGenerateBOM} size="sm" variant="outline" disabled={errors.length > 0}>
           <FileText className="mr-2 h-4 w-4" />
           Generieren
         </Button>
       </div>
 
-      {validation.errors.length > 0 && (
+      {errors.length > 0 && (
         <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+          <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <ul className="list-disc pl-4 space-y-1">
-              {validation.errors.map((error, i) => (
-                <li key={i}>{error}</li>
+              {errors.map((error, i) => (
+                <li key={i}>{error.message}</li>
               ))}
             </ul>
           </AlertDescription>
         </Alert>
       )}
 
-      {validation.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             <ul className="list-disc pl-4 space-y-1">
-              {validation.warnings.map((warning, i) => (
-                <li key={i}>{warning}</li>
+              {warnings.map((warning, i) => (
+                <li key={i}>{warning.message}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {infos.length > 0 && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <ul className="list-disc pl-4 space-y-1">
+              {infos.map((info, i) => (
+                <li key={i}>{info.message}</li>
               ))}
             </ul>
           </AlertDescription>
