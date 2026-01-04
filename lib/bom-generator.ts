@@ -1,53 +1,18 @@
-/**
- * BOM (Bill of Materials) Generator for Simpli Connect Shelves
- * Automatically calculates required parts based on shelf configuration
- */
-
-export type BomLine = {
-  sku: string
-  name: string
-  qty: number
-  unit: "pcs" | "set" | "pack"
-  note?: string
-}
-
-export type BomConfig = {
-  width: 38 | 75
-  height: 40 | 80 | 120 | 160 | 200
-  sections: number
-  levels: number
-  material: "metal" | "glass"
-  finish: "black" | "white" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
-  panels?: {
-    shelves?: number
-    sideWalls?: number
-    backWalls?: number
-  }
-  modules?: {
-    doors40?: number
-    lockableDoors40?: number
-    flapDoors?: number
-    doubleDrawers80?: number
-    jalousie80?: number
-    functionalWall1?: number
-    functionalWall2?: number
-  }
-}
+import type { Config, BomLine, RuleMessage, Derived } from "./bom-types"
+import { derive } from "./derive"
 
 /**
  * Validate configuration before BOM generation
- * Implements Rules J, K, L from specification
- * Enhanced validation to ensure complete and order-ready configurations
+ * Implements comprehensive validation rules
  */
-export function validateConfig(config: BomConfig): { valid: boolean; errors: string[]; warnings: string[] } {
-  const errors: string[] = []
-  const warnings: string[] = []
+export function validateConfig(config: Config): {
+  valid: boolean
+  messages: RuleMessage[]
+} {
+  const messages: RuleMessage[] = []
   const compartments = config.sections * config.levels
 
-  if (config.sections < 1 || config.levels < 1) {
-    errors.push("Mindestens 1 Sektion und 1 Ebene erforderlich")
-  }
-
+  // Calculate total fronts
   const frontsTotal =
     (config.modules?.doors40 || 0) +
     (config.modules?.lockableDoors40 || 0) +
@@ -55,85 +20,113 @@ export function validateConfig(config: BomConfig): { valid: boolean; errors: str
     (config.modules?.doubleDrawers80 || 0) +
     (config.modules?.jalousie80 || 0)
 
+  // Rule J: Max fronts <= compartments
   if (frontsTotal > compartments) {
-    errors.push(`Zu viele Frontmodule. Maximal ${compartments} erlaubt, ${frontsTotal} konfiguriert`)
+    messages.push({
+      code: "RULE_J",
+      severity: "error",
+      message: `Zu viele Frontmodule. Maximal ${compartments} erlaubt, ${frontsTotal} konfiguriert`,
+    })
   }
 
+  // Rule K: Doors in pairs warning
   if ((config.modules?.doors40 || 0) % 2 !== 0) {
-    warnings.push("Türmodule 40 cm werden üblicherweise paarweise eingesetzt.")
+    messages.push({
+      code: "RULE_K",
+      severity: "warning",
+      message: "Türmodule 40 cm werden üblicherweise paarweise eingesetzt.",
+    })
   }
 
+  // Rule L: Double drawers limit
   if ((config.modules?.doubleDrawers80 || 0) > compartments) {
-    errors.push(`Zu viele Doppelschubladen. Maximal ${compartments} erlaubt`)
+    messages.push({
+      code: "RULE_L",
+      severity: "error",
+      message: `Zu viele Doppelschubladen. Maximal ${compartments} erlaubt`,
+    })
   }
 
-  if (!config.panels || Object.keys(config.panels).length === 0) {
-    errors.push("Flächen (Shelves) erforderlich - BOM unvollständig")
+  // Additional validation: Width must be 38 or 75
+  if (config.width !== 38 && config.width !== 75) {
+    messages.push({
+      code: "INVALID_WIDTH",
+      severity: "error",
+      message: `Ungültige Breite: ${config.width}. Erlaubt sind nur 38 oder 75 cm`,
+    })
   }
+
+  // Additional validation: Height must be valid
+  const validHeights = [40, 80, 120, 160, 200]
+  if (!validHeights.includes(config.height)) {
+    messages.push({
+      code: "INVALID_HEIGHT",
+      severity: "error",
+      message: `Ungültige Höhe: ${config.height}. Erlaubt sind: ${validHeights.join(", ")} cm`,
+    })
+  }
+
+  const hasErrors = messages.some((m) => m.severity === "error")
 
   return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
+    valid: !hasErrors,
+    messages,
   }
+}
+
+/**
+ * Calculate derived values from configuration
+ */
+export function calculateDerived(config: Config): Derived {
+  return derive(config)
 }
 
 /**
  * Generate complete BOM from configuration
  */
-export function generateBOM(config: BomConfig): BomLine[] {
+export function generateBOM(config: Config): BomLine[] {
   const validation = validateConfig(config)
   if (!validation.valid) {
-    console.warn("[v0] BOM Validation errors:", validation.errors)
+    console.warn("[v0] BOM Validation errors:", validation.messages)
     return []
   }
-  if (validation.warnings.length > 0) {
-    console.warn("[v0] BOM Validation warnings:", validation.warnings)
-  }
 
-  const sections = config.sections
-  const levels = config.levels
-
-  const shelves = config.panels?.shelves && config.panels.shelves > 0 ? config.panels.shelves : sections * levels
-
-  const sideWalls = config.panels?.sideWalls || 0
-  const backWalls = config.panels?.backWalls || 0
-
-  const totalPanels = shelves + sideWalls + backWalls
-  const tubeSetQty = sections * levels
-
+  const derived = calculateDerived(config)
   const bom: BomLine[] = []
 
   // LEITERN (Uprights)
   bom.push({
     sku: `SIM-UP-${config.height}`,
     name: `Leiter ${config.height} cm`,
-    qty: sections + 1,
+    qty: derived.uprightsQty,
     unit: "pcs",
+    category: "upright",
   })
 
   // STANGENSETS (Tube Sets)
-  const tubeSetSku = config.material === "glass" ? `SIM-S-${config.width}-G` : `SIM-S-${config.width}-M`
+  const tubeSetSku = config.material === "glass" ? `SIM-S-${derived.widthERP}-G` : `SIM-S-${derived.widthERP}-M`
 
   bom.push({
     sku: tubeSetSku,
-    name: `Stangenset ${config.width} ${config.material === "glass" ? "Glas" : "Metall"}`,
-    qty: tubeSetQty,
+    name: `Stangenset ${derived.widthERP} ${config.material === "glass" ? "Glas" : "Metall"}`,
+    qty: derived.tubeSetQty,
     unit: "set",
+    category: "tubeset",
   })
 
   // FLÄCHEN (Panels/Shelves)
   const panelSku =
     config.material === "glass"
-      ? `SIM-P-G-${config.width}-${config.finish}`
-      : `SIM-P-M-${config.width}-${config.finish}`
+      ? `SIM-P-G-${derived.widthERP}-${config.finish}`
+      : `SIM-P-M-${derived.widthERP}-${config.finish}`
 
   bom.push({
     sku: panelSku,
-    name: `Flächen-Set ${config.material}`,
-    qty: Math.ceil(totalPanels / 2),
+    name: `Flächen-Set ${config.material} ${config.finish}`,
+    qty: derived.panelPacks,
     unit: "pack",
     note: "2 Stück pro Pack",
+    category: "panel",
   })
 
   // ZUBEHÖR (Accessories)
@@ -142,46 +135,51 @@ export function generateBOM(config: BomConfig): BomLine[] {
   bom.push({
     sku: "SIM-AD",
     name: "Adapter",
-    qty: tubeSetQty * 4,
+    qty: derived.adaptersQty,
     unit: "pcs",
+    category: "accessory",
   })
 
   // Screwset
   bom.push({
     sku: "SIM-SCR-SET",
     name: "Schraubenset",
-    qty: Math.max(1, Math.ceil(tubeSetQty / 4)),
+    qty: derived.screwSetQty,
     unit: "set",
+    category: "accessory",
   })
 
-  // Extra screws for metal 75cm
-  if (config.material === "metal" && config.width === 75) {
+  // Extra screws for metal 80cm (75 UI)
+  if (derived.extraMetalScrewsQty > 0) {
     bom.push({
       sku: "SIM-SCR-80",
       name: "Zusatzschrauben 80",
-      qty: totalPanels,
+      qty: derived.extraMetalScrewsQty,
       unit: "pcs",
+      category: "accessory",
     })
   }
 
   // Glass protection
-  if (config.material === "glass") {
+  if (derived.cornerProtectorsQty > 0) {
     bom.push({
       sku: "SIM-CP-G",
       name: "Eckschutz Glas",
-      qty: totalPanels * 4,
+      qty: derived.cornerProtectorsQty,
       unit: "pcs",
+      category: "accessory",
     })
+  }
 
-    // Stabilizer rod for 75cm glass
-    if (config.width === 75) {
-      bom.push({
-        sku: "SIM-STAB-80",
-        name: "Stabilisierungsstab 80",
-        qty: tubeSetQty,
-        unit: "pcs",
-      })
-    }
+  // Stabilizer rod for 80cm glass (75 UI)
+  if (derived.stabilizerRodQty > 0) {
+    bom.push({
+      sku: "SIM-STAB-80",
+      name: "Stabilisierungsstab 80",
+      qty: derived.stabilizerRodQty,
+      unit: "pcs",
+      category: "accessory",
+    })
   }
 
   // MODULES
@@ -190,8 +188,9 @@ export function generateBOM(config: BomConfig): BomLine[] {
     bom.push({
       sku: "SIM-DOOR-40",
       name: "Tür 40 cm",
-      qty: config.modules?.doors40!,
+      qty: config.modules!.doors40!,
       unit: "pcs",
+      category: "module",
     })
   }
 
@@ -199,8 +198,9 @@ export function generateBOM(config: BomConfig): BomLine[] {
     bom.push({
       sku: "SIM-DOOR-40-LOCK",
       name: "Abschließbare Tür 40 cm",
-      qty: config.modules?.lockableDoors40!,
+      qty: config.modules!.lockableDoors40!,
       unit: "pcs",
+      category: "module",
     })
   }
 
@@ -208,8 +208,9 @@ export function generateBOM(config: BomConfig): BomLine[] {
     bom.push({
       sku: "SIM-FLAP-DOOR",
       name: "Klapprahmen",
-      qty: config.modules?.flapDoors!,
+      qty: config.modules!.flapDoors!,
       unit: "pcs",
+      category: "module",
     })
   }
 
@@ -217,8 +218,9 @@ export function generateBOM(config: BomConfig): BomLine[] {
     bom.push({
       sku: "SIM-DRAWER-80",
       name: "Doppelschublade 80 cm",
-      qty: config.modules?.doubleDrawers80!,
+      qty: config.modules!.doubleDrawers80!,
       unit: "pcs",
+      category: "module",
     })
   }
 
@@ -226,8 +228,9 @@ export function generateBOM(config: BomConfig): BomLine[] {
     bom.push({
       sku: "SIM-JAL-80",
       name: "Jalousie 80 cm",
-      qty: config.modules?.jalousie80!,
+      qty: config.modules!.jalousie80!,
       unit: "pcs",
+      category: "module",
     })
   }
 
@@ -235,8 +238,9 @@ export function generateBOM(config: BomConfig): BomLine[] {
     bom.push({
       sku: "SIM-FW1",
       name: "Funktionswand 1",
-      qty: config.modules?.functionalWall1!,
+      qty: config.modules!.functionalWall1!,
       unit: "pcs",
+      category: "module",
     })
   }
 
@@ -244,8 +248,9 @@ export function generateBOM(config: BomConfig): BomLine[] {
     bom.push({
       sku: "SIM-FW2",
       name: "Funktionswand 2",
-      qty: config.modules?.functionalWall2!,
+      qty: config.modules!.functionalWall2!,
       unit: "pcs",
+      category: "module",
     })
   }
 
@@ -253,13 +258,4 @@ export function generateBOM(config: BomConfig): BomLine[] {
   return bom.filter((line) => line.qty > 0)
 }
 
-/**
- * Calculate just the main structural parts (for quick preview)
- */
-export function calculateStructure(sections: number, levels: number, width: 38 | 75) {
-  return {
-    uprights: sections + 1,
-    tubeSets: sections * levels,
-    compartments: sections * levels,
-  }
-}
+export type { Config as BomConfig, BomLine }

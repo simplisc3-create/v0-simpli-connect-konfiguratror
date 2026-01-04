@@ -544,7 +544,7 @@ export function ShelfConfigurator() {
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
           <Canvas shadows camera={{ position: [2, 1.5, 3], fov: 45 }} className="h-full w-full">
-            <color attach="background" args={["#f0f0f0"]} />
+            <color attach="background" args={["#1a1a1a"]} />
             <ambientLight intensity={0.5} />
             <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} />
             <directionalLight position={[-3, 3, -3]} intensity={0.4} />
@@ -556,7 +556,7 @@ export function ShelfConfigurator() {
               onCellHover={setHoveredCell}
             />
             <ContactShadows position={[0, -0.01, 0]} opacity={0.6} scale={10} blur={2} far={4} />
-            <Environment preset="studio" />
+            <Environment preset="apartment" />
             <OrbitControls
               makeDefault
               minPolarAngle={0.2}
