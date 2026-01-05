@@ -101,7 +101,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const glbs: JSX.Element[] = []
     const cells: JSX.Element[] = []
 
-    const fallbackColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
+    const fallbackColor = config.color
 
     const depth = 0.38
 
