@@ -321,11 +321,11 @@ export function ShelfConfigurator() {
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
-              console.log(`[v0] Setting cell [${row},${col}] color to:`, prev.color)
+              console.log(`[v0] Setting cell [${row},${col}] color to:`, activeColor)
               return {
                 ...cell,
                 type,
-                color: prev.color,
+                color: activeColor,
                 material: prev.material,
               }
             }
@@ -358,7 +358,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory],
+    [saveToHistory, activeColor],
   )
 
   const handleCellClick3D = useCallback(
