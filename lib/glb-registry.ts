@@ -43,7 +43,7 @@ export const COLOR_KEYS: ColorKey[] = ["white", "gray", "black", "blue", "green"
 // ✅ DEINE MAPPINGS (editierbar in EINER Stelle)
 export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType, string>>> = {
   80: {
-    "ohne-rueckwand": "1-1",
+    "ohne-rueckwand": "1-8",
     "ohne-seitenwaende": "1-1", // Fixed: was 1-2, should be 1-1
     "mit-seitenwaenden": "1-3",
     "mit-klapptuer": "1-4",
