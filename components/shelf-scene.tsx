@@ -1,11 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import type React from "react"
+
+import { useMemo, useState, memo } from "react"
 import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
-import type { JSX } from "react/jsx-runtime"
 
 type Props = {
   config: ShelfConfig
@@ -96,12 +97,54 @@ function InteractiveCell({
   )
 }
 
-export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onCellHover }: Props) {
-  const { glbModules, interactiveCells } = useMemo(() => {
-    const glbs: JSX.Element[] = []
-    const cells: JSX.Element[] = []
+interface StableGLBModuleProps {
+  position: [number, number, number]
+  cellType: GridCell["type"]
+  width: number
+  height: number
+  depth: number
+  color: string
+  row: number
+  col: number
+  gridConfig: ShelfConfig
+}
 
-    const fallbackColor = config.color
+const StableGLBModule = memo(
+  function StableGLBModule(props: StableGLBModuleProps) {
+    return <GLBModule {...props} />
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if these specific props change
+    return (
+      prevProps.cellType === nextProps.cellType &&
+      prevProps.width === nextProps.width &&
+      prevProps.height === nextProps.height &&
+      prevProps.color === nextProps.color &&
+      prevProps.position[0] === nextProps.position[0] &&
+      prevProps.position[1] === nextProps.position[1] &&
+      prevProps.position[2] === nextProps.position[2] &&
+      prevProps.row === nextProps.row &&
+      prevProps.col === nextProps.col
+    )
+  },
+)
+
+export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onCellHover }: Props) {
+  const gridStructure = useMemo(() => {
+    return {
+      grid: config.grid,
+      columnWidths: config.columnWidths,
+      rowHeights: config.rowHeights,
+      rows: config.rows,
+      columns: config.columns,
+    }
+  }, [config.grid, config.columnWidths, config.rowHeights, config.rows, config.columns])
+
+  const { glbModules, interactiveCells } = useMemo(() => {
+    const glbs: React.ReactNode[] = []
+    const cells: React.ReactNode[] = []
+
+    const fallbackColor = "weiss"
 
     const depth = 0.38
 
@@ -109,27 +152,27 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const rowTubeOverlap = 0.013 // vertical overlap (up-down) - adjusted to reduce gap
 
     const columnCenters: number[] = []
-    for (let col = 0; col < config.columns; col++) {
-      const colWidth = config.columnWidths[col] / 100
+    for (let col = 0; col < gridStructure.columns; col++) {
+      const colWidth = gridStructure.columnWidths[col] / 100
       let xPos = 0
       for (let c = 0; c < col; c++) {
-        xPos += config.columnWidths[c] / 100 - columnTubeOverlap
+        xPos += gridStructure.columnWidths[c] / 100 - columnTubeOverlap
       }
       columnCenters.push(xPos + colWidth / 2)
     }
 
     let totalWidth = 0
-    for (let col = 0; col < config.columns; col++) {
-      totalWidth += config.columnWidths[col] / 100
+    for (let col = 0; col < gridStructure.columns; col++) {
+      totalWidth += gridStructure.columnWidths[col] / 100
       if (col > 0) totalWidth -= columnTubeOverlap
     }
 
     const rowCenters: number[] = []
-    for (let row = 0; row < config.rows; row++) {
-      const rowHeight = config.rowHeights[row] / 100
+    for (let row = 0; row < gridStructure.rows; row++) {
+      const rowHeight = gridStructure.rowHeights[row] / 100
       let yPos = 0
       for (let r = 0; r < row; r++) {
-        yPos += config.rowHeights[r] / 100 - rowTubeOverlap
+        yPos += gridStructure.rowHeights[r] / 100 - rowTubeOverlap
       }
       rowCenters.push(yPos + rowHeight / 2)
     }
@@ -138,10 +181,10 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const offsetY = 0
     const offsetZ = -depth / 2
 
-    config.grid.forEach((rowCells, gridRow) => {
+    gridStructure.grid.forEach((rowCells, gridRow) => {
       rowCells.forEach((cell, gridCol) => {
-        const cellWidth = config.columnWidths[gridCol] / 100
-        const cellHeight = config.rowHeights[gridRow] / 100
+        const cellWidth = gridStructure.columnWidths[gridCol] / 100
+        const cellHeight = gridStructure.rowHeights[gridRow] / 100
 
         const cellX = columnCenters[gridCol] + offsetX
         const cellY = rowCenters[gridRow] + offsetY
@@ -197,7 +240,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
         console.log(`[v0] Rendering cell [${gridRow},${gridCol}] with color: ${cellColor} -> ${panelColor}`)
 
         glbs.push(
-          <GLBModule
+          <StableGLBModule
             key={`glb-${gridRow}-${gridCol}`}
             position={[cellX, cellY, cellZ]}
             cellType={cell.type}
@@ -214,7 +257,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     })
 
     return { glbModules: glbs, interactiveCells: cells }
-  }, [config, selectedTool, hoveredCell, onCellClick, onCellHover])
+  }, [gridStructure, selectedTool, hoveredCell, onCellClick, onCellHover])
 
   return (
     <group>
