@@ -185,6 +185,13 @@ function LoadedGLBModel({
         scaleX = width / frameBaseWidth
         scaleY = height / frameBaseHeight
         scaleZ = depth / frameBaseDepth
+
+        console.log(`[v0] Frame80-style scaling for ${cellType}:`, {
+          modelUrl,
+          targetDimensions: { width, height, depth },
+          baseDimensions: { frameBaseWidth, frameBaseHeight, frameBaseDepth },
+          scaleFactor: { scaleX, scaleY, scaleZ },
+        })
       } else {
         scaleX = size.x > 0 ? width / size.x : 1
         scaleY = size.y > 0 ? height / size.y : 1
