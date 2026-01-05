@@ -321,6 +321,7 @@ export function ShelfConfigurator() {
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
+              console.log(`[v0] Setting cell [${row},${col}] color to:`, prev.color)
               return {
                 ...cell,
                 type,

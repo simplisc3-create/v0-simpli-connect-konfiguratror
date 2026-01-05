@@ -234,6 +234,12 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
 
         if (isEmpty || isGhost) return
 
+        console.log(`[v0] Cell [${gridRow},${gridCol}] raw data:`, {
+          cellColor: cell.color,
+          cellType: cell.type,
+          fallbackColor,
+        })
+
         const cellColor = cell.color || fallbackColor
         const panelColor = colorMap[cellColor] || colorMap.weiss
 
