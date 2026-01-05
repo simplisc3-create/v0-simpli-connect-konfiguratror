@@ -1,6 +1,16 @@
 export type WidthKey = 40 | 80
 export type HeightKey = number
-export type ColorKey = "white" | "gray" | "black" | "blue" | "green" | "yellow" | "orange" | "red"
+export type ColorKey =
+  | "white"
+  | "gray"
+  | "black"
+  | "blue"
+  | "green"
+  | "yellow"
+  | "orange"
+  | "red"
+  | "anthrazit"
+  | "beige"
 
 export type ModuleType =
   | "ohne-seitenwaende"
@@ -31,7 +41,18 @@ export const MODULE_TYPES: ModuleType[] = [
   "abschliessbar-rechts",
 ]
 
-export const COLOR_KEYS: ColorKey[] = ["white", "gray", "black", "blue", "green", "yellow", "orange", "red"]
+export const COLOR_KEYS: ColorKey[] = [
+  "white",
+  "gray",
+  "black",
+  "blue",
+  "green",
+  "yellow",
+  "orange",
+  "red",
+  "anthrazit",
+  "beige",
+]
 
 export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType, string>>> = {
   80: {
@@ -57,6 +78,20 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
 
 const GLB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
 
+// Format: "{width}x40x40-{variantCode}-{color}_optimized.glb" -> full URL
+const DIRECT_URL_MAP: Record<string, string> = {
+  // Orange 80cm - ohne Rückwand (variant 1-1) - shadow-free version
+  "80x40x40-1-1-orange_optimized.glb": "/images/ohne-rueckwand-orange80.glb",
+  // Orange 80cm - other variants (using Orns files)
+  "80x40x40-1-2-orange_optimized.glb": "/images/80x40x40-1-2-orns.glb",
+  "80x40x40-1-3-orange_optimized.glb": "/images/80x40x40-1-3-orns.glb",
+  "80x40x40-1-4-orange_optimized.glb": "/images/80x40x40-1-4-orns.glb",
+  "80x40x40-1-5-orange_optimized.glb": "/images/80x40x40-1-5-orns.glb",
+  "80x40x40-1-6-orange_optimized.glb": "/images/80x40x40-1-6-orns.glb",
+  "80x40x40-1-7-orange_optimized.glb": "/images/80x40x40-1-7-orns.glb",
+  "80x40x40-1-8-orange_optimized.glb": "/images/80x40x40-1-8-orns.glb",
+}
+
 const ROOT_LEVEL_FILES: Set<string> = new Set([
   // Blue 40cm modules - stored at root, not in blue40/ folder
   "40x40x40-2-1-blue_optimized.glb",
@@ -67,6 +102,24 @@ const ROOT_LEVEL_FILES: Set<string> = new Set([
   "40x40x40-2-6-blue_optimized.glb",
   "40x40x40-2-7-blue_optimized.glb",
 ])
+
+/**
+ * HOW TO ADD NEW GLB FILES / COLORS:
+ *
+ * Option 1 - Files stored in folders (standard):
+ * Upload files to Vercel Blob Storage in this folder structure:
+ * - {color}{width}/{width}x40x40-{variantCode}-{color}_optimized.glb
+ * Example: white80/80x40x40-1-1-white_optimized.glb
+ *         red80/80x40x40-1-1-red_optimized.glb
+ *
+ * Option 2 - Files stored at root level:
+ * Upload files to root and add filename to ROOT_LEVEL_FILES set below
+ * Example: "80x40x40-1-1-anthrazit_optimized.glb"
+ *
+ * Available variant codes:
+ * 80cm width: 1-1 to 1-8 (ohne-rueckwand to mit-seitenwaenden)
+ * 40cm width: 2-1 to 2-7 (ohne-rueckwand to abschliessbar-rechts)
+ */
 
 export function buildGlbFilename(args: { width: WidthKey; variantCode: string; color: ColorKey }): string {
   const { width, variantCode, color } = args
@@ -104,9 +157,14 @@ export function resolveGlbUrl(args: {
   const filename = buildGlbFilename({ width, variantCode, color })
 
   let url: string
-  if (ROOT_LEVEL_FILES.has(filename)) {
+
+  if (DIRECT_URL_MAP[filename]) {
+    url = DIRECT_URL_MAP[filename]
+  } else if (ROOT_LEVEL_FILES.has(filename)) {
+    // Files stored at root level (no folder)
     url = `${GLB_BASE_URL}/${filename}`
   } else {
+    // Standard folder structure: {color}{width}/{filename}
     const folder = buildFolderPath(color, width)
     url = `${GLB_BASE_URL}/${folder}/${filename}`
   }

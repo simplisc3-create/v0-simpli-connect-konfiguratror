@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useCallback, useMemo, useRef, Suspense } from "react"
+import { useState, useCallback, useMemo, useRef, Suspense, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment, ContactShadows } from "@react-three/drei"
+import { OrbitControls } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
@@ -18,6 +18,7 @@ import {
   funktionswaende,
 } from "@/lib/simpli-products"
 import type { ShoppingItem } from "@/types/shopping-item" // Import ShoppingItem
+import { useThree } from "@react-three/fiber"
 
 export type GridCell = {
   id: string
@@ -704,6 +705,16 @@ export function ShelfConfigurator() {
     return { items: list, totalPrice: total }
   }
 
+  const gridHash = useMemo(() => {
+    return JSON.stringify({
+      grid: config.grid.map((row) => row.map((cell) => ({ type: cell.type, color: cell.color }))),
+      columns: config.columns,
+      rows: config.rows,
+      columnWidths: config.columnWidths,
+      rowHeights: config.rowHeights,
+    })
+  }, [config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
+
   const bomData = useMemo(() => {
     const result = calculateBOM(config)
     const transformedItems = result.items.map((item) => ({
@@ -714,26 +725,46 @@ export function ShelfConfigurator() {
       total: item.subtotal,
     }))
     return { items: transformedItems, totalPrice: result.totalPrice }
-  }, [config]) // Updated dependency to include config
+  }, [gridHash]) // Use gridHash instead of config to prevent unnecessary recalculations
+
+  function InvalidateOnChange({ gridHash }: { gridHash: string }) {
+    const { invalidate } = useThree()
+    useEffect(() => {
+      invalidate()
+    }, [gridHash, invalidate])
+    return null
+  }
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-neutral-900">
+    <div className="flex h-screen w-screen flex-col">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          <Canvas shadows camera={{ position: [2, 1.5, 3], fov: 45 }} className="h-full w-full">
-            <color attach="background" args={["#1a1a1a"]} />
+          <Canvas
+            shadows={false}
+            camera={{ position: [3, 2.5, 3], fov: 45 }}
+            gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+            dpr={[1, 2]}
+            frameloop="demand"
+          >
+            <color attach="background" args={["#ffffff"]} />
             <ambientLight intensity={0.5} />
-            <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} />
-            <directionalLight position={[-3, 3, -3]} intensity={0.4} />
+            <directionalLight position={[5, 5, 5]} intensity={0.5} />
+            <directionalLight position={[-5, 5, 5]} intensity={0.5} />
+            <directionalLight position={[5, 5, -5]} intensity={0.5} />
+            <directionalLight position={[-5, 5, -5]} intensity={0.5} />
+            <directionalLight position={[0, -5, 0]} intensity={0.3} />
+            <directionalLight position={[0, 5, 0]} intensity={0.5} />
+
             <Suspense
               fallback={
                 <mesh>
                   <boxGeometry args={[0.5, 0.5, 0.5]} />
-                  <meshStandardMaterial color="#333" />
+                  <meshBasicMaterial color="#e0e0e0" />
                 </mesh>
               }
             >
+              <InvalidateOnChange gridHash={JSON.stringify(config.grid)} />
               <ShelfScene
                 config={config}
                 selectedTool={selectedTool}
@@ -742,8 +773,7 @@ export function ShelfConfigurator() {
                 onCellHover={setHoveredCell}
               />
             </Suspense>
-            <ContactShadows position={[0, -0.01, 0]} opacity={0.6} scale={10} blur={2} far={4} />
-            <Environment preset="apartment" />
+
             <OrbitControls
               makeDefault
               minPolarAngle={0.2}
