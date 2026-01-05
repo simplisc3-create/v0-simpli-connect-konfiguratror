@@ -65,22 +65,14 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
 
 export const UPLOADED_MODELS: Record<string, string> = {
   // White 80cm modules - using hebbkx1anhila5yf storage
+  "80x40x40-1-1-white_optimized.glb": "/images/80x40x40-1-1-white-optimized.glb",
   "80x40x40-1-2-white_optimized.glb": "/images/80x40x40-1-2-white-optimized.glb",
+  "80x40x40-1-3-white_optimized.glb": "/images/80x40x40-1-3-white-optimized.glb",
+  "80x40x40-1-4-white_optimized.glb": "/images/80x40x40-1-4-white-optimized.glb",
+  "80x40x40-1-5-white_optimized.glb": "/images/80x40x40-1-5-white-optimized.glb",
+  "80x40x40-1-6-white_optimized.glb": "/images/80x40x40-1-6-white-optimized.glb",
   "80x40x40-1-7-white_optimized.glb": "/images/80x40x40-1-7-white-optimized.glb",
-
-  // Using xo2a99j1qyph0ija storage for remaining variants
-  "80x40x40-1-1-white_optimized.glb":
-    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-1-white_optimized.glb",
-  "80x40x40-1-3-white_optimized.glb":
-    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-3-white_optimized.glb",
-  "80x40x40-1-4-white_optimized.glb":
-    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-4-white_optimized.glb",
-  "80x40x40-1-5-white_optimized.glb":
-    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-5-white_optimized.glb",
-  "80x40x40-1-6-white_optimized.glb":
-    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-6-white_optimized.glb",
-  "80x40x40-1-8-white_optimized.glb":
-    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-8-white_optimized.glb",
+  "80x40x40-1-8-white_optimized.glb": "/images/80x40x40-1-8-white-optimized.glb",
 }
 
 export function buildGlbFilename(args: {
