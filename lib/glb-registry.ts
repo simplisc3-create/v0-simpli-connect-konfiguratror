@@ -88,7 +88,7 @@ export function resolveGlbUrl(args: {
 }) {
   const { width, height, moduleType, color } = args
 
-  if (moduleType === "ohne-rueckwand" && width === 80 && color === "orange") {
+  if (moduleType === "ohne-rueckwand" && width === 80) {
     return {
       url: SPECIAL_FRAME_URLS["ohne-rueckwand-orange-80"],
       filename: "ohne-rueckwand-orange80.glb",
