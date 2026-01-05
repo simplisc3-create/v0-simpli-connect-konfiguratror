@@ -1,304 +1,125 @@
 "use client"
 
-import { useState, useCallback, useMemo, useRef, useEffect } from "react"
+import { useState, useCallback, useMemo, useRef } from "react"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment } from "@react-three/drei"
+import { OrbitControls, Environment, ContactShadows } from "@react-three/drei"
+import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
-import { LiveCart } from "./live-cart"
-import {
-  Undo2,
-  Redo2,
-  RotateCcw,
-  Eraser,
-  Square,
-  PanelTop,
-  DoorOpen,
-  Lock,
-  PanelTopOpen,
-  Archive,
-  Trash2,
-  Grid3X3,
-  LayoutGrid,
-  Plus,
-  Minus,
-  Package,
-  X,
-} from "lucide-react"
+import { ConfiguratorHeader } from "./configurator-header"
+import { Undo2, Redo2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import {
+  type Product,
+  leitern,
+  stangensets,
+  metallboeden,
+  glasboeden,
+  holzboeden,
+  schubladenTueren,
+  funktionswaende,
+} from "@/lib/simpli-products"
+import type { ShoppingItem } from "@/types/shopping-item"
+import type { ShelfColor } from "@/types/shelf-color"
+
+const colorMap: Record<ShelfColor, string> = {
+  weiss: "weiss",
+  schwarz: "schwarz",
+  blau: "blue",
+  gruen: "green",
+  gelb: "yellow",
+  orange: "orange",
+  rot: "red",
+  satiniert: "satin",
+}
+
+export type CellStyles = Record<string, { panelColor?: ShelfColor; frontColor?: ShelfColor }>
+
+export type PaintMode = "panels" | "fronts"
 
 export type GridCell = {
   id: string
   type:
     | "empty"
+    | "ghost"
     | "ohne-seitenwaende"
-    | "mit-seitenwaenden"
     | "ohne-rueckwand"
     | "mit-rueckwand"
     | "mit-tueren"
-    | "abschliessbare-tueren"
-    | "schubladen"
-    | "mit-doppelschublade"
     | "mit-klapptuer"
-    | "leer" // Added for 40cm width modules
-    | "mit-tuer-links" // Added for 40cm width modules
-    | "mit-tuer-rechts" // Added for 40cm width modules
-    | "mit-abschliessbarer-tuer-links" // Added for 40cm width modules
-  color: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange"
+    | "mit-doppelschublade"
+    | "abschliessbare-tueren"
+  row: number
+  col: number
+  color?: ShelfColor
+  material?: "metal" | "glass"
 }
 
 export type ShelfConfig = {
-  columns: ColumnData[]
-  material: "metall" | "glas"
-  accentColor: "weiss" | "schwarz" | "rot" | "gruen" | "gelb" | "blau" | "orange"
-}
-
-export type ColumnData = {
   width: 38 | 75
-  cells: GridCell[]
-}
-
-type ModuleType = GridCell["type"]
-
-const createEmptyCell = (id: string, color: GridCell["color"] = "weiss"): GridCell => ({
-  id,
-  type: "empty",
-  color,
-})
-
-const createInitialCell = (id: string, color: GridCell["color"] = "weiss"): GridCell => ({
-  id,
-  type: "ohne-rueckwand",
-  color,
-})
-
-const createInitialConfig = (): ShelfConfig => ({
-  columns: [
-    {
-      width: 75,
-      cells: [createInitialCell("col-0-cell-0")],
-    },
-  ],
-  material: "metall",
-  accentColor: "weiss",
-})
-
-const moduleTypes = [
-  { id: "ohne-seitenwaende" as const, label: "ohne Seitenwände", icon: Square },
-  { id: "ohne-rueckwand" as const, label: "ohne Rückwand", icon: LayoutGrid },
-  { id: "mit-rueckwand" as const, label: "mit Rückwand", icon: PanelTop },
-  { id: "mit-tueren" as const, label: "mit Türen", icon: DoorOpen },
-  { id: "mit-klapptuer" as const, label: "mit Klapptür", icon: PanelTopOpen },
-  { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: Archive },
-  { id: "abschliessbare-tueren" as const, label: "abschließbare Türen", icon: Lock },
-  // Added for 40cm width modules, though these might not be directly used here but in other components
-  { id: "leer" as const, label: "Leer", icon: Square }, // Assuming 'leer' is equivalent to 'empty' for filtering
-  { id: "mit-tuer-links" as const, label: "Tür links", icon: DoorOpen },
-  { id: "mit-tuer-rechts" as const, label: "Tür rechts", icon: DoorOpen },
-  { id: "mit-abschliessbarer-tuer-links" as const, label: "Abschließbare Tür links", icon: Lock },
-] as const
-
-const baseColors = [
-  { id: "weiss" as const, label: "Weiß", hex: "#F5F5F5" },
-  { id: "schwarz" as const, label: "Schwarz", hex: "#1A1A1A" },
-]
-
-const specialColorOptions = [
-  { id: "blau" as const, label: "Blau", hex: "#00566B" },
-  { id: "gruen" as const, label: "Grün", hex: "#228B22" },
-  { id: "gelb" as const, label: "Gelb", hex: "#9A8700" },
-  { id: "orange" as const, label: "Orange", hex: "#B45309" },
-  { id: "rot" as const, label: "Rot", hex: "#7F1D1D" },
-]
-
-const materialOptions = [
-  { id: "metall" as const, label: "Metall" },
-  { id: "glas" as const, label: "Glas" },
-]
-
-function ModulePreviewIcon({ type, isSelected }: { type: GridCell["type"] | "empty"; isSelected?: boolean }) {
-  const strokeColor = isSelected ? "rgb(0, 180, 216)" : "currentColor"
-  const fillColor = "transparent"
-
-  switch (type) {
-    case "ohne-seitenwaende":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect
-            x="8"
-            y="8"
-            width="32"
-            height="24"
-            rx="2"
-            stroke={strokeColor}
-            strokeWidth="2"
-            fill={fillColor}
-            strokeDasharray="4 2"
-          />
-        </svg>
-      )
-    case "ohne-rueckwand":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-        </svg>
-      )
-    case "mit-rueckwand":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <rect x="12" y="12" width="24" height="16" rx="1" fill={strokeColor} fillOpacity="0.2" />
-        </svg>
-      )
-    case "mit-tueren":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <circle cx="18" cy="20" r="2" fill={strokeColor} />
-          <circle cx="30" cy="20" r="2" fill={strokeColor} />
-        </svg>
-      )
-    case "mit-klapptuer":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <line x1="8" y1="20" x2="40" y2="20" stroke={strokeColor} strokeWidth="2" strokeDasharray="4 2" />
-          <circle cx="24" cy="26" r="2" fill={strokeColor} />
-        </svg>
-      )
-    case "mit-doppelschublade":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <line x1="8" y1="20" x2="40" y2="20" stroke={strokeColor} strokeWidth="2" />
-          <line x1="20" y1="14" x2="28" y2="14" stroke={strokeColor} strokeWidth="2" />
-          <line x1="20" y1="26" x2="28" y2="26" stroke={strokeColor} strokeWidth="2" />
-        </svg>
-      )
-    case "abschliessbare-tueren":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <rect x="16" y="16" width="6" height="8" rx="1" fill={strokeColor} />
-          <rect x="26" y="16" width="6" height="8" rx="1" fill={strokeColor} />
-        </svg>
-      )
-    // Added icons for 40cm specific modules
-    case "leer":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-        </svg>
-      )
-    case "mit-tuer-links":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <rect x="16" y="16" width="10" height="8" rx="1" fill={strokeColor} />
-        </svg>
-      )
-    case "mit-tuer-rechts":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <rect x="24" y="16" width="10" height="8" rx="1" fill={strokeColor} />
-        </svg>
-      )
-    case "mit-abschliessbarer-tuer-links":
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-          <rect x="16" y="16" width="6" height="8" rx="1" fill={strokeColor} />
-          <circle cx="25" cy="20" r="1.5" fill={strokeColor} />
-        </svg>
-      )
-    default:
-      return (
-        <svg width="48" height="40" viewBox="0 0 48 40" fill="none">
-          <rect x="8" y="8" width="32" height="24" rx="2" stroke={strokeColor} strokeWidth="2" fill={fillColor} />
-        </svg>
-      )
+  height: 40 | 80 | 120 | 160 | 200
+  sections: number
+  levels: number
+  material: "metal" | "glass"
+  finish: "black" | "white" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
+  color: ShelfColor
+  defaultPanelColor: ShelfColor
+  defaultFrontColor: ShelfColor
+  cellStyles: CellStyles
+  panels?: {
+    shelves?: number
+    sideWalls?: number
+    backWalls?: number
   }
-}
-
-function ModuleIconSVG({ type }: { type: GridCell["type"] }) {
-  const iconSize = 20
-  switch (type) {
-    case "ohne-seitenwaende":
-      return <Square width={iconSize} height={iconSize} />
-    case "mit-seitenwaenden":
-      return <Grid3X3 width={iconSize} height={iconSize} />
-    case "ohne-rueckwand":
-      return <LayoutGrid width={iconSize} height={iconSize} />
-    case "mit-rueckwand":
-      return <PanelTop width={iconSize} height={iconSize} />
-    case "mit-tueren":
-      return <DoorOpen width={iconSize} height={iconSize} />
-    case "abschliessbare-tueren":
-      return <Lock width={iconSize} height={iconSize} />
-    case "mit-klapptuer":
-      return <PanelTopOpen width={iconSize} height={iconSize} />
-    case "mit-doppelschublade":
-      return <Archive width={iconSize} height={iconSize} />
-    case "schubladen":
-      return <Archive width={iconSize} height={iconSize} />
-    case "delete":
-      return <Trash2 width={iconSize} height={iconSize} />
-    // Added icons for 40cm specific modules
-    case "leer":
-      return <Square width={iconSize} height={iconSize} />
-    case "mit-tuer-links":
-      return <DoorOpen width={iconSize} height={iconSize} />
-    case "mit-tuer-rechts":
-      return <DoorOpen width={iconSize} height={iconSize} />
-    case "mit-abschliessbarer-tuer-links":
-      return <Lock width={iconSize} height={iconSize} />
-    default:
-      return null
+  modules?: {
+    doors40?: number
+    lockableDoors40?: number
+    flapDoors?: number
+    doubleDrawers80?: number
+    jalousie80?: number
+    functionalWall1?: number
+    functionalWall2?: number
   }
+  grid: GridCell[][]
+  columns: number
+  rows: number
+  columnWidths: (75 | 38)[]
+  rowHeights: (40 | 80 | 120 | 160 | 200)[]
 }
 
-const hasAnyModules = (config: ShelfConfig): boolean => {
-  return config.columns.some((col) => col.cells.some((cell) => cell.type !== "empty"))
+const createInitialGrid = (): GridCell[][] => {
+  return [[{ id: "cell-0-0", type: "ghost", row: 0, col: 0 }]]
+}
+
+const initialConfig: ShelfConfig = {
+  width: 75,
+  height: 38,
+  sections: 1,
+  levels: 1,
+  material: "metal",
+  finish: "white",
+  color: "weiss",
+  defaultPanelColor: "weiss",
+  defaultFrontColor: "weiss",
+  cellStyles: {},
+  grid: createInitialGrid(),
+  columns: 1,
+  rows: 1,
+  columnWidths: [75] as (75 | 38)[],
+  rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
 }
 
 export function ShelfConfigurator() {
-  const [config, setConfig] = useState<ShelfConfig>(createInitialConfig())
-  const [selectedTool, setSelectedTool] = useState<ModuleType | "empty" | null>("ohne-rueckwand")
-  const [selectedCell, setSelectedCell] = useState<{ col: number; stackIndex: number } | null>(null)
-  const [hoveredCell, setHoveredCell] = useState<{ col: number; stackIndex: number } | null>(null)
-  const [showShoppingList, setShowShoppingList] = useState(false)
-  const [showMobilePanel, setShowMobilePanel] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragAction, setDragAction] = useState<"add" | "remove" | null>(null)
-  const [isSidePanelCollapsed, setIsSidePanelCollapsed] = useState(false)
-  const [editMode, setEditMode] = useState<"global" | "cell">("global")
-  const [dragState, setDragState] = useState<{
-    active: boolean
-    startCell: { col: number; stackIndex: number } | null
-  }>({
-    active: false,
-    startCell: null,
-  })
+  const [config, setConfig] = useState<ShelfConfig>(initialConfig)
+  const [selectedTool, setSelectedTool] = useState<string>("ohne-seitenwaende")
+  const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
+  const [paintMode, setPaintMode] = useState<PaintMode>("panels")
+  const [activeColor, setActiveColor] = useState<ShelfColor>("weiss")
+  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
+  const [showShoppingList, setShowShoppingList] = useState<boolean>(false)
 
-  const [isCartOpen, setIsCartOpen] = useState(false)
-  const [expandedWidthSelector, setExpandedWidthSelector] = useState<number | null>(null)
-
-  const isConfiguratorStarted = hasAnyModules(config)
-
-  const [history, setHistory] = useState<ShelfConfig[]>([createInitialConfig()])
+  const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
   const isUndoRedo = useRef(false)
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
 
   const saveToHistory = useCallback(
     (newConfig: ShelfConfig) => {
@@ -336,943 +157,995 @@ export function ShelfConfigurator() {
   const canUndo = historyIndex > 0
   const canRedo = historyIndex < history.length - 1
 
-  const handleCellSelect = useCallback((col: number, stackIndex: number) => {
-    console.log("[v0] Cell selected:", { col, stackIndex })
-    setSelectedCell((prev) => {
-      if (prev?.col === col && prev?.stackIndex === stackIndex) {
-        console.log("[v0] Deselecting cell")
-        return null // Deselect if clicking the same cell
+  const getColumnHeights = (grid: GridCell[][]): number[] => {
+    const heights: number[] = []
+    grid[0]?.forEach((_, colIndex) => {
+      let maxHeight = 0
+      for (let row = grid.length - 1; row >= 0; row--) {
+        if (grid[row]?.[colIndex]?.type !== "empty" && grid[row]?.[colIndex]?.type !== "ghost") {
+          maxHeight = grid.length - row
+          break
+        }
       }
-      console.log("[v0] Selecting new cell")
-      return { col, stackIndex }
+      heights[colIndex] = maxHeight
     })
-    setEditMode("cell")
-  }, [])
+    return heights
+  }
 
-  const handleCellClick = useCallback(
-    (col: number, stackIndex: number) => {
-      if (!selectedTool) {
-        handleCellSelect(col, stackIndex)
-        return
-      }
-
-      setConfig((prev) => {
-        const newColumns = prev.columns.map((column, colIdx) => {
-          if (colIdx !== col) return column
-
-          const newCells = column.cells.map((cell, cellIdx) => {
-            if (cellIdx !== stackIndex) return cell
-
-            if (selectedTool === "empty" || selectedTool === "delete") {
-              if (
-                cellIdx === column.cells.length - 1 ||
-                column.cells.slice(cellIdx + 1).every((c) => c.type === "empty")
-              ) {
-                return { ...cell, type: "empty" as const }
-              }
-              return cell
-            }
-
-            return { ...cell, type: selectedTool, color: cell.color || prev.accentColor }
-          })
-
-          return { ...column, cells: newCells }
-        })
-
-        const newConfig = { ...prev, columns: newColumns }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [selectedTool, saveToHistory, handleCellSelect],
-  )
-
-  const handleExpandUp = useCallback(
-    (col: number) => {
-      setConfig((prev) => {
-        const newColumns = prev.columns.map((column, colIdx) => {
-          if (colIdx !== col) return column
-
-          const hasFilledCell = column.cells.some((c) => c.type !== "empty")
-          if (!hasFilledCell) return column
-
-          const newCell: GridCell = {
-            id: `col-${col}-cell-${column.cells.length}`,
-            type:
-              selectedTool && selectedTool !== "empty" && selectedTool !== "delete" ? selectedTool : "ohne-rueckwand",
-            color: prev.accentColor,
-          }
-
-          return { ...column, cells: [...column.cells, newCell] }
-        })
-
-        const newConfig = { ...prev, columns: newColumns }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [selectedTool, saveToHistory],
-  )
-
-  const handleExpandLeft = useCallback(
-    (width: 38 | 75 = 75) => {
-      setConfig((prev) => {
-        const newCell: GridCell = {
-          id: `col-0-cell-0`,
-          type: selectedTool && selectedTool !== "empty" && selectedTool !== "delete" ? selectedTool : "empty",
-          color: prev.accentColor,
-        }
-
-        const newColumn: ColumnData = {
-          width,
-          cells: [newCell],
-        }
-
-        const updatedColumns = prev.columns.map((col, idx) => ({
-          ...col,
-          cells: col.cells.map((cell, cellIdx) => ({
-            ...cell,
-            id: `col-${idx + 1}-cell-${cellIdx}`,
-          })),
-        }))
-
-        const newConfig = { ...prev, columns: [newColumn, ...updatedColumns] }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [selectedTool, saveToHistory],
-  )
-
-  const handleExpandRight = useCallback(
-    (width: 38 | 75 = 75) => {
-      setConfig((prev) => {
-        const newColIndex = prev.columns.length
-        const newCell: GridCell = {
-          id: `col-${newColIndex}-cell-0`,
-          type: selectedTool && selectedTool !== "empty" && selectedTool !== "delete" ? selectedTool : "empty",
-          color: prev.accentColor,
-        }
-
-        const newColumn: ColumnData = {
-          width,
-          cells: [newCell],
-        }
-
-        const newConfig = { ...prev, columns: [...prev.columns, newColumn] }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [selectedTool, saveToHistory],
-  )
-
-  const handleAddRow = useCallback(() => {
-    setConfig((prev) => {
-      const newColumns = prev.columns.map((column, colIdx) => {
-        const newCell: GridCell = {
-          id: `col-${colIdx}-cell-${column.cells.length}`,
-          type: "empty",
-          color: prev.accentColor,
-        }
-        return { ...column, cells: [...column.cells, newCell] }
-      })
-      const newConfig = { ...prev, columns: newColumns }
-      setTimeout(() => saveToHistory(newConfig), 0)
-      return newConfig
-    })
-  }, [saveToHistory])
-
-  const handleRemoveRow = useCallback(() => {
-    setConfig((prev) => {
-      const maxCells = Math.max(...prev.columns.map((col) => col.cells.length))
-      if (maxCells <= 1) return prev
-
-      const newColumns = prev.columns.map((column) => {
-        if (column.cells.length <= 1) return column
-        return { ...column, cells: column.cells.slice(0, -1) }
-      })
-      const newConfig = { ...prev, columns: newColumns }
-      setTimeout(() => saveToHistory(newConfig), 0)
-      return newConfig
-    })
-  }, [saveToHistory])
-
-  const handleAddColumn = useCallback(() => {
-    handleExpandRight(38)
-  }, [handleExpandRight])
-
-  const handleRemoveColumn = useCallback(() => {
-    setConfig((prev) => {
-      if (prev.columns.length <= 1) return prev
-      const newConfig = { ...prev, columns: prev.columns.slice(0, -1) }
-      setTimeout(() => saveToHistory(newConfig), 0)
-      return newConfig
-    })
-  }, [saveToHistory])
-
-  const handleMaterialChange = useCallback(
-    (material: "metall" | "glas") => {
-      setConfig((prev) => {
-        const newConfig = { ...prev, material }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const handleColorChange = useCallback(
-    (color: ShelfConfig["accentColor"]) => {
-      setConfig((prev) => {
-        const newConfig = { ...prev, accentColor: color }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const handleCellColorChange = useCallback(
-    (col: number, stackIndex: number, color: ShelfConfig["accentColor"]) => {
-      setConfig((prev) => {
-        const newColumns = prev.columns.map((column, colIdx) => {
-          if (colIdx !== col) return column
-          return {
-            ...column,
-            cells: column.cells.map((cell, cellIdx) => {
-              if (cellIdx !== stackIndex) return cell
-              return { ...cell, color }
-            }),
-          }
-        })
-        const newConfig = { ...prev, columns: newColumns }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const handleCellTypeChange = useCallback(
-    (col: number, stackIndex: number, type: ModuleType) => {
-      setConfig((prev) => {
-        const newColumns = prev.columns.map((column, colIdx) => {
-          if (colIdx !== col) return column
-          return {
-            ...column,
-            cells: column.cells.map((cell, cellIdx) => {
-              if (cellIdx !== stackIndex) return cell
-              return { ...cell, type }
-            }),
-          }
-        })
-        const newConfig = { ...prev, columns: newColumns }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const handleColumnWidthChange = useCallback(
-    (colIndex: number, newWidth: 38 | 75) => {
-      setConfig((prev) => {
-        const newColumns = prev.columns.map((col, idx) => {
-          if (idx !== colIndex) return col
-          return { ...col, width: newWidth }
-        })
-        const newConfig = { ...prev, columns: newColumns }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-      setExpandedWidthSelector(null)
-    },
-    [saveToHistory],
-  )
-
-  const selectedCellData = useMemo(() => {
-    if (!selectedCell) return null
-    const column = config.columns[selectedCell.col]
-    if (!column) return null
-    const cell = column.cells[selectedCell.stackIndex]
-    if (!cell) return null
-    return cell
-  }, [selectedCell, config.columns])
-
-  const selectedColumnWidth = useMemo(() => {
-    if (!selectedCell) return null
-    const column = config.columns[selectedCell.col]
-    return column?.width ?? null
-  }, [selectedCell, config.columns])
-
-  const availableModuleTypes = useMemo(() => {
-    if (selectedColumnWidth && selectedColumnWidth <= 40) {
-      const allowed40cmTypes = [
-        "ohne-seitenwaende",
-        "ohne-rueckwand",
-        "mit-rueckwand",
-        "mit-tuer-links",
-        "mit-tuer-rechts",
-      ]
-      return moduleTypes.filter((m) => allowed40cmTypes.includes(m.id))
+  const isConnectedToExisting = (row: number, col: number, grid: GridCell[][]): boolean => {
+    const currentCell = grid[row]?.[col]
+    if (!currentCell || currentCell.type !== "ghost") {
+      return false
     }
-    return moduleTypes
-  }, [selectedColumnWidth])
+    return true
+  }
+
+  const hasSupportBelow = (row: number, col: number, grid: GridCell[][]): boolean => {
+    const hasAnyFilledModule = grid.some((r) => r.some((c) => c.type !== "empty" && c.type !== "ghost"))
+    if (!hasAnyFilledModule) return true
+
+    if (row === 0) return true
+    const belowCell = grid[row - 1]?.[col]
+    return belowCell !== undefined && belowCell.type !== "empty" && belowCell.type !== "ghost"
+  }
+
+  const expandGridAroundPlacement = (grid: GridCell[][], placedRow: number, placedCol: number): GridCell[][] => {
+    let newGrid = grid.map((row) => [...row])
+    const rows = newGrid.length
+    const cols = newGrid[0]?.length || 0
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (newGrid[r][c].type === "ghost") {
+          newGrid[r][c] = { ...newGrid[r][c], type: "empty" }
+        }
+      }
+    }
+
+    let needsExpansion = false
+    let expandLeft = false
+    let expandRight = false
+    let expandUp = false
+
+    const hasFilledAtCol0 = newGrid.some((row) => row[0] && row[0].type !== "empty" && row[0].type !== "ghost")
+    if (hasFilledAtCol0) {
+      expandLeft = true
+      needsExpansion = true
+    }
+
+    const lastColIdx = cols - 1
+    const hasFilledAtLastCol = newGrid.some((row) => {
+      const cell = row[lastColIdx]
+      return cell && cell.type !== "empty" && cell.type !== "ghost"
+    })
+    if (hasFilledAtLastCol) {
+      expandRight = true
+      needsExpansion = true
+    }
+
+    const topRowIdx = rows - 1
+    const hasFilledAtTopRow = newGrid[topRowIdx].some((cell) => cell.type !== "empty" && cell.type !== "ghost")
+    if (hasFilledAtTopRow) {
+      expandUp = true
+      needsExpansion = true
+    }
+
+    if (expandLeft) {
+      newGrid = newGrid.map((row, ri) => {
+        const newCell: GridCell = {
+          id: `cell-${ri}--1-temp`,
+          type: "empty",
+          row: ri,
+          col: -1,
+        }
+        return [newCell, ...row.map((c) => ({ ...c, col: c.col + 1, id: `cell-${c.row}-${c.col + 1}` }))]
+      })
+    }
+
+    if (expandRight) {
+      const currentCols = newGrid[0]?.length || 0
+      newGrid = newGrid.map((row, ri) => {
+        const newCell: GridCell = {
+          id: `cell-${ri}-${currentCols}`,
+          type: "empty" as const,
+          row: ri,
+          col: currentCols,
+        }
+        return [...row, newCell]
+      })
+    }
+
+    if (expandUp) {
+      const currentRows = newGrid.length
+      const currentCols = newGrid[0]?.length || 0
+      const newRow = Array.from({ length: currentCols }, (_, ci) => ({
+        id: `cell-${currentRows}-${ci}`,
+        type: "empty" as const,
+        row: currentRows,
+        col: ci,
+      }))
+      newGrid.push(newRow)
+    }
+
+    const updatedRows = newGrid.length
+    const updatedCols = newGrid[0]?.length || 0
+
+    for (let r = 0; r < updatedRows; r++) {
+      for (let c = 0; c < updatedCols; c++) {
+        const cell = newGrid[r][c]
+        if (cell.type !== "empty" && cell.type !== "ghost") {
+          const adjacentPositions = [
+            { nr: r - 1, nc: c }, // below
+            { nr: r + 1, nc: c }, // above
+            { nr: r, nc: c - 1 }, // left
+            { nr: r, nc: c + 1 }, // right
+          ]
+
+          adjacentPositions.forEach(({ nr, nc }) => {
+            if (nr >= 0 && nr < updatedRows && nc >= 0 && nc < updatedCols) {
+              const adjacentCell = newGrid[nr][nc]
+              if (adjacentCell.type === "empty") {
+                newGrid[nr][nc] = { ...adjacentCell, type: "ghost" }
+              }
+            }
+          })
+        }
+      }
+    }
+
+    return newGrid
+  }
+
+  const placeModule = useCallback(
+    (row: number, col: number, type: GridCell["type"]) => {
+      console.log("[v0] Placing module at", row, col, type)
+
+      setConfig((prev) => {
+        const currentCell = prev.grid[row]?.[col]
+
+        if (!currentCell || (currentCell.type !== "ghost" && currentCell.type !== "empty")) {
+          console.log("[v0] Cannot place - cell is not ghost or empty")
+          return prev
+        }
+
+        if (!isConnectedToExisting(row, col, prev.grid)) {
+          console.log("[v0] Cannot place - not connected to existing modules")
+          return prev
+        }
+
+        if (!hasSupportBelow(row, col, prev.grid)) {
+          console.log("[v0] Cannot place - no support below")
+          return prev
+        }
+
+        let newGrid = prev.grid.map((r, ri) =>
+          r.map((cell, ci) => {
+            if (ri === row && ci === col) {
+              console.log(`[v0] Setting cell [${row},${col}] color to:`, activeColor)
+              return {
+                ...cell,
+                type,
+                color: activeColor,
+                material: prev.material,
+              }
+            }
+            return cell
+          }),
+        )
+
+        newGrid = expandGridAroundPlacement(newGrid, row, col)
+
+        const newColumns = newGrid[0]?.length || 1
+        const newRows = newGrid.length
+
+        const newColumnWidths = [...prev.columnWidths]
+        while (newColumnWidths.length < newColumns) newColumnWidths.push(75)
+
+        const newRowHeights = [...prev.rowHeights]
+        while (newRowHeights.length < newRows) newRowHeights.push(38)
+
+        const newConfig = {
+          ...prev,
+          grid: newGrid,
+          columns: newColumns,
+          rows: newRows,
+          columnWidths: newColumnWidths as (75 | 38)[],
+          rowHeights: newRowHeights,
+        }
+
+        console.log("[v0] New grid size:", newRows, "x", newColumns)
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory, activeColor],
+  )
+
+  const handleCellClick3D = useCallback(
+    (row: number, col: number) => {
+      console.log("[v0] Cell clicked:", row, col)
+
+      if (!selectedTool || selectedTool === "empty") {
+        placeModule(row, col, "ghost")
+      } else {
+        placeModule(row, col, selectedTool)
+      }
+    },
+    [selectedTool, placeModule],
+  )
+
+  const clearCell = useCallback(
+    (row: number, col: number) => {
+      placeModule(row, col, "empty")
+    },
+    [placeModule],
+  )
+
+  const resizeGrid = useCallback(
+    (newRows: number, newCols: number) => {
+      const limitedRows = Math.min(Math.max(1, newRows), 8)
+
+      setConfig((prev) => {
+        const newGrid = Array.from({ length: limitedRows }, (_, rowIndex) =>
+          Array.from({ length: newCols }, (_, colIndex) => {
+            if (rowIndex < prev.rows && colIndex < prev.columns) {
+              return prev.grid[rowIndex][colIndex]
+            }
+            if (rowIndex === 0) {
+              return {
+                id: `cell-${rowIndex}-${colIndex}`,
+                type: "empty" as const,
+                row: rowIndex,
+                col: colIndex,
+              }
+            }
+            return {
+              id: `cell-${rowIndex}-${colIndex}`,
+              type: "empty" as const,
+              row: rowIndex,
+              col: colIndex,
+            }
+          }),
+        )
+
+        const newColumnWidths = [...prev.columnWidths]
+        while (newColumnWidths.length < newCols) newColumnWidths.push(75)
+        while (newColumnWidths.length > newCols) newColumnWidths.pop()
+
+        const newRowHeights = [...prev.rowHeights]
+        while (newRowHeights.length < limitedRows) newRowHeights.push(38)
+        while (newRowHeights.length > limitedRows) newRowHeights.pop()
+
+        const newConfig = {
+          ...prev,
+          grid: newGrid,
+          columns: newCols,
+          rows: limitedRows,
+          columnWidths: newColumnWidths as (75 | 38)[],
+          rowHeights: newRowHeights,
+        }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const setRowHeight = useCallback(
+    (rowIndex: number, height: number) => {
+      setConfig((prev) => {
+        const newHeights = [...prev.rowHeights]
+        newHeights[rowIndex] = Math.max(20, Math.min(120, height))
+        const newConfig = { ...prev, rowHeights: newHeights }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const setColumnWidth = useCallback(
+    (colIndex: number, width: 75 | 38) => {
+      setConfig((prev) => {
+        const newWidths = [...prev.columnWidths]
+        newWidths[colIndex] = width
+        const newConfig = { ...prev, columnWidths: newWidths as (75 | 38)[] }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const updateConfig = useCallback(
+    (updates: Partial<ShelfConfig>) => {
+      setConfig((prev) => {
+        const newConfig = { ...prev, ...updates }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
 
   const reset = useCallback(() => {
-    const newConfig = createInitialConfig()
+    const newConfig = {
+      width: 75,
+      height: 38,
+      sections: 1,
+      levels: 1,
+      material: "metal",
+      finish: "white",
+      color: "weiss",
+      defaultPanelColor: "weiss",
+      defaultFrontColor: "weiss",
+      cellStyles: {},
+      grid: createInitialGrid(),
+      columns: 1,
+      rows: 1,
+      columnWidths: [75] as (75 | 38)[],
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+    }
     setConfig(newConfig)
     setHistory([newConfig])
     setHistoryIndex(0)
-    setSelectedTool("ohne-rueckwand")
+    setSelectedTool("ohne-seitenwaende")
+    setPaintMode("panels")
+    setShowShoppingList(false)
   }, [])
 
-  const onSelectTool = useCallback((tool: ModuleType | "empty" | null) => {
-    setSelectedTool(tool)
-  }, [])
-
-  const priceFormatted = useMemo(() => {
-    return (0).toFixed(2).replace(".", ",")
-  }, [config])
-
-  const configWithDefaults = useMemo(
-    () => ({
-      ...config,
-    }),
-    [config],
+  const getPanelColor = useCallback(
+    (cellId: string): ShelfColor => {
+      return config.cellStyles[cellId]?.panelColor ?? config.defaultPanelColor
+    },
+    [config.cellStyles, config.defaultPanelColor],
   )
 
-  const rowCount = Math.max(...config.columns.map((col) => col.cells.length))
-  const colCount = config.columns.length
+  const getFrontColor = useCallback(
+    (cellId: string): ShelfColor => {
+      return config.cellStyles[cellId]?.frontColor ?? config.defaultFrontColor
+    },
+    [config.cellStyles, config.defaultFrontColor],
+  )
 
-  const totalWidth = config.columns.reduce((sum, col) => sum + col.width, 0)
-  const totalHeight = rowCount * 38 // Each row is 38cm
-
-  const resetCamera = useCallback(() => {
-    // Reset camera logic here
+  const applyColorToCell = useCallback((row: number, col: number, color: ShelfColor, mode: PaintMode) => {
+    const cellId = `c-${row}-${col}`
+    setConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      if (!newCellStyles[cellId]) {
+        newCellStyles[cellId] = {}
+      }
+      if (mode === "panels") {
+        newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: color }
+      } else {
+        newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: color }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
   }, [])
 
+  const applyColorToRow = useCallback(() => {
+    if (!selectedCell) return
+    setConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      for (let col = 0; col < prev.columns; col++) {
+        const cell = prev.grid[selectedCell.row]?.[col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          const cellId = `c-${selectedCell.row}-${col}`
+          if (!newCellStyles[cellId]) {
+            newCellStyles[cellId] = {}
+          }
+          if (paintMode === "panels") {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: activeColor }
+          } else {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: activeColor }
+          }
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }, [selectedCell, paintMode, activeColor])
+
+  const applyColorToColumn = useCallback(() => {
+    if (!selectedCell) return
+    setConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      for (let row = 0; row < prev.rows; row++) {
+        const cell = prev.grid[row]?.[selectedCell.col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          const cellId = `c-${row}-${selectedCell.col}`
+          if (!newCellStyles[cellId]) {
+            newCellStyles[cellId] = {}
+          }
+          if (paintMode === "panels") {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: activeColor }
+          } else {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: activeColor }
+          }
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }, [selectedCell, paintMode, activeColor])
+
+  const applyColorToAll = useCallback(() => {
+    setConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      for (let row = 0; row < prev.rows; row++) {
+        for (let col = 0; col < prev.columns; col++) {
+          const cell = prev.grid[row]?.[col]
+          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+            const cellId = `c-${row}-${col}`
+            if (!newCellStyles[cellId]) {
+              newCellStyles[cellId] = {}
+            }
+            if (paintMode === "panels") {
+              newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: activeColor }
+            } else {
+              newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: activeColor }
+            }
+          }
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }, [paintMode, activeColor])
+
+  const clearPanelColor = useCallback(() => {
+    if (!selectedCell) return
+    const cellId = `c-${selectedCell.row}-${selectedCell.col}`
+    setConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      if (newCellStyles[cellId]) {
+        const { panelColor, ...rest } = newCellStyles[cellId]
+        if (Object.keys(rest).length === 0) {
+          delete newCellStyles[cellId]
+        } else {
+          newCellStyles[cellId] = rest
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }, [selectedCell])
+
+  const clearFrontColor = useCallback(() => {
+    if (!selectedCell) return
+    const cellId = `c-${selectedCell.row}-${selectedCell.col}`
+    setConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      if (newCellStyles[cellId]) {
+        const { frontColor, ...rest } = newCellStyles[cellId]
+        if (Object.keys(rest).length === 0) {
+          delete newCellStyles[cellId]
+        } else {
+          newCellStyles[cellId] = rest
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }, [selectedCell])
+
+  const handleCellClick = useCallback(
+    (row: number, col: number) => {
+      setSelectedCell({ row, col })
+      const cell = config.grid[row]?.[col]
+      if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+        applyColorToCell(row, col, activeColor, paintMode)
+      }
+      placeModule(row, col, selectedTool)
+    },
+    [config.grid, activeColor, paintMode, applyColorToCell, selectedTool, placeModule],
+  )
+
+  const pruneCellStyles = useCallback((newRows: number, newCols: number) => {
+    setConfig((prev) => {
+      const newCellStyles: CellStyles = {}
+      for (const [cellId, style] of Object.entries(prev.cellStyles)) {
+        const match = cellId.match(/c-(\d+)-(\d+)/)
+        if (match) {
+          const row = Number.parseInt(match[1])
+          const col = Number.parseInt(match[2])
+          if (row < newRows && col < newCols) {
+            newCellStyles[cellId] = style
+          }
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }, [])
+
+  const { shoppingList, totalPrice } = useMemo(() => {
+    const items: ShoppingItem[] = []
+    const itemMap = new Map<string, ShoppingItem>()
+
+    const addItem = (product: Product, quantity: number, colorKey?: ShelfColor) => {
+      const key = colorKey ? `${product.sku}-${colorKey}` : product.sku
+      if (itemMap.has(key)) {
+        const existing = itemMap.get(key)!
+        existing.quantity += quantity
+        existing.totalPrice = existing.quantity * existing.unitPrice
+      } else {
+        const newItem: ShoppingItem = {
+          sku: product.sku,
+          name: colorKey ? `${product.name} (${colorKey})` : product.name,
+          quantity,
+          unitPrice: product.price,
+          totalPrice: quantity * product.price,
+          category: product.category,
+        }
+        itemMap.set(key, newItem)
+        items.push(newItem)
+      }
+    }
+
+    const filledCells = config.grid.flat().filter((cell) => cell.type !== "empty" && cell.type !== "ghost")
+
+    if (filledCells.length === 0) {
+      return { shoppingList: items, totalPrice: 0 }
+    }
+
+    const panelsByColor: Record<ShelfColor, { count: number; width: 75 | 38 }[]> = {} as any
+
+    filledCells.forEach((cell) => {
+      const cellId = `c-${cell.row}-${cell.col}`
+      const panelColor = getPanelColor(cellId)
+      const width = config.columnWidths[cell.col] || 75
+
+      if (!panelsByColor[panelColor]) {
+        panelsByColor[panelColor] = []
+      }
+      panelsByColor[panelColor].push({ count: 1, width })
+    })
+
+    for (const [colorKey, panels] of Object.entries(panelsByColor)) {
+      const color = colorKey as ShelfColor
+      const panelCount = panels.length
+      const packs = Math.ceil(panelCount / 2)
+      const deliveredPanels = packs * 2
+
+      const width = panels[0]?.width || 75
+      let product: Product | undefined
+
+      if (config.material === "metal") {
+        product = metallboeden.find((p) => p.width === width && p.color?.toLowerCase() === color.toLowerCase())
+      } else if (config.material === "glass") {
+        product = glasboeden.find((p) => p.width === width && p.color?.toLowerCase() === color.toLowerCase())
+      }
+
+      if (product) {
+        addItem(product, packs, color)
+      }
+    }
+
+    const frontModuleTypes = ["mit-tueren", "mit-klapptuer", "mit-doppelschublade", "abschliessbare-tueren"]
+    const frontsByColorAndType: Record<string, { color: ShelfColor; type: string; count: number; width: 75 | 38 }> = {}
+
+    filledCells.forEach((cell) => {
+      if (frontModuleTypes.includes(cell.type)) {
+        const cellId = `c-${cell.row}-${cell.col}`
+        const frontColor = getFrontColor(cellId)
+        const width = config.columnWidths[cell.col] || 75
+        const key = `${cell.type}-${frontColor}-${width}`
+
+        if (!frontsByColorAndType[key]) {
+          frontsByColorAndType[key] = { color: frontColor, type: cell.type, count: 0, width }
+        }
+        frontsByColorAndType[key].count++
+      }
+    })
+
+    for (const [_, data] of Object.entries(frontsByColorAndType)) {
+      const product = schubladenTueren.find(
+        (p) =>
+          p.moduleType === data.type && p.width === data.width && p.color?.toLowerCase() === data.color.toLowerCase(),
+      )
+
+      if (product) {
+        addItem(product, data.count, data.color)
+      }
+    }
+
+    const ladderHeightsNeeded: number[] = []
+
+    const columnGroups: number[][] = []
+    let currentGroup: number[] = []
+
+    const usedColIndices = Array.from(new Set(filledCells.map((cell) => cell.col)).values()).sort((a, b) => a - b)
+
+    usedColIndices.forEach((col, idx) => {
+      if (idx === 0) {
+        currentGroup.push(col)
+      } else {
+        const prevCol = usedColIndices[idx - 1]
+        if (col === prevCol + 1) {
+          currentGroup.push(col)
+        } else {
+          columnGroups.push(currentGroup)
+          currentGroup = [col]
+        }
+      }
+    })
+    if (currentGroup.length > 0) {
+      columnGroups.push(currentGroup)
+    }
+
+    columnGroups.forEach((group) => {
+      for (let i = 0; i <= group.length; i++) {
+        let ladderHeight: number
+
+        if (i === 0) {
+          ladderHeight = config.rowHeights[group[0]] || 0
+        } else if (i === group.length) {
+          ladderHeight = config.rowHeights[group[group.length - 1]] || 0
+        } else {
+          const leftColHeight = config.rowHeights[group[i - 1]] || 0
+          const rightColHeight = config.rowHeights[group[i]] || 0
+          ladderHeight = Math.max(leftColHeight, rightColHeight)
+        }
+
+        ladderHeightsNeeded.push(ladderHeight)
+      }
+    })
+
+    const ladderSizeCounts: Map<number, number> = new Map()
+
+    ladderHeightsNeeded.forEach((heightCm) => {
+      let leiterSize = 40
+      if (heightCm > 160) leiterSize = 200
+      else if (heightCm > 120) leiterSize = 160
+      else if (heightCm > 80) leiterSize = 120
+      else if (heightCm > 40) leiterSize = 80
+
+      const current = ladderSizeCounts.get(leiterSize) || 0
+      ladderSizeCounts.set(leiterSize, current + 1)
+    })
+
+    ladderSizeCounts.forEach((count, size) => {
+      const leiterProduct = leitern.find((l) => l.size === size)
+      if (leiterProduct) {
+        addItem(leiterProduct, count)
+      }
+    })
+
+    let tube80Levels = 0
+    let tube40Levels = 0
+
+    usedColIndices.forEach((colIdx) => {
+      const cells = filledCells.filter((cell) => cell.col === colIdx)
+      if (cells.length === 0) return
+
+      const numCells = cells.length
+      const tubesNeeded = numCells + 1
+
+      if (config.columnWidths[colIdx] === 75) {
+        tube80Levels += tubesNeeded
+      } else {
+        tube40Levels += tubesNeeded
+      }
+    })
+
+    const stange80 = stangensets.find((s) => s.size === 80 && s.variant === "metall")
+    const stange40 = stangensets.find((s) => s.size === 40 && s.variant === "metall")
+
+    if (stange80 && tube80Levels > 0) addItem(stange80, tube80Levels)
+    if (stange40 && tube40Levels > 0) addItem(stange40, tube40Levels)
+
+    const shelfCounts: Map<string, { product: Product; needed: number }> = new Map()
+
+    const cellsByRow: Map<number, typeof filledCells> = new Map()
+    filledCells.forEach((cell) => {
+      const existing = cellsByRow.get(cell.row) || []
+      existing.push(cell)
+      cellsByRow.set(cell.row, existing)
+    })
+
+    const sidewallCounts: Map<string, { product: Product; needed: number }> = new Map()
+
+    cellsByRow.forEach((rowCells, rowIdx) => {
+      const sortedCells = rowCells.sort((a, b) => a.col - b.col)
+
+      let currentBlock: typeof filledCells = []
+      const blocks: (typeof filledCells)[] = []
+
+      sortedCells.forEach((cell, idx) => {
+        if (
+          ["mit-rueckwand", "mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-doppelschublade"].includes(
+            cell.type,
+          )
+        ) {
+          if (currentBlock.length === 0) {
+            currentBlock.push(cell)
+          } else {
+            const lastCell = currentBlock[currentBlock.length - 1]
+            if (cell.col === lastCell.col + 1) {
+              currentBlock.push(cell)
+            } else {
+              blocks.push(currentBlock)
+              currentBlock = [cell]
+            }
+          }
+        } else {
+          if (currentBlock.length > 0) {
+            blocks.push(currentBlock)
+            currentBlock = []
+          }
+        }
+      })
+      if (currentBlock.length > 0) {
+        blocks.push(currentBlock)
+      }
+
+      blocks.forEach((block) => {
+        const n = block.length
+        const sidewallsNeeded = n + 1
+
+        const representativeCell = block[0]
+        const cellColor = representativeCell.color || config.color
+        const cellMaterial = representativeCell.material || config.material
+        const productColor = colorMap[cellColor] || "weiss"
+        const bodenSize = config.columnWidths[representativeCell.col] === 38 ? 38 : 80
+
+        let sidewallProduct: Product | undefined
+
+        if (cellMaterial === "metal") {
+          sidewallProduct =
+            metallboeden.find((p) => p.size === bodenSize && p.color === productColor) ||
+            metallboeden.find((p) => p.size === bodenSize)
+        } else if (cellMaterial === "glass") {
+          const glassColor = productColor === "schwarz" ? "schwarz" : undefined
+          sidewallProduct = glasboeden.find(
+            (p) => p.size === bodenSize && (glassColor ? p.color === glassColor : p.variant === "satiniert"),
+          )
+        } else {
+          sidewallProduct = holzboeden.find((p) => p.size === bodenSize)
+        }
+
+        if (sidewallProduct) {
+          const key = `sidewall-${sidewallProduct.artNr}`
+          const existing = sidewallCounts.get(key)
+          if (existing) {
+            existing.needed += sidewallsNeeded
+          } else {
+            sidewallCounts.set(key, { product: sidewallProduct, needed: sidewallsNeeded })
+          }
+        }
+      })
+    })
+
+    sidewallCounts.forEach(({ product, needed }, key) => {
+      const packsNeeded = Math.ceil(needed / 2)
+      const delivered = packsNeeded * 2
+
+      const sidewallProduct: Product = {
+        ...product,
+        artNr: `sw-${product.artNr}`,
+        name: `Seitenwand ${product.name}`,
+      }
+      addItem(sidewallProduct, needed)
+    })
+
+    filledCells.forEach((cell) => {
+      const colIndex = cell.col
+      const bodenSize = config.columnWidths[colIndex] === 38 ? 38 : 80
+
+      const cellColor = cell.color || config.color
+      const cellMaterial = cell.material || config.material
+      const productColor = colorMap[cellColor] || "weiss"
+
+      let shelfProduct: (typeof metallboeden)[0] | (typeof glasboeden)[0] | (typeof holzboeden)[0] | undefined
+
+      if (cellMaterial === "metal") {
+        shelfProduct =
+          metallboeden.find((p) => p.size === bodenSize && p.color === productColor) ||
+          metallboeden.find((p) => p.size === bodenSize)
+      } else if (cellMaterial === "glass") {
+        const glassColor = productColor === "schwarz" ? "schwarz" : undefined
+        shelfProduct = glasboeden.find(
+          (p) => p.size === bodenSize && (glassColor ? p.color === glassColor : p.variant === "satiniert"),
+        )
+      } else {
+        shelfProduct = holzboeden.find((p) => p.size === bodenSize)
+      }
+
+      if (shelfProduct) {
+        const key = shelfProduct.artNr
+        const existing = shelfCounts.get(key)
+        if (existing) {
+          existing.needed += 1
+        } else {
+          shelfCounts.set(key, { product: shelfProduct, needed: 1 })
+        }
+      }
+
+      switch (cell.type) {
+        case "mit-rueckwand": {
+          const backPanel =
+            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
+            funktionswaende.find((p) => p.variant === "1-seitig")
+          if (backPanel) addItem(backPanel, 1)
+          break
+        }
+        case "mit-tueren":
+        case "abschliessbare-tueren": {
+          const door =
+            schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
+            schubladenTueren.find((p) => p.category === "tuer")
+          if (door) addItem(door, 2)
+          break
+        }
+        case "mit-klapptuer": {
+          const door =
+            schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
+            schubladenTueren.find((p) => p.category === "tuer")
+          if (door) addItem(door, 1)
+          break
+        }
+        case "mit-doppelschublade": {
+          const drawer =
+            schubladenTueren.find((p) => p.category === "schublade" && p.color === "weiss") ||
+            schubladenTueren.find((p) => p.category === "schublade")
+          if (drawer) addItem(drawer, 1)
+          break
+        }
+      }
+    })
+
+    shelfCounts.forEach(({ product, needed }) => {
+      const packsNeeded = Math.ceil(needed / 2)
+      const delivered = packsNeeded * 2
+      addItem(product, packsNeeded)
+    })
+
+    return { shoppingList: items, totalPrice: items.reduce((sum, item) => sum + item.totalPrice, 0) }
+  }, [config, getPanelColor, getFrontColor])
+
+  const priceFormatted = totalPrice.toFixed(2).replace(".", ",")
+
   return (
-    <div className="flex h-screen flex-col bg-muted/30 lg:flex-row">
-      {/* Mobile cart toggle only */}
-      {isMobile && <LiveCart config={config} isOpen={isCartOpen} onToggle={() => setIsCartOpen(!isCartOpen)} />}
+    <div className="flex h-full w-full flex-col bg-neutral-950">
+      <ConfiguratorHeader />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex-1">
+          <Canvas shadows camera={{ position: [2, 1.5, 3], fov: 45 }} className="h-full w-full">
+            <color attach="background" args={["#1a1a1a"]} />
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} />
+            <directionalLight position={[-3, 3, -3]} intensity={0.4} />
+            <ShelfScene
+              config={config}
+              selectedTool={selectedTool}
+              hoveredCell={hoveredCell}
+              onCellClick={handleCellClick3D}
+              onCellHover={setHoveredCell}
+              paintMode={paintMode}
+            />
+            <ContactShadows position={[0, -0.01, 0]} opacity={0.6} scale={10} blur={2} far={4} />
+            <Environment preset="apartment" />
+            <OrbitControls
+              makeDefault
+              minPolarAngle={0.2}
+              maxPolarAngle={Math.PI / 2.2}
+              minDistance={1.5}
+              maxDistance={8}
+            />
+          </Canvas>
 
-      <div
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 w-[320px] bg-[#0a0a0a] border-r border-border/30 flex-col overflow-y-auto",
-          "hidden lg:flex",
-        )}
-      >
-        {selectedCell && selectedCellData && (
-          <div className="p-4 space-y-3 border-t border-[#00b4d8]/30 bg-[#00b4d8]/5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[#00b4d8]">
-                Zelle R{selectedCell.stackIndex + 1}C{selectedCell.col + 1}
-              </h3>
-              <button
-                onClick={() => {
-                  setSelectedCell(null)
-                  setEditMode("global")
-                }}
-                className="h-6 w-6 rounded flex items-center justify-center hover:bg-[#1a1a1a] transition-colors"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
-
-            <p className="text-xs text-muted-foreground/80">Bearbeiten Sie diese einzelne Zelle</p>
-
-            {/* Cell Module Type */}
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground">Modul-Typ</span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {availableModuleTypes.map((module) => (
-                  <button
-                    key={module.id}
-                    onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, module.id)}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
-                      selectedCellData.type === module.id
-                        ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
-                        : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
-                    )}
-                  >
-                    <module.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">{module.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Cell Color */}
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground">Zellen-Farbe</span>
-              <div className="flex gap-1.5 flex-wrap">
-                {[...baseColors, ...specialColorOptions].map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
-                    className={cn(
-                      "w-8 h-8 rounded-lg border-2 transition-all",
-                      selectedCellData.color === c.id
-                        ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                        : "border-border/50 hover:border-border",
-                    )}
-                    style={{ backgroundColor: c.hex }}
-                    title={c.label}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Clear Cell Button */}
-            <button
-              onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
-              className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400 transition-all"
-            >
-              <Eraser className="h-4 w-4" />
-              <span className="text-xs">Zelle leeren</span>
-            </button>
-          </div>
-        )}
-
-        <div className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            Standard-Farbe <span className="text-xs text-muted-foreground font-normal">(alle Zellen)</span>
-          </h3>
-          <div className="flex gap-2 flex-wrap">
-            {baseColors.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handleColorChange(c.id)}
-                className={cn(
-                  "w-12 h-12 rounded-lg border-2 transition-all",
-                  config.accentColor === c.id
-                    ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                    : "border-border/50 hover:border-border",
-                )}
-                style={{ backgroundColor: c.hex }}
-                title={c.label}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
-          <div className="flex gap-2 flex-wrap">
-            {specialColorOptions.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)}
-                className={cn(
-                  "w-12 h-12 rounded-lg border-2 transition-all",
-                  // Only highlight if the cell is selected and matches the color
-                  selectedCell && selectedCellData?.color === c.id
-                    ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                    : "border-border/50 hover:border-border",
-                )}
-                style={{ backgroundColor: c.hex }}
-                title={c.label}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Bodenmaterial Section */}
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">Bodenmaterial</h3>
-          <div className="flex gap-2">
-            {materialOptions.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => handleMaterialChange(m.id)}
-                className={cn(
-                  "flex-1 py-2.5 text-sm rounded-lg border transition-all",
-                  config.material === m.id
-                    ? "bg-transparent border-[#00b4d8] text-[#00b4d8] font-medium"
-                    : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Regal-Größe</h3>
-            <span className="text-xs text-muted-foreground">
-              {totalWidth} × {totalHeight} cm
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-muted-foreground">Reihen</span>
-              <button
-                onClick={handleRemoveRow}
-                disabled={rowCount <= 1}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-base font-bold w-5 text-center">{rowCount}</span>
-              <button
-                onClick={handleAddRow}
-                disabled={rowCount >= 6}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-muted-foreground">Spalten</span>
-              <button
-                onClick={handleRemoveColumn}
-                disabled={colCount <= 1}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-base font-bold w-5 text-center">{colCount}</span>
-              <button
-                onClick={handleAddColumn}
-                disabled={colCount >= 6}
-                className="h-8 w-8 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30 hover:bg-[#252525] transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <span className="text-xs text-muted-foreground">Spaltenbreiten (klicken zum Ändern)</span>
-            <div className="flex gap-2">
-              {config.columns.map((col, idx) => (
-                <div key={idx} className="relative">
-                  <button
-                    onClick={() => setExpandedWidthSelector(expandedWidthSelector === idx ? null : idx)}
-                    className={cn(
-                      "px-3 py-1.5 text-xs rounded-lg border transition-all",
-                      col.width === 75
-                        ? "bg-[#00b4d8]/10 border-[#00b4d8]/50 text-[#00b4d8]"
-                        : "bg-[#1a1a1a] border-border/50 text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {col.width}cm
-                  </button>
-                  {expandedWidthSelector === idx && (
-                    <div className="absolute top-full left-0 mt-1 bg-[#1a1a1a] border border-border/50 rounded-lg shadow-lg z-10 overflow-hidden">
-                      <button
-                        onClick={() => handleColumnWidthChange(idx, 38)}
-                        className={cn(
-                          "w-full px-4 py-2 text-xs text-left hover:bg-[#252525] transition-colors",
-                          col.width === 38 && "text-[#00b4d8]",
-                        )}
-                      >
-                        38 cm
-                      </button>
-                      <button
-                        onClick={() => handleColumnWidthChange(idx, 75)}
-                        className={cn(
-                          "w-full px-4 py-2 text-xs text-left hover:bg-[#252525] transition-colors",
-                          col.width === 75 && "text-[#00b4d8]",
-                        )}
-                      >
-                        75 cm
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Simpli-Elemente Section */}
-        <div className="p-4 space-y-3 border-t border-border/20">
-          <h3 className="text-sm font-semibold text-foreground">
-            Simpli-Elemente <span className="text-muted-foreground font-normal">(Klicken oder Ziehen)</span>
-          </h3>
-
-          {/* Eraser Tool */}
-          <button
-            onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
-            className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
-              selectedTool === "empty"
-                ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
-                : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
-            )}
-          >
-            <Eraser className="h-5 w-5" />
-            <span className="text-sm">Radierer (Zelle leeren)</span>
-          </button>
-
-          {/* Module Grid - 2 columns */}
-          <div className="grid grid-cols-2 gap-2">
-            {availableModuleTypes.map((module) => (
-              <button
-                key={module.id}
-                onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
-                className={cn(
-                  "relative flex flex-col items-center justify-center gap-2 p-3 rounded-lg border transition-all min-h-[90px]",
-                  selectedTool === module.id
-                    ? "border-[#00b4d8] bg-[#00b4d8]/10"
-                    : "border-border/30 bg-[#1a1a1a] hover:border-border",
-                )}
-              >
-                <ModulePreviewIcon type={module.id} isSelected={selectedTool === module.id} />
-                <span
-                  className={cn(
-                    "text-xs text-center leading-tight",
-                    selectedTool === module.id ? "text-[#00b4d8]" : "text-muted-foreground",
-                  )}
-                >
-                  {module.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Toolbar at bottom */}
-        <div className="mt-auto p-4 border-t border-border/20">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={undo}
-                disabled={!canUndo}
-                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <Undo2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={redo}
-                disabled={!canRedo}
-                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <Redo2 className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="absolute right-4 top-4 flex gap-2">
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={reset}
-              className="h-9 px-3 text-muted-foreground hover:text-destructive"
+              variant="outline"
+              size="icon"
+              onClick={undo}
+              disabled={!canUndo}
+              className="bg-black/70 border-neutral-700 hover:bg-black/90 disabled:opacity-30"
+              title="Rückgängig (Undo)"
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Zurücksetzen
+              <Undo2 className="h-5 w-5 text-white" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={redo}
+              disabled={!canRedo}
+              className="bg-black/70 border-neutral-700 hover:bg-black/90 disabled:opacity-30"
+              title="Wiederholen (Redo)"
+            >
+              <Redo2 className="h-5 w-5 text-white" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={reset}
+              className="bg-black/70 border-neutral-700 hover:bg-black/90 hover:border-red-500"
+              title="Zurücksetzen (Reset)"
+            >
+              <RotateCcw className="h-5 w-5 text-white" />
             </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Main 3D Viewer Area */}
-      <div className="flex-1 relative lg:ml-[320px]">
-        {/* Desktop cart */}
-        {!isMobile && <LiveCart config={config} isOpen={isCartOpen} onToggle={() => setIsCartOpen(!isCartOpen)} />}
-
-        <Canvas
-          camera={{ position: [2, 1.5, 2], fov: 45 }}
-          shadows
-          className="w-full h-full"
-          gl={{ antialias: true, alpha: true }}
-        >
-          <color attach="background" args={["#1a1a1a"]} />
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
-          <directionalLight position={[-3, 4, -3]} intensity={0.4} />
-
-          <ShelfScene
-            config={configWithDefaults}
-            selectedTool={selectedTool}
-            hoveredCell={hoveredCell}
-            selectedCell={selectedCell}
-            onCellClick={handleCellClick}
-            onCellHover={setHoveredCell}
-            onCellSelect={handleCellSelect}
-            onExpandLeft={handleExpandLeft}
-            onExpandRight={handleExpandRight}
-            onExpandUp={handleExpandUp}
-          />
-
-          <OrbitControls
-            enablePan={true}
-            enableZoom={true}
-            enableRotate={true}
-            minDistance={0.5}
-            maxDistance={10}
-            minPolarAngle={0}
-            maxPolarAngle={Math.PI / 2}
-          />
-          <Environment preset="studio" />
-        </Canvas>
-
-        {/* Mobile toggle button */}
-        {isMobile && (
-          <button
-            onClick={() => setShowMobilePanel(true)}
-            className="fixed bottom-4 left-4 z-30 bg-[#00b4d8] text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2"
-          >
-            <Package className="h-5 w-5" />
-            <span className="font-medium">Konfigurator</span>
-          </button>
-        )}
-
-        {/* Mobile Panel Overlay */}
-        {isMobile && showMobilePanel && (
-          <div className="fixed inset-0 z-50 bg-[#0a0a0a] overflow-y-auto">
-            <div className="sticky top-0 z-10 bg-[#0a0a0a] border-b border-border/30 p-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Konfigurator</h2>
-              <button onClick={() => setShowMobilePanel(false)} className="p-2 hover:bg-[#1a1a1a] rounded-lg">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Mobile panel content - same as desktop */}
-            <div className="p-4 space-y-6">
-              {selectedCell && selectedCellData && (
-                <div className="p-4 space-y-3 border-t border-[#00b4d8]/30 bg-[#00b4d8]/5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-[#00b4d8]">
-                      Zelle R{selectedCell.stackIndex + 1}C{selectedCell.col + 1}
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setSelectedCell(null)
-                        setEditMode("global")
-                      }}
-                      className="h-6 w-6 rounded flex items-center justify-center hover:bg-[#1a1a1a] transition-colors"
-                    >
-                      <X className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground/80">Bearbeiten Sie diese einzelne Zelle</p>
-
-                  {/* Cell Module Type */}
-                  <div className="space-y-2">
-                    <span className="text-xs text-muted-foreground">Modul-Typ</span>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {availableModuleTypes.map((module) => (
-                        <button
-                          key={module.id}
-                          onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, module.id)}
-                          className={cn(
-                            "flex items-center gap-2 p-2 rounded-lg border text-xs transition-all",
-                            selectedCellData.type === module.id
-                              ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
-                              : "border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-border hover:text-foreground",
-                          )}
-                        >
-                          <module.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate">{module.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Cell Color */}
-                  <div className="space-y-2">
-                    <span className="text-xs text-muted-foreground">Zellen-Farbe</span>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {[...baseColors, ...specialColorOptions].map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => handleCellColorChange(selectedCell.col, selectedCell.stackIndex, c.id)}
-                          className={cn(
-                            "w-8 h-8 rounded-lg border-2 transition-all",
-                            selectedCellData.color === c.id
-                              ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                              : "border-border/50 hover:border-border",
-                          )}
-                          style={{ backgroundColor: c.hex }}
-                          title={c.label}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Clear Cell Button */}
-                  <button
-                    onClick={() => handleCellTypeChange(selectedCell.col, selectedCell.stackIndex, "empty")}
-                    className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-border/30 bg-[#1a1a1a] text-muted-foreground hover:border-red-500/50 hover:text-red-400 transition-all"
-                  >
-                    <Eraser className="h-4 w-4" />
-                    <span className="text-xs">Zelle leeren</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Standard Farbe Section - rename from just "Farbe" */}
-              <div className="p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Standard-Farbe <span className="text-xs text-muted-foreground font-normal">(alle Zellen)</span>
-                </h3>
-                <div className="flex gap-2 flex-wrap">
-                  {baseColors.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleColorChange(c.id)}
-                      className={cn(
-                        "w-12 h-12 rounded-lg border-2 transition-all",
-                        config.accentColor === c.id
-                          ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                          : "border-border/50 hover:border-border",
-                      )}
-                      style={{ backgroundColor: c.hex }}
-                      title={c.label}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Sonderfarbe */}
-              <div className="p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Zellenfarbe</h3>
-                <div className="flex gap-2 flex-wrap">
-                  {specialColorOptions.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() =>
-                        handleCellColorChange(selectedCell?.col ?? -1, selectedCell?.stackIndex ?? -1, c.id)
-                      }
-                      className={cn(
-                        "w-12 h-12 rounded-lg border-2 transition-all",
-                        selectedCell && selectedCellData?.color === c.id
-                          ? "border-[#00b4d8] ring-2 ring-[#00b4d8]/30"
-                          : "border-border/50 hover:border-border",
-                      )}
-                      style={{ backgroundColor: c.hex }}
-                      title={c.label}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Bodenmaterial */}
-              <div className="p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Bodenmaterial</h3>
-                <div className="flex gap-2">
-                  {materialOptions.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => handleMaterialChange(m.id)}
-                      className={cn(
-                        "flex-1 py-2.5 text-sm rounded-lg border transition-all",
-                        config.material === m.id
-                          ? "bg-transparent border-[#00b4d8] text-[#00b4d8] font-medium"
-                          : "bg-transparent border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
-                      )}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Regal-Größe */}
-              <div className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-foreground">Regal-Größe</h3>
-                  <span className="text-xs text-muted-foreground">
-                    {totalWidth} × {totalHeight} cm
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm text-muted-foreground">Reihen</span>
-                    <button
-                      onClick={handleRemoveRow}
-                      disabled={rowCount <= 1}
-                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="text-lg font-bold w-6 text-center">{rowCount}</span>
-                    <button
-                      onClick={handleAddRow}
-                      disabled={rowCount >= 6}
-                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm text-muted-foreground">Spalten</span>
-                    <button
-                      onClick={handleRemoveColumn}
-                      disabled={colCount <= 1}
-                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="text-lg font-bold w-6 text-center">{colCount}</span>
-                    <button
-                      onClick={handleAddColumn}
-                      disabled={colCount >= 6}
-                      className="h-10 w-10 rounded-lg bg-[#1a1a1a] border border-border/30 flex items-center justify-center disabled:opacity-30"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Simpli-Elemente */}
-              <div className="p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Simpli-Elemente</h3>
-                <button
-                  onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
-                    selectedTool === "empty"
-                      ? "border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]"
-                      : "border-border/30 bg-[#1a1a1a] text-muted-foreground",
-                  )}
-                >
-                  <Eraser className="h-5 w-5" />
-                  <span className="text-sm">Radierer</span>
-                </button>
-                <div className="grid grid-cols-2 gap-2">
-                  {availableModuleTypes.map((module) => (
-                    <button
-                      key={module.id}
-                      onClick={() => {
-                        onSelectTool(selectedTool === module.id ? null : module.id)
-                        setShowMobilePanel(false)
-                      }}
-                      className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all",
-                        selectedTool === module.id
-                          ? "border-[#00b4d8] bg-[#00b4d8]/10"
-                          : "border-border/30 bg-[#1a1a1a]",
-                      )}
-                    >
-                      <ModulePreviewIcon type={module.id} isSelected={selectedTool === module.id} />
-                      <span
-                        className={cn(
-                          "text-xs text-center",
-                          selectedTool === module.id ? "text-[#00b4d8]" : "text-muted-foreground",
-                        )}
-                      >
-                        {module.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg bg-black/70 px-4 py-2 text-sm text-neutral-300">
+            {selectedTool ? (
+              <span>
+                Ausgewählt:{" "}
+                <span className="font-semibold text-blue-400">
+                  {selectedTool === "empty" ? "Radierer" : getToolLabel(selectedTool)}
+                </span>{" "}
+                | Klicke auf Zellen im 3D-Regal
+              </span>
+            ) : (
+              "Wähle ein Modul aus der rechten Seite"
+            )}
           </div>
-        )}
+
+          {selectedTool && selectedTool !== "empty" && (
+            <div className="absolute left-4 top-4 rounded-lg bg-black/70 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-6 w-6 rounded"
+                  style={{
+                    backgroundColor: config.finish !== "none" ? getColorHex(config.finish) : getColorHex("white"),
+                  }}
+                />
+                <span className="text-sm text-white">{getToolLabel(selectedTool)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <ConfiguratorPanel
+          config={config}
+          onUpdateConfig={updateConfig}
+          selectedTool={selectedTool}
+          onSelectTool={setSelectedTool}
+          onPlaceModule={placeModule}
+          onClearCell={clearCell}
+          onResizeGrid={resizeGrid}
+          onSetColumnWidth={setColumnWidth}
+          onSetRowHeight={setRowHeight}
+          selectedCell={selectedCell}
+          paintMode={paintMode}
+          onPaintModeChange={setPaintMode}
+          activeColor={activeColor}
+          onActiveColorChange={setActiveColor}
+          onApplyColorToRow={applyColorToRow}
+          onApplyColorToColumn={applyColorToColumn}
+          onApplyColorToAll={applyColorToAll}
+          onClearPanelColor={clearPanelColor}
+          onClearFrontColor={clearFrontColor}
+          shoppingList={shoppingList}
+          price={priceFormatted}
+          showShoppingList={showShoppingList}
+          onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
+        />
       </div>
     </div>
   )
+}
+
+function getToolLabel(tool: string): string {
+  const labels: Record<string, string> = {
+    empty: "Leer",
+    ghost: "Geisterzelle",
+    "ohne-seitenwaende": "Offenes Fach",
+    "ohne-rueckwand": "Ohne Rückwand",
+    "mit-rueckwand": "Mit Rückwand",
+    "mit-tueren": "Mit Türen",
+    "mit-klapptuer": "Mit Klapptür",
+    "mit-doppelschublade": "Mit Schubladen",
+    "abschliessbare-tueren": "Abschließbar",
+  }
+  return labels[tool] || tool
+}
+
+function getColorHex(color: string): string {
+  const colors: Record<string, string> = {
+    white: "#FFFFFF",
+    black: "#000000",
+    blue: "#00A0D6",
+    green: "#228B22",
+    yellow: "#FFFF00",
+    orange: "#FF8C00",
+    red: "#DC143C",
+    satin: "#F0F8FF",
+  }
+  return colors[color] || "#FFFFFF"
 }

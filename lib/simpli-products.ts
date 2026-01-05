@@ -12,7 +12,7 @@ export type ProductCategory =
   | "funktionswand"
   | "led"
 
-export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb" | "grau"
+export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "lila" | "gruen" | "gelb"
 
 export interface Product {
   artNr: string
@@ -82,12 +82,10 @@ export const metallboeden: Product[] = [
   },
   { artNr: "sim008-rt", name: "Metallboden Rot 40", category: "metallboden", size: 40, price: 19.5, color: "rot" },
   { artNr: "sim009-rt", name: "Metallboden Rot 80", category: "metallboden", size: 80, price: 33.5, color: "rot" },
+  { artNr: "sim008-li", name: "Metallboden Lila 40", category: "metallboden", size: 40, price: 19.5, color: "lila" },
+  { artNr: "sim009-li", name: "Metallboden Lila 80", category: "metallboden", size: 80, price: 33.5, color: "lila" },
   { artNr: "sim008-gr", name: "Metallboden Grün 40", category: "metallboden", size: 40, price: 19.5, color: "gruen" },
   { artNr: "sim009-gr", name: "Metallboden Grün 80", category: "metallboden", size: 80, price: 33.5, color: "gruen" },
-  { artNr: "sim008-ge", name: "Metallboden Gelb 40", category: "metallboden", size: 40, price: 19.5, color: "gelb" },
-  { artNr: "sim009-ge", name: "Metallboden Gelb 80", category: "metallboden", size: 80, price: 33.5, color: "gelb" },
-  { artNr: "sim008-grau", name: "Metallboden Grau 40", category: "metallboden", size: 40, price: 19.5, color: "grau" },
-  { artNr: "sim009-grau", name: "Metallboden Grau 80", category: "metallboden", size: 80, price: 33.5, color: "grau" },
 ]
 
 // Glasböden (Glass shelves - 2 pieces per package)
@@ -203,7 +201,7 @@ export function getStangensetPrice(width: number, variant: "metall" | "glas" = "
   return stange?.price ?? 0
 }
 
-export function getMetallbodenPrice(width: number, color?: ShelfColor): number {
+export function getMetallbodenPrice(width: number): number {
   // All colors same price, just check by size
   return width === 40 ? 19.5 : width === 80 ? 33.5 : 0
 }
@@ -237,15 +235,15 @@ export function getLedPrice(stripes: 2 | 4): number {
 }
 
 // Color hex values for rendering
-export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar", string> = {
+export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar" | "gelb", string> = {
   schwarz: "#1a1a1a",
   weiss: "#f5f5f5",
   blau: "#00b4d8",
   orange: "#f97316",
   rot: "#dc2626",
+  lila: "#8b5cf6",
   gruen: "#228B22",
   gelb: "#eab308",
-  grau: "#6b7280",
   satiniert: "#e8e8e8",
   makassar: "#3d2817",
 }
