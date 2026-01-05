@@ -66,24 +66,27 @@ export const MODULE_TO_CODE: Record<SizeKey, Partial<Record<ModuleType, string>>
   },
 }
 
-// Track logged warnings to only log once per missing combination
-const loggedWarnings = new Set<string>()
+// These are known working URLs that bypass the folder structure
+export const DIRECT_URL_MAPPINGS: Record<string, string> = {
+  // Orange 80cm modules
+  "80x40x40-ohne-rueckwand-orange": `${GLB_BASE_URL}/ohne-rueckwand-orange80.glb?v=${Date.now()}`,
 
-export const LEGACY_URLS: Record<string, string> = {
-  // Known working URLs - frame80 works for ohne-seitenwaende
-  frame80: `${GLB_BASE_URL}/frame80.glb`,
-  "ohne-rueckwand-orange-80": `${GLB_BASE_URL}/ohne-rueckwand-orange80.glb?v=${Date.now()}`,
+  // Frame80 (ohne-seitenwaende) - legacy URL
+  "80x40x40-ohne-seitenwaende-white": `${GLB_BASE_URL}/frame80.glb`,
+  "80x40x40-ohne-seitenwaende-black": `${GLB_BASE_URL}/frame80.glb`,
+  "80x40x40-ohne-seitenwaende-gray": `${GLB_BASE_URL}/frame80.glb`,
+  "80x40x40-ohne-seitenwaende-blue": `${GLB_BASE_URL}/frame80.glb`,
+  "80x40x40-ohne-seitenwaende-green": `${GLB_BASE_URL}/frame80.glb`,
+  "80x40x40-ohne-seitenwaende-yellow": `${GLB_BASE_URL}/frame80.glb`,
+  "80x40x40-ohne-seitenwaende-orange": `${GLB_BASE_URL}/frame80.glb`,
+  "80x40x40-ohne-seitenwaende-red": `${GLB_BASE_URL}/frame80.glb`,
 }
 
-// Only these combinations are verified to exist
-const VERIFIED_NEW_URLS: Set<string> = new Set([
-  // Add verified URLs here as they become available
-  // Format: "color-size-moduleType"
-  "orange-80-ohne-rueckwand",
-])
+// Fallback module type if requested module is not available
+const FALLBACK_MODULE: ModuleType = "ohne-seitenwaende"
 
-const verifiedUrls = new Set<string>()
-const failedUrls = new Set<string>()
+// Track logged warnings to only log once per missing combination
+const loggedWarnings = new Set<string>()
 
 /**
  * Builds the GLB filename based on the new naming convention
@@ -113,19 +116,30 @@ export function buildFolderPath(args: {
   return `glbgrande/${color}${family}`
 }
 
-const FALLBACK_MODULE = "ohne-seitenwaende" // Declare the FALLBACK_MODULE variable
-
 /**
  * Main resolver function for GLB URLs
  * Returns the correct GLB URL based on size, moduleType, and color
  */
+export function resolveGlbUrl(args: {
+  size: SizeKey
+  moduleType: ModuleType
+  color: ColorKey
+}): { url: string; filename: string; code: string; isDirect?: boolean }
+
+export function resolveGlbUrl(args: {
+  width: WidthKey
+  height: HeightKey
+  moduleType: ModuleType
+  color: ColorKey
+}): { url: string; filename: string; variantCode: string; isDirect?: boolean }
+
 export function resolveGlbUrl(args: {
   size?: SizeKey
   width?: WidthKey
   height?: HeightKey
   moduleType: ModuleType
   color: ColorKey
-}): { url: string; filename: string; code?: string; variantCode?: string; isLegacy?: boolean } {
+}): { url: string; filename: string; code?: string; variantCode?: string; isDirect?: boolean } {
   // Determine size from width if not provided directly
   let size: SizeKey
   if (args.size) {
@@ -137,35 +151,24 @@ export function resolveGlbUrl(args: {
   }
 
   const { moduleType, color } = args
-  const family = size === "40x40x40" ? "40" : "80"
 
-  const legacyKey = `${moduleType}-${color}-${family}`
-  if (LEGACY_URLS[legacyKey]) {
+  const directKey = `${size}-${moduleType}-${color}`
+  if (DIRECT_URL_MAPPINGS[directKey]) {
+    const directUrl = DIRECT_URL_MAPPINGS[directKey]
+    const filename = directUrl.split("/").pop()?.split("?")[0] || "direct.glb"
+    console.log(`[v0] Using direct URL mapping for ${directKey}`)
     return {
-      url: LEGACY_URLS[legacyKey],
-      filename: `${moduleType}-${color}${family}.glb`,
-      code: "legacy",
-      variantCode: "legacy",
-      isLegacy: true,
+      url: directUrl,
+      filename,
+      code: MODULE_TO_CODE[size]?.[moduleType] || "1",
+      variantCode: MODULE_TO_CODE[size]?.[moduleType] || "1",
+      isDirect: true,
     }
   }
-
-  // This is the most common case and we know frame80.glb exists
-  if (moduleType === "ohne-seitenwaende" && size === "80x40x40") {
-    return {
-      url: LEGACY_URLS["frame80"],
-      filename: `frame80.glb`,
-      code: "2",
-      variantCode: "2",
-      isLegacy: true,
-    }
-  }
-
-  const verifyKey = `${color}-${family}-${moduleType}`
-  const useNewUrl = VERIFIED_NEW_URLS.has(verifyKey)
 
   // Get the code for this module type and size
   let code = MODULE_TO_CODE[size]?.[moduleType]
+  let usedFallback = false
 
   // Fallback handling if module type not found
   if (!code) {
@@ -176,29 +179,21 @@ export function resolveGlbUrl(args: {
       )
       loggedWarnings.add(warningKey)
     }
-    code = MODULE_TO_CODE[size]?.[FALLBACK_MODULE] || "1"
+    code = MODULE_TO_CODE[size]?.[FALLBACK_MODULE] || "2"
+    usedFallback = true
   }
 
-  if (!useNewUrl) {
-    // For ohne-rueckwand with orange, use the known working URL
-    if (moduleType === "ohne-rueckwand" && color === "orange" && size === "80x40x40") {
+  if (usedFallback) {
+    const fallbackKey = `${size}-${FALLBACK_MODULE}-${color}`
+    if (DIRECT_URL_MAPPINGS[fallbackKey]) {
+      const directUrl = DIRECT_URL_MAPPINGS[fallbackKey]
+      const filename = directUrl.split("/").pop()?.split("?")[0] || "fallback.glb"
       return {
-        url: LEGACY_URLS["ohne-rueckwand-orange-80"],
-        filename: `ohne-rueckwand-orange80.glb`,
-        code: "1",
-        variantCode: "1",
-        isLegacy: true,
-      }
-    }
-
-    // For other cases, fallback to frame80 for 80cm modules
-    if (size === "80x40x40") {
-      return {
-        url: LEGACY_URLS["frame80"],
-        filename: `frame80.glb`,
-        code: code,
+        url: directUrl,
+        filename,
+        code,
         variantCode: code,
-        isLegacy: true,
+        isDirect: true,
       }
     }
   }
@@ -212,7 +207,7 @@ export function resolveGlbUrl(args: {
     filename,
     code,
     variantCode: code,
-    isLegacy: false,
+    isDirect: false,
   }
 }
 
