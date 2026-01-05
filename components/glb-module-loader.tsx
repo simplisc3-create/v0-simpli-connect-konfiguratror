@@ -80,6 +80,8 @@ export const GLBModule = memo(function GLBModule({
   const [modelUrl, setModelUrl] = useState<string | null>(explicitModelUrl || null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [usingFallback, setUsingFallback] = useState(false)
+  const gltf = useGLTF(modelUrl)
 
   useEffect(() => {
     if (explicitModelUrl) {
@@ -91,13 +93,14 @@ export const GLBModule = memo(function GLBModule({
     const fetchBlobModels = async () => {
       try {
         setLoading(true)
+        setError(null)
+        setUsingFallback(false)
 
         const colorName = COLOR_MAP[color.toLowerCase()] || "white"
 
         const widthCm = Math.round(width * 100)
         const heightCm = Math.round(height * 100)
 
-        // Standard width is 40 or 80
         const standardWidth = widthCm <= 50 ? 40 : 80
 
         const params = new URLSearchParams({
@@ -120,6 +123,14 @@ export const GLBModule = memo(function GLBModule({
 
         if (data.url) {
           console.log(`[v0] Resolved GLB: ${data.filename} -> ${data.url}`)
+
+          if (data.isLegacy || data.warning) {
+            setUsingFallback(true)
+            if (data.warning) {
+              console.warn(`[v0] ${data.warning}`)
+            }
+          }
+
           setModelUrl(data.url)
         } else {
           console.warn("[v0] No model URL found for:", { cellType, standardWidth, heightCm, colorName })
@@ -143,6 +154,7 @@ export const GLBModule = memo(function GLBModule({
 
   return (
     <LoadedGLBModel
+      gltf={gltf}
       modelUrl={modelUrl}
       cellType={cellType}
       position={position}
@@ -153,11 +165,13 @@ export const GLBModule = memo(function GLBModule({
       row={row}
       col={col}
       gridConfig={gridConfig}
+      usingFallback={usingFallback}
     />
   )
 })
 
 function LoadedGLBModel({
+  gltf,
   modelUrl,
   cellType,
   position,
@@ -168,7 +182,9 @@ function LoadedGLBModel({
   row,
   col,
   gridConfig,
+  usingFallback,
 }: {
+  gltf: any
   modelUrl: string
   cellType: GridCell["type"]
   position: [number, number, number]
@@ -179,11 +195,10 @@ function LoadedGLBModel({
   row: number
   col: number
   gridConfig: ShelfConfig
+  usingFallback?: boolean
 }) {
-  const gltf = useGLTF(modelUrl)
-
-  const [clonedScene, setClonedScene] = useState<any>(null)
   const [loadError, setLoadError] = useState(false)
+  const [clonedScene, setClonedScene] = useState<any>(null)
   const [scaleFactor, setScaleFactor] = useState<[number, number, number]>([1, 1, 1])
   const [modelOffset, setModelOffset] = useState<[number, number, number]>([0, 0, 0])
   const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0])
@@ -204,21 +219,18 @@ function LoadedGLBModel({
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
-      // Center the model
       const offsetX = -center.x * scaleX
       const offsetY = -center.y * scaleY
       const offsetZ = -center.z * scaleZ
 
       setModelOffset([offsetX, offsetY, offsetZ])
 
-      // Set rotation based on cell type
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
       } else {
         setRotation([0, 0, 0])
       }
 
-      // Apply color to relevant meshes
       clone.traverse((child) => {
         if ((child as any).isMesh) {
           const mesh = child as any
