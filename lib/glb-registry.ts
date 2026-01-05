@@ -113,7 +113,7 @@ export function buildFolderPath(args: {
 }): string {
   const { size, color } = args
   const family = size === "40x40x40" ? "40" : "80"
-  return `glbgrande/${color}${family}`
+  return `${color}${family}`
 }
 
 /**
