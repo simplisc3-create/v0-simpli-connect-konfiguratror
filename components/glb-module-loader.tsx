@@ -35,6 +35,8 @@ export function GLBModule({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [stableColor] = useState(color)
+
   useEffect(() => {
     if (explicitModelUrl) {
       setModelUrl(explicitModelUrl)
@@ -62,7 +64,7 @@ export function GLBModule({
           "#ef4444": "red",
         }
 
-        const colorName = colorMap[color.toLowerCase()] || "white"
+        const colorName = colorMap[stableColor.toLowerCase()] || "white"
 
         const widthCm = Math.round(width * 100)
         const heightCm = Math.round(height * 100)
@@ -104,7 +106,7 @@ export function GLBModule({
     }
 
     fetchBlobModels()
-  }, [width, height, cellType, color, explicitModelUrl])
+  }, [width, height, cellType, stableColor, explicitModelUrl])
 
   if (cellType === "empty" || loading || !modelUrl || error) {
     return null
@@ -118,7 +120,7 @@ export function GLBModule({
       width={width}
       height={height}
       depth={depth}
-      color={color}
+      color={stableColor}
       row={row}
       col={col}
       gridConfig={gridConfig}
@@ -187,14 +189,12 @@ function LoadedGLBModel({
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
-      // The overlap is now handled at the grid level in shelf-scene.tsx
       const offsetX = -center.x * scaleX
       const offsetY = -center.y * scaleY
       const offsetZ = -center.z * scaleZ
 
       setModelOffset([offsetX, offsetY, offsetZ])
 
-      // ... existing code for rotation ...
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
       } else if (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) {
@@ -229,7 +229,7 @@ function LoadedGLBModel({
       console.error("[v0] Error processing GLB model:", error)
       setLoadError(true)
     }
-  }, [gltf?.scene, color, width, height, depth, loadError, row, col, gridConfig, cellType, modelUrl])
+  }, [gltf?.scene, color, width, height, depth, loadError, cellType, modelUrl])
 
   if (loadError || !clonedScene) {
     return null

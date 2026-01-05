@@ -97,16 +97,18 @@ function InteractiveCell({
 }
 
 export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onCellHover }: Props) {
+  const gridKey = useMemo(() => JSON.stringify(config.grid), [config.grid])
+
   const { glbModules, interactiveCells } = useMemo(() => {
     const glbs: JSX.Element[] = []
     const cells: JSX.Element[] = []
 
-    const fallbackColor = config.color
+    const fallbackColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
 
     const depth = 0.38
 
-    const columnTubeOverlap = 0.003 // horizontal overlap (left-right) - already perfect
-    const rowTubeOverlap = 0.013 // vertical overlap (up-down) - adjusted to reduce gap
+    const columnTubeOverlap = 0.003
+    const rowTubeOverlap = 0.013
 
     const columnCenters: number[] = []
     for (let col = 0; col < config.columns; col++) {
@@ -212,7 +214,7 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     })
 
     return { glbModules: glbs, interactiveCells: cells }
-  }, [config, selectedTool, hoveredCell, onCellClick, onCellHover])
+  }, [gridKey, selectedTool, hoveredCell, onCellClick, onCellHover, config])
 
   return (
     <group>
