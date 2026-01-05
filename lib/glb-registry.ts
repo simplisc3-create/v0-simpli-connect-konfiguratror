@@ -1,5 +1,5 @@
 // src/lib/glb/registry.ts
-export const GLB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
+export const GLB_BASE_URL = "/images"
 
 export type WidthKey = 40 | 80
 export type HeightKey = number
@@ -43,14 +43,14 @@ export const COLOR_KEYS: ColorKey[] = ["white", "gray", "black", "blue", "green"
 // ✅ DEINE MAPPINGS (editierbar in EINER Stelle)
 export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType, string>>> = {
   80: {
-    "ohne-rueckwand": "1-1",
-    "ohne-seitenwaende": "1-1", // Fixed: was 1-2, should be 1-1
-    "mit-seitenwaenden": "1-3",
-    "mit-klapptuer": "1-4",
-    "mit-doppelschublade": "1-5",
-    "mit-tueren": "1-6",
-    "abschliessbare-tueren": "1-7",
-    "mit-rueckwand": "1-8",
+    "ohne-seitenwaende": "1-1", // Open frame
+    "ohne-rueckwand": "1-2", // Without back panel
+    "mit-seitenwaenden": "1-3", // With side panels
+    "mit-klapptuer": "1-4", // With flap door
+    "mit-doppelschublade": "1-5", // With double drawer
+    "mit-tueren": "1-6", // With doors
+    "abschliessbare-tueren": "1-7", // Lockable doors
+    "mit-rueckwand": "1-8", // With back panel
   },
   40: {
     "ohne-rueckwand": "2-1",
@@ -63,8 +63,24 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
   },
 }
 
-export const SPECIAL_FRAME_URLS: Record<string, string> = {
-  "frame-80": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-1-white_optimized.glb",
+export const UPLOADED_MODELS: Record<string, string> = {
+  // White 80cm modules - using hebbkx1anhila5yf storage
+  "80x40x40-1-2-white_optimized.glb": "/images/80x40x40-1-2-white-optimized.glb",
+  "80x40x40-1-7-white_optimized.glb": "/images/80x40x40-1-7-white-optimized.glb",
+
+  // Using xo2a99j1qyph0ija storage for remaining variants
+  "80x40x40-1-1-white_optimized.glb":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-1-white_optimized.glb",
+  "80x40x40-1-3-white_optimized.glb":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-3-white_optimized.glb",
+  "80x40x40-1-4-white_optimized.glb":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-4-white_optimized.glb",
+  "80x40x40-1-5-white_optimized.glb":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-5-white_optimized.glb",
+  "80x40x40-1-6-white_optimized.glb":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-6-white_optimized.glb",
+  "80x40x40-1-8-white_optimized.glb":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/white80/80x40x40-1-8-white_optimized.glb",
 }
 
 export function buildGlbFilename(args: {
@@ -86,25 +102,31 @@ export function resolveGlbUrl(args: {
 }) {
   const { width, height, moduleType, color } = args
 
-  if (moduleType === "ohne-seitenwaende" && width === 80) {
-    const filename = `80x40x${height}-1-1-${color}_optimized.glb`
-    const url = `${GLB_BASE_URL}/${color}80/${filename}`
-    return {
-      url,
-      filename,
-      variantCode: "1-1",
-    }
-  }
-
   const variantCode = MODULE_TO_VARIANT_CODE[width]?.[moduleType]
 
   if (!variantCode) {
-    throw new Error(
-      `No variantCode mapping for width=${width} moduleType="${moduleType}". Check MODULE_TO_VARIANT_CODE.`,
-    )
+    console.warn(`No variantCode mapping for width=${width} moduleType="${moduleType}". Using fallback.`)
+    return {
+      url: "/images/80x40x40-1-7-white-optimized.glb",
+      filename: "80x40x40-1-7-white_optimized.glb",
+      variantCode: "1-7-fallback",
+    }
   }
 
   const filename = buildGlbFilename({ width, height, variantCode, color })
-  const url = `${GLB_BASE_URL}/${filename}`
-  return { url, filename, variantCode }
+
+  if (UPLOADED_MODELS[filename]) {
+    return {
+      url: UPLOADED_MODELS[filename],
+      filename,
+      variantCode,
+    }
+  }
+
+  console.warn(`No uploaded model found for ${filename}, using fallback`)
+  return {
+    url: "/images/80x40x40-1-7-white-optimized.glb",
+    filename: "80x40x40-1-7-white_optimized.glb",
+    variantCode: "1-7-fallback",
+  }
 }

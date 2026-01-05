@@ -89,15 +89,33 @@ export function GLBModule({
 
         if (data.url) {
           console.log(`[v0] Resolved GLB: ${data.filename}`)
-          setModelUrl(data.url)
+          if (data.url.startsWith("http://") || data.url.startsWith("https://")) {
+            setModelUrl(data.url)
+          } else {
+            // Local file - validate it exists
+            try {
+              const testResponse = await fetch(data.url, { method: "HEAD" })
+              const contentType = testResponse.headers.get("content-type")
+
+              if (testResponse.ok && (!contentType || !contentType.includes("text/html"))) {
+                setModelUrl(data.url)
+              } else {
+                console.warn("[v0] Model file not found or invalid, using fallback:", data.filename)
+                setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
+              }
+            } catch (fetchError) {
+              console.warn("[v0] Could not verify model file, using fallback:", fetchError)
+              setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
+            }
+          }
         } else {
           console.warn("[v0] No model URL found for:", { cellType, standardWidth, heightCm, colorName })
-          setError(`No model found for ${cellType}`)
+          setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Unknown error"
         console.error("[v0] Error fetching GLB model:", errorMsg)
-        setError(errorMsg)
+        setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
       } finally {
         setLoading(false)
       }
@@ -106,7 +124,7 @@ export function GLBModule({
     fetchBlobModels()
   }, [width, height, cellType, color, explicitModelUrl])
 
-  if (cellType === "empty" || loading || !modelUrl || error) {
+  if (cellType === "empty" || loading || !modelUrl) {
     return null
   }
 
@@ -167,23 +185,9 @@ function LoadedGLBModel({
       const size = box.getSize(new THREE.Vector3())
       const center = box.getCenter(new THREE.Vector3())
 
-      let scaleX = 1
-      let scaleY = 1
-      let scaleZ = 1
-
-      if (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) {
-        const frameBaseWidth = 0.8
-        const frameBaseHeight = 0.4
-        const frameBaseDepth = 0.38
-
-        scaleX = width / frameBaseWidth
-        scaleY = height / frameBaseHeight
-        scaleZ = depth / frameBaseDepth
-      } else {
-        scaleX = size.x > 0 ? width / size.x : 1
-        scaleY = size.y > 0 ? height / size.y : 1
-        scaleZ = size.z > 0 ? depth / size.z : 1
-      }
+      const scaleX = size.x > 0 ? width / size.x : 1
+      const scaleY = size.y > 0 ? height / size.y : 1
+      const scaleZ = size.z > 0 ? depth / size.z : 1
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
@@ -194,11 +198,8 @@ function LoadedGLBModel({
 
       setModelOffset([offsetX, offsetY, offsetZ])
 
-      // ... existing code for rotation ...
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
-      } else if (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) {
-        setRotation([0, -Math.PI / 2, 0])
       } else {
         setRotation([0, 0, 0])
       }
