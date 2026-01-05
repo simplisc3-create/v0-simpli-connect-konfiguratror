@@ -63,10 +63,6 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
   },
 }
 
-export const SPECIAL_FRAME_URLS: Record<string, string> = {
-  "frame-80": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/frame80.glb",
-}
-
 export function buildGlbFilename(args: {
   width: WidthKey
   height: HeightKey
@@ -89,24 +85,17 @@ export function resolveGlbUrl(args: {
 }) {
   const { width, height, moduleType, color } = args
 
-  // Special handling for frame80
-  if (moduleType === "ohne-seitenwaende" && width === 80) {
-    return {
-      url: SPECIAL_FRAME_URLS["frame-80"],
-      filename: "frame80.glb",
-      variantCode: "frame-80",
-    }
-  }
-
   const variantCode = MODULE_TO_VARIANT_CODE[width]?.[moduleType]
 
   if (!variantCode) {
-    console.warn(`[v0] No variantCode mapping for width=${width} moduleType="${moduleType}". Falling back to frame80.`)
-    return {
-      url: SPECIAL_FRAME_URLS["frame-80"],
-      filename: "frame80.glb",
-      variantCode: "frame-80",
-    }
+    console.warn(
+      `[v0] No variantCode mapping for width=${width} moduleType="${moduleType}". Falling back to ohne-seitenwaende.`,
+    )
+    const fallbackCode = MODULE_TO_VARIANT_CODE[width]?.["ohne-seitenwaende"] || "1-1"
+    const filename = buildGlbFilename({ width, height, variantCode: fallbackCode, color })
+    const folderPath = buildFolderPath(color, width)
+    const url = `${GLB_BASE_URL}/${folderPath}/${filename}`
+    return { url, filename, variantCode: fallbackCode }
   }
 
   const filename = buildGlbFilename({ width, height, variantCode, color })
