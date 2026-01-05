@@ -66,17 +66,21 @@ export const MODULE_TO_CODE: Record<SizeKey, Partial<Record<ModuleType, string>>
   },
 }
 
-// Fallback module type if requested module is not available
-const FALLBACK_MODULE: ModuleType = "ohne-rueckwand"
-
 // Track logged warnings to only log once per missing combination
 const loggedWarnings = new Set<string>()
 
 export const LEGACY_URLS: Record<string, string> = {
-  // Known working URLs - add more as they become available
+  // Known working URLs - frame80 works for ohne-seitenwaende
+  frame80: `${GLB_BASE_URL}/frame80.glb`,
   "ohne-rueckwand-orange-80": `${GLB_BASE_URL}/ohne-rueckwand-orange80.glb?v=${Date.now()}`,
-  "frame80-white": `${GLB_BASE_URL}/frame80.glb`,
 }
+
+// Only these combinations are verified to exist
+const VERIFIED_NEW_URLS: Set<string> = new Set([
+  // Add verified URLs here as they become available
+  // Format: "color-size-moduleType"
+  "orange-80-ohne-rueckwand",
+])
 
 const verifiedUrls = new Set<string>()
 const failedUrls = new Set<string>()
@@ -108,6 +112,8 @@ export function buildFolderPath(args: {
   const family = size === "40x40x40" ? "40" : "80"
   return `glbgrande/${color}${family}`
 }
+
+const FALLBACK_MODULE = "ohne-seitenwaende" // Declare the FALLBACK_MODULE variable
 
 /**
  * Main resolver function for GLB URLs
@@ -144,16 +150,19 @@ export function resolveGlbUrl(args: {
     }
   }
 
-  // Also check for frame80 fallback for ohne-seitenwaende
-  if (moduleType === "ohne-seitenwaende" && LEGACY_URLS[`frame80-${color}`]) {
+  // This is the most common case and we know frame80.glb exists
+  if (moduleType === "ohne-seitenwaende" && size === "80x40x40") {
     return {
-      url: LEGACY_URLS[`frame80-${color}`],
+      url: LEGACY_URLS["frame80"],
       filename: `frame80.glb`,
-      code: "legacy",
-      variantCode: "legacy",
+      code: "2",
+      variantCode: "2",
       isLegacy: true,
     }
   }
+
+  const verifyKey = `${color}-${family}-${moduleType}`
+  const useNewUrl = VERIFIED_NEW_URLS.has(verifyKey)
 
   // Get the code for this module type and size
   let code = MODULE_TO_CODE[size]?.[moduleType]
@@ -168,6 +177,30 @@ export function resolveGlbUrl(args: {
       loggedWarnings.add(warningKey)
     }
     code = MODULE_TO_CODE[size]?.[FALLBACK_MODULE] || "1"
+  }
+
+  if (!useNewUrl) {
+    // For ohne-rueckwand with orange, use the known working URL
+    if (moduleType === "ohne-rueckwand" && color === "orange" && size === "80x40x40") {
+      return {
+        url: LEGACY_URLS["ohne-rueckwand-orange-80"],
+        filename: `ohne-rueckwand-orange80.glb`,
+        code: "1",
+        variantCode: "1",
+        isLegacy: true,
+      }
+    }
+
+    // For other cases, fallback to frame80 for 80cm modules
+    if (size === "80x40x40") {
+      return {
+        url: LEGACY_URLS["frame80"],
+        filename: `frame80.glb`,
+        code: code,
+        variantCode: code,
+        isLegacy: true,
+      }
+    }
   }
 
   const folder = buildFolderPath({ size, color })
