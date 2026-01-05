@@ -174,11 +174,10 @@ function LoadedGLBModel({
       let scaleY = 1
       let scaleZ = 1
 
-      const isFrame80Style =
-        (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) ||
-        (cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80"))
+      const isOhneRueckwandOrange = cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80")
+      const isFrame80 = cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")
 
-      if (isFrame80Style) {
+      if (isFrame80) {
         const frameBaseWidth = 0.8
         const frameBaseHeight = 0.4
         const frameBaseDepth = 0.38
@@ -187,10 +186,26 @@ function LoadedGLBModel({
         scaleY = height / frameBaseHeight
         scaleZ = depth / frameBaseDepth
 
-        console.log(`[v0] Frame80-style scaling for ${cellType}:`, {
+        console.log(`[v0] Frame80 scaling:`, {
           modelUrl,
           targetDimensions: { width, height, depth },
           baseDimensions: { frameBaseWidth, frameBaseHeight, frameBaseDepth },
+          scaleFactor: { scaleX, scaleY, scaleZ },
+        })
+      } else if (isOhneRueckwandOrange) {
+        const modelWidth = size.z
+        const modelHeight = size.y
+        const modelDepth = size.x
+
+        scaleX = depth / modelDepth
+        scaleY = height / modelHeight
+        scaleZ = width / modelWidth
+
+        console.log(`[v0] ohne-rueckwand-orange80 scaling:`, {
+          modelUrl,
+          actualModelSize: { x: size.x, y: size.y, z: size.z },
+          targetDimensions: { width, height, depth },
+          mappedBase: { modelWidth, modelHeight, modelDepth },
           scaleFactor: { scaleX, scaleY, scaleZ },
         })
       } else {
@@ -201,27 +216,35 @@ function LoadedGLBModel({
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
-      let offsetX = -center.x * scaleX
-      let offsetY = -center.y * scaleY
-      let offsetZ = -center.z * scaleZ
+      let offsetX = 0
+      let offsetY = 0
+      let offsetZ = 0
 
-      if (cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80")) {
-        offsetX += 0.0
-        offsetY += 0.0
-        offsetZ += 0.0
+      if (isOhneRueckwandOrange) {
+        offsetX = -center.x * scaleX
+        offsetY = -center.y * scaleY + height / 2
+        offsetZ = -center.z * scaleZ
 
-        console.log(`[v0] ohne-rueckwand-orange80 offset adjustment:`, {
+        console.log(`[v0] ohne-rueckwand-orange80 offset:`, {
           center: { x: center.x, y: center.y, z: center.z },
-          size: { x: size.x, y: size.y, z: size.z },
+          scaledCenter: { x: center.x * scaleX, y: center.y * scaleY, z: center.z * scaleZ },
           finalOffset: { offsetX, offsetY, offsetZ },
         })
+      } else if (isFrame80) {
+        offsetX = -center.x * scaleX
+        offsetY = -center.y * scaleY + height / 2
+        offsetZ = -center.z * scaleZ
+      } else {
+        offsetX = -center.x * scaleX
+        offsetY = -center.y * scaleY
+        offsetZ = -center.z * scaleZ
       }
 
       setModelOffset([offsetX, offsetY, offsetZ])
 
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
-      } else if (isFrame80Style) {
+      } else if (isFrame80 || isOhneRueckwandOrange) {
         setRotation([0, -Math.PI / 2, 0])
       } else {
         setRotation([0, 0, 0])
