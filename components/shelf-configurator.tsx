@@ -115,9 +115,7 @@ export function ShelfConfigurator() {
         return
       }
       setHistory((prev) => {
-        // Remove any future states if we're in the middle of history
         const newHistory = prev.slice(0, historyIndex + 1)
-        // Add new state and limit history to 50 entries
         return [...newHistory, newConfig].slice(-50)
       })
       setHistoryIndex((prev) => Math.min(prev + 1, 49))
@@ -196,14 +194,12 @@ export function ShelfConfigurator() {
     let expandRight = false
     let expandUp = false
 
-    // Check if we need to expand left (if there's a filled module at col 0)
     const hasFilledAtCol0 = newGrid.some((row) => row[0] && row[0].type !== "empty" && row[0].type !== "ghost")
     if (hasFilledAtCol0) {
       expandLeft = true
       needsExpansion = true
     }
 
-    // Check if we need to expand right (if there's a filled module at last col)
     const lastColIdx = cols - 1
     const hasFilledAtLastCol = newGrid.some((row) => {
       const cell = row[lastColIdx]
@@ -214,7 +210,6 @@ export function ShelfConfigurator() {
       needsExpansion = true
     }
 
-    // Check if we need to expand up (if there's a filled module at top row)
     const topRowIdx = rows - 1
     const hasFilledAtTopRow = newGrid[topRowIdx].some((cell) => cell.type !== "empty" && cell.type !== "ghost")
     if (hasFilledAtTopRow) {
@@ -222,7 +217,6 @@ export function ShelfConfigurator() {
       needsExpansion = true
     }
 
-    // Perform expansions
     if (expandLeft) {
       newGrid = newGrid.map((row, ri) => {
         const newCell: GridCell = {
@@ -267,7 +261,6 @@ export function ShelfConfigurator() {
       for (let c = 0; c < updatedCols; c++) {
         const cell = newGrid[r][c]
         if (cell.type !== "empty" && cell.type !== "ghost") {
-          // Create ghost cells in 4 adjacent positions
           const adjacentPositions = [
             { nr: r - 1, nc: c }, // below
             { nr: r + 1, nc: c }, // above
@@ -297,25 +290,21 @@ export function ShelfConfigurator() {
       setConfig((prev) => {
         const currentCell = prev.grid[row]?.[col]
 
-        // Don't allow placement if not a ghost cell
         if (!currentCell || (currentCell.type !== "ghost" && currentCell.type !== "empty")) {
           console.log("[v0] Cannot place - cell is not ghost or empty")
           return prev
         }
 
-        // Check if cell is connected to existing modules
         if (!isConnectedToExisting(row, col, prev.grid)) {
           console.log("[v0] Cannot place - not connected to existing modules")
           return prev
         }
 
-        // Check if has support below (for non-ground level)
         if (!hasSupportBelow(row, col, prev.grid)) {
           console.log("[v0] Cannot place - no support below")
           return prev
         }
 
-        // Place the module
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
@@ -330,10 +319,8 @@ export function ShelfConfigurator() {
           }),
         )
 
-        // Expand grid with new ghost cells around the placement
         newGrid = expandGridAroundPlacement(newGrid, row, col)
 
-        // Update column widths and row heights based on new grid size
         const newColumns = newGrid[0]?.length || 1
         const newRows = newGrid.length
 
@@ -365,10 +352,8 @@ export function ShelfConfigurator() {
       console.log("[v0] Cell clicked:", row, col)
 
       if (!selectedTool || selectedTool === "empty") {
-        // Clear the cell
         placeModule(row, col, "ghost")
       } else {
-        // Place the selected module
         placeModule(row, col, selectedTool)
       }
     },
@@ -434,10 +419,9 @@ export function ShelfConfigurator() {
 
   const setRowHeight = useCallback(
     (rowIndex: number, height: number) => {
-      // accept any number, not just 38 | 76
       setConfig((prev) => {
         const newHeights = [...prev.rowHeights]
-        newHeights[rowIndex] = Math.max(20, Math.min(120, height)) // Clamp between 20 and 120
+        newHeights[rowIndex] = Math.max(20, Math.min(120, height))
         const newConfig = { ...prev, rowHeights: newHeights }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
@@ -513,7 +497,6 @@ export function ShelfConfigurator() {
       return { shoppingList: [], totalPrice: 0 }
     }
 
-    // Group filled cells by column
     const cellsByColumn: Map<number, typeof filledCells> = new Map()
     filledCells.forEach((cell) => {
       const existing = cellsByColumn.get(cell.col) || []
@@ -521,27 +504,20 @@ export function ShelfConfigurator() {
       cellsByColumn.set(cell.col, existing)
     })
 
-    // For each column, calculate the height based on the number of filled cells (rows)
     const columnHeights: Map<number, number> = new Map()
 
     cellsByColumn.forEach((cells, colIdx) => {
-      // Get all row indices for this column
       const rows = cells.map((c) => c.row).sort((a, b) => a - b)
-
-      // Calculate total height by summing the row heights for filled cells
       let heightCm = 0
       rows.forEach((rowIdx) => {
         heightCm += config.rowHeights[rowIdx] || 38
       })
-
       columnHeights.set(colIdx, heightCm)
       console.log(`[v0] Column ${colIdx}: rows=${JSON.stringify(rows)}, height=${heightCm}cm`)
     })
 
-    // Find all column indices that have at least one filled cell
     const usedColIndices = Array.from(cellsByColumn.keys()).sort((a, b) => a - b)
 
-    // Group consecutive columns
     const columnGroups: number[][] = []
     let currentGroup: number[] = []
 
@@ -565,39 +541,28 @@ export function ShelfConfigurator() {
     console.log("[v0] Ladder calc - Used columns:", usedColIndices)
     console.log("[v0] Ladder calc - Column groups:", columnGroups)
 
-    // A ladder between two columns needs to be as tall as the taller column
-    // A ladder at the edge needs to match the height of its adjacent column
     const ladderHeightsNeeded: number[] = []
 
     columnGroups.forEach((group) => {
-      // For a group of N columns, we need N+1 ladders
       for (let i = 0; i <= group.length; i++) {
         let ladderHeight: number
-
         if (i === 0) {
-          // Left edge ladder - height of first column in group
           ladderHeight = columnHeights.get(group[0]) || 0
         } else if (i === group.length) {
-          // Right edge ladder - height of last column in group
           ladderHeight = columnHeights.get(group[group.length - 1]) || 0
         } else {
-          // Middle ladder - max height of left and right columns
           const leftColHeight = columnHeights.get(group[i - 1]) || 0
           const rightColHeight = columnHeights.get(group[i]) || 0
           ladderHeight = Math.max(leftColHeight, rightColHeight)
         }
-
         ladderHeightsNeeded.push(ladderHeight)
       }
     })
 
     console.log("[v0] Ladder heights needed (cm):", ladderHeightsNeeded)
 
-    // Convert needed heights to actual ladder sizes and count them
     const ladderSizeCounts: Map<number, number> = new Map()
-
     ladderHeightsNeeded.forEach((heightCm) => {
-      // Find the appropriate ladder size (must be >= height)
       let leiterSize = 40
       if (heightCm > 160) leiterSize = 200
       else if (heightCm > 120) leiterSize = 160
@@ -610,7 +575,6 @@ export function ShelfConfigurator() {
 
     console.log("[v0] Ladder size counts:", Object.fromEntries(ladderSizeCounts))
 
-    // Add ladders to shopping list
     ladderSizeCounts.forEach((count, size) => {
       const leiterProduct = leitern.find((l) => l.size === size)
       if (leiterProduct) {
@@ -618,17 +582,13 @@ export function ShelfConfigurator() {
       }
     })
 
-    // For each column, we need levels+1 tube sets (one above and one below each cell)
     let tube80Levels = 0
     let tube40Levels = 0
 
     usedColIndices.forEach((colIdx) => {
       const cells = cellsByColumn.get(colIdx) || []
       if (cells.length === 0) return
-
-      // Count actual cells in this column
       const numCells = cells.length
-      // We need numCells + 1 tube sets for each column (top, between cells, bottom)
       const tubesNeeded = numCells + 1
 
       if (config.columnWidths[colIdx] === 75) {
@@ -646,9 +606,116 @@ export function ShelfConfigurator() {
 
     console.log("[v0] Tube sets - 80cm:", tube80Levels, "40cm:", tube40Levels)
 
+    const sidewallRequiredTypes: GridCell["type"][] = [
+      "mit-rueckwand",
+      "mit-tueren",
+      "abschliessbare-tueren",
+      "mit-klapptuer",
+      "mit-doppelschublade",
+    ]
+
+    const cellsByRow: Map<number, typeof filledCells> = new Map()
+    filledCells.forEach((cell) => {
+      const existing = cellsByRow.get(cell.row) || []
+      existing.push(cell)
+      cellsByRow.set(cell.row, existing)
+    })
+
+    const sidewallCounts: Map<string, { product: Product; needed: number }> = new Map()
+
+    cellsByRow.forEach((rowCells, rowIdx) => {
+      const sortedCells = [...rowCells].sort((a, b) => a.col - b.col)
+      const sidewallBlocks: (typeof sortedCells)[] = []
+      let currentBlock: typeof sortedCells = []
+
+      sortedCells.forEach((cell, idx) => {
+        const needsSidewalls = sidewallRequiredTypes.includes(cell.type)
+        if (needsSidewalls) {
+          if (currentBlock.length === 0) {
+            currentBlock.push(cell)
+          } else {
+            const lastCell = currentBlock[currentBlock.length - 1]
+            if (cell.col === lastCell.col + 1) {
+              currentBlock.push(cell)
+            } else {
+              if (currentBlock.length > 0) {
+                sidewallBlocks.push(currentBlock)
+              }
+              currentBlock = [cell]
+            }
+          }
+        } else {
+          if (currentBlock.length > 0) {
+            sidewallBlocks.push(currentBlock)
+            currentBlock = []
+          }
+        }
+      })
+
+      if (currentBlock.length > 0) {
+        sidewallBlocks.push(currentBlock)
+      }
+
+      console.log(
+        `[v0] Row ${rowIdx} sidewall blocks:`,
+        sidewallBlocks.map((b) => b.map((c) => `${c.col}:${c.type}`)),
+      )
+
+      sidewallBlocks.forEach((block) => {
+        const numModules = block.length
+        const sidewallsNeeded = numModules + 1
+
+        const representativeCell = block[0]
+        const cellColor = representativeCell.color || config.color
+        const cellMaterial = representativeCell.material || config.material
+        const productColor = colorMap[cellColor] || "weiss"
+        const bodenSize = config.columnWidths[representativeCell.col] === 38 ? 38 : 80
+        const panelSize = bodenSize === 38 ? 40 : 80
+
+        let sidewallProduct: Product | undefined
+        if (cellMaterial === "metal") {
+          sidewallProduct =
+            metallboeden.find((p) => p.size === panelSize && p.color === productColor) ||
+            metallboeden.find((p) => p.size === panelSize)
+        } else if (cellMaterial === "glass") {
+          const glassColor = productColor === "schwarz" ? "schwarz" : undefined
+          sidewallProduct = glasboeden.find(
+            (p) => p.size === panelSize && (glassColor ? p.color === glassColor : p.variant === "satiniert"),
+          )
+        }
+
+        if (sidewallProduct) {
+          const key = `sidewall-${sidewallProduct.artNr}`
+          const existing = sidewallCounts.get(key)
+          if (existing) {
+            existing.needed += sidewallsNeeded
+          } else {
+            sidewallCounts.set(key, {
+              product: {
+                ...sidewallProduct,
+                name: `Seitenwand ${sidewallProduct.name}`,
+                artNr: `sw-${sidewallProduct.artNr}`,
+              },
+              needed: sidewallsNeeded,
+            })
+          }
+        }
+
+        console.log(
+          `[v0] Sidewall block: ${numModules} modules → ${sidewallsNeeded} sidewalls (${productColor}, ${panelSize}cm)`,
+        )
+      })
+    })
+
+    sidewallCounts.forEach(({ product, needed }) => {
+      const packsNeeded = Math.ceil(needed / 2)
+      const delivered = packsNeeded * 2
+      console.log(`[v0] Sidewalls ${product.name}: needed=${needed}, packs=${packsNeeded}, delivered=${delivered}`)
+      addItem(product, needed)
+    })
+
     const shelfCounts: Map<string, { product: Product; needed: number }> = new Map()
 
-    // Calculate shelves and accessories per cell
     filledCells.forEach((cell) => {
       const colIndex = cell.col
       const bodenSize = config.columnWidths[colIndex] === 38 ? 38 : 80
@@ -664,7 +731,6 @@ export function ShelfConfigurator() {
           metallboeden.find((p) => p.size === bodenSize && p.color === productColor) ||
           metallboeden.find((p) => p.size === bodenSize)
       } else if (cellMaterial === "glass") {
-        // Glass only has schwarz and satiniert variant
         const glassColor = productColor === "schwarz" ? "schwarz" : undefined
         shelfProduct = glasboeden.find(
           (p) => p.size === bodenSize && (glassColor ? p.color === glassColor : p.variant === "satiniert"),
@@ -683,7 +749,6 @@ export function ShelfConfigurator() {
         }
       }
 
-      // Add accessories based on cell type
       switch (cell.type) {
         case "mit-rueckwand": {
           const backPanel =
@@ -718,11 +783,9 @@ export function ShelfConfigurator() {
     })
 
     shelfCounts.forEach(({ product, needed }) => {
-      // Panels come in 2-packs, so calculate packs needed
       const packsNeeded = Math.ceil(needed / 2)
       const delivered = packsNeeded * 2
       console.log(`[v0] Shelf ${product.name}: needed=${needed}, packs=${packsNeeded}, delivered=${delivered}`)
-      // Add the actual needed quantity (price is per piece)
       addItem(product, needed)
     })
 
