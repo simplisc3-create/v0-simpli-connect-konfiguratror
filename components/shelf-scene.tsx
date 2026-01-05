@@ -24,6 +24,13 @@ const colorMap: Record<string, string> = {
   rot: colorHexMap.rot,
   lila: colorHexMap.lila,
   gelb: colorHexMap.gelb,
+  white: colorHexMap.weiss,
+  black: colorHexMap.schwarz,
+  blue: colorHexMap.blau,
+  green: colorHexMap.gruen,
+  yellow: colorHexMap.gelb,
+  red: colorHexMap.rot,
+  purple: colorHexMap.lila,
 }
 
 function InteractiveCell({
@@ -94,44 +101,36 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const glbs: JSX.Element[] = []
     const cells: JSX.Element[] = []
 
-    const effectiveColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
-    const panelColor = colorMap[effectiveColor] || colorMap.weiss
+    const fallbackColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
 
     const depth = 0.38
 
     const columnTubeOverlap = 0.003 // horizontal overlap (left-right) - already perfect
     const rowTubeOverlap = 0.013 // vertical overlap (up-down) - adjusted to reduce gap
 
-    // to make the tubes overlap and appear as single tubes
     const columnCenters: number[] = []
     for (let col = 0; col < config.columns; col++) {
       const colWidth = config.columnWidths[col] / 100
-      // Sum up previous column widths minus overlaps
       let xPos = 0
       for (let c = 0; c < col; c++) {
         xPos += config.columnWidths[c] / 100 - columnTubeOverlap
       }
-      // Add half of current column width to get center
       columnCenters.push(xPos + colWidth / 2)
     }
 
-    // Calculate total width (sum of all widths minus overlaps between them)
     let totalWidth = 0
     for (let col = 0; col < config.columns; col++) {
       totalWidth += config.columnWidths[col] / 100
       if (col > 0) totalWidth -= columnTubeOverlap
     }
 
-    // Each row after the first shifts down by rowTubeOverlap to overlap the shared tube
     const rowCenters: number[] = []
     for (let row = 0; row < config.rows; row++) {
       const rowHeight = config.rowHeights[row] / 100
-      // Sum up previous row heights minus overlaps
       let yPos = 0
       for (let r = 0; r < row; r++) {
         yPos += config.rowHeights[r] / 100 - rowTubeOverlap
       }
-      // Add half of current row height to get center
       rowCenters.push(yPos + rowHeight / 2)
     }
 
@@ -191,6 +190,9 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
         }
 
         if (isEmpty || isGhost) return
+
+        const cellColor = cell.color || fallbackColor
+        const panelColor = colorMap[cellColor] || colorMap.weiss
 
         glbs.push(
           <GLBModule
