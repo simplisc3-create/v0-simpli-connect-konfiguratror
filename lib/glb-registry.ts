@@ -1,12 +1,13 @@
 // src/lib/glb/registry.ts
 export const GLB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
 
+export type SizeKey = "40x40x40" | "80x40x40"
 export type WidthKey = 40 | 80
 export type HeightKey = number
 
 export type ColorKey = "white" | "gray" | "black" | "blue" | "green" | "yellow" | "orange" | "red"
 
-// Globaler Union-Type (weil 40er mehr Module hat)
+// Global union type for all module types
 export type ModuleType =
   | "ohne-seitenwaende"
   | "ohne-rueckwand"
@@ -16,13 +17,13 @@ export type ModuleType =
   | "mit-klapptuer"
   | "mit-doppelschublade"
   | "abschliessbare-tueren"
+  | "abschliessbar"
   | "mit-tuere-links"
   | "mit-tuere-rechts"
   | "abschliessbar-links"
   | "abschliessbar-rechts"
 
 export const MODULE_TYPES: ModuleType[] = [
-  // shared / 80-family
   "ohne-seitenwaende",
   "ohne-rueckwand",
   "mit-rueckwand",
@@ -31,7 +32,7 @@ export const MODULE_TYPES: ModuleType[] = [
   "mit-klapptuer",
   "mit-doppelschublade",
   "abschliessbare-tueren",
-  // 40-family extras
+  "abschliessbar",
   "mit-tuere-links",
   "mit-tuere-rechts",
   "abschliessbar-links",
@@ -40,80 +41,127 @@ export const MODULE_TYPES: ModuleType[] = [
 
 export const COLOR_KEYS: ColorKey[] = ["white", "gray", "black", "blue", "green", "yellow", "orange", "red"]
 
-// ✅ DEINE MAPPINGS (editierbar in EINER Stelle)
-export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType, string>>> = {
-  80: {
-    "ohne-rueckwand": "1-8",
-    "ohne-seitenwaende": "1-1", // Fixed: was 1-2, should be 1-1
-    "mit-seitenwaenden": "1-3",
-    "mit-klapptuer": "1-4",
-    "mit-doppelschublade": "1-5",
-    "mit-tueren": "1-6",
-    "abschliessbare-tueren": "1-7",
-    "mit-rueckwand": "1-8",
+// 80x40x40: "80x40x40-1-{code}-{color}_optimized.glb"
+// 40x40x40: "40x40x40-2-{code}-{color}_optimized.glb"
+export const MODULE_TO_CODE: Record<SizeKey, Partial<Record<ModuleType, string>>> = {
+  "80x40x40": {
+    "ohne-rueckwand": "1",
+    "ohne-seitenwaende": "2",
+    "mit-seitenwaenden": "3",
+    "mit-klapptuer": "4",
+    "mit-doppelschublade": "5",
+    "mit-tueren": "6",
+    "abschliessbare-tueren": "7",
+    abschliessbar: "7",
+    "mit-rueckwand": "8",
   },
-  40: {
-    "ohne-rueckwand": "2-1",
-    "mit-rueckwand": "2-2",
-    "mit-seitenwaenden": "2-3",
-    "mit-tuere-rechts": "2-4",
-    "mit-tuere-links": "2-5",
-    "abschliessbar-links": "2-6",
-    "abschliessbar-rechts": "2-7",
+  "40x40x40": {
+    "ohne-rueckwand": "1",
+    "mit-rueckwand": "2",
+    "mit-seitenwaenden": "3",
+    "mit-tuere-rechts": "4",
+    "mit-tuere-links": "5",
+    "abschliessbar-links": "6",
+    "abschliessbar-rechts": "7",
   },
 }
 
-export const SPECIAL_FRAME_URLS: Record<string, string> = {
-  "frame-80": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/frame80.glb",
-  "ohne-rueckwand-orange-80":
-    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/ohne-rueckwand-orange80.glb?v=" + Date.now(),
-}
+// Fallback module type if requested module is not available
+const FALLBACK_MODULE: ModuleType = "ohne-rueckwand"
 
+// Track logged warnings to only log once per missing combination
+const loggedWarnings = new Set<string>()
+
+/**
+ * Builds the GLB filename based on the new naming convention
+ * 80x40x40: "80x40x40-1-{code}-{color}_optimized.glb"
+ * 40x40x40: "40x40x40-2-{code}-{color}_optimized.glb"
+ */
 export function buildGlbFilename(args: {
-  width: WidthKey
-  height: HeightKey
-  variantCode: string
+  size: SizeKey
+  code: string
   color: ColorKey
-}) {
-  const { width, height, variantCode, color } = args
-  const capitalizedColor = color.charAt(0).toUpperCase() + color.slice(1)
-  // depth ist fix 40
-  return `${width}x40x${height}-${variantCode}-${capitalizedColor}_optimized.glb`
+}): string {
+  const { size, code, color } = args
+  const prefix = size === "40x40x40" ? "2" : "1"
+  return `${size}-${prefix}-${code}-${color}_optimized.glb`
 }
+
+/**
+ * Builds the folder path based on color and size family
+ * folder = `${color}${family}` where family = "40" or "80"
+ */
+export function buildFolderPath(args: {
+  size: SizeKey
+  color: ColorKey
+}): string {
+  const { size, color } = args
+  const family = size === "40x40x40" ? "40" : "80"
+  return `glbgrande/${color}${family}`
+}
+
+/**
+ * Main resolver function for GLB URLs
+ * Returns the correct GLB URL based on size, moduleType, and color
+ */
+export function resolveGlbUrl(args: {
+  size: SizeKey
+  moduleType: ModuleType
+  color: ColorKey
+}): { url: string; filename: string; code: string }
 
 export function resolveGlbUrl(args: {
   width: WidthKey
   height: HeightKey
   moduleType: ModuleType
   color: ColorKey
-}) {
-  const { width, height, moduleType, color } = args
+}): { url: string; filename: string; variantCode: string }
 
-  if (moduleType === "ohne-rueckwand" && width === 80) {
-    return {
-      url: SPECIAL_FRAME_URLS["ohne-rueckwand-orange-80"],
-      filename: "ohne-rueckwand-orange80.glb",
-      variantCode: "1-8-orange",
+export function resolveGlbUrl(args: {
+  size?: SizeKey
+  width?: WidthKey
+  height?: HeightKey
+  moduleType: ModuleType
+  color: ColorKey
+}): { url: string; filename: string; code?: string; variantCode?: string } {
+  // Determine size from width if not provided directly
+  let size: SizeKey
+  if (args.size) {
+    size = args.size
+  } else if (args.width) {
+    size = args.width >= 80 ? "80x40x40" : "40x40x40"
+  } else {
+    size = "80x40x40" // default
+  }
+
+  const { moduleType, color } = args
+
+  // Get the code for this module type and size
+  let code = MODULE_TO_CODE[size]?.[moduleType]
+
+  // Fallback handling if module type not found
+  if (!code) {
+    const warningKey = `${size}-${moduleType}-${color}`
+    if (!loggedWarnings.has(warningKey)) {
+      console.warn(
+        `[GLB Registry] No code mapping for size=${size} moduleType="${moduleType}". Falling back to "${FALLBACK_MODULE}".`,
+      )
+      loggedWarnings.add(warningKey)
     }
+    code = MODULE_TO_CODE[size]?.[FALLBACK_MODULE] || "1"
   }
 
-  if (moduleType === "ohne-seitenwaende" && width === 80) {
-    return {
-      url: SPECIAL_FRAME_URLS["frame-80"],
-      filename: "frame80.glb",
-      variantCode: "frame-80",
-    }
+  const folder = buildFolderPath({ size, color })
+  const filename = buildGlbFilename({ size, code, color })
+  const url = `${GLB_BASE_URL}/${folder}/${filename}`
+
+  return {
+    url,
+    filename,
+    code,
+    variantCode: code, // For backward compatibility
   }
-
-  const variantCode = MODULE_TO_VARIANT_CODE[width]?.[moduleType]
-
-  if (!variantCode) {
-    throw new Error(
-      `No variantCode mapping for width=${width} moduleType="${moduleType}". Check MODULE_TO_VARIANT_CODE.`,
-    )
-  }
-
-  const filename = buildGlbFilename({ width, height, variantCode, color })
-  const url = `${GLB_BASE_URL}/${filename}`
-  return { url, filename, variantCode }
 }
+
+// Legacy export for backward compatibility
+export const MODULE_TO_VARIANT_CODE = MODULE_TO_CODE

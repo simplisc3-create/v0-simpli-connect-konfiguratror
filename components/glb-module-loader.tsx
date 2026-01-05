@@ -19,6 +19,52 @@ type GLBModuleProps = {
   modelUrl?: string
 }
 
+const COLOR_MAP: Record<string, string> = {
+  // Hex colors
+  "#ffffff": "white",
+  "#f5f5f5": "white",
+  "#e5e7eb": "gray",
+  "#6b7280": "gray",
+  "#9ca3af": "gray",
+  "#1f2937": "black",
+  "#000000": "black",
+  "#3b82f6": "blue",
+  "#2563eb": "blue",
+  "#10b981": "green",
+  "#059669": "green",
+  "#22c55e": "green",
+  "#eab308": "yellow",
+  "#ffeb3b": "yellow",
+  "#facc15": "yellow",
+  "#f59e0b": "orange",
+  "#fb923c": "orange",
+  "#ef4444": "red",
+  "#dc2626": "red",
+  "#9c27b0": "purple",
+  "#a855f7": "purple",
+  // Named colors (German to English)
+  weiss: "white",
+  weiß: "white",
+  white: "white",
+  grau: "gray",
+  gray: "gray",
+  grey: "gray",
+  schwarz: "black",
+  black: "black",
+  blau: "blue",
+  blue: "blue",
+  gruen: "green",
+  grün: "green",
+  green: "green",
+  gelb: "yellow",
+  yellow: "yellow",
+  orange: "orange",
+  rot: "red",
+  red: "red",
+  lila: "purple",
+  purple: "purple",
+}
+
 export const GLBModule = memo(function GLBModule({
   position,
   cellType,
@@ -46,30 +92,12 @@ export const GLBModule = memo(function GLBModule({
       try {
         setLoading(true)
 
-        const colorMap: Record<string, string> = {
-          "#ffffff": "white",
-          "#f5f5f5": "white",
-          "#e5e7eb": "gray",
-          "#6b7280": "gray",
-          "#1f2937": "black",
-          "#000000": "black",
-          "#3b82f6": "blue",
-          "#2563eb": "blue",
-          "#10b981": "green",
-          "#059669": "green",
-          "#eab308": "yellow",
-          "#ffeb3b": "yellow",
-          "#f59e0b": "orange",
-          "#ef4444": "red",
-          "#9c27b0": "purple",
-          "#a855f7": "purple",
-        }
-
-        const colorName = colorMap[color.toLowerCase()] || "white"
+        const colorName = COLOR_MAP[color.toLowerCase()] || "white"
 
         const widthCm = Math.round(width * 100)
         const heightCm = Math.round(height * 100)
 
+        // Standard width is 40 or 80
         const standardWidth = widthCm <= 50 ? 40 : 80
 
         const params = new URLSearchParams({
@@ -91,7 +119,7 @@ export const GLBModule = memo(function GLBModule({
         const data = await response.json()
 
         if (data.url) {
-          console.log(`[v0] Resolved GLB: ${data.filename}`)
+          console.log(`[v0] Resolved GLB: ${data.filename} -> ${data.url}`)
           setModelUrl(data.url)
         } else {
           console.warn("[v0] No model URL found for:", { cellType, standardWidth, heightCm, colorName })
@@ -170,86 +198,27 @@ function LoadedGLBModel({
       const size = box.getSize(new THREE.Vector3())
       const center = box.getCenter(new THREE.Vector3())
 
-      let scaleX = 1
-      let scaleY = 1
-      let scaleZ = 1
-
-      const isOhneRueckwandOrange = cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80")
-      const isFrame80 = cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")
-
-      if (isFrame80) {
-        const frameBaseWidth = 0.8
-        const frameBaseHeight = 0.4
-        const frameBaseDepth = 0.38
-
-        scaleX = width / frameBaseWidth
-        scaleY = height / frameBaseHeight
-        scaleZ = depth / frameBaseDepth
-
-        console.log(`[v0] Frame80 scaling:`, {
-          modelUrl,
-          targetDimensions: { width, height, depth },
-          baseDimensions: { frameBaseWidth, frameBaseHeight, frameBaseDepth },
-          scaleFactor: { scaleX, scaleY, scaleZ },
-        })
-      } else if (isOhneRueckwandOrange) {
-        const modelWidth = size.z
-        const modelHeight = size.y
-        const modelDepth = size.x
-
-        scaleX = depth / modelDepth
-        scaleY = height / modelHeight
-        scaleZ = width / modelWidth
-
-        console.log(`[v0] ohne-rueckwand-orange80 scaling:`, {
-          modelUrl,
-          actualModelSize: { x: size.x, y: size.y, z: size.z },
-          targetDimensions: { width, height, depth },
-          mappedBase: { modelWidth, modelHeight, modelDepth },
-          scaleFactor: { scaleX, scaleY, scaleZ },
-        })
-      } else {
-        scaleX = size.x > 0 ? width / size.x : 1
-        scaleY = size.y > 0 ? height / size.y : 1
-        scaleZ = size.z > 0 ? depth / size.z : 1
-      }
+      const scaleX = size.x > 0 ? width / size.x : 1
+      const scaleY = size.y > 0 ? height / size.y : 1
+      const scaleZ = size.z > 0 ? depth / size.z : 1
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
-      let offsetX = 0
-      let offsetY = 0
-      let offsetZ = 0
-
-      if (isOhneRueckwandOrange) {
-        offsetX = -center.x * scaleX
-        offsetY = -center.y * scaleY + height / 2
-        offsetZ = -center.z * scaleZ
-
-        console.log(`[v0] ohne-rueckwand-orange80 offset:`, {
-          center: { x: center.x, y: center.y, z: center.z },
-          scaledCenter: { x: center.x * scaleX, y: center.y * scaleY, z: center.z * scaleZ },
-          finalOffset: { offsetX, offsetY, offsetZ },
-        })
-      } else if (isFrame80) {
-        offsetX = -center.x * scaleX
-        offsetY = -center.y * scaleY + height / 2
-        offsetZ = -center.z * scaleZ
-      } else {
-        offsetX = -center.x * scaleX
-        offsetY = -center.y * scaleY
-        offsetZ = -center.z * scaleZ
-      }
+      // Center the model
+      const offsetX = -center.x * scaleX
+      const offsetY = -center.y * scaleY
+      const offsetZ = -center.z * scaleZ
 
       setModelOffset([offsetX, offsetY, offsetZ])
 
+      // Set rotation based on cell type
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
-      } else if (isFrame80 || isOhneRueckwandOrange) {
-        setRotation([0, -Math.PI / 2, 0])
       } else {
         setRotation([0, 0, 0])
       }
 
+      // Apply color to relevant meshes
       clone.traverse((child) => {
         if ((child as any).isMesh) {
           const mesh = child as any
