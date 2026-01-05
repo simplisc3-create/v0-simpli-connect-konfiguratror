@@ -1,10 +1,5 @@
-// src/lib/glb/registry.ts
-// SINGLE SOURCE OF TRUTH for GLB model resolution
-// Uses direct URL mappings for uploaded files with hash suffixes
-
 export type WidthKey = 40 | 80
 export type HeightKey = number
-
 export type ColorKey = "white" | "gray" | "black" | "blue" | "green" | "yellow" | "orange" | "red"
 
 export type ModuleType =
@@ -60,27 +55,26 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
   },
 }
 
-// Key format: "{width}x40x{height}-{variantCode}-{color}"
-const UPLOADED_MODEL_URLS: Record<string, string> = {
-  // White 80cm models (height 40) - REAL Blob Storage URLs with hash suffixes
-  "80x40x40-1-1-white": "/images/80x40x40-1-1-white-optimized.glb",
-  "80x40x40-1-2-white": "/images/ohne-seitenwaendeweiss80.glb",
-  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-optimized.glb",
-  "80x40x40-1-4-white": "/images/80x40x40-1-4-white-optimized.glb",
-  "80x40x40-1-5-white": "/images/80x40x40-1-5-white-optimized.glb",
-  "80x40x40-1-6-white": "/images/80x40x40-1-6-white-optimized.glb",
-  "80x40x40-1-7-white": "/images/80x40x40-1-7-white-optimized.glb",
-  "80x40x40-1-8-white": "/images/80x40x40-1-8-white-optimized.glb",
+const GLB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
+
+const ROOT_LEVEL_FILES: Set<string> = new Set([
+  // Blue 40cm modules - stored at root, not in blue40/ folder
+  "40x40x40-2-1-blue_optimized.glb",
+  "40x40x40-2-2-blue_optimized.glb",
+  "40x40x40-2-3-blue_optimized.glb",
+  "40x40x40-2-4-blue_optimized.glb",
+  "40x40x40-2-5-blue_optimized.glb",
+  "40x40x40-2-6-blue_optimized.glb",
+  "40x40x40-2-7-blue_optimized.glb",
+])
+
+export function buildGlbFilename(args: { width: WidthKey; variantCode: string; color: ColorKey }): string {
+  const { width, variantCode, color } = args
+  return `${width}x40x40-${variantCode}-${color}_optimized.glb`
 }
 
-export function buildModelKey(args: {
-  width: WidthKey
-  height: HeightKey
-  variantCode: string
-  color: ColorKey
-}): string {
-  const { width, height, variantCode, color } = args
-  return `${width}x40x${height}-${variantCode}-${color}`
+export function buildFolderPath(color: ColorKey, width: WidthKey): string {
+  return `${color}${width}`
 }
 
 export function resolveGlbUrl(args: {
@@ -89,51 +83,41 @@ export function resolveGlbUrl(args: {
   moduleType: ModuleType
   color: ColorKey
 }): { url: string; filename: string; variantCode: string } {
-  const { width, height, moduleType, color } = args
+  const { width, moduleType, color } = args
 
-  // Validate width
   if (width !== 40 && width !== 80) {
     throw new Error(`[GLB Registry] Invalid width: ${width}. Must be 40 or 80.`)
   }
 
-  // Validate color
   if (!COLOR_KEYS.includes(color)) {
     throw new Error(`[GLB Registry] Invalid color: "${color}". Valid colors: ${COLOR_KEYS.join(", ")}`)
   }
 
-  // Get variant code from mapping
   const variantCode = MODULE_TO_VARIANT_CODE[width]?.[moduleType]
 
   if (!variantCode) {
     throw new Error(
-      `[GLB Registry] No variant code mapping for width=${width}, moduleType="${moduleType}". ` +
-        `Available module types for width ${width}: ${Object.keys(MODULE_TO_VARIANT_CODE[width] || {}).join(", ")}`,
+      `[GLB Registry] No variant code mapping for width=${width}, moduleType="${moduleType}". Available module types for width ${width}: ${Object.keys(MODULE_TO_VARIANT_CODE[width] || {}).join(", ")}`,
     )
   }
 
-  // Build key for lookup
-  const modelKey = buildModelKey({ width, height, variantCode, color })
+  const filename = buildGlbFilename({ width, variantCode, color })
 
-  // Look up URL in uploaded models
-  const url = UPLOADED_MODEL_URLS[modelKey]
+  let url: string
+  if (ROOT_LEVEL_FILES.has(filename)) {
+    url = `${GLB_BASE_URL}/${filename}`
+  } else {
+    const folder = buildFolderPath(color, width)
+    url = `${GLB_BASE_URL}/${folder}/${filename}`
+  }
 
-  if (!url) {
-    throw new Error(
-      `[GLB Registry] No uploaded model URL for key="${modelKey}". ` +
-        `Available models: ${Object.keys(UPLOADED_MODEL_URLS).join(", ")}`,
-    )
+  if (url.startsWith("/")) {
+    throw new Error(`[GLB Registry] CRITICAL: URL must be absolute. Got: ${url}`)
   }
 
   if (!url.startsWith("https://")) {
-    throw new Error(`[GLB Registry] CRITICAL: URL must be a full Blob URL starting with https://. Got: ${url}`)
+    throw new Error(`[GLB Registry] CRITICAL: URL must start with https://. Got: ${url}`)
   }
 
-  // Extract filename from URL for logging
-  const filename = url.split("/").pop() || modelKey
-
-  return {
-    url,
-    filename,
-    variantCode,
-  }
+  return { url, filename, variantCode }
 }

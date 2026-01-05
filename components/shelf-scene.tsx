@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, memo } from "react"
 import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
@@ -25,7 +25,7 @@ const colorMap: Record<string, string> = {
   gelb: colorHexMap.gelb,
 }
 
-function InteractiveCell({
+const InteractiveCell = memo(function InteractiveCell({
   position,
   width,
   height,
@@ -73,12 +73,10 @@ function InteractiveCell({
     document.body.style.cursor = "auto"
   }
 
-  const showClickArea = isGhost || selectedTool !== null
+  if (!isGhost) return null
 
-  if (!showClickArea) return null
-
-  const cellColor = isGhost ? "#10b981" : showHover ? (selectedTool === "empty" ? "#ff4444" : "#4488ff") : "#666666"
-  const cellOpacity = isGhost ? (showHover ? 0.5 : 0.3) : showHover ? 0.4 : isEmpty ? 0.15 : 0.05
+  const cellColor = showHover ? "#22c55e" : "#10b981" // Green for ghost cells
+  const cellOpacity = showHover ? 0.6 : 0.4
 
   return (
     <mesh position={position} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
@@ -86,51 +84,44 @@ function InteractiveCell({
       <meshStandardMaterial color={cellColor} transparent opacity={cellOpacity} depthWrite={false} />
     </mesh>
   )
-}
+})
 
-export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onCellHover }: Props) {
-  const { glbModules, interactiveCells } = useMemo(() => {
+export const ShelfScene = memo(function ShelfScene({
+  config,
+  selectedTool,
+  hoveredCell,
+  onCellClick,
+  onCellHover,
+}: Props) {
+  const glbModules = useMemo(() => {
     const glbs: JSX.Element[] = []
-    const cells: JSX.Element[] = []
-
-    const effectiveColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
-    const panelColor = colorMap[effectiveColor] || colorMap.weiss
-
     const depth = 0.38
+    const columnTubeOverlap = 0.003
+    const rowTubeOverlap = 0.008
 
-    const columnTubeOverlap = 0.003 // horizontal overlap (left-right) - already perfect
-    const rowTubeOverlap = 0.013 // vertical overlap (up-down) - adjusted to reduce gap
-
-    // to make the tubes overlap and appear as single tubes
     const columnCenters: number[] = []
     for (let col = 0; col < config.columns; col++) {
       const colWidth = config.columnWidths[col] / 100
-      // Sum up previous column widths minus overlaps
       let xPos = 0
       for (let c = 0; c < col; c++) {
         xPos += config.columnWidths[c] / 100 - columnTubeOverlap
       }
-      // Add half of current column width to get center
       columnCenters.push(xPos + colWidth / 2)
     }
 
-    // Calculate total width (sum of all widths minus overlaps between them)
     let totalWidth = 0
     for (let col = 0; col < config.columns; col++) {
       totalWidth += config.columnWidths[col] / 100
       if (col > 0) totalWidth -= columnTubeOverlap
     }
 
-    // Each row after the first shifts down by rowTubeOverlap to overlap the shared tube
     const rowCenters: number[] = []
     for (let row = 0; row < config.rows; row++) {
       const rowHeight = config.rowHeights[row] / 100
-      // Sum up previous row heights minus overlaps
       let yPos = 0
       for (let r = 0; r < row; r++) {
         yPos += config.rowHeights[r] / 100 - rowTubeOverlap
       }
-      // Add half of current row height to get center
       rowCenters.push(yPos + rowHeight / 2)
     }
 
@@ -140,6 +131,8 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
 
     config.grid.forEach((rowCells, gridRow) => {
       rowCells.forEach((cell, gridCol) => {
+        if (cell.type === "empty" || cell.type === "ghost") return
+
         const cellWidth = config.columnWidths[gridCol] / 100
         const cellHeight = config.rowHeights[gridRow] / 100
 
@@ -147,59 +140,17 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
         const cellY = rowCenters[gridRow] + offsetY
         const cellZ = offsetZ + depth / 2
 
-        const isGhost = cell.type === "ghost"
-        const isEmpty = cell.type === "empty"
-        const isHovered = hoveredCell?.row === gridRow && hoveredCell?.col === gridCol
-
-        if (isGhost) {
-          cells.push(
-            <InteractiveCell
-              key={`interactive-${gridRow}-${gridCol}`}
-              position={[cellX, cellY, cellZ]}
-              width={cellWidth}
-              height={cellHeight}
-              depth={depth}
-              row={gridRow}
-              col={gridCol}
-              isEmpty={false}
-              isGhost={true}
-              isHovered={isHovered}
-              selectedTool={selectedTool}
-              onClick={onCellClick}
-              onHover={onCellHover}
-            />,
-          )
-        } else if (isEmpty && (isHovered || selectedTool)) {
-          cells.push(
-            <InteractiveCell
-              key={`interactive-${gridRow}-${gridCol}`}
-              position={[cellX, cellY, cellZ]}
-              width={cellWidth}
-              height={cellHeight}
-              depth={depth}
-              row={gridRow}
-              col={gridCol}
-              isEmpty={true}
-              isGhost={false}
-              isHovered={isHovered}
-              selectedTool={selectedTool}
-              onClick={onCellClick}
-              onHover={onCellHover}
-            />,
-          )
-        }
-
-        if (isEmpty || isGhost) return
+        const cellColor = cell.color ? colorMap[cell.color] : colorMap.weiss
 
         glbs.push(
           <GLBModule
-            key={`glb-${gridRow}-${gridCol}`}
+            key={`glb-${gridRow}-${gridCol}-${cell.type}`}
             position={[cellX, cellY, cellZ]}
             cellType={cell.type}
             width={cellWidth}
             height={cellHeight}
             depth={depth}
-            color={panelColor}
+            color={cellColor}
             row={gridRow}
             col={gridCol}
             gridConfig={config}
@@ -208,8 +159,80 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
       })
     })
 
-    return { glbModules: glbs, interactiveCells: cells }
-  }, [config, selectedTool, hoveredCell, onCellClick, onCellHover])
+    return glbs
+  }, [config]) // Updated dependency array
+
+  const interactiveCells = useMemo(() => {
+    const cells: JSX.Element[] = []
+    const depth = 0.38
+    const columnTubeOverlap = 0.003
+    const rowTubeOverlap = 0.008
+
+    const columnCenters: number[] = []
+    for (let col = 0; col < config.columns; col++) {
+      const colWidth = config.columnWidths[col] / 100
+      let xPos = 0
+      for (let c = 0; c < col; c++) {
+        xPos += config.columnWidths[c] / 100 - columnTubeOverlap
+      }
+      columnCenters.push(xPos + colWidth / 2)
+    }
+
+    let totalWidth = 0
+    for (let col = 0; col < config.columns; col++) {
+      totalWidth += config.columnWidths[col] / 100
+      if (col > 0) totalWidth -= columnTubeOverlap
+    }
+
+    const rowCenters: number[] = []
+    for (let row = 0; row < config.rows; row++) {
+      const rowHeight = config.rowHeights[row] / 100
+      let yPos = 0
+      for (let r = 0; r < row; r++) {
+        yPos += config.rowHeights[r] / 100 - rowTubeOverlap
+      }
+      rowCenters.push(yPos + rowHeight / 2)
+    }
+
+    const offsetX = -totalWidth / 2
+    const offsetY = 0
+    const offsetZ = -depth / 2
+
+    config.grid.forEach((rowCells, gridRow) => {
+      rowCells.forEach((cell, gridCol) => {
+        if (cell.type !== "ghost") return
+
+        const cellWidth = config.columnWidths[gridCol] / 100
+        const cellHeight = config.rowHeights[gridRow] / 100
+
+        const cellX = columnCenters[gridCol] + offsetX
+        const cellY = rowCenters[gridRow] + offsetY
+        const cellZ = offsetZ + depth / 2
+
+        const isHovered = hoveredCell?.row === gridRow && hoveredCell?.col === gridCol
+
+        cells.push(
+          <InteractiveCell
+            key={`interactive-${gridRow}-${gridCol}`}
+            position={[cellX, cellY, cellZ]}
+            width={cellWidth}
+            height={cellHeight}
+            depth={depth}
+            row={gridRow}
+            col={gridCol}
+            isEmpty={false}
+            isGhost={true}
+            isHovered={isHovered}
+            selectedTool={selectedTool}
+            onClick={onCellClick}
+            onHover={onCellHover}
+          />,
+        )
+      })
+    })
+
+    return cells
+  }, [config, selectedTool, hoveredCell, onCellClick, onCellHover]) // Updated dependency array
 
   return (
     <group>
@@ -217,4 +240,4 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
       {interactiveCells}
     </group>
   )
-}
+})

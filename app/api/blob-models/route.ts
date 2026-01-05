@@ -1,105 +1,46 @@
+// app/api/blob-models/route.ts
 import { NextResponse } from "next/server"
-import { resolveGlbUrl, type ModuleType, type ColorKey, type WidthKey, COLOR_KEYS } from "@/lib/glb-registry"
+import { resolveGlbUrl } from "@/lib/glb-registry"
 
-export async function GET(request: Request) {
+export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const cellType = searchParams.get("cellType") as ModuleType | null
-    const width = searchParams.get("width")
-    const height = searchParams.get("height")
-    const color = searchParams.get("color") as ColorKey | null
+    const { searchParams } = new URL(req.url)
 
-    if (!cellType || !width || !height || !color) {
+    const width = Number(searchParams.get("width"))
+    const height = Number(searchParams.get("height"))
+    const moduleType = searchParams.get("moduleType")
+    const color = searchParams.get("color")
+
+    if (!width || !height || !moduleType || !color) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Missing required parameters",
-          required: ["cellType", "width", "height", "color"],
-          received: { cellType, width, height, color },
+          error: "Missing query params. Required: width, height, moduleType, color",
         },
         { status: 400 },
       )
     }
-
-    const widthNum = Number.parseInt(width, 10)
-    const heightNum = Number.parseInt(height, 10)
-
-    if (isNaN(widthNum) || isNaN(heightNum)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Invalid width or height - must be numbers",
-          received: { width, height },
-        },
-        { status: 400 },
-      )
-    }
-
-    // Normalize to standard widths
-    const widthKey: WidthKey = widthNum > 50 ? 80 : 40
-    // All modules are 40cm tall (standard shelf height)
-    const heightKey = 40
-
-    // Validate color
-    if (!COLOR_KEYS.includes(color)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Invalid color: "${color}"`,
-          validColors: COLOR_KEYS,
-        },
-        { status: 400 },
-      )
-    }
-
-    console.log(
-      `[v0] API resolving: cellType=${cellType}, width=${widthNum}cm->${widthKey}, height=${heightNum}cm->${heightKey}, color=${color}`,
-    )
 
     const result = resolveGlbUrl({
-      width: widthKey,
-      height: heightKey,
-      moduleType: cellType,
-      color: color,
+      width: width as 40 | 80,
+      height,
+      moduleType: moduleType as any,
+      color: color as any,
     })
-
-    if (!result.url.startsWith("https://")) {
-      console.error("[v0] CRITICAL: resolveGlbUrl returned non-https URL:", result.url)
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "CRITICAL: System returned invalid URL (must be https://)",
-          url: result.url,
-        },
-        { status: 500 },
-      )
-    }
-
-    console.log(`[v0] Resolved GLB URL: ${result.url}`)
 
     return NextResponse.json({
       ok: true,
       url: result.url,
       filename: result.filename,
       variantCode: result.variantCode,
-      inputs: {
-        cellType,
-        width: widthKey,
-        height: heightKey,
-        color,
-      },
     })
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error("[v0] Error in blob-models API:", errorMessage)
-
+  } catch (err: any) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Failed to resolve model",
-        details: errorMessage,
+        error: err?.message ?? "Unknown error",
       },
-      { status: 400 },
+      { status: 500 },
     )
   }
 }

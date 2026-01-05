@@ -5,7 +5,6 @@ export type ProductCategory =
   | "stangenset"
   | "metallboden"
   | "glasboden"
-  | "holzboden"
   | "schublade"
   | "tuer"
   | "jalousie"
@@ -108,12 +107,6 @@ export const glasboeden: Product[] = [
   },
 ]
 
-// Holzböden (Wood shelves - Makassar - 2 pieces per package)
-export const holzboeden: Product[] = [
-  { artNr: "sim016", name: "Makassar 40", category: "holzboden", size: 40, price: 26.0, variant: "makassar" },
-  { artNr: "sim017", name: "Makassar 80", category: "holzboden", size: 80, price: 35.0, variant: "makassar" },
-]
-
 // Schubladen & Türen (Drawers & Doors)
 export const schubladenTueren: Product[] = [
   {
@@ -182,7 +175,6 @@ export const allProducts: Product[] = [
   ...stangensets,
   ...metallboeden,
   ...glasboeden,
-  ...holzboeden,
   ...schubladenTueren,
   ...funktionswaende,
   ...ledUnits,
@@ -208,10 +200,6 @@ export function getGlasbodenPrice(width: number): number {
   return width === 40 ? 26.0 : width === 80 ? 35.0 : 0
 }
 
-export function getHolzbodenPrice(width: number): number {
-  return width === 40 ? 26.0 : width === 80 ? 35.0 : 0
-}
-
 export function getSchubladePrice(): number {
   return 88.5 // Doppelschublade 80
 }
@@ -233,7 +221,7 @@ export function getLedPrice(stripes: 2 | 4): number {
 }
 
 // Color hex values for rendering
-export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar" | "gelb", string> = {
+export const colorHexMap: Record<ShelfColor | "satiniert" | "gelb", string> = {
   schwarz: "#1a1a1a",
   weiss: "#f5f5f5",
   blau: "#00b4d8",
@@ -242,5 +230,4 @@ export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar" | "gelb",
   gruen: "#228B22",
   gelb: "#eab308",
   satiniert: "#e8e8e8",
-  makassar: "#3d2817",
 }

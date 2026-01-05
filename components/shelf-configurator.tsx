@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useRef } from "react"
+import { useState, useCallback, useMemo, useRef, Suspense } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, Environment, ContactShadows } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
@@ -14,7 +14,6 @@ import {
   stangensets,
   metallboeden,
   glasboeden,
-  holzboeden,
   schubladenTueren,
   funktionswaende,
 } from "@/lib/simpli-products"
@@ -34,6 +33,7 @@ export type GridCell = {
     | "abschliessbare-tueren"
   row: number
   col: number
+  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot" // Per-module color
 }
 
 export type ShelfConfig = {
@@ -85,6 +85,7 @@ const initialConfig: ShelfConfig = {
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
   const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("ohne-seitenwaende")
+  const [selectedColor, setSelectedColor] = useState<GridCell["color"]>("weiss") // Add selected color state
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
 
@@ -145,8 +146,12 @@ export function ShelfConfigurator() {
     return heights
   }
 
-  const isConnectedToExisting = (row: number, col: number, grid: GridCell[][]): boolean => {
+  const isConnectedToExisting = (row: number, col: number, grid: GridCell[][], type?: GridCell["type"]): boolean => {
     const currentCell = grid[row]?.[col]
+    if (type === "empty") {
+      // Allow clearing any non-empty cell
+      return currentCell !== undefined && currentCell.type !== "empty"
+    }
     if (!currentCell || currentCell.type !== "ghost") {
       return false
     }
@@ -287,8 +292,7 @@ export function ShelfConfigurator() {
           return prev
         }
 
-        // Check if cell is connected to existing modules
-        if (!isConnectedToExisting(row, col, prev.grid)) {
+        if (!isConnectedToExisting(row, col, prev.grid, type)) {
           console.log("[v0] Cannot place - not connected to existing modules")
           return prev
         }
@@ -303,7 +307,7 @@ export function ShelfConfigurator() {
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
-              return { ...cell, type }
+              return { ...cell, type, color: selectedColor }
             }
             return cell
           }),
@@ -336,7 +340,7 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory],
+    [saveToHistory, selectedColor], // Added selectedColor to dependencies
   )
 
   const handleCellClick3D = useCallback(
@@ -467,9 +471,10 @@ export function ShelfConfigurator() {
     setHistory([newConfig])
     setHistoryIndex(0)
     setSelectedTool("ohne-seitenwaende")
+    setSelectedColor("weiss") // Reset selected color
   }, [])
 
-  const { shoppingList, totalPrice } = useMemo(() => {
+  const calculateBOM = (config: ShelfConfig) => {
     const items: Map<string, ShoppingItem> = new Map()
 
     const addItem = (product: Product, qty = 1) => {
@@ -488,7 +493,7 @@ export function ShelfConfigurator() {
 
     const filledCells = config.grid.flat().filter((c) => c.type !== "empty" && c.type !== "ghost")
     if (filledCells.length === 0) {
-      return { shoppingList: [], totalPrice: 0 }
+      return { items: [], totalPrice: 0 }
     }
 
     // Group filled cells by column
@@ -638,8 +643,6 @@ export function ShelfConfigurator() {
           metallboeden.find((p) => p.size === bodenSize)
       } else if (config.material === "glass") {
         shelfProduct = glasboeden.find((p) => p.size === bodenSize)
-      } else {
-        shelfProduct = holzboeden.find((p) => p.size === bodenSize)
       }
 
       if (shelfProduct) {
@@ -698,13 +701,23 @@ export function ShelfConfigurator() {
     const list = Array.from(items.values())
     const total = list.reduce((sum, item) => sum + item.subtotal, 0)
 
-    return { shoppingList: list, totalPrice: total }
-  }, [config])
+    return { items: list, totalPrice: total }
+  }
 
-  const priceFormatted = totalPrice.toFixed(2).replace(".", ",")
+  const bomData = useMemo(() => {
+    const result = calculateBOM(config)
+    const transformedItems = result.items.map((item) => ({
+      id: item.product.artNr,
+      name: item.product.name,
+      quantity: item.quantity,
+      pricePerUnit: item.product.price,
+      total: item.subtotal,
+    }))
+    return { items: transformedItems, totalPrice: result.totalPrice }
+  }, [config]) // Updated dependency to include config
 
   return (
-    <div className="flex h-full w-full flex-col bg-neutral-950">
+    <div className="flex h-screen w-screen flex-col bg-neutral-900">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
@@ -713,13 +726,22 @@ export function ShelfConfigurator() {
             <ambientLight intensity={0.5} />
             <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} />
             <directionalLight position={[-3, 3, -3]} intensity={0.4} />
-            <ShelfScene
-              config={config}
-              selectedTool={selectedTool}
-              hoveredCell={hoveredCell}
-              onCellClick={handleCellClick3D}
-              onCellHover={setHoveredCell}
-            />
+            <Suspense
+              fallback={
+                <mesh>
+                  <boxGeometry args={[0.5, 0.5, 0.5]} />
+                  <meshStandardMaterial color="#333" />
+                </mesh>
+              }
+            >
+              <ShelfScene
+                config={config}
+                selectedTool={selectedTool}
+                hoveredCell={hoveredCell}
+                onCellClick={handleCellClick3D}
+                onCellHover={setHoveredCell}
+              />
+            </Suspense>
             <ContactShadows position={[0, -0.01, 0]} opacity={0.6} scale={10} blur={2} far={4} />
             <Environment preset="apartment" />
             <OrbitControls
@@ -795,15 +817,19 @@ export function ShelfConfigurator() {
         <ConfiguratorPanel
           config={config}
           selectedTool={selectedTool}
-          onSelectTool={setSelectedTool}
-          onPlaceModule={placeModule}
+          selectedColor={selectedColor}
+          onSelectTool={(tool) => {
+            setSelectedTool(tool)
+          }}
+          onSelectColor={setSelectedColor}
+          onPlaceModule={handleCellClick3D}
           onClearCell={clearCell}
           onResizeGrid={resizeGrid}
           onSetColumnWidth={setColumnWidth}
           onSetRowHeight={setRowHeight}
           onUpdateConfig={updateConfig}
-          shoppingList={shoppingList}
-          price={priceFormatted}
+          shoppingList={bomData.items}
+          price={bomData.totalPrice} // Pass raw number instead of formatted string
           showShoppingList={showShoppingList}
           onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
         />
@@ -837,6 +863,13 @@ function getColorHex(color: string): string {
     orange: "#FF8C00",
     red: "#DC143C",
     satin: "#F0F8FF",
+    weiss: "#FFFFFF",
+    schwarz: "#000000",
+    blau: "#00A0D6",
+    gruen: "#228B22",
+    gelb: "#FFFF00",
+    orange: "#FF8C00",
+    rot: "#DC143C",
   }
   return colors[color] || "#FFFFFF"
 }
