@@ -115,6 +115,7 @@ export function ShelfConfigurator() {
   const [paintMode, setPaintMode] = useState<PaintMode>("panels")
   const [activeColor, setActiveColor] = useState<ShelfColor>("weiss")
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
+  const [showShoppingList, setShowShoppingList] = useState(false)
 
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
@@ -489,6 +490,7 @@ export function ShelfConfigurator() {
     setHistoryIndex(0)
     setSelectedTool("ohne-seitenwaende")
     setPaintMode("panels")
+    setShowShoppingList(false)
   }, [])
 
   const getPanelColor = useCallback(
@@ -1093,6 +1095,11 @@ export function ShelfConfigurator() {
           onUpdateConfig={updateConfig}
           selectedTool={selectedTool}
           onSelectTool={setSelectedTool}
+          onPlaceModule={placeModule}
+          onClearCell={clearCell}
+          onResizeGrid={resizeGrid}
+          onSetColumnWidth={setColumnWidth}
+          onSetRowHeight={setRowHeight}
           selectedCell={selectedCell}
           paintMode={paintMode}
           onPaintModeChange={setPaintMode}
@@ -1105,6 +1112,8 @@ export function ShelfConfigurator() {
           onClearFrontColor={clearFrontColor}
           shoppingList={shoppingList}
           price={priceFormatted}
+          showShoppingList={showShoppingList}
+          onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
         />
       </div>
     </div>
