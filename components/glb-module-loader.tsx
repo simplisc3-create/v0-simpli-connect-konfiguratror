@@ -1,7 +1,7 @@
 "use client"
 
 import { useGLTF } from "@react-three/drei"
-import { useEffect, useState } from "react"
+import { useEffect, useState, memo } from "react"
 import * as THREE from "three"
 import type { GridCell } from "./shelf-configurator"
 import type { ShelfConfig } from "./shelf-configurator"
@@ -19,7 +19,7 @@ type GLBModuleProps = {
   modelUrl?: string
 }
 
-export function GLBModule({
+export const GLBModule = memo(function GLBModule({
   position,
   cellType,
   width,
@@ -34,8 +34,6 @@ export function GLBModule({
   const [modelUrl, setModelUrl] = useState<string | null>(explicitModelUrl || null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  const [stableColor] = useState(color)
 
   useEffect(() => {
     if (explicitModelUrl) {
@@ -60,11 +58,14 @@ export function GLBModule({
           "#10b981": "green",
           "#059669": "green",
           "#eab308": "yellow",
+          "#ffeb3b": "yellow",
           "#f59e0b": "orange",
           "#ef4444": "red",
+          "#9c27b0": "purple",
+          "#a855f7": "purple",
         }
 
-        const colorName = colorMap[stableColor.toLowerCase()] || "white"
+        const colorName = colorMap[color.toLowerCase()] || "white"
 
         const widthCm = Math.round(width * 100)
         const heightCm = Math.round(height * 100)
@@ -106,7 +107,7 @@ export function GLBModule({
     }
 
     fetchBlobModels()
-  }, [width, height, cellType, stableColor, explicitModelUrl])
+  }, [width, height, cellType, color, explicitModelUrl])
 
   if (cellType === "empty" || loading || !modelUrl || error) {
     return null
@@ -120,13 +121,13 @@ export function GLBModule({
       width={width}
       height={height}
       depth={depth}
-      color={stableColor}
+      color={color}
       row={row}
       col={col}
       gridConfig={gridConfig}
     />
   )
-}
+})
 
 function LoadedGLBModel({
   modelUrl,
@@ -189,12 +190,14 @@ function LoadedGLBModel({
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
+      // The overlap is now handled at the grid level in shelf-scene.tsx
       const offsetX = -center.x * scaleX
       const offsetY = -center.y * scaleY
       const offsetZ = -center.z * scaleZ
 
       setModelOffset([offsetX, offsetY, offsetZ])
 
+      // ... existing code for rotation ...
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
       } else if (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) {
@@ -229,7 +232,7 @@ function LoadedGLBModel({
       console.error("[v0] Error processing GLB model:", error)
       setLoadError(true)
     }
-  }, [gltf?.scene, color, width, height, depth, loadError, cellType, modelUrl])
+  }, [gltf?.scene, color, width, height, depth, loadError, row, col, gridConfig, cellType, modelUrl])
 
   if (loadError || !clonedScene) {
     return null
