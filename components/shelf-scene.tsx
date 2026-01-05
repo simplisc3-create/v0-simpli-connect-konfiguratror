@@ -5,7 +5,7 @@ import type React from "react"
 import { useMemo, useState, memo } from "react"
 import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
-import { colorHexMap } from "@/lib/simpli-products"
+import { colorHexMap } from "@/lib/color-hex-map"
 import { GLBModule } from "./glb-module-loader"
 
 type Props = {
@@ -138,18 +138,18 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
       rows: config.rows,
       columns: config.columns,
     }
-  }, [config.grid, config.columnWidths, config.rowHeights, config.rows, config.columns])
+  }, [config])
 
   const { glbModules, interactiveCells } = useMemo(() => {
     const glbs: React.ReactNode[] = []
     const cells: React.ReactNode[] = []
 
-    const fallbackColor = "weiss"
+    const fallbackColor = config.defaultPanelColor || "weiss"
 
     const depth = 0.38
 
-    const columnTubeOverlap = 0.003 // horizontal overlap (left-right) - already perfect
-    const rowTubeOverlap = 0.013 // vertical overlap (up-down) - adjusted to reduce gap
+    const columnTubeOverlap = 0.003
+    const rowTubeOverlap = 0.013
 
     const columnCenters: number[] = []
     for (let col = 0; col < gridStructure.columns; col++) {
@@ -180,6 +180,8 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
     const offsetX = -totalWidth / 2
     const offsetY = 0
     const offsetZ = -depth / 2
+
+    const getCellId = (row: number, col: number) => `c-${row}-${col}`
 
     gridStructure.grid.forEach((rowCells, gridRow) => {
       rowCells.forEach((cell, gridCol) => {
@@ -234,10 +236,11 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
 
         if (isEmpty || isGhost) return
 
-        const cellColor = cell.color || fallbackColor
-        const panelColor = colorMap[cellColor] || colorMap.weiss
-
-        console.log(`[v0] Rendering cell [${gridRow},${gridCol}] with color: ${cellColor} -> ${panelColor}`)
+        const cellId = getCellId(gridRow, gridCol)
+        const cellStylePanelColor = config.cellStyles?.[cellId]?.panelColor
+        const cellPanelColor = cell.panelColor
+        const resolvedPanelColor = cellStylePanelColor ?? cellPanelColor ?? cell.color ?? fallbackColor
+        const panelColor = colorMap[resolvedPanelColor] || colorMap.weiss
 
         glbs.push(
           <StableGLBModule

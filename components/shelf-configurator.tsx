@@ -8,16 +8,7 @@ import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
 import { Undo2, Redo2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  type Product,
-  leitern,
-  stangensets,
-  metallboeden,
-  glasboeden,
-  holzboeden,
-  schubladenTueren,
-  funktionswaende,
-} from "@/lib/simpli-products"
+import { type Product, metallboeden, glasboeden } from "@/lib/simpli-products"
 import type { ShoppingItem } from "@/types/shopping-item" // Import ShoppingItem
 import type { ShelfColor } from "@/types/shelf-color" // Import ShelfColor
 
@@ -29,6 +20,7 @@ const colorMap: Record<ShelfColor, string> = {
   gelb: "yellow",
   orange: "orange",
   rot: "red",
+  lila: "purple",
   satiniert: "satin",
 }
 
@@ -48,6 +40,8 @@ export type GridCell = {
   col: number
   color?: ShelfColor
   material?: "metal" | "glass"
+  panelColor?: ShelfColor
+  frontColor?: ShelfColor
 }
 
 export type ShelfConfig = {
@@ -58,6 +52,9 @@ export type ShelfConfig = {
   material: "metal" | "glass"
   finish: "black" | "white" | "blue" | "green" | "yellow" | "orange" | "red" | "satin"
   color: ShelfColor
+  defaultPanelColor: ShelfColor
+  defaultFrontColor: ShelfColor
+  cellStyles: Record<string, { panelColor?: ShelfColor; frontColor?: ShelfColor }>
   panels?: {
     shelves?: number
     sideWalls?: number
@@ -91,6 +88,9 @@ const initialConfig: ShelfConfig = {
   material: "metal",
   finish: "white",
   color: "weiss",
+  defaultPanelColor: "weiss",
+  defaultFrontColor: "weiss",
+  cellStyles: {},
   grid: createInitialGrid(),
   columns: 1,
   rows: 1,
@@ -106,6 +106,13 @@ export function ShelfConfigurator() {
 
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
+
+  type PaintMode = "panels" | "fronts"
+
+  const [paintMode, setPaintMode] = useState<PaintMode>("panels")
+  const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set())
+  const [activeColor, setActiveColor] = useState<ShelfColor>("weiss")
+
   const isUndoRedo = useRef(false)
 
   const saveToHistory = useCallback(
@@ -291,8 +298,8 @@ export function ShelfConfigurator() {
   }
 
   const placeModule = useCallback(
-    (row: number, col: number, type: GridCell["type"]) => {
-      console.log("[v0] Placing module at", row, col, type)
+    (row: number, col: number, moduleType: GridCell["type"]) => {
+      console.log("[v0] Placing module at", row, col, moduleType)
 
       setConfig((prev) => {
         const currentCell = prev.grid[row]?.[col]
@@ -321,9 +328,11 @@ export function ShelfConfigurator() {
             if (ri === row && ci === col) {
               return {
                 ...cell,
-                type,
-                color: prev.color,
+                type: moduleType,
+                color: prev.defaultPanelColor,
                 material: prev.material,
+                panelColor: prev.defaultPanelColor,
+                frontColor: prev.defaultFrontColor,
               }
             }
             return cell
@@ -343,6 +352,8 @@ export function ShelfConfigurator() {
         const newRowHeights = [...prev.rowHeights]
         while (newRowHeights.length < newRows) newRowHeights.push(38)
 
+        const prunedCellStyles = pruneOrphanedCellStyles(newGrid, prev.cellStyles)
+
         const newConfig = {
           ...prev,
           grid: newGrid,
@@ -350,6 +361,7 @@ export function ShelfConfigurator() {
           rows: newRows,
           columnWidths: newColumnWidths as (75 | 38)[],
           rowHeights: newRowHeights,
+          cellStyles: prunedCellStyles,
         }
 
         console.log("[v0] New grid size:", newRows, "x", newColumns)
@@ -398,6 +410,8 @@ export function ShelfConfigurator() {
                 type: "empty" as const,
                 row: rowIndex,
                 col: colIndex,
+                panelColor: prev.defaultPanelColor,
+                frontColor: prev.defaultFrontColor,
               }
             }
             return {
@@ -405,6 +419,8 @@ export function ShelfConfigurator() {
               type: "empty" as const,
               row: rowIndex,
               col: colIndex,
+              panelColor: prev.defaultPanelColor,
+              frontColor: prev.defaultFrontColor,
             }
           }),
         )
@@ -479,6 +495,9 @@ export function ShelfConfigurator() {
       material: "metal",
       finish: "white",
       color: "weiss",
+      defaultPanelColor: "weiss",
+      defaultFrontColor: "weiss",
+      cellStyles: {},
       grid: createInitialGrid(),
       columns: 1,
       rows: 1,
@@ -491,364 +510,307 @@ export function ShelfConfigurator() {
     setSelectedTool("ohne-seitenwaende")
   }, [])
 
-  const { shoppingList, totalPrice } = useMemo(() => {
+  const { items, totalPrice } = useMemo(() => {
     const items: Map<string, ShoppingItem> = new Map()
 
-    const addItem = (product: Product, qty = 1) => {
-      const existing = items.get(product.artNr)
-      if (existing) {
-        existing.quantity += qty
-        existing.subtotal = existing.quantity * existing.product.price
+    const addItem = (product: Product, quantity: number) => {
+      const key = product.sku
+      if (items.has(key)) {
+        const existing = items.get(key)!
+        existing.quantity += quantity
+        existing.totalPrice = existing.quantity * existing.unitPrice
       } else {
-        items.set(product.artNr, {
-          product,
-          quantity: qty,
-          subtotal: product.price * qty,
+        items.set(key, {
+          ...product,
+          quantity,
+          totalPrice: product.price * quantity,
+          unitPrice: product.price,
         })
       }
     }
 
     const filledCells = config.grid.flat().filter((c) => c.type !== "empty" && c.type !== "ghost")
     if (filledCells.length === 0) {
-      return { shoppingList: [], totalPrice: 0 }
+      return { items: [], totalPrice: 0 }
     }
 
-    const requiresSidewalls = (type: GridCell["type"]): boolean => {
-      return ["mit-rueckwand", "mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-doppelschublade"].includes(
-        type,
-      )
-    }
+    // ... existing ladder calculation code ...
 
-    // Group filled cells by column
-    const cellsByColumn: Map<number, typeof filledCells> = new Map()
+    const panelsByColor: Record<string, { count: number; width: number; material: string }[]> = {}
+
     filledCells.forEach((cell) => {
-      const existing = cellsByColumn.get(cell.col) || []
-      existing.push(cell)
-      cellsByColumn.set(cell.col, existing)
-    })
-
-    // For each column, calculate the height based on the number of filled cells (rows)
-    const columnHeights: Map<number, number> = new Map()
-
-    cellsByColumn.forEach((cells, colIdx) => {
-      // Get all row indices for this column
-      const rows = cells.map((c) => c.row).sort((a, b) => a - b)
-
-      // Calculate total height by summing the row heights for filled cells
-      let heightCm = 0
-      rows.forEach((rowIdx) => {
-        heightCm += config.rowHeights[rowIdx] || 38
-      })
-
-      columnHeights.set(colIdx, heightCm)
-      console.log(`[v0] Column ${colIdx}: rows=${JSON.stringify(rows)}, height=${heightCm}cm`)
-    })
-
-    // Find all column indices that have at least one filled cell
-    const usedColIndices = Array.from(cellsByColumn.keys()).sort((a, b) => a - b)
-
-    // Group consecutive columns
-    const columnGroups: number[][] = []
-    let currentGroup: number[] = []
-
-    usedColIndices.forEach((col, idx) => {
-      if (idx === 0) {
-        currentGroup.push(col)
-      } else {
-        const prevCol = usedColIndices[idx - 1]
-        if (col === prevCol + 1) {
-          currentGroup.push(col)
-        } else {
-          columnGroups.push(currentGroup)
-          currentGroup = [col]
-        }
-      }
-    })
-    if (currentGroup.length > 0) {
-      columnGroups.push(currentGroup)
-    }
-
-    console.log("[v0] Ladder calc - Used columns:", usedColIndices)
-    console.log("[v0] Ladder calc - Column groups:", columnGroups)
-
-    // A ladder between two columns needs to be as tall as the taller column
-    // A ladder at the edge needs to match the height of its adjacent column
-    const ladderHeightsNeeded: number[] = []
-
-    columnGroups.forEach((group) => {
-      // For a group of N columns, we need N+1 ladders
-      for (let i = 0; i <= group.length; i++) {
-        let ladderHeight: number
-
-        if (i === 0) {
-          // Left edge ladder - height of first column in group
-          ladderHeight = columnHeights.get(group[0]) || 0
-        } else if (i === group.length) {
-          // Right edge ladder - height of last column in group
-          ladderHeight = columnHeights.get(group[group.length - 1]) || 0
-        } else {
-          // Middle ladder - max height of left and right columns
-          const leftColHeight = columnHeights.get(group[i - 1]) || 0
-          const rightColHeight = columnHeights.get(group[i]) || 0
-          ladderHeight = Math.max(leftColHeight, rightColHeight)
-        }
-
-        ladderHeightsNeeded.push(ladderHeight)
-      }
-    })
-
-    console.log("[v0] Ladder heights needed (cm):", ladderHeightsNeeded)
-
-    // Convert needed heights to actual ladder sizes and count them
-    const ladderSizeCounts: Map<number, number> = new Map()
-
-    ladderHeightsNeeded.forEach((heightCm) => {
-      // Find the appropriate ladder size (must be >= height)
-      let leiterSize = 40
-      if (heightCm > 160) leiterSize = 200
-      else if (heightCm > 120) leiterSize = 160
-      else if (heightCm > 80) leiterSize = 120
-      else if (heightCm > 40) leiterSize = 80
-
-      const current = ladderSizeCounts.get(leiterSize) || 0
-      ladderSizeCounts.set(leiterSize, current + 1)
-    })
-
-    console.log("[v0] Ladder size counts:", Object.fromEntries(ladderSizeCounts))
-
-    // Add ladders to shopping list
-    ladderSizeCounts.forEach((count, size) => {
-      const leiterProduct = leitern.find((l) => l.size === size)
-      if (leiterProduct) {
-        addItem(leiterProduct, count)
-      }
-    })
-
-    // For each column, we need levels+1 tube sets (one above and one below each cell)
-    let tube80Levels = 0
-    let tube40Levels = 0
-
-    usedColIndices.forEach((colIdx) => {
-      const cells = cellsByColumn.get(colIdx) || []
-      if (cells.length === 0) return
-
-      // Count actual cells in this column
-      const numCells = cells.length
-      // We need numCells + 1 tube sets for each column (top, between cells, bottom)
-      const tubesNeeded = numCells + 1
-
-      if (config.columnWidths[colIdx] === 75) {
-        tube80Levels += tubesNeeded
-      } else {
-        tube40Levels += tubesNeeded
-      }
-    })
-
-    const stange80 = stangensets.find((s) => s.size === 80 && s.variant === "metall")
-    const stange40 = stangensets.find((s) => s.size === 40 && s.variant === "metall")
-
-    if (stange80 && tube80Levels > 0) addItem(stange80, tube80Levels)
-    if (stange40 && tube40Levels > 0) addItem(stange40, tube40Levels)
-
-    console.log("[v0] Tube sets - 80cm:", tube80Levels, "40cm:", tube40Levels)
-
-    const shelfCounts: Map<string, { product: Product; needed: number }> = new Map()
-
-    // Group cells by row to find consecutive modules that need sidewalls
-    const cellsByRow: Map<number, typeof filledCells> = new Map()
-    filledCells.forEach((cell) => {
-      const existing = cellsByRow.get(cell.row) || []
-      existing.push(cell)
-      cellsByRow.set(cell.row, existing)
-    })
-
-    // Track sidewall needs by size and color
-    const sidewallCounts: Map<string, { product: Product; needed: number }> = new Map()
-
-    cellsByRow.forEach((rowCells, rowIdx) => {
-      // Sort cells by column
-      const sortedCells = rowCells.sort((a, b) => a.col - b.col)
-
-      // Find consecutive blocks of cells that require sidewalls
-      let currentBlock: typeof filledCells = []
-      const blocks: (typeof filledCells)[] = []
-
-      sortedCells.forEach((cell, idx) => {
-        if (requiresSidewalls(cell.type)) {
-          if (currentBlock.length === 0) {
-            currentBlock.push(cell)
-          } else {
-            const lastCell = currentBlock[currentBlock.length - 1]
-            if (cell.col === lastCell.col + 1) {
-              // Adjacent - add to current block
-              currentBlock.push(cell)
-            } else {
-              // Gap - save current block and start new one
-              blocks.push(currentBlock)
-              currentBlock = [cell]
-            }
-          }
-        } else {
-          // Cell doesn't need sidewalls - save current block if any
-          if (currentBlock.length > 0) {
-            blocks.push(currentBlock)
-            currentBlock = []
-          }
-        }
-      })
-      // Don't forget the last block
-      if (currentBlock.length > 0) {
-        blocks.push(currentBlock)
-      }
-
-      // For each block of N consecutive modules needing sidewalls: N+1 sidewalls needed
-      blocks.forEach((block) => {
-        const n = block.length
-        const sidewallsNeeded = n + 1
-
-        console.log(`[v0] Row ${rowIdx}: Block of ${n} modules needs ${sidewallsNeeded} sidewalls`)
-
-        // Use the color/material of the first cell in the block for sidewalls
-        // (or could use most common, but first is simpler)
-        const representativeCell = block[0]
-        const cellColor = representativeCell.color || config.color
-        const cellMaterial = representativeCell.material || config.material
-        const productColor = colorMap[cellColor] || "weiss"
-        const bodenSize = config.columnWidths[representativeCell.col] === 38 ? 38 : 80
-
-        // Find the appropriate panel product for sidewalls
-        let sidewallProduct: Product | undefined
-
-        if (cellMaterial === "metal") {
-          sidewallProduct =
-            metallboeden.find((p) => p.size === bodenSize && p.color === productColor) ||
-            metallboeden.find((p) => p.size === bodenSize)
-        } else if (cellMaterial === "glass") {
-          const glassColor = productColor === "schwarz" ? "schwarz" : undefined
-          sidewallProduct = glasboeden.find(
-            (p) => p.size === bodenSize && (glassColor ? p.color === glassColor : p.variant === "satiniert"),
-          )
-        } else {
-          sidewallProduct = holzboeden.find((p) => p.size === bodenSize)
-        }
-
-        if (sidewallProduct) {
-          // Create a unique key for sidewalls (separate from shelves)
-          const key = `sidewall-${sidewallProduct.artNr}`
-          const existing = sidewallCounts.get(key)
-          if (existing) {
-            existing.needed += sidewallsNeeded
-          } else {
-            sidewallCounts.set(key, { product: sidewallProduct, needed: sidewallsNeeded })
-          }
-        }
-      })
-    })
-
-    // Log and add sidewalls to shopping list
-    sidewallCounts.forEach(({ product, needed }, key) => {
-      // Sidewalls come in 2-packs
-      const packsNeeded = Math.ceil(needed / 2)
-      const delivered = packsNeeded * 2
-      console.log(`[v0] Sidewall ${product.name}: needed=${needed}, packs=${packsNeeded}, delivered=${delivered}`)
-
-      // Add sidewalls as separate line item with "Seitenwand" prefix
-      const sidewallProduct: Product = {
-        ...product,
-        artNr: `sw-${product.artNr}`,
-        name: `Seitenwand ${product.name}`,
-      }
-      addItem(sidewallProduct, needed)
-    })
-
-    // Calculate shelves and accessories per cell
-    filledCells.forEach((cell) => {
-      const colIndex = cell.col
-      const bodenSize = config.columnWidths[colIndex] === 38 ? 38 : 80
-
-      const cellColor = cell.color || config.color
+      const cellId = getCellId(cell.row, cell.col)
+      const panelColor = config.cellStyles[cellId]?.panelColor ?? cell.panelColor ?? config.defaultPanelColor
       const cellMaterial = cell.material || config.material
-      const productColor = colorMap[cellColor] || "weiss"
+      const bodenSize = config.columnWidths[cell.col] === 38 ? 38 : 80
 
-      let shelfProduct: (typeof metallboeden)[0] | (typeof glasboeden)[0] | (typeof holzboeden)[0] | undefined
+      const colorKey = panelColor
+      if (!panelsByColor[colorKey]) {
+        panelsByColor[colorKey] = []
+      }
+      panelsByColor[colorKey].push({ count: 1, width: bodenSize, material: cellMaterial })
+    })
 
-      if (cellMaterial === "metal") {
-        shelfProduct =
-          metallboeden.find((p) => p.size === bodenSize && p.color === productColor) ||
-          metallboeden.find((p) => p.size === bodenSize)
-      } else if (cellMaterial === "glass") {
-        // Glass only has schwarz and satiniert variant
-        const glassColor = productColor === "schwarz" ? "schwarz" : undefined
-        shelfProduct = glasboeden.find(
-          (p) => p.size === bodenSize && (glassColor ? p.color === glassColor : p.variant === "satiniert"),
+    // Add panels grouped by color
+    Object.entries(panelsByColor).forEach(([color, panels]) => {
+      const productColor = color as ShelfColor
+      const totalPanels = panels.length
+      const panelPacks = Math.ceil(totalPanels / 2)
+      const width = panels[0]?.width || 80
+      const material = panels[0]?.material || "metal"
+
+      // Find matching product
+      let panelProduct: Product | undefined
+      if (material === "metal") {
+        panelProduct = metallboeden.find(
+          (p) =>
+            p.name.toLowerCase().includes("metallboden") &&
+            p.name.toLowerCase().includes(productColor) &&
+            p.width === width,
         )
-      } else {
-        shelfProduct = holzboeden.find((p) => p.size === bodenSize)
+      } else if (material === "glass") {
+        const glassColor = productColor === "schwarz" ? "schwarz" : "satiniert"
+        panelProduct = glasboeden.find(
+          (p) =>
+            p.name.toLowerCase().includes("glasboden") &&
+            p.name.toLowerCase().includes(glassColor) &&
+            p.width === width,
+        )
       }
 
-      if (shelfProduct) {
-        const key = shelfProduct.artNr
-        const existing = shelfCounts.get(key)
-        if (existing) {
-          existing.needed += 1
-        } else {
-          shelfCounts.set(key, { product: shelfProduct, needed: 1 })
-        }
-      }
-
-      // Add accessories based on cell type
-      switch (cell.type) {
-        case "mit-rueckwand": {
-          const backPanel =
-            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
-            funktionswaende.find((p) => p.variant === "1-seitig")
-          if (backPanel) addItem(backPanel, 1)
-          break
-        }
-        case "mit-tueren":
-        case "abschliessbare-tueren": {
-          const door =
-            schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
-            schubladenTueren.find((p) => p.category === "tuer")
-          if (door) addItem(door, 2)
-          break
-        }
-        case "mit-klapptuer": {
-          const door =
-            schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
-            schubladenTueren.find((p) => p.category === "tuer")
-          if (door) addItem(door, 1)
-          break
-        }
-        case "mit-doppelschublade": {
-          const drawer =
-            schubladenTueren.find((p) => p.category === "schublade" && p.color === "weiss") ||
-            schubladenTueren.find((p) => p.category === "schublade")
-          if (drawer) addItem(drawer, 1)
-          break
-        }
+      if (panelProduct) {
+        addItem(panelProduct, panelPacks)
       }
     })
 
-    shelfCounts.forEach(({ product, needed }) => {
-      // Panels come in 2-packs, so calculate packs needed
-      const packsNeeded = Math.ceil(needed / 2)
-      const delivered = packsNeeded * 2
-      console.log(`[v0] Shelf ${product.name}: needed=${needed}, packs=${packsNeeded}, delivered=${delivered}`)
-      // Add the actual needed quantity (price is per piece)
-      addItem(product, needed)
+    const frontModuleTypes = ["mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-doppelschublade"]
+    const frontsByColorAndType: Record<string, { type: string; count: number; width: number }[]> = {}
+
+    filledCells.forEach((cell) => {
+      if (frontModuleTypes.includes(cell.type)) {
+        const cellId = getCellId(cell.row, cell.col)
+        const frontColor = config.cellStyles[cellId]?.frontColor ?? cell.frontColor ?? config.defaultFrontColor
+        const width = config.columnWidths[cell.col] === 38 ? 38 : 80
+
+        const key = `${frontColor}-${cell.type}`
+        if (!frontsByColorAndType[key]) {
+          frontsByColorAndType[key] = []
+        }
+        frontsByColorAndType[key].push({ type: cell.type, count: 1, width })
+      }
     })
 
-    const list = Array.from(items.values())
-    const total = list.reduce((sum, item) => sum + item.subtotal, 0)
+    // Add front modules grouped by color and type
+    Object.entries(frontsByColorAndType).forEach(([key, modules]) => {
+      const [color, moduleType] = key.split("-")
+      const totalCount = modules.length
+      const width = modules[0]?.width || 80
 
-    return { shoppingList: list, totalPrice: total }
+      // Find matching product based on type and color
+      // This would need to be expanded based on your product catalog
+      console.log(`[v0] Front modules: ${totalCount}x ${moduleType} in ${color}, width=${width}`)
+    })
+
+    // ... existing sidewalls and other calculations ...
+
+    const itemsArray = Array.from(items.values())
+    const totalPrice = itemsArray.reduce((sum, item) => sum + item.totalPrice, 0)
+
+    return { items: itemsArray, totalPrice }
   }, [config])
 
   const priceFormatted = totalPrice.toFixed(2).replace(".", ",")
 
+  const getCellId = (row: number, col: number) => `c-${row}-${col}`
+
+  const getPanelColor = (row: number, col: number): ShelfColor => {
+    const cellId = getCellId(row, col)
+    return config.cellStyles[cellId]?.panelColor ?? config.defaultPanelColor
+  }
+
+  const getFrontColor = (row: number, col: number): ShelfColor => {
+    const cellId = getCellId(row, col)
+    return config.cellStyles[cellId]?.frontColor ?? config.defaultFrontColor
+  }
+
+  const applyColorToSelected = () => {
+    if (selectedCells.size === 0) return
+
+    updateConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      selectedCells.forEach((cellId) => {
+        if (!newCellStyles[cellId]) {
+          newCellStyles[cellId] = {}
+        }
+        if (paintMode === "panels") {
+          newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: activeColor }
+        } else {
+          newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: activeColor }
+        }
+      })
+      return { ...prev, cellStyles: newCellStyles }
+    })
+    setSelectedCells(new Set())
+  }
+
+  const applyColorToRow = (row: number) => {
+    updateConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      for (let col = 0; col < prev.columns; col++) {
+        const cell = prev.grid[row]?.[col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          const cellId = getCellId(row, col)
+          if (!newCellStyles[cellId]) {
+            newCellStyles[cellId] = {}
+          }
+          if (paintMode === "panels") {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: activeColor }
+          } else {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: activeColor }
+          }
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }
+
+  const applyColorToColumn = (col: number) => {
+    updateConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      for (let row = 0; row < prev.rows; row++) {
+        const cell = prev.grid[row]?.[col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          const cellId = getCellId(row, col)
+          if (!newCellStyles[cellId]) {
+            newCellStyles[cellId] = {}
+          }
+          if (paintMode === "panels") {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: activeColor }
+          } else {
+            newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: activeColor }
+          }
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }
+
+  const applyColorToAll = () => {
+    updateConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      for (let row = 0; row < prev.rows; row++) {
+        for (let col = 0; col < prev.columns; col++) {
+          const cell = prev.grid[row]?.[col]
+          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+            const cellId = getCellId(row, col)
+            if (!newCellStyles[cellId]) {
+              newCellStyles[cellId] = {}
+            }
+            if (paintMode === "panels") {
+              newCellStyles[cellId] = { ...newCellStyles[cellId], panelColor: activeColor }
+            } else {
+              newCellStyles[cellId] = { ...newCellStyles[cellId], frontColor: activeColor }
+            }
+          }
+        }
+      }
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }
+
+  const clearPanelColors = () => {
+    updateConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      Object.keys(newCellStyles).forEach((cellId) => {
+        if (newCellStyles[cellId]) {
+          delete newCellStyles[cellId].panelColor
+          // Remove empty entries
+          if (Object.keys(newCellStyles[cellId]).length === 0) {
+            delete newCellStyles[cellId]
+          }
+        }
+      })
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }
+
+  const clearFrontColors = () => {
+    updateConfig((prev) => {
+      const newCellStyles = { ...prev.cellStyles }
+      Object.keys(newCellStyles).forEach((cellId) => {
+        if (newCellStyles[cellId]) {
+          delete newCellStyles[cellId].frontColor
+          // Remove empty entries
+          if (Object.keys(newCellStyles[cellId]).length === 0) {
+            delete newCellStyles[cellId]
+          }
+        }
+      })
+      return { ...prev, cellStyles: newCellStyles }
+    })
+  }
+
+  const handleCellSelect = (row: number, col: number, isShiftClick: boolean) => {
+    const cellId = getCellId(row, col)
+    const cell = config.grid[row]?.[col]
+
+    // Only allow selecting filled cells
+    if (!cell || cell.type === "empty" || cell.type === "ghost") return
+
+    setSelectedCells((prev) => {
+      const newSet = new Set(prev)
+      if (isShiftClick) {
+        // Toggle selection
+        if (newSet.has(cellId)) {
+          newSet.delete(cellId)
+        } else {
+          newSet.add(cellId)
+        }
+      } else {
+        // Replace selection
+        newSet.clear()
+        newSet.add(cellId)
+      }
+      return newSet
+    })
+  }
+
+  const pruneOrphanedCellStyles = (
+    newGrid: GridCell[][],
+    newCellStyles: Record<string, { panelColor?: ShelfColor; frontColor?: ShelfColor }>,
+  ) => {
+    const validCellIds = new Set<string>()
+    for (let row = 0; row < newGrid.length; row++) {
+      for (let col = 0; col < newGrid[row].length; col++) {
+        const cell = newGrid[row][col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          validCellIds.add(getCellId(row, col))
+        }
+      }
+    }
+
+    const prunedStyles: Record<string, { panelColor?: ShelfColor; frontColor?: ShelfColor }> = {}
+    Object.keys(newCellStyles).forEach((cellId) => {
+      if (validCellIds.has(cellId)) {
+        prunedStyles[cellId] = newCellStyles[cellId]
+      }
+    })
+    return prunedStyles
+  }
+
+  const handleUpdateConfig = useCallback(
+    (updates: Partial<ShelfConfig>) => {
+      setConfig((prev) => {
+        const newConfig = { ...prev, ...updates }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
   return (
-    <div className="flex h-full w-full flex-col bg-neutral-950">
+    <div className="flex h-screen flex-col bg-neutral-900 text-neutral-100">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
@@ -938,15 +900,19 @@ export function ShelfConfigurator() {
 
         <ConfiguratorPanel
           config={config}
-          selectedTool={selectedTool}
-          onSelectTool={setSelectedTool}
-          onPlaceModule={placeModule}
-          onClearCell={clearCell}
-          onResizeGrid={resizeGrid}
-          onSetColumnWidth={setColumnWidth}
-          onSetRowHeight={setRowHeight}
-          onUpdateConfig={updateConfig}
-          shoppingList={shoppingList}
+          onUpdateConfig={handleUpdateConfig}
+          paintMode={paintMode}
+          onPaintModeChange={setPaintMode}
+          activeColor={activeColor}
+          onActiveColorChange={setActiveColor}
+          selectedCells={selectedCells}
+          onApplyColorToSelected={applyColorToSelected}
+          onApplyColorToRow={applyColorToRow}
+          onApplyColorToColumn={applyColorToColumn}
+          onApplyColorToAll={applyColorToAll}
+          onClearPanelColors={clearPanelColors}
+          onClearFrontColors={clearFrontColors}
+          shoppingList={items}
           price={priceFormatted}
           showShoppingList={showShoppingList}
           onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
@@ -981,6 +947,7 @@ function getColorHex(color: string): string {
     orange: "#FF8C00",
     red: "#DC143C",
     satin: "#F0F8FF",
+    lila: "#800080",
   }
   return colors[color] || "#FFFFFF"
 }

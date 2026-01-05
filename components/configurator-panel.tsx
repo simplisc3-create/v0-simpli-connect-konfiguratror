@@ -1,82 +1,76 @@
 "use client"
-
-import { useState } from "react"
-import type { ShelfConfig, GridCell, ShoppingItem } from "./shelf-configurator"
+import type { ShelfConfig, GridCell } from "./shelf-configurator"
+import type { ShelfColor } from "@/types/shelf-color"
+import type { ShoppingItem } from "@/types/shopping-item"
 import { cn } from "@/lib/utils"
-import { ShoppingCart, ChevronDown, ChevronRight, X, Plus, Minus, Eraser, List } from "lucide-react"
-import { colorHexMap } from "@/lib/simpli-products"
+import { ShoppingCart, ChevronDown, ChevronRight, Plus, List, Paintbrush } from "lucide-react"
+import { colorHexMap } from "@/lib/color-hex-map"
 
-type Props = {
+type PaintMode = "panels" | "fronts"
+
+const baseColors: { id: ShelfColor; label: string; color: string }[] = [
+  { id: "weiss", label: "Weiß", color: colorHexMap.weiss },
+  { id: "schwarz", label: "Schwarz", color: colorHexMap.schwarz },
+]
+
+const specialColors: { id: ShelfColor; label: string; color: string }[] = [
+  { id: "blau", label: "Blau", color: colorHexMap.blau },
+  { id: "gruen", label: "Grün", color: colorHexMap.gruen },
+  { id: "gelb", label: "Gelb", color: colorHexMap.gelb },
+  { id: "orange", label: "Orange", color: colorHexMap.orange },
+  { id: "rot", label: "Rot", color: colorHexMap.rot },
+  { id: "lila", label: "Lila", color: colorHexMap.lila },
+]
+
+const moduleTypes: { id: GridCell["type"]; label: string; icon: string }[] = [
+  { id: "ohne-seitenwaende", label: "ohne Seitenwände", icon: "open" },
+  { id: "ohne-rueckwand", label: "ohne Rückwand", icon: "shelf" },
+  { id: "mit-rueckwand", label: "mit Rückwand", icon: "back" },
+  { id: "mit-tueren", label: "mit Türen", icon: "doors" },
+  { id: "mit-klapptuer", label: "mit Klapptür", icon: "flip" },
+  { id: "mit-doppelschublade", label: "mit Doppelschublade", icon: "drawer" },
+  { id: "abschliessbare-tueren", label: "abschließbare Türen", icon: "lock" },
+]
+
+interface ConfiguratorPanelProps {
   config: ShelfConfig
-  selectedTool: GridCell["type"] | null
-  onSelectTool: (tool: GridCell["type"] | null) => void
-  onPlaceModule: (row: number, col: number, type: GridCell["type"]) => void
-  onClearCell: (row: number, col: number) => void
-  onResizeGrid: (rows: number, cols: number) => void
-  onSetColumnWidth: (col: number, width: 75 | 38) => void
-  onSetRowHeight: (row: number, height: number) => void
   onUpdateConfig: (updates: Partial<ShelfConfig>) => void
+  paintMode: PaintMode
+  onPaintModeChange: (mode: PaintMode) => void
+  activeColor: ShelfColor
+  onActiveColorChange: (color: ShelfColor) => void
+  selectedCells: Set<string>
+  onApplyColorToSelected: () => void
+  onApplyColorToRow: (row: number) => void
+  onApplyColorToColumn: (col: number) => void
+  onApplyColorToAll: () => void
+  onClearPanelColors: () => void
+  onClearFrontColors: () => void
   shoppingList: ShoppingItem[]
   price: string
   showShoppingList: boolean
   onToggleShoppingList: () => void
 }
 
-const baseColors = [
-  { id: "weiss" as const, label: "Weiß", color: colorHexMap.weiss },
-  { id: "schwarz" as const, label: "Schwarz", color: colorHexMap.schwarz },
-]
-
-const specialColors = [
-  { id: "blau" as const, label: "Blau", color: colorHexMap.blau },
-  { id: "gruen" as const, label: "Grün", color: colorHexMap.gruen },
-  { id: "gelb" as const, label: "Gelb", color: colorHexMap.gelb },
-  { id: "orange" as const, label: "Orange", color: colorHexMap.orange },
-  { id: "rot" as const, label: "Rot", color: colorHexMap.rot },
-  { id: "lila" as const, label: "Lila", color: colorHexMap.lila },
-]
-
-const moduleTypes = [
-  { id: "ohne-seitenwaende" as const, label: "ohne Seitenwände", icon: "open" },
-  { id: "ohne-rueckwand" as const, label: "ohne Rückwand", icon: "shelf" },
-  { id: "mit-rueckwand" as const, label: "mit Rückwand", icon: "back" },
-  { id: "mit-tueren" as const, label: "mit Türen", icon: "doors" },
-  { id: "mit-klapptuer" as const, label: "mit Klapptür", icon: "flip" },
-  { id: "mit-doppelschublade" as const, label: "mit Doppelschublade", icon: "drawer" },
-  { id: "abschliessbare-tueren" as const, label: "abschließbare Türen", icon: "lock" },
-]
-
-const materialOptions = [
-  { id: "metall" as const, label: "Metall" },
-  { id: "glas" as const, label: "Glas" },
-  { id: "holz" as const, label: "Holz" },
-]
-
 export function ConfiguratorPanel({
   config,
-  selectedTool,
-  onSelectTool,
-  onPlaceModule,
-  onClearCell,
-  onResizeGrid,
-  onSetColumnWidth,
-  onSetRowHeight,
   onUpdateConfig,
+  paintMode,
+  onPaintModeChange,
+  activeColor,
+  onActiveColorChange,
+  selectedCells,
+  onApplyColorToSelected,
+  onApplyColorToRow,
+  onApplyColorToColumn,
+  onApplyColorToAll,
+  onClearPanelColors,
+  onClearFrontColors,
   shoppingList,
   price,
   showShoppingList,
   onToggleShoppingList,
-}: Props) {
-  const [expandedSection, setExpandedSection] = useState<string | null>("grid")
-
-  const handleCellClick = (row: number, col: number) => {
-    if (selectedTool === "empty") {
-      onClearCell(row, col)
-    } else if (selectedTool) {
-      onPlaceModule(row, col, selectedTool)
-    }
-  }
-
+}: ConfiguratorPanelProps) {
   const getModuleLabel = (type: GridCell["type"]) => {
     if (type === "empty") return ""
     const found = moduleTypes.find((m) => m.id === type)
@@ -104,47 +98,69 @@ export function ConfiguratorPanel({
     }
   }
 
+  const getCellId = (row: number, col: number) => `c-${row}-${col}`
+
+  // Get cell color for display in grid
+  const getCellDisplayColor = (cell: GridCell): string => {
+    const cellId = getCellId(cell.row, cell.col)
+    const styleColor = config.cellStyles?.[cellId]?.panelColor
+    const cellColor = styleColor ?? cell.panelColor ?? cell.color ?? config.defaultPanelColor ?? "weiss"
+    return colorHexMap[cellColor] || colorHexMap.weiss
+  }
+
   return (
     <div className="flex w-96 flex-col border-l border-neutral-700 bg-neutral-800">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {/* Farbe Section */}
         <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Farbe</h3>
-          <div className="flex items-start gap-3">
-            <div className="flex gap-2">
-              {baseColors.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => onUpdateConfig({ baseColor: color.id, accentColor: "none" })}
-                  className={cn(
-                    "h-10 w-10 rounded border-2 transition-all",
-                    config.baseColor === color.id && config.accentColor === "none"
-                      ? "border-white ring-2 ring-white ring-offset-2 ring-offset-neutral-800"
-                      : "border-neutral-600 hover:border-neutral-400",
-                  )}
-                  style={{ backgroundColor: color.color }}
-                  title={color.label}
-                />
-              ))}
-            </div>
-            <div className="ml-auto flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600">
-              <span className="text-2xl font-bold text-white">S</span>
-            </div>
+          <div className="mb-3 flex items-center gap-2">
+            <Paintbrush className="h-4 w-4 text-blue-400" />
+            <h3 className="text-sm font-medium text-neutral-100">Farbmodus</h3>
           </div>
+          <div className="mb-3 flex gap-2">
+            <button
+              onClick={() => onPaintModeChange("panels")}
+              className={cn(
+                "flex-1 rounded px-3 py-2 text-sm font-medium transition-all",
+                paintMode === "panels"
+                  ? "bg-blue-600 text-white"
+                  : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600",
+              )}
+            >
+              Böden & Wände
+            </button>
+            <button
+              onClick={() => onPaintModeChange("fronts")}
+              className={cn(
+                "flex-1 rounded px-3 py-2 text-sm font-medium transition-all",
+                paintMode === "fronts"
+                  ? "bg-blue-600 text-white"
+                  : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600",
+              )}
+            >
+              Fronten
+            </button>
+          </div>
+          <p className="text-xs text-neutral-400">
+            {paintMode === "panels"
+              ? "Farbe für Regalböden und Seitenwände"
+              : "Farbe für Türen, Klappen und Schubladen"}
+          </p>
         </div>
 
-        {/* Sonderfarbe Section */}
+        {/* Active Color Section */}
         <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Sonderfarbe</h3>
-          <div className="flex flex-wrap gap-2">
-            {specialColors.map((color) => (
+          <h3 className="mb-3 text-sm font-medium text-neutral-100">
+            Aktive Farbe ({paintMode === "panels" ? "Böden" : "Fronten"})
+          </h3>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[...baseColors, ...specialColors].map((color) => (
               <button
                 key={color.id}
-                onClick={() => onUpdateConfig({ accentColor: color.id })}
+                onClick={() => onActiveColorChange(color.id)}
                 className={cn(
                   "h-10 w-10 rounded border-2 transition-all",
-                  config.accentColor === color.id
+                  activeColor === color.id
                     ? "border-white ring-2 ring-white ring-offset-2 ring-offset-neutral-800"
                     : "border-neutral-600 hover:border-neutral-400",
                 )}
@@ -153,98 +169,72 @@ export function ConfiguratorPanel({
               />
             ))}
           </div>
-        </div>
 
-        {/* Material Section */}
-        <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Bodenmaterial</h3>
-          <div className="flex gap-2">
-            {materialOptions.map((mat) => (
-              <button
-                key={mat.id}
-                onClick={() => onUpdateConfig({ shelfMaterial: mat.id })}
-                className={cn(
-                  "rounded-lg border px-4 py-2 text-sm transition-all",
-                  config.shelfMaterial === mat.id
-                    ? "border-white bg-neutral-700 text-white"
-                    : "border-neutral-600 text-neutral-300 hover:border-neutral-400",
-                )}
-              >
-                {mat.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Grid Size Controls */}
-        <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Regal-Größe</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-400">Spalten:</span>
-              <button
-                onClick={() => config.columns > 1 && onResizeGrid(config.rows, config.columns - 1)}
-                className="rounded bg-neutral-700 p-1 hover:bg-neutral-600"
-              >
-                <Minus className="h-4 w-4 text-neutral-300" />
-              </button>
-              <span className="w-6 text-center text-neutral-100">{config.columns}</span>
-              <button
-                onClick={() => config.columns < 6 && onResizeGrid(config.rows, config.columns + 1)}
-                className="rounded bg-neutral-700 p-1 hover:bg-neutral-600"
-              >
-                <Plus className="h-4 w-4 text-neutral-300" />
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-400">Reihen:</span>
-              <span className="w-6 text-center text-neutral-100">{config.rows}</span>
-              <button
-                onClick={() => config.rows < 8 && onResizeGrid(config.rows + 1, config.columns)}
-                className="rounded bg-neutral-700 p-1 hover:bg-neutral-600"
-              >
-                <Plus className="h-4 w-4 text-neutral-300" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Module Tools */}
-        <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Simpli-Elemente (Klicken zum Auswählen)</h3>
-
-          {/* Eraser tool */}
-          <div className="mb-3">
+          {/* Apply Actions */}
+          <div className="space-y-2">
             <button
-              onClick={() => onSelectTool(selectedTool === "empty" ? null : "empty")}
+              onClick={onApplyColorToSelected}
+              disabled={selectedCells.size === 0}
               className={cn(
-                "flex w-full items-center gap-2 rounded-lg border p-2 transition-all",
-                selectedTool === "empty"
-                  ? "border-red-500 bg-red-500/20 text-red-300"
-                  : "border-neutral-600 text-neutral-300 hover:border-neutral-400",
+                "w-full rounded px-3 py-2 text-sm font-medium transition-all",
+                selectedCells.size > 0
+                  ? "bg-green-600 text-white hover:bg-green-500"
+                  : "bg-neutral-700 text-neutral-500 cursor-not-allowed",
               )}
             >
-              <Eraser className="h-5 w-5" />
-              <span>Radierer (Zelle leeren)</span>
+              Auf Auswahl anwenden ({selectedCells.size} Zellen)
+            </button>
+            <button
+              onClick={onApplyColorToAll}
+              className="w-full rounded bg-neutral-700 px-3 py-2 text-sm font-medium text-neutral-300 hover:bg-neutral-600"
+            >
+              Auf alle Zellen anwenden
             </button>
           </div>
+        </div>
 
-          {/* Module type buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            {moduleTypes.map((module) => (
+        {/* Clear Colors Section */}
+        <div className="border-b border-neutral-700 p-4">
+          <h3 className="mb-3 text-sm font-medium text-neutral-100">Farben zurücksetzen</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={onClearPanelColors}
+              className="flex-1 rounded bg-neutral-700 px-3 py-2 text-sm font-medium text-neutral-300 hover:bg-red-600 hover:text-white"
+            >
+              Böden-Farben
+            </button>
+            <button
+              onClick={onClearFrontColors}
+              className="flex-1 rounded bg-neutral-700 px-3 py-2 text-sm font-medium text-neutral-300 hover:bg-red-600 hover:text-white"
+            >
+              Fronten-Farben
+            </button>
+          </div>
+        </div>
+
+        {/* Default Color for New Modules */}
+        <div className="border-b border-neutral-700 p-4">
+          <h3 className="mb-3 text-sm font-medium text-neutral-100">Standard-Farbe (für neue Module)</h3>
+          <div className="flex flex-wrap gap-2">
+            {[...baseColors, ...specialColors].map((color) => (
               <button
-                key={module.id}
-                onClick={() => onSelectTool(selectedTool === module.id ? null : module.id)}
+                key={color.id}
+                onClick={() =>
+                  onUpdateConfig({
+                    color: color.id,
+                    defaultPanelColor: color.id,
+                    defaultFrontColor: color.id,
+                  })
+                }
                 className={cn(
-                  "flex flex-col items-center rounded-lg border p-2 transition-all",
-                  selectedTool === module.id
-                    ? "border-blue-500 bg-blue-500/20 text-blue-300"
-                    : "border-neutral-600 text-neutral-300 hover:border-neutral-400",
+                  "h-8 w-8 rounded border-2 transition-all",
+                  config.defaultPanelColor === color.id
+                    ? "border-white ring-2 ring-white ring-offset-2 ring-offset-neutral-800"
+                    : "border-neutral-600 hover:border-neutral-400",
                 )}
-              >
-                <ModulePreviewSVG type={module.id} />
-                <span className="mt-1 text-center text-[10px] leading-tight">{module.label}</span>
-              </button>
+                style={{ backgroundColor: color.color }}
+                title={color.label}
+              />
             ))}
           </div>
         </div>
@@ -258,7 +248,14 @@ export function ConfiguratorPanel({
             {config.columnWidths.map((width, colIndex) => (
               <button
                 key={`col-width-${colIndex}`}
-                onClick={() => onSetColumnWidth(colIndex, width === 75 ? 38 : 75)}
+                onClick={() =>
+                  onUpdateConfig({
+                    columnWidths: config.columnWidths.map((w, i) => (i === colIndex ? (w === 75 ? 38 : 75) : w)) as (
+                      | 75
+                      | 38
+                    )[],
+                  })
+                }
                 className="flex-1 rounded bg-neutral-700 px-1 py-0.5 text-[10px] text-neutral-300 hover:bg-neutral-600"
               >
                 {width}cm
@@ -267,17 +264,17 @@ export function ConfiguratorPanel({
           </div>
 
           <div className="flex">
+            {/* Row height controls */}
             <div className="flex flex-col gap-1 pr-2">
               {[...config.rowHeights].reverse().map((height, reverseIndex) => {
                 const rowIndex = config.rowHeights.length - 1 - reverseIndex
                 return (
-                  <button
+                  <div
                     key={`row-height-${rowIndex}`}
-                    onClick={() => onSetRowHeight(rowIndex, height === 38 ? 76 : 38)}
-                    className="flex h-16 w-10 items-center justify-center rounded bg-neutral-700 text-[10px] text-neutral-300 hover:bg-neutral-600"
+                    className="flex h-16 w-10 items-center justify-center rounded bg-neutral-700 text-[10px] text-neutral-300"
                   >
                     {height}cm
-                  </button>
+                  </div>
                 )
               })}
             </div>
@@ -296,21 +293,23 @@ export function ConfiguratorPanel({
                 .map((cell) => {
                   const isEmpty = cell.type === "empty" || cell.type === "ghost"
                   const isGhost = cell.type === "ghost"
-                  const effectiveColor = config.accentColor !== "none" ? config.accentColor : config.baseColor
-                  const bgColor = isEmpty ? "transparent" : colorHexMap[effectiveColor]
+                  const cellId = getCellId(cell.row, cell.col)
+                  const isSelected = selectedCells.has(cellId)
+                  const bgColor = isEmpty ? "transparent" : getCellDisplayColor(cell)
 
                   return (
                     <button
                       key={cell.id}
-                      onClick={() => handleCellClick(cell.row, cell.col)}
                       className={cn(
                         "relative flex items-center justify-center rounded border-2 text-[9px] font-medium transition-all",
                         isEmpty
                           ? isGhost
                             ? "border-dashed border-blue-400/50 hover:border-blue-400 hover:bg-blue-500/10"
                             : "border-dashed border-neutral-600 hover:border-neutral-400 hover:bg-neutral-700/30"
-                          : "border-solid border-neutral-500",
-                        selectedTool && "cursor-pointer",
+                          : isSelected
+                            ? "border-solid border-yellow-400 ring-2 ring-yellow-400"
+                            : "border-solid border-neutral-500 hover:border-blue-400",
+                        "cursor-pointer",
                       )}
                       style={{ backgroundColor: isEmpty ? undefined : bgColor }}
                       title={
@@ -318,7 +317,7 @@ export function ConfiguratorPanel({
                           ? "Geister-Zelle: Klicken zum Platzieren"
                           : isEmpty
                             ? "Leere Zelle"
-                            : getModuleLabel(cell.type)
+                            : `${getModuleLabel(cell.type)} - Shift+Klick zum Auswählen`
                       }
                     >
                       {isEmpty ? (
@@ -328,20 +327,16 @@ export function ConfiguratorPanel({
                           <span
                             className={cn(
                               "text-center",
-                              effectiveColor === "weiss" ? "text-neutral-800" : "text-white",
+                              bgColor === colorHexMap.weiss || bgColor === colorHexMap.gelb
+                                ? "text-neutral-800"
+                                : "text-white",
                             )}
                           >
                             {getModuleShortLabel(cell.type)}
                           </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onClearCell(cell.row, cell.col)
-                            }}
-                            className="absolute -right-1 -top-1 rounded-full bg-red-500 p-0.5 text-white hover:bg-red-400"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          {isSelected && (
+                            <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-yellow-400" />
+                          )}
                         </>
                       )}
                     </button>
@@ -351,7 +346,8 @@ export function ConfiguratorPanel({
           </div>
 
           <p className="mt-2 text-[10px] text-neutral-500">
-            Tipp: Blaue Zellen sind Geister-Zellen - platziere Module dort um das Regal zu erweitern
+            Tipp: Blaue Zellen sind Geister-Zellen - platziere Module dort um das Regal zu erweitern. Shift+Klick zum
+            Auswählen mehrerer Zellen.
           </p>
         </div>
 
@@ -374,18 +370,17 @@ export function ConfiguratorPanel({
                 <div className="space-y-2">
                   {shoppingList.map((item) => (
                     <div
-                      key={item.product.artNr}
+                      key={item.sku}
                       className="flex items-center justify-between rounded bg-neutral-700 px-3 py-2 text-sm"
                     >
                       <div className="flex-1">
-                        <div className="text-neutral-100">{item.product.name}</div>
+                        <div className="text-neutral-100">{item.name}</div>
                         <div className="text-xs text-neutral-400">
-                          Art.Nr: {item.product.artNr} | {item.quantity}x à{" "}
-                          {item.product.price.toFixed(2).replace(".", ",")} €
+                          Art.Nr: {item.sku} | {item.quantity}x à {item.unitPrice.toFixed(2).replace(".", ",")} €
                         </div>
                       </div>
                       <div className="text-right font-medium text-neutral-100">
-                        {item.subtotal.toFixed(2).replace(".", ",")} €
+                        {item.totalPrice.toFixed(2).replace(".", ",")} €
                       </div>
                     </div>
                   ))}
@@ -409,124 +404,4 @@ export function ConfiguratorPanel({
       </div>
     </div>
   )
-}
-
-function ModulePreviewSVG({ type }: { type: string }) {
-  const baseStyle = "stroke-current"
-
-  switch (type) {
-    case "ohne-seitenwaende":
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect x="5" y="5" width="40" height="25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
-        </svg>
-      )
-    case "ohne-rueckwand":
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect x="5" y="5" width="40" height="25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
-          <rect x="6" y="6" width="38" height="10" fill="currentColor" fillOpacity="0.15" />
-          <rect x="6" y="18" width="38" height="11" fill="currentColor" fillOpacity="0.15" />
-        </svg>
-      )
-    case "mit-rueckwand":
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect
-            x="5"
-            y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
-          <rect x="5" y="5" width="2" height="25" fill="currentColor" fillOpacity="0.4" />
-          <rect x="43" y="5" width="2" height="25" fill="currentColor" fillOpacity="0.4" />
-        </svg>
-      )
-    case "mit-tueren":
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect
-            x="5"
-            y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <line x1="25" y1="5" x2="25" y2="30" stroke="currentColor" strokeWidth="1" />
-          <circle cx="22" cy="17" r="1.5" fill="currentColor" />
-          <circle cx="28" cy="17" r="1.5" fill="currentColor" />
-        </svg>
-      )
-    case "mit-klapptuer":
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect
-            x="5"
-            y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <line x1="5" y1="25" x2="45" y2="25" stroke="currentColor" strokeWidth="1" />
-          <line x1="20" y1="27" x2="30" y2="27" stroke="currentColor" strokeWidth="2" />
-        </svg>
-      )
-    case "mit-doppelschublade":
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect
-            x="5"
-            y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <line x1="5" y1="17" x2="45" y2="17" stroke="currentColor" strokeWidth="1" />
-          <line x1="18" y1="11" x2="32" y2="11" stroke="currentColor" strokeWidth="2" />
-          <line x1="18" y1="23" x2="32" y2="23" stroke="currentColor" strokeWidth="2" />
-        </svg>
-      )
-    case "abschliessbare-tueren":
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect
-            x="5"
-            y="5"
-            width="40"
-            height="25"
-            fill="currentColor"
-            fillOpacity="0.2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <line x1="25" y1="5" x2="25" y2="30" stroke="currentColor" strokeWidth="1" />
-          <circle cx="22" cy="15" r="2" fill="none" stroke="currentColor" strokeWidth="1" />
-          <rect x="21" y="15" width="2" height="4" fill="currentColor" />
-          <circle cx="28" cy="15" r="2" fill="none" stroke="currentColor" strokeWidth="1" />
-          <rect x="27" y="15" width="2" height="4" fill="currentColor" />
-        </svg>
-      )
-    default:
-      return (
-        <svg viewBox="0 0 50 35" className="h-8 w-12">
-          <rect x="5" y="5" width="40" height="25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        </svg>
-      )
-  }
 }
