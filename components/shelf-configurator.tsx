@@ -115,7 +115,7 @@ export function ShelfConfigurator() {
   const [paintMode, setPaintMode] = useState<PaintMode>("panels")
   const [activeColor, setActiveColor] = useState<ShelfColor>("weiss")
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
-  const [showShoppingList, setShowShoppingList] = useState(false)
+  const [showShoppingList, setShowShoppingList] = useState<boolean>(false)
 
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
