@@ -272,8 +272,8 @@ export function ConfiguratorPanel({
                 return (
                   <button
                     key={`row-height-${rowIndex}`}
-                    onClick={() => onSetRowHeight(rowIndex, height === 38 ? 76 : 38)}
-                    className="flex h-16 w-10 items-center justify-center rounded bg-neutral-700 text-[10px] text-neutral-300 hover:bg-neutral-600"
+                    disabled
+                    className="flex h-16 w-10 items-center justify-center rounded bg-neutral-700 text-[10px] text-neutral-300 cursor-not-allowed opacity-50"
                   >
                     {height}cm
                   </button>
