@@ -21,6 +21,17 @@ import {
 import type { ShoppingItem } from "@/types/shopping-item" // Import ShoppingItem
 import type { ShelfColor } from "@/types/shelf-color" // Import ShelfColor
 
+const colorMap: Record<ShelfColor, string> = {
+  weiss: "weiss",
+  schwarz: "schwarz",
+  blau: "blue",
+  gruen: "green",
+  gelb: "yellow",
+  orange: "orange",
+  rot: "red",
+  satiniert: "satin",
+}
+
 export type GridCell = {
   id: string
   type:
@@ -35,6 +46,8 @@ export type GridCell = {
     | "abschliessbare-tueren"
   row: number
   col: number
+  color?: ShelfColor
+  material?: "metal" | "glass"
 }
 
 export type ShelfConfig = {
@@ -306,7 +319,12 @@ export function ShelfConfigurator() {
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
-              return { ...cell, type }
+              return {
+                ...cell,
+                type,
+                color: prev.color,
+                material: prev.material,
+              }
             }
             return cell
           }),
@@ -632,27 +650,20 @@ export function ShelfConfigurator() {
 
     // Calculate shelves and accessories per cell
     filledCells.forEach((cell) => {
-      const cellWidth = config.columnWidths[cell.col]
-      const bodenSize = cellWidth === 75 ? 80 : 40
+      const colIndex = cell.col
+      const bodenSize = config.columnWidths[colIndex] === 38 ? 38 : 80
 
-      let shelfProduct: Product | undefined
-      const colorMap: Record<string, ShelfColor> = {
-        white: "weiss",
-        black: "schwarz",
-        blue: "blau",
-        orange: "orange",
-        red: "rot",
-        purple: "lila",
-        green: "gruen",
-        yellow: "gelb",
-      }
-      const productColor = colorMap[config.color] || "weiss"
+      const cellColor = cell.color || config.color
+      const cellMaterial = cell.material || config.material
+      const productColor = colorMap[cellColor] || "weiss"
 
-      if (config.material === "metal") {
+      let shelfProduct: (typeof metallboeden)[0] | (typeof glasboeden)[0] | (typeof holzboeden)[0] | undefined
+
+      if (cellMaterial === "metal") {
         shelfProduct =
           metallboeden.find((p) => p.size === bodenSize && p.color === productColor) ||
           metallboeden.find((p) => p.size === bodenSize)
-      } else if (config.material === "glass") {
+      } else if (cellMaterial === "glass") {
         // Glass only has schwarz and satiniert variant
         const glassColor = productColor === "schwarz" ? "schwarz" : undefined
         shelfProduct = glasboeden.find(
