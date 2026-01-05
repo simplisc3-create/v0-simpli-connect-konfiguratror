@@ -33,7 +33,6 @@ const specialColors = [
   { id: "gelb" as const, label: "Gelb", color: colorHexMap.gelb },
   { id: "orange" as const, label: "Orange", color: colorHexMap.orange },
   { id: "rot" as const, label: "Rot", color: colorHexMap.rot },
-  { id: "lila" as const, label: "Lila", color: colorHexMap.lila },
 ]
 
 const moduleTypes = [

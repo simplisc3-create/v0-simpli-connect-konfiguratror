@@ -22,7 +22,6 @@ const colorMap: Record<string, string> = {
   gruen: colorHexMap.gruen,
   orange: colorHexMap.orange,
   rot: colorHexMap.rot,
-  lila: colorHexMap.lila,
   gelb: colorHexMap.gelb,
 }
 

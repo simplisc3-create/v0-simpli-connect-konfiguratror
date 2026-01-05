@@ -45,6 +45,7 @@ export function GLBModule({
     const fetchBlobModels = async () => {
       try {
         setLoading(true)
+        setError(null)
 
         const colorMap: Record<string, string> = {
           "#ffffff": "white",
@@ -81,41 +82,27 @@ export function GLBModule({
         )
 
         const response = await fetch(`/api/blob-models?${params}`)
-        if (!response.ok) {
-          throw new Error(`Failed to fetch model: ${response.statusText}`)
-        }
-
         const data = await response.json()
 
-        if (data.url) {
-          console.log(`[v0] Resolved GLB: ${data.filename}`)
-          if (data.url.startsWith("http://") || data.url.startsWith("https://")) {
-            setModelUrl(data.url)
-          } else {
-            // Local file - validate it exists
-            try {
-              const testResponse = await fetch(data.url, { method: "HEAD" })
-              const contentType = testResponse.headers.get("content-type")
-
-              if (testResponse.ok && (!contentType || !contentType.includes("text/html"))) {
-                setModelUrl(data.url)
-              } else {
-                console.warn("[v0] Model file not found or invalid, using fallback:", data.filename)
-                setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
-              }
-            } catch (fetchError) {
-              console.warn("[v0] Could not verify model file, using fallback:", fetchError)
-              setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
-            }
-          }
-        } else {
-          console.warn("[v0] No model URL found for:", { cellType, standardWidth, heightCm, colorName })
-          setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
+        if (!data.ok) {
+          throw new Error(data.details || data.error || "Failed to resolve model")
         }
+
+        if (!data.url) {
+          throw new Error(`No model URL returned for ${cellType}`)
+        }
+
+        if (!data.url.startsWith("https://")) {
+          throw new Error(`CRITICAL: Received non-https URL: ${data.url}`)
+        }
+
+        console.log(`[v0] Resolved GLB URL: ${data.url}`)
+
+        setModelUrl(data.url)
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Unknown error"
         console.error("[v0] Error fetching GLB model:", errorMsg)
-        setModelUrl("/images/80x40x40-1-7-white-optimized.glb")
+        setError(errorMsg)
       } finally {
         setLoading(false)
       }
@@ -123,6 +110,17 @@ export function GLBModule({
 
     fetchBlobModels()
   }, [width, height, cellType, color, explicitModelUrl])
+
+  if (error) {
+    return (
+      <group position={position}>
+        <mesh>
+          <boxGeometry args={[width, height, depth]} />
+          <meshStandardMaterial color="red" opacity={0.5} transparent />
+        </mesh>
+      </group>
+    )
+  }
 
   if (cellType === "empty" || loading || !modelUrl) {
     return null
@@ -191,7 +189,6 @@ function LoadedGLBModel({
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
-      // The overlap is now handled at the grid level in shelf-scene.tsx
       const offsetX = -center.x * scaleX
       const offsetY = -center.y * scaleY
       const offsetZ = -center.z * scaleZ

@@ -12,7 +12,7 @@ export type ProductCategory =
   | "funktionswand"
   | "led"
 
-export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "lila" | "gruen" | "gelb"
+export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb"
 
 export interface Product {
   artNr: string
@@ -82,8 +82,6 @@ export const metallboeden: Product[] = [
   },
   { artNr: "sim008-rt", name: "Metallboden Rot 40", category: "metallboden", size: 40, price: 19.5, color: "rot" },
   { artNr: "sim009-rt", name: "Metallboden Rot 80", category: "metallboden", size: 80, price: 33.5, color: "rot" },
-  { artNr: "sim008-li", name: "Metallboden Lila 40", category: "metallboden", size: 40, price: 19.5, color: "lila" },
-  { artNr: "sim009-li", name: "Metallboden Lila 80", category: "metallboden", size: 80, price: 33.5, color: "lila" },
   { artNr: "sim008-gr", name: "Metallboden Grün 40", category: "metallboden", size: 40, price: 19.5, color: "gruen" },
   { artNr: "sim009-gr", name: "Metallboden Grün 80", category: "metallboden", size: 80, price: 33.5, color: "gruen" },
 ]
@@ -241,7 +239,6 @@ export const colorHexMap: Record<ShelfColor | "satiniert" | "makassar" | "gelb",
   blau: "#00b4d8",
   orange: "#f97316",
   rot: "#dc2626",
-  lila: "#8b5cf6",
   gruen: "#228B22",
   gelb: "#eab308",
   satiniert: "#e8e8e8",

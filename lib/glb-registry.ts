@@ -1,12 +1,12 @@
 // src/lib/glb/registry.ts
-export const GLB_BASE_URL = "/images"
+// SINGLE SOURCE OF TRUTH for GLB model resolution
+// Uses direct URL mappings for uploaded files with hash suffixes
 
 export type WidthKey = 40 | 80
 export type HeightKey = number
 
 export type ColorKey = "white" | "gray" | "black" | "blue" | "green" | "yellow" | "orange" | "red"
 
-// Globaler Union-Type (weil 40er mehr Module hat)
 export type ModuleType =
   | "ohne-seitenwaende"
   | "ohne-rueckwand"
@@ -22,7 +22,6 @@ export type ModuleType =
   | "abschliessbar-rechts"
 
 export const MODULE_TYPES: ModuleType[] = [
-  // shared / 80-family
   "ohne-seitenwaende",
   "ohne-rueckwand",
   "mit-rueckwand",
@@ -31,7 +30,6 @@ export const MODULE_TYPES: ModuleType[] = [
   "mit-klapptuer",
   "mit-doppelschublade",
   "abschliessbare-tueren",
-  // 40-family extras
   "mit-tuere-links",
   "mit-tuere-rechts",
   "abschliessbar-links",
@@ -40,17 +38,16 @@ export const MODULE_TYPES: ModuleType[] = [
 
 export const COLOR_KEYS: ColorKey[] = ["white", "gray", "black", "blue", "green", "yellow", "orange", "red"]
 
-// ✅ DEINE MAPPINGS (editierbar in EINER Stelle)
 export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType, string>>> = {
   80: {
-    "ohne-seitenwaende": "1-1", // Open frame
-    "ohne-rueckwand": "1-2", // Without back panel
-    "mit-seitenwaenden": "1-3", // With side panels
-    "mit-klapptuer": "1-4", // With flap door
-    "mit-doppelschublade": "1-5", // With double drawer
-    "mit-tueren": "1-6", // With doors
-    "abschliessbare-tueren": "1-7", // Lockable doors
-    "mit-rueckwand": "1-8", // With back panel
+    "mit-seitenwaenden": "1-8",
+    "abschliessbare-tueren": "1-7",
+    "mit-tueren": "1-6",
+    "mit-doppelschublade": "1-5",
+    "mit-klapptuer": "1-4",
+    "mit-rueckwand": "1-3",
+    "ohne-seitenwaende": "1-2",
+    "ohne-rueckwand": "1-1",
   },
   40: {
     "ohne-rueckwand": "2-1",
@@ -63,27 +60,27 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
   },
 }
 
-export const UPLOADED_MODELS: Record<string, string> = {
-  // White 80cm modules - using hebbkx1anhila5yf storage
-  "80x40x40-1-1-white_optimized.glb": "/images/80x40x40-1-1-white-optimized.glb",
-  "80x40x40-1-2-white_optimized.glb": "/images/80x40x40-1-2-white-optimized.glb",
-  "80x40x40-1-3-white_optimized.glb": "/images/80x40x40-1-3-white-optimized.glb",
-  "80x40x40-1-4-white_optimized.glb": "/images/80x40x40-1-4-white-optimized.glb",
-  "80x40x40-1-5-white_optimized.glb": "/images/80x40x40-1-5-white-optimized.glb",
-  "80x40x40-1-6-white_optimized.glb": "/images/80x40x40-1-6-white-optimized.glb",
-  "80x40x40-1-7-white_optimized.glb": "/images/80x40x40-1-7-white-optimized.glb",
-  "80x40x40-1-8-white_optimized.glb": "/images/80x40x40-1-8-white-optimized.glb",
+// Key format: "{width}x40x{height}-{variantCode}-{color}"
+const UPLOADED_MODEL_URLS: Record<string, string> = {
+  // White 80cm models (height 40) - REAL Blob Storage URLs with hash suffixes
+  "80x40x40-1-1-white": "/images/80x40x40-1-1-white-optimized.glb",
+  "80x40x40-1-2-white": "/images/ohne-seitenwaendeweiss80.glb",
+  "80x40x40-1-3-white": "/images/80x40x40-1-3-white-optimized.glb",
+  "80x40x40-1-4-white": "/images/80x40x40-1-4-white-optimized.glb",
+  "80x40x40-1-5-white": "/images/80x40x40-1-5-white-optimized.glb",
+  "80x40x40-1-6-white": "/images/80x40x40-1-6-white-optimized.glb",
+  "80x40x40-1-7-white": "/images/80x40x40-1-7-white-optimized.glb",
+  "80x40x40-1-8-white": "/images/80x40x40-1-8-white-optimized.glb",
 }
 
-export function buildGlbFilename(args: {
+export function buildModelKey(args: {
   width: WidthKey
   height: HeightKey
   variantCode: string
   color: ColorKey
-}) {
+}): string {
   const { width, height, variantCode, color } = args
-  // depth ist fix 40
-  return `${width}x40x${height}-${variantCode}-${color}_optimized.glb`
+  return `${width}x40x${height}-${variantCode}-${color}`
 }
 
 export function resolveGlbUrl(args: {
@@ -91,34 +88,52 @@ export function resolveGlbUrl(args: {
   height: HeightKey
   moduleType: ModuleType
   color: ColorKey
-}) {
+}): { url: string; filename: string; variantCode: string } {
   const { width, height, moduleType, color } = args
 
+  // Validate width
+  if (width !== 40 && width !== 80) {
+    throw new Error(`[GLB Registry] Invalid width: ${width}. Must be 40 or 80.`)
+  }
+
+  // Validate color
+  if (!COLOR_KEYS.includes(color)) {
+    throw new Error(`[GLB Registry] Invalid color: "${color}". Valid colors: ${COLOR_KEYS.join(", ")}`)
+  }
+
+  // Get variant code from mapping
   const variantCode = MODULE_TO_VARIANT_CODE[width]?.[moduleType]
 
   if (!variantCode) {
-    console.warn(`No variantCode mapping for width=${width} moduleType="${moduleType}". Using fallback.`)
-    return {
-      url: "/images/80x40x40-1-7-white-optimized.glb",
-      filename: "80x40x40-1-7-white_optimized.glb",
-      variantCode: "1-7-fallback",
-    }
+    throw new Error(
+      `[GLB Registry] No variant code mapping for width=${width}, moduleType="${moduleType}". ` +
+        `Available module types for width ${width}: ${Object.keys(MODULE_TO_VARIANT_CODE[width] || {}).join(", ")}`,
+    )
   }
 
-  const filename = buildGlbFilename({ width, height, variantCode, color })
+  // Build key for lookup
+  const modelKey = buildModelKey({ width, height, variantCode, color })
 
-  if (UPLOADED_MODELS[filename]) {
-    return {
-      url: UPLOADED_MODELS[filename],
-      filename,
-      variantCode,
-    }
+  // Look up URL in uploaded models
+  const url = UPLOADED_MODEL_URLS[modelKey]
+
+  if (!url) {
+    throw new Error(
+      `[GLB Registry] No uploaded model URL for key="${modelKey}". ` +
+        `Available models: ${Object.keys(UPLOADED_MODEL_URLS).join(", ")}`,
+    )
   }
 
-  console.warn(`No uploaded model found for ${filename}, using fallback`)
+  if (!url.startsWith("https://")) {
+    throw new Error(`[GLB Registry] CRITICAL: URL must be a full Blob URL starting with https://. Got: ${url}`)
+  }
+
+  // Extract filename from URL for logging
+  const filename = url.split("/").pop() || modelKey
+
   return {
-    url: "/images/80x40x40-1-7-white-optimized.glb",
-    filename: "80x40x40-1-7-white_optimized.glb",
-    variantCode: "1-7-fallback",
+    url,
+    filename,
+    variantCode,
   }
 }
