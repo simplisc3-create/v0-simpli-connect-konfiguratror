@@ -137,8 +137,9 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
       rowHeights: config.rowHeights,
       rows: config.rows,
       columns: config.columns,
+      cellStyles: config.cellStyles || {},
     }
-  }, [config.grid, config.columnWidths, config.rowHeights, config.rows, config.columns])
+  }, [config.grid, config.columnWidths, config.rowHeights, config.rows, config.columns, config.cellStyles])
 
   const { glbModules, interactiveCells } = useMemo(() => {
     const glbs: React.ReactNode[] = []
@@ -234,16 +235,21 @@ export function ShelfScene({ config, selectedTool, hoveredCell, onCellClick, onC
 
         if (isEmpty || isGhost) return
 
+        const cellId = `c-${gridRow}-${gridCol}`
+        const cellStyle = gridStructure.cellStyles[cellId]
+        const overridePanelColor = cellStyle?.panelColor
+
         console.log(`[v0] Cell [${gridRow},${gridCol}] raw data:`, {
           cellColor: cell.color,
+          overridePanelColor,
           cellType: cell.type,
           fallbackColor,
         })
 
-        const cellColor = cell.color || fallbackColor
-        const panelColor = colorMap[cellColor] || colorMap.weiss
+        const effectiveColor = overridePanelColor || cell.color || fallbackColor
+        const panelColor = colorMap[effectiveColor] || colorMap.weiss
 
-        console.log(`[v0] Rendering cell [${gridRow},${gridCol}] with color: ${cellColor} -> ${panelColor}`)
+        console.log(`[v0] Rendering cell [${gridRow},${gridCol}] with color: ${effectiveColor} -> ${panelColor}`)
 
         glbs.push(
           <StableGLBModule
