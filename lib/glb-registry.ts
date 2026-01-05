@@ -65,6 +65,7 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
 
 export const SPECIAL_FRAME_URLS: Record<string, string> = {
   "frame-80": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/frame80.glb",
+  "ohne-rueckwand-orange-80": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/ohne-rueckwand-orange80.glb",
 }
 
 export function buildGlbFilename(args: {
@@ -74,8 +75,9 @@ export function buildGlbFilename(args: {
   color: ColorKey
 }) {
   const { width, height, variantCode, color } = args
+  const capitalizedColor = color.charAt(0).toUpperCase() + color.slice(1)
   // depth ist fix 40
-  return `${width}x40x${height}-${variantCode}-${color}_optimized.glb`
+  return `${width}x40x${height}-${variantCode}-${capitalizedColor}_optimized.glb`
 }
 
 export function resolveGlbUrl(args: {
@@ -85,6 +87,14 @@ export function resolveGlbUrl(args: {
   color: ColorKey
 }) {
   const { width, height, moduleType, color } = args
+
+  if (moduleType === "ohne-rueckwand" && width === 80 && color === "orange") {
+    return {
+      url: SPECIAL_FRAME_URLS["ohne-rueckwand-orange-80"],
+      filename: "ohne-rueckwand-orange80.glb",
+      variantCode: "1-8-orange",
+    }
+  }
 
   if (moduleType === "ohne-seitenwaende" && width === 80) {
     return {
