@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { resolveGlbUrl, type ModuleType, type ColorKey, type SizeKey } from "@/lib/glb-registry"
+import { resolveGlbUrl, type ModuleType, type ColorKey, type WidthKey } from "@/lib/glb-registry"
 
 export async function GET(request: Request) {
   try {
@@ -12,23 +12,27 @@ export async function GET(request: Request) {
     if (cellType && width && height && color) {
       try {
         const widthNum = Number.parseInt(width, 10)
+        const heightNum = Number.parseInt(height, 10)
 
-        const size: SizeKey = widthNum >= 80 ? "80x40x40" : "40x40x40"
+        const widthKey: WidthKey = widthNum > 50 ? 80 : 40
+        // All modules are 40cm tall (standard shelf height)
+        const heightKey = 40
 
-        console.log(`[v0] API resolving: cellType=${cellType}, width=${widthNum}cm, size=${size}, color=${color}`)
+        console.log(
+          `[v0] API resolving: cellType=${cellType}, width=${widthNum}cm->${widthKey}, height=${heightNum}cm->${heightKey}, color=${color}`,
+        )
 
         const result = resolveGlbUrl({
-          size,
+          width: widthKey,
+          height: heightKey,
           moduleType: cellType,
           color: color,
         })
 
-        console.log(`[v0] Resolved GLB URL: ${result.url}`)
-
         return NextResponse.json({
           url: result.url,
           filename: result.filename,
-          variantCode: result.code,
+          variantCode: result.variantCode,
         })
       } catch (error) {
         console.error("[v0] Error resolving GLB URL:", error)
