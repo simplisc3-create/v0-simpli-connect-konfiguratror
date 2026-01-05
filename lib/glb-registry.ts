@@ -65,7 +65,8 @@ export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType,
 
 export const SPECIAL_FRAME_URLS: Record<string, string> = {
   "frame-80": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/frame80.glb",
-  "ohne-rueckwand-orange-80": "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/ohne-rueckwand-orange80.glb",
+  "ohne-rueckwand-orange-80":
+    "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com/ohne-rueckwand-orange80.glb?v=" + Date.now(),
 }
 
 export function buildGlbFilename(args: {
