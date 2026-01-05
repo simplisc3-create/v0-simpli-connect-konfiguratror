@@ -170,26 +170,32 @@ function LoadedGLBModel({
       const size = box.getSize(new THREE.Vector3())
       const center = box.getCenter(new THREE.Vector3())
 
+      console.log(`[v0] Model dimensions for ${cellType}:`, {
+        modelUrl,
+        actualSize: { x: size.x, y: size.y, z: size.z },
+        center: { x: center.x, y: center.y, z: center.z },
+        targetSize: { width, height, depth },
+      })
+
       let scaleX = 1
       let scaleY = 1
       let scaleZ = 1
 
-      if (
+      const isFrame80Style =
         (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) ||
         (cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80"))
-      ) {
-        const frameBaseWidth = 0.8
-        const frameBaseHeight = 0.4
-        const frameBaseDepth = 0.38
 
-        scaleX = width / frameBaseWidth
-        scaleY = height / frameBaseHeight
-        scaleZ = depth / frameBaseDepth
+      if (isFrame80Style) {
+        // Use actual model dimensions instead of hardcoded base dimensions
+        // This ensures proper scaling regardless of the model's internal size
+        scaleX = size.x > 0 ? width / size.x : 1
+        scaleY = size.y > 0 ? height / size.y : 1
+        scaleZ = size.z > 0 ? depth / size.z : 1
 
         console.log(`[v0] Frame80-style scaling for ${cellType}:`, {
           modelUrl,
+          actualModelSize: { x: size.x, y: size.y, z: size.z },
           targetDimensions: { width, height, depth },
-          baseDimensions: { frameBaseWidth, frameBaseHeight, frameBaseDepth },
           scaleFactor: { scaleX, scaleY, scaleZ },
         })
       } else {
@@ -200,7 +206,6 @@ function LoadedGLBModel({
 
       setScaleFactor([scaleX, scaleY, scaleZ])
 
-      // The overlap is now handled at the grid level in shelf-scene.tsx
       const offsetX = -center.x * scaleX
       const offsetY = -center.y * scaleY
       const offsetZ = -center.z * scaleZ
@@ -209,10 +214,7 @@ function LoadedGLBModel({
 
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
-      } else if (
-        (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) ||
-        (cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80"))
-      ) {
+      } else if (isFrame80Style) {
         setRotation([0, -Math.PI / 2, 0])
       } else {
         setRotation([0, 0, 0])
