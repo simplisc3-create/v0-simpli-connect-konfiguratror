@@ -174,7 +174,10 @@ function LoadedGLBModel({
       let scaleY = 1
       let scaleZ = 1
 
-      if (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) {
+      if (
+        (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) ||
+        (cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80"))
+      ) {
         const frameBaseWidth = 0.8
         const frameBaseHeight = 0.4
         const frameBaseDepth = 0.38
@@ -197,10 +200,12 @@ function LoadedGLBModel({
 
       setModelOffset([offsetX, offsetY, offsetZ])
 
-      // ... existing code for rotation ...
       if (cellType === "abschliessbare-tueren" || cellType === "mit-tueren" || cellType === "mit-klapptuer") {
         setRotation([0, Math.PI, 0])
-      } else if (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) {
+      } else if (
+        (cellType === "ohne-seitenwaende" && modelUrl.includes("frame80")) ||
+        (cellType === "ohne-rueckwand" && modelUrl.includes("ohne-rueckwand-orange80"))
+      ) {
         setRotation([0, -Math.PI / 2, 0])
       } else {
         setRotation([0, 0, 0])
