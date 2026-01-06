@@ -55,16 +55,16 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
 }
 
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(0.95, 0.95, 0.95),
-  black: new THREE.Color(0.1, 0.1, 0.1),
-  gray: new THREE.Color(0.6, 0.6, 0.6),
-  anthrazit: new THREE.Color(0.25, 0.25, 0.28),
-  blue: new THREE.Color(0.2, 0.5, 0.9),
-  green: new THREE.Color(0.1, 0.7, 0.3),
-  yellow: new THREE.Color(0.95, 0.85, 0.2),
-  orange: new THREE.Color(0.95, 0.5, 0.1),
-  red: new THREE.Color(0.9, 0.2, 0.2),
-  beige: new THREE.Color(0.85, 0.75, 0.6),
+  white: new THREE.Color(0.98, 0.98, 0.98),
+  black: new THREE.Color(0.08, 0.08, 0.08),
+  gray: new THREE.Color(0.55, 0.55, 0.55),
+  anthrazit: new THREE.Color(0.22, 0.22, 0.25),
+  blue: new THREE.Color(0.15, 0.45, 1.0),
+  green: new THREE.Color(0.05, 0.75, 0.25),
+  yellow: new THREE.Color(1.0, 0.9, 0.15),
+  orange: new THREE.Color(1.0, 0.45, 0.05),
+  red: new THREE.Color(0.95, 0.15, 0.15),
+  beige: new THREE.Color(0.88, 0.78, 0.62),
 }
 
 function getColorName(hex: string): string {
@@ -223,8 +223,8 @@ const LoadedGLBModel = memo(
             child.material = new THREE.MeshStandardMaterial({
               map: texture,
               color: targetColorValue,
-              metalness: 0.1,
-              roughness: 0.8,
+              metalness: 0.25,
+              roughness: 0.55,
               side: THREE.DoubleSide,
               shadowSide: THREE.DoubleSide,
             })

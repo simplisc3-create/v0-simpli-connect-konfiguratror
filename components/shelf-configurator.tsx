@@ -20,6 +20,8 @@ import {
 } from "@/lib/simpli-products"
 import type { ShoppingItem } from "@/types/shopping-item"
 import { useThree } from "@react-three/fiber"
+import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
+import * as THREE from "three"
 
 export type GridCell = {
   id: string
@@ -443,6 +445,13 @@ export function ShelfConfigurator() {
           return prev
         }
 
+        const columnWidth = prev.columnWidths[col]
+        const widthInCm = columnWidth === 75 ? 80 : 40
+        if (type !== "empty" && type !== "ghost" && !isModuleTypeAvailableForWidth(type, widthInCm)) {
+          console.log(`[v0] Cannot place - module type "${type}" not available for ${widthInCm}cm width`)
+          return prev
+        }
+
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
@@ -582,7 +591,23 @@ export function ShelfConfigurator() {
       setConfig((prev) => {
         const newWidths = [...prev.columnWidths]
         newWidths[colIndex] = width
-        const newConfig = { ...prev, columnWidths: newWidths as (75 | 38)[] }
+
+        const widthInCm = width === 75 ? 80 : 40
+        const newGrid = prev.grid.map((row) =>
+          row.map((cell, ci) => {
+            if (ci === colIndex && cell.type !== "empty" && cell.type !== "ghost") {
+              // Check if current module type is compatible with new width
+              if (!isModuleTypeAvailableForWidth(cell.type, widthInCm)) {
+                console.log(`[v0] Converting incompatible module "${cell.type}" to "mit-rueckwand" for ${widthInCm}cm`)
+                // Convert to a compatible module type (mit-rueckwand exists for both widths)
+                return { ...cell, type: "mit-rueckwand" as const }
+              }
+            }
+            return cell
+          }),
+        )
+
+        const newConfig = { ...prev, columnWidths: newWidths as (75 | 38)[], grid: newGrid }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
@@ -948,18 +973,24 @@ export function ShelfConfigurator() {
         <div className="relative flex-1">
           <Canvas
             shadows={true}
-            camera={{ position: [3, 2.5, 3], fov: 45 }}
-            gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+            camera={{ position: [0, 1.2, 2.5], fov: 50 }}
+            gl={{
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true,
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.2,
+            }}
             dpr={[1, 2]}
             frameloop="demand"
             performance={{ min: 0.5 }}
           >
             <color attach="background" args={["#f5f5f5"]} />
 
-            <ambientLight intensity={0.6} />
+            <ambientLight intensity={0.55} />
             <directionalLight
               position={[5, 5, 5]}
-              intensity={0.8}
+              intensity={0.75}
               castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
@@ -995,6 +1026,7 @@ export function ShelfConfigurator() {
 
             <OrbitControls
               makeDefault
+              target={[0, 0.8, 0]}
               minPolarAngle={0.2}
               maxPolarAngle={Math.PI / 2.2}
               minDistance={1.5}
