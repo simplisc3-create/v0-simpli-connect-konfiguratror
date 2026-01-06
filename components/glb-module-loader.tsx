@@ -114,6 +114,12 @@ const PANEL_KEYWORDS = [
   "front",
   "deckel",
   "cover",
+  "floor",
+  "ceiling",
+  "bodenplatte",
+  "deckenplatte",
+  "top",
+  "bottom",
 ]
 
 function isFramePart(meshName: string, geometry: THREE.BufferGeometry): boolean {
@@ -322,6 +328,8 @@ const LoadedGLBModel = memo(
                 roughness: 0.5,
                 side: THREE.DoubleSide,
                 shadowSide: THREE.DoubleSide,
+                emissive: new THREE.Color(0, 0, 0),
+                emissiveIntensity: 0,
               })
             }
           }

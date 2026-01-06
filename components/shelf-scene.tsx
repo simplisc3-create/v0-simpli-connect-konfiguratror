@@ -5,6 +5,7 @@ import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
+import { ContactShadows } from "@react-three/drei"
 
 type Props = {
   config: ShelfConfig
@@ -115,7 +116,7 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
 
     const depth = 0.38
     const columnTubeOverlap = 0.003
-    const rowTubeOverlap = 0.008
+    const rowTubeOverlap = 0.003
 
     // Calculate column centers
     const columnCenters: number[] = []
@@ -193,6 +194,21 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
 
   return (
     <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial color="#c0c0c0" roughness={0.9} metalness={0.05} />
+      </mesh>
+
+      <ContactShadows
+        position={[0, 0, 0]}
+        opacity={0.4}
+        scale={6}
+        blur={2.5}
+        far={2}
+        resolution={512}
+        color="#000000"
+      />
+
       {glbModules.map(({ key, position, cell, row, col, width, height }) => (
         <GLBModule
           key={key}

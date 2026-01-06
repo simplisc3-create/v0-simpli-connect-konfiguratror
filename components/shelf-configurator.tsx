@@ -991,7 +991,8 @@ export function ShelfConfigurator() {
             frameloop="demand"
             performance={{ min: 0.5 }}
           >
-            <color attach="background" args={["#f5f5f5"]} />
+            <color attach="background" args={["#ffffff"]} />
+            <fog attach="fog" args={["#ffffff", 5, 15]} />
 
             <ambientLight intensity={0.44} />
             <directionalLight
