@@ -1,21 +1,25 @@
-// Simpli-Connect Complete Product Catalog with Real Prices
+// Simpli-Connect Complete Product Catalog with Official SKUs
 
 export type ProductCategory =
   | "leiter"
   | "stangenset"
   | "metallboden"
   | "glasboden"
+  | "holzboden"
   | "schublade"
   | "tuer"
+  | "klapptuer"
   | "jalousie"
   | "funktionswand"
   | "seitenwand"
   | "led"
-
-export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb"
+  | "adapter"
+  | "schraube"
+  | "metallstab"
+  | "eckschutz"
 
 export interface Product {
-  artNr: string
+  artNr: string // Official SKU
   name: string
   category: ProductCategory
   size: number // in cm
@@ -24,83 +28,185 @@ export interface Product {
   variant?: string
 }
 
+export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb"
+
 // Leitern (Ladders/Heights) - vertical frame posts
 export const leitern: Product[] = [
-  { artNr: "sim001", name: "Leiter 40 cm", category: "leiter", size: 40, price: 13.5 },
-  { artNr: "sim002", name: "Leiter 80 cm", category: "leiter", size: 80, price: 20.5 },
-  { artNr: "sim003", name: "Leiter 120 cm", category: "leiter", size: 120, price: 27.5 },
-  { artNr: "sim004", name: "Leiter 160 cm", category: "leiter", size: 160, price: 33.5 },
-  { artNr: "sim005", name: "Leiter 200 cm", category: "leiter", size: 200, price: 41.0 },
+  { artNr: "SIM-L-40", name: "Leiter 40", category: "leiter", size: 40, price: 13.5 },
+  { artNr: "SIM-L-80", name: "Leiter 80", category: "leiter", size: 80, price: 20.5 },
+  { artNr: "SIM-L-120", name: "Leiter 120", category: "leiter", size: 120, price: 27.5 },
+  { artNr: "SIM-L-160", name: "Leiter 160", category: "leiter", size: 160, price: 33.5 },
+  { artNr: "SIM-L-200", name: "Leiter 200", category: "leiter", size: 200, price: 41.0 },
 ]
 
 // Stangensets (Tube sets - 2 pieces per set)
 export const stangensets: Product[] = [
   {
-    artNr: "sim006",
-    name: "Stangenset Metall 40 cm",
+    artNr: "SIM-S-40-M",
+    name: "Stangenset 40 Metall",
     category: "stangenset",
     size: 40,
     price: 6.95,
     variant: "metall",
   },
   {
-    artNr: "sim007m",
-    name: "Stangenset Metall 80 cm",
+    artNr: "SIM-S-80-M",
+    name: "Stangenset 80 Metall",
     category: "stangenset",
     size: 80,
     price: 10.5,
     variant: "metall",
   },
-  { artNr: "sim007g", name: "Stangenset Glas 80 cm", category: "stangenset", size: 80, price: 10.5, variant: "glas" },
+  { artNr: "SIM-S-80-G", name: "Stangenset 80 Glas", category: "stangenset", size: 80, price: 10.5, variant: "glas" },
 ]
 
 // Metallböden (Metal shelves - 2 pieces per package)
 export const metallboeden: Product[] = [
   // Standard colors
-  { artNr: "sim008", name: "Metallboden Schwarz 40", category: "metallboden", size: 40, price: 19.5, color: "schwarz" },
-  { artNr: "sim009", name: "Metallboden Schwarz 80", category: "metallboden", size: 80, price: 33.5, color: "schwarz" },
-  { artNr: "sim010", name: "Metallboden Weiß 40", category: "metallboden", size: 40, price: 19.5, color: "weiss" },
-  { artNr: "sim011", name: "Metallboden Weiß 80", category: "metallboden", size: 80, price: 33.5, color: "weiss" },
-  // Special colors - same prices
-  { artNr: "sim008-bl", name: "Metallboden Blau 40", category: "metallboden", size: 40, price: 19.5, color: "blau" },
-  { artNr: "sim009-bl", name: "Metallboden Blau 80", category: "metallboden", size: 80, price: 33.5, color: "blau" },
   {
-    artNr: "sim008-or",
-    name: "Metallboden Orange 40",
+    artNr: "SIM-B-M-40-B",
+    name: "Boden Metall 40 Schwarz",
+    category: "metallboden",
+    size: 40,
+    price: 19.5,
+    color: "schwarz",
+  },
+  {
+    artNr: "SIM-B-M-80-B",
+    name: "Boden Metall 80 Schwarz",
+    category: "metallboden",
+    size: 80,
+    price: 33.5,
+    color: "schwarz",
+  },
+  {
+    artNr: "SIM-B-M-40-W",
+    name: "Boden Metall 40 Weiß",
+    category: "metallboden",
+    size: 40,
+    price: 19.5,
+    color: "weiss",
+  },
+  {
+    artNr: "SIM-B-M-80-W",
+    name: "Boden Metall 80 Weiß",
+    category: "metallboden",
+    size: 80,
+    price: 33.5,
+    color: "weiss",
+  },
+  // Special colors - same prices
+  {
+    artNr: "SIM-B-M-40-C-BL",
+    name: "Boden Metall 40 Blau",
+    category: "metallboden",
+    size: 40,
+    price: 19.5,
+    color: "blau",
+  },
+  {
+    artNr: "SIM-B-M-80-C-BL",
+    name: "Boden Metall 80 Blau",
+    category: "metallboden",
+    size: 80,
+    price: 33.5,
+    color: "blau",
+  },
+  {
+    artNr: "SIM-B-M-40-C-OR",
+    name: "Boden Metall 40 Orange",
     category: "metallboden",
     size: 40,
     price: 19.5,
     color: "orange",
   },
   {
-    artNr: "sim009-or",
-    name: "Metallboden Orange 80",
+    artNr: "SIM-B-M-80-C-OR",
+    name: "Boden Metall 80 Orange",
     category: "metallboden",
     size: 80,
     price: 33.5,
     color: "orange",
   },
-  { artNr: "sim008-rt", name: "Metallboden Rot 40", category: "metallboden", size: 40, price: 19.5, color: "rot" },
-  { artNr: "sim009-rt", name: "Metallboden Rot 80", category: "metallboden", size: 80, price: 33.5, color: "rot" },
-  { artNr: "sim008-gr", name: "Metallboden Grün 40", category: "metallboden", size: 40, price: 19.5, color: "gruen" },
-  { artNr: "sim009-gr", name: "Metallboden Grün 80", category: "metallboden", size: 80, price: 33.5, color: "gruen" },
+  {
+    artNr: "SIM-B-M-40-C-RT",
+    name: "Boden Metall 40 Rot",
+    category: "metallboden",
+    size: 40,
+    price: 19.5,
+    color: "rot",
+  },
+  {
+    artNr: "SIM-B-M-80-C-RT",
+    name: "Boden Metall 80 Rot",
+    category: "metallboden",
+    size: 80,
+    price: 33.5,
+    color: "rot",
+  },
+  {
+    artNr: "SIM-B-M-40-C-GR",
+    name: "Boden Metall 40 Grün",
+    category: "metallboden",
+    size: 40,
+    price: 19.5,
+    color: "gruen",
+  },
+  {
+    artNr: "SIM-B-M-80-C-GR",
+    name: "Boden Metall 80 Grün",
+    category: "metallboden",
+    size: 80,
+    price: 33.5,
+    color: "gruen",
+  },
+  {
+    artNr: "SIM-B-M-40-C-GE",
+    name: "Boden Metall 40 Gelb",
+    category: "metallboden",
+    size: 40,
+    price: 19.5,
+    color: "gelb",
+  },
+  {
+    artNr: "SIM-B-M-80-C-GE",
+    name: "Boden Metall 80 Gelb",
+    category: "metallboden",
+    size: 80,
+    price: 33.5,
+    color: "gelb",
+  },
 ]
 
 // Glasböden (Glass shelves - 2 pieces per package)
 export const glasboeden: Product[] = [
-  { artNr: "sim012", name: "Glas Schwarz 40", category: "glasboden", size: 40, price: 26.0, color: "schwarz" },
-  { artNr: "sim013", name: "Glas Schwarz 80", category: "glasboden", size: 80, price: 35.0, color: "schwarz" },
   {
-    artNr: "sim014",
-    name: "Glas Satiniert 40",
+    artNr: "SIM-B-G-40-B",
+    name: "Boden Glas 40 Schwarz",
+    category: "glasboden",
+    size: 40,
+    price: 26.0,
+    color: "schwarz",
+  },
+  {
+    artNr: "SIM-B-G-80-B",
+    name: "Boden Glas 80 Schwarz",
+    category: "glasboden",
+    size: 80,
+    price: 35.0,
+    color: "schwarz",
+  },
+  {
+    artNr: "SIM-B-G-40-F",
+    name: "Boden Glas 40 Satiniert",
     category: "glasboden",
     size: 40,
     price: 26.0,
     variant: "satiniert",
   },
   {
-    artNr: "sim015",
-    name: "Glas Satiniert 80",
+    artNr: "SIM-B-G-80-F",
+    name: "Boden Glas 80 Satiniert",
     category: "glasboden",
     size: 80,
     price: 35.0,
@@ -108,26 +214,63 @@ export const glasboeden: Product[] = [
   },
 ]
 
+// Holzböden (Wood shelves - 2 pieces per package)
+export const holzboeden: Product[] = [
+  {
+    artNr: "SIM-B-W-40-MK",
+    name: "Boden Holz 40 Makassar",
+    category: "holzboden",
+    size: 40,
+    price: 32.0,
+    variant: "makassar",
+  },
+  {
+    artNr: "SIM-B-W-80-MK",
+    name: "Boden Holz 80 Makassar",
+    category: "holzboden",
+    size: 80,
+    price: 45.0,
+    variant: "makassar",
+  },
+]
+
 // Schubladen & Türen (Drawers & Doors)
 export const schubladenTueren: Product[] = [
+  { artNr: "SIM-D-40-B", name: "Tür 40 Schwarz", category: "tuer", size: 40, price: 32.5, color: "schwarz" },
+  { artNr: "SIM-D-40-W", name: "Tür 40 Weiß", category: "tuer", size: 40, price: 32.5, color: "weiss" },
   {
-    artNr: "sim018s",
+    artNr: "SIM-D-40-L",
+    name: "Tür 40 Abschließbar",
+    category: "tuer",
+    size: 40,
+    price: 42.5,
+    variant: "abschliessbar",
+  },
+  { artNr: "SIM-F-40", name: "Klapptür 40", category: "klapptuer", size: 40, price: 38.0 },
+  { artNr: "SIM-F-80", name: "Klapptür 80", category: "klapptuer", size: 80, price: 52.0 },
+  {
+    artNr: "SIM-DS-80-B",
     name: "Doppelschublade 80 Schwarz",
     category: "schublade",
     size: 80,
     price: 88.5,
     color: "schwarz",
   },
-  { artNr: "sim018w", name: "Doppelschublade 80 Weiß", category: "schublade", size: 80, price: 88.5, color: "weiss" },
-  { artNr: "sim019s", name: "Tür 40 Schwarz", category: "tuer", size: 40, price: 32.5, color: "schwarz" },
-  { artNr: "sim019w", name: "Tür 40 Weiß", category: "tuer", size: 40, price: 32.5, color: "weiss" },
-  { artNr: "sim020c", name: "Jalousie 80 Chrom", category: "jalousie", size: 80, price: 68.0, variant: "chrom" },
+  {
+    artNr: "SIM-DS-80-W",
+    name: "Doppelschublade 80 Weiß",
+    category: "schublade",
+    size: 80,
+    price: 88.5,
+    color: "weiss",
+  },
+  { artNr: "SIM-J-80", name: "Jalousie 80", category: "jalousie", size: 80, price: 68.0 },
 ]
 
 // Funktionswände (Function walls / Back panels)
 export const funktionswaende: Product[] = [
   {
-    artNr: "sim023s",
+    artNr: "SIM-FW-1-B",
     name: "Funktionswand 1-seitig Schwarz",
     category: "funktionswand",
     size: 1,
@@ -136,7 +279,7 @@ export const funktionswaende: Product[] = [
     variant: "1-seitig",
   },
   {
-    artNr: "sim023w",
+    artNr: "SIM-FW-1-W",
     name: "Funktionswand 1-seitig Weiß",
     category: "funktionswand",
     size: 1,
@@ -145,7 +288,7 @@ export const funktionswaende: Product[] = [
     variant: "1-seitig",
   },
   {
-    artNr: "sim024s",
+    artNr: "SIM-FW-2-B",
     name: "Funktionswand 2-seitig Schwarz",
     category: "funktionswand",
     size: 2,
@@ -154,7 +297,7 @@ export const funktionswaende: Product[] = [
     variant: "2-seitig",
   },
   {
-    artNr: "sim024w",
+    artNr: "SIM-FW-2-W",
     name: "Funktionswand 2-seitig Weiß",
     category: "funktionswand",
     size: 2,
@@ -164,128 +307,116 @@ export const funktionswaende: Product[] = [
   },
 ]
 
-// LED-Units
-export const ledUnits: Product[] = [
-  { artNr: "sim021", name: "LED Unit 2 Stripes", category: "led", size: 2, price: 75.0 },
-  { artNr: "sim022", name: "LED Unit 4 Stripes", category: "led", size: 4, price: 99.5 },
-]
-
 // Seitenwände (Side walls)
 export const seitenwaende: Product[] = [
-  // 40cm side walls (for 40cm wide modules)
+  // 40cm side walls
   {
-    artNr: "sim025s-40",
+    artNr: "SIM-SW-40-B",
     name: "Seitenwand 40 Schwarz",
-    category: "seitenwand" as ProductCategory,
+    category: "seitenwand",
     size: 40,
     price: 15.5,
     color: "schwarz",
   },
+  { artNr: "SIM-SW-40-W", name: "Seitenwand 40 Weiß", category: "seitenwand", size: 40, price: 15.5, color: "weiss" },
+  { artNr: "SIM-SW-40-C-BL", name: "Seitenwand 40 Blau", category: "seitenwand", size: 40, price: 15.5, color: "blau" },
   {
-    artNr: "sim025w-40",
-    name: "Seitenwand 40 Weiß",
-    category: "seitenwand" as ProductCategory,
-    size: 40,
-    price: 15.5,
-    color: "weiss",
-  },
-  {
-    artNr: "sim025bl-40",
-    name: "Seitenwand 40 Blau",
-    category: "seitenwand" as ProductCategory,
-    size: 40,
-    price: 15.5,
-    color: "blau",
-  },
-  {
-    artNr: "sim025or-40",
+    artNr: "SIM-SW-40-C-OR",
     name: "Seitenwand 40 Orange",
-    category: "seitenwand" as ProductCategory,
+    category: "seitenwand",
     size: 40,
     price: 15.5,
     color: "orange",
   },
+  { artNr: "SIM-SW-40-C-RT", name: "Seitenwand 40 Rot", category: "seitenwand", size: 40, price: 15.5, color: "rot" },
   {
-    artNr: "sim025rt-40",
-    name: "Seitenwand 40 Rot",
-    category: "seitenwand" as ProductCategory,
-    size: 40,
-    price: 15.5,
-    color: "rot",
-  },
-  {
-    artNr: "sim025gr-40",
+    artNr: "SIM-SW-40-C-GR",
     name: "Seitenwand 40 Grün",
-    category: "seitenwand" as ProductCategory,
+    category: "seitenwand",
     size: 40,
     price: 15.5,
     color: "gruen",
   },
+  { artNr: "SIM-SW-40-C-GE", name: "Seitenwand 40 Gelb", category: "seitenwand", size: 40, price: 15.5, color: "gelb" },
+  // 80cm side walls
   {
-    artNr: "sim025ge-40",
-    name: "Seitenwand 40 Gelb",
-    category: "seitenwand" as ProductCategory,
-    size: 40,
-    price: 15.5,
-    color: "gelb",
-  },
-  // 80cm side walls (for 80cm wide modules)
-  {
-    artNr: "sim025s-80",
+    artNr: "SIM-SW-80-B",
     name: "Seitenwand 80 Schwarz",
-    category: "seitenwand" as ProductCategory,
+    category: "seitenwand",
     size: 80,
     price: 22.5,
     color: "schwarz",
   },
+  { artNr: "SIM-SW-80-W", name: "Seitenwand 80 Weiß", category: "seitenwand", size: 80, price: 22.5, color: "weiss" },
+  { artNr: "SIM-SW-80-C-BL", name: "Seitenwand 80 Blau", category: "seitenwand", size: 80, price: 22.5, color: "blau" },
   {
-    artNr: "sim025w-80",
-    name: "Seitenwand 80 Weiß",
-    category: "seitenwand" as ProductCategory,
-    size: 80,
-    price: 22.5,
-    color: "weiss",
-  },
-  {
-    artNr: "sim025bl-80",
-    name: "Seitenwand 80 Blau",
-    category: "seitenwand" as ProductCategory,
-    size: 80,
-    price: 22.5,
-    color: "blau",
-  },
-  {
-    artNr: "sim025or-80",
+    artNr: "SIM-SW-80-C-OR",
     name: "Seitenwand 80 Orange",
-    category: "seitenwand" as ProductCategory,
+    category: "seitenwand",
     size: 80,
     price: 22.5,
     color: "orange",
   },
+  { artNr: "SIM-SW-80-C-RT", name: "Seitenwand 80 Rot", category: "seitenwand", size: 80, price: 22.5, color: "rot" },
   {
-    artNr: "sim025rt-80",
-    name: "Seitenwand 80 Rot",
-    category: "seitenwand" as ProductCategory,
-    size: 80,
-    price: 22.5,
-    color: "rot",
-  },
-  {
-    artNr: "sim025gr-80",
+    artNr: "SIM-SW-80-C-GR",
     name: "Seitenwand 80 Grün",
-    category: "seitenwand" as ProductCategory,
+    category: "seitenwand",
     size: 80,
     price: 22.5,
     color: "gruen",
   },
+  { artNr: "SIM-SW-80-C-GE", name: "Seitenwand 80 Gelb", category: "seitenwand", size: 80, price: 22.5, color: "gelb" },
+]
+
+// LED-Units
+export const ledUnits: Product[] = [
+  { artNr: "SIM-LED-2", name: "LED Unit 2 Stripes", category: "led", size: 2, price: 75.0 },
+  { artNr: "SIM-LED-4", name: "LED Unit 4 Stripes", category: "led", size: 4, price: 99.5 },
+]
+
+// Zubehör & Montageteile (Accessories & Mounting Parts)
+// Adapter (zwischen Leiter & Stange)
+export const adapter: Product[] = [{ artNr: "SIM-AD", name: "Adapter", category: "adapter", size: 1, price: 2.5 }]
+
+// Schrauben (Screws)
+export const schrauben: Product[] = [
+  { artNr: "SIM-SCR-STD", name: "Standardschraube", category: "schraube", size: 1, price: 0.5, variant: "start" },
   {
-    artNr: "sim025ge-80",
-    name: "Seitenwand 80 Gelb",
-    category: "seitenwand" as ProductCategory,
-    size: 80,
-    price: 22.5,
-    color: "gelb",
+    artNr: "SIM-SCR-EXT",
+    name: "Erweiterungsschraube",
+    category: "schraube",
+    size: 1,
+    price: 0.5,
+    variant: "erweiterung",
   },
+  {
+    artNr: "SIM-SCR-MB-80",
+    name: "Schrauben Metallboden 80 (4er)",
+    category: "schraube",
+    size: 80,
+    price: 1.5,
+    variant: "metallboden",
+  },
+  {
+    artNr: "SIM-SCR-MB-40",
+    name: "Schrauben Metallboden 40 (4er)",
+    category: "schraube",
+    size: 40,
+    price: 1.5,
+    variant: "metallboden",
+  },
+]
+
+// Metallstab für Glasböden
+export const metallstaebe: Product[] = [
+  { artNr: "SIM-MS-80", name: "Metallstab Glasboden 80", category: "metallstab", size: 80, price: 4.5 },
+  { artNr: "SIM-MS-40", name: "Metallstab Glasboden 40", category: "metallstab", size: 40, price: 3.5 },
+]
+
+// Eckschutz für Glasböden (4 Stück pro Set)
+export const eckschutz: Product[] = [
+  { artNr: "SIM-CP-G", name: "Eckschutz Glas (4er)", category: "eckschutz", size: 1, price: 2.0 },
 ]
 
 // All products combined
@@ -294,10 +425,15 @@ export const allProducts: Product[] = [
   ...stangensets,
   ...metallboeden,
   ...glasboeden,
+  ...holzboeden,
   ...schubladenTueren,
   ...funktionswaende,
   ...seitenwaende,
   ...ledUnits,
+  ...adapter,
+  ...schrauben,
+  ...metallstaebe,
+  ...eckschutz,
 ]
 
 // Price lookup helpers
@@ -320,12 +456,20 @@ export function getGlasbodenPrice(width: number): number {
   return width === 40 ? 26.0 : width === 80 ? 35.0 : 0
 }
 
+export function getHolzbodenPrice(width: number): number {
+  return width === 40 ? 32.0 : width === 80 ? 45.0 : 0
+}
+
 export function getSchubladePrice(): number {
   return 88.5 // Doppelschublade 80
 }
 
 export function getTuerPrice(width: number): number {
   return width === 40 ? 32.5 : 32.5 // Only 40 cm available
+}
+
+export function getKlapptuerPrice(width: number): number {
+  return width === 40 ? 38.0 : width === 80 ? 52.0 : 0
 }
 
 export function getJalousiePrice(): number {

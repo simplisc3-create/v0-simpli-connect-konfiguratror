@@ -157,3 +157,15 @@ export function resolveGlbUrl(args: {
 
   return { url, variantCode }
 }
+
+export function isModuleTypeAvailableForWidth(moduleType: ModuleType, width: WidthKey): boolean {
+  const variantCode = width === 80 ? MODULE_TO_VARIANT_CODE_80[moduleType] : MODULE_TO_VARIANT_CODE_40[moduleType]
+  return !!variantCode
+}
+
+export function getAvailableModuleTypesForWidth(width: WidthKey): ModuleType[] {
+  const map = width === 80 ? MODULE_TO_VARIANT_CODE_80 : MODULE_TO_VARIANT_CODE_40
+  return Object.entries(map)
+    .filter(([_, code]) => !!code)
+    .map(([type]) => type as ModuleType)
+}

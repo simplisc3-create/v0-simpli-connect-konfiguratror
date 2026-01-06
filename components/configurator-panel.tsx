@@ -1,17 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import type { ShelfConfig, GridCell } from "./shelf-configurator"
+import type { ShelfConfig, GridCell, ColorKey } from "./shelf-configurator"
 import { cn } from "@/lib/utils"
-import { ShoppingCart, ChevronDown, ChevronRight, Plus, List } from "lucide-react"
+import { ShoppingCart, ChevronDown, ChevronRight, Plus, List, Paintbrush, X, Rows, Columns, Grid } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
+import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 
 type Props = {
   config: ShelfConfig
   selectedTool: GridCell["type"] | null
   selectedColor: GridCell["color"]
+  selectedCell: { row: number; col: number } | null
   onSelectTool: (tool: GridCell["type"] | null) => void
-  onSelectColor: (color: GridCell["color"]) => void
+  onSelectColor: (color: ColorKey) => void
   onPlaceModule: (row: number, col: number, type: GridCell["type"]) => void
   onClearCell: (row: number, col: number) => void
   onResizeGrid: (columns: number, rows: number) => void
@@ -22,6 +24,12 @@ type Props = {
   price: number
   showShoppingList: boolean
   onToggleShoppingList: () => void
+  onApplyCellColor?: (row: number, col: number, color: ColorKey) => void
+  onApplyColorToRow?: (row: number, color: ColorKey) => void
+  onApplyColorToColumn?: (col: number, color: ColorKey) => void
+  onApplyColorToAll?: (color: ColorKey) => void
+  onClearCellColor?: (row: number, col: number) => void
+  onDeselectCell?: () => void
 }
 
 const baseColors = [
@@ -57,6 +65,7 @@ export function ConfiguratorPanel({
   config,
   selectedTool,
   selectedColor,
+  selectedCell,
   onSelectTool,
   onSelectColor,
   onPlaceModule,
@@ -69,6 +78,12 @@ export function ConfiguratorPanel({
   price,
   showShoppingList,
   onToggleShoppingList,
+  onApplyCellColor,
+  onApplyColorToRow,
+  onApplyColorToColumn,
+  onApplyColorToAll,
+  onClearCellColor,
+  onDeselectCell,
 }: Props) {
   const [expandedSection, setExpandedSection] = useState<string | null>("grid")
 
@@ -112,10 +127,95 @@ export function ConfiguratorPanel({
     return labels[type] || ""
   }
 
+  const selectedCellInfo = selectedCell ? config.grid[selectedCell.row]?.[selectedCell.col] : null
+
+  const usedWidths = Array.from(new Set(config.columnWidths))
+  const allModulesAvailable = usedWidths.length === 0
+
   return (
     <div className="flex w-96 flex-col border-l border-neutral-700 bg-neutral-800">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
+        {selectedCell && selectedCellInfo && selectedCellInfo.type !== "empty" && selectedCellInfo.type !== "ghost" && (
+          <div className="border-b border-neutral-700 bg-neutral-900 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Paintbrush className="h-4 w-4 text-blue-400" />
+                <h3 className="text-sm font-medium text-neutral-100">Zelle bearbeiten</h3>
+              </div>
+              <button
+                onClick={onDeselectCell}
+                className="rounded p-1 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mb-3 rounded bg-neutral-800 p-2 text-xs text-neutral-300">
+              <span className="font-medium">{getModuleLabel(selectedCellInfo.type)}</span>
+              <span className="ml-2 text-neutral-500">
+                Zeile {selectedCell.row + 1}, Spalte {selectedCell.col + 1}
+              </span>
+            </div>
+
+            {/* Color selection for selected cell */}
+            <div className="mb-3">
+              <p className="mb-2 text-xs text-neutral-400">Farbe wählen:</p>
+              <div className="flex flex-wrap gap-2">
+                {[...baseColors, ...specialColors].map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => onApplyCellColor?.(selectedCell.row, selectedCell.col, color.id)}
+                    className={cn(
+                      "h-8 w-8 rounded border-2 transition-all",
+                      selectedCellInfo.color === color.id
+                        ? "border-white ring-2 ring-white ring-offset-1 ring-offset-neutral-900"
+                        : "border-neutral-600 hover:border-neutral-400",
+                    )}
+                    style={{ backgroundColor: color.color }}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Quick actions */}
+            <div className="space-y-2">
+              <p className="text-xs text-neutral-400">Schnellaktionen:</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => onApplyColorToRow?.(selectedCell.row, selectedColor)}
+                  className="flex items-center justify-center gap-1 rounded border border-neutral-600 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-700"
+                >
+                  <Rows className="h-3 w-3" />
+                  Zeile färben
+                </button>
+                <button
+                  onClick={() => onApplyColorToColumn?.(selectedCell.col, selectedColor)}
+                  className="flex items-center justify-center gap-1 rounded border border-neutral-600 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-700"
+                >
+                  <Columns className="h-3 w-3" />
+                  Spalte färben
+                </button>
+                <button
+                  onClick={() => onApplyColorToAll?.(selectedColor)}
+                  className="flex items-center justify-center gap-1 rounded border border-neutral-600 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-700"
+                >
+                  <Grid className="h-3 w-3" />
+                  Alle färben
+                </button>
+                <button
+                  onClick={() => onClearCellColor?.(selectedCell.row, selectedCell.col)}
+                  className="flex items-center justify-center gap-1 rounded border border-red-600/50 px-2 py-1.5 text-xs text-red-400 hover:bg-red-900/20"
+                >
+                  <X className="h-3 w-3" />
+                  Zurücksetzen
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Farbe Section */}
         <div className="border-b border-neutral-700 p-4">
           <h3 className="mb-3 text-sm font-medium text-neutral-100">Farbe für neues Modul</h3>
@@ -187,23 +287,53 @@ export function ConfiguratorPanel({
         {/* Module Type Selector */}
         <div className="border-b border-neutral-700 p-4">
           <h3 className="mb-3 text-sm font-medium text-neutral-100">Modultyp auswählen</h3>
+          {!allModulesAvailable && usedWidths.length > 0 && (
+            <p className="mb-3 rounded bg-blue-900/20 border border-blue-500/30 px-3 py-2 text-xs text-blue-200">
+              {usedWidths.length === 1 ? (
+                <>Nur Module für {usedWidths[0] === 75 ? "80" : "40"}cm Breite verfügbar</>
+              ) : (
+                <>Module für 40cm und 80cm Breite verfügbar</>
+              )}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-2">
-            {moduleTypes.map((moduleType) => (
-              <button
-                key={moduleType.id}
-                onClick={() => onSelectTool(selectedTool === moduleType.id ? null : moduleType.id)}
-                className={cn(
-                  "rounded-lg border px-3 py-2 text-sm transition-all",
-                  selectedTool === moduleType.id
-                    ? "border-white bg-neutral-700 text-white ring-2 ring-white"
-                    : "border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:bg-neutral-700",
-                )}
-              >
-                {moduleType.label}
-              </button>
-            ))}
+            {moduleTypes.map((moduleType) => {
+              const isAvailable =
+                allModulesAvailable ||
+                usedWidths.some((width) => isModuleTypeAvailableForWidth(moduleType.id, width === 75 ? 80 : 40))
+
+              return (
+                <button
+                  key={moduleType.id}
+                  onClick={() =>
+                    isAvailable ? onSelectTool(selectedTool === moduleType.id ? null : moduleType.id) : null
+                  }
+                  disabled={!isAvailable}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm transition-all",
+                    !isAvailable && "cursor-not-allowed opacity-40 grayscale",
+                    isAvailable && selectedTool === moduleType.id
+                      ? "border-white bg-neutral-700 text-white ring-2 ring-white"
+                      : isAvailable
+                        ? "border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:bg-neutral-700"
+                        : "border-neutral-700 text-neutral-600",
+                  )}
+                  title={
+                    !isAvailable
+                      ? `Nicht verfügbar für ${usedWidths.map((w) => (w === 75 ? "80cm" : "40cm")).join(" und ")}`
+                      : moduleType.label
+                  }
+                >
+                  {moduleType.label}
+                </button>
+              )
+            })}
           </div>
-          <p className="mt-2 text-xs text-neutral-400">Wähle einen Modultyp und klicke auf grüne Geister-Zellen</p>
+          <p className="mt-2 text-xs text-neutral-400">
+            {allModulesAvailable
+              ? "Wähle einen Modultyp und klicke auf grüne Geister-Zellen"
+              : "Ausgegraute Module sind für die gewählte Breite nicht verfügbar"}
+          </p>
         </div>
 
         {/* Visual Grid Editor */}
@@ -271,6 +401,7 @@ export function ConfiguratorPanel({
                       )}
                       style={{ backgroundColor: isEmpty ? undefined : bgColor }}
                       title={isGhost ? "Geister-Zelle" : isEmpty ? "Leer" : getModuleLabel(cell.type)}
+                      onClick={() => handleCellClick(cell.row, cell.col)}
                     >
                       {isEmpty ? (
                         isGhost ? (

@@ -11,14 +11,14 @@ import { Button } from "@/components/ui/button"
 import {
   type Product,
   leitern,
-  stangensets,
   metallboeden,
   glasboeden,
-  schubladenTueren,
+  seitenwaende,
+  adapter,
+  schrauben,
   funktionswaende,
-  seitenwaende, // Import seitenwaende
 } from "@/lib/simpli-products"
-import type { ShoppingItem } from "@/types/shopping-item" // Import ShoppingItem
+import type { ShoppingItem } from "@/types/shopping-item"
 import { useThree } from "@react-three/fiber"
 
 export type GridCell = {
@@ -34,10 +34,19 @@ export type GridCell = {
     | "mit-klapptuer"
     | "mit-doppelschublade"
     | "abschliessbare-tueren"
+    | "mit-tuere-rechts"
+    | "mit-tuere-links"
+    | "abschliessbar-rechts"
+    | "abschliessbar-links"
+    | "klapptuer"
   row: number
   col: number
-  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot" // Per-module color
+  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
 }
+
+export type CellId = `c-${number}-${number}`
+export type ColorKey = GridCell["color"]
+export type CellStyles = Record<CellId, { color?: ColorKey }>
 
 export type ShelfConfig = {
   width: 38 | 75
@@ -65,7 +74,10 @@ export type ShelfConfig = {
   rows: number
   columnWidths: (75 | 38)[]
   rowHeights: (40 | 80 | 120 | 160 | 200)[]
+  cellStyles?: CellStyles
 }
+
+export const getCellId = (row: number, col: number): CellId => `c-${row}-${col}`
 
 const createInitialGrid = (): GridCell[][] => {
   return [[{ id: "cell-0-0", type: "ghost", row: 0, col: 0 }]]
@@ -83,14 +95,16 @@ const initialConfig: ShelfConfig = {
   rows: 1,
   columnWidths: [75] as (75 | 38)[],
   rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+  cellStyles: {}, // Initialize empty cellStyles
 }
 
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
   const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("offenes-fach")
-  const [selectedColor, setSelectedColor] = useState<GridCell["color"]>("weiss") // Add selected color state
+  const [selectedColor, setSelectedColor] = useState<GridCell["color"]>("weiss")
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
+  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
 
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
@@ -103,9 +117,7 @@ export function ShelfConfigurator() {
         return
       }
       setHistory((prev) => {
-        // Remove any future states if we're in the middle of history
         const newHistory = prev.slice(0, historyIndex + 1)
-        // Add new state and limit history to 50 entries
         return [...newHistory, newConfig].slice(-50)
       })
       setHistoryIndex((prev) => Math.min(prev + 1, 49))
@@ -134,6 +146,139 @@ export function ShelfConfigurator() {
   const canUndo = historyIndex > 0
   const canRedo = historyIndex < history.length - 1
 
+  const pruneCellStyles = useCallback((styles: CellStyles, maxRows: number, maxCols: number): CellStyles => {
+    const pruned: CellStyles = {}
+    Object.entries(styles).forEach(([key, value]) => {
+      const match = key.match(/^c-(\d+)-(\d+)$/)
+      if (match) {
+        const row = Number.parseInt(match[1], 10)
+        const col = Number.parseInt(match[2], 10)
+        if (row < maxRows && col < maxCols) {
+          pruned[key as CellId] = value
+        }
+      }
+    })
+    return pruned
+  }, [])
+
+  const applyCellColor = useCallback(
+    (row: number, col: number, color: ColorKey) => {
+      setConfig((prev) => {
+        const cellId = getCellId(row, col)
+        const newCellStyles = { ...(prev.cellStyles || {}), [cellId]: { color } }
+
+        // Also update the grid cell's color for BOM calculation
+        const newGrid = prev.grid.map((r, ri) =>
+          r.map((cell, ci) => {
+            if (ri === row && ci === col) {
+              return { ...cell, color }
+            }
+            return cell
+          }),
+        )
+
+        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const applyColorToRow = useCallback(
+    (row: number, color: ColorKey) => {
+      setConfig((prev) => {
+        const newCellStyles = { ...(prev.cellStyles || {}) }
+        const newGrid = prev.grid.map((r, ri) =>
+          r.map((cell, ci) => {
+            if (ri === row && cell.type !== "empty" && cell.type !== "ghost") {
+              const cellId = getCellId(ri, ci)
+              newCellStyles[cellId] = { color }
+              return { ...cell, color }
+            }
+            return cell
+          }),
+        )
+
+        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const applyColorToColumn = useCallback(
+    (col: number, color: ColorKey) => {
+      setConfig((prev) => {
+        const newCellStyles = { ...(prev.cellStyles || {}) }
+        const newGrid = prev.grid.map((r, ri) =>
+          r.map((cell, ci) => {
+            if (ci === col && cell.type !== "empty" && cell.type !== "ghost") {
+              const cellId = getCellId(ri, ci)
+              newCellStyles[cellId] = { color }
+              return { ...cell, color }
+            }
+            return cell
+          }),
+        )
+
+        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const applyColorToAll = useCallback(
+    (color: ColorKey) => {
+      setConfig((prev) => {
+        const newCellStyles: CellStyles = {}
+        const newGrid = prev.grid.map((r, ri) =>
+          r.map((cell, ci) => {
+            if (cell.type !== "empty" && cell.type !== "ghost") {
+              const cellId = getCellId(ri, ci)
+              newCellStyles[cellId] = { color }
+              return { ...cell, color }
+            }
+            return cell
+          }),
+        )
+
+        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  const clearCellColor = useCallback(
+    (row: number, col: number) => {
+      setConfig((prev) => {
+        const cellId = getCellId(row, col)
+        const newCellStyles = { ...(prev.cellStyles || {}) }
+        delete newCellStyles[cellId]
+
+        // Revert to default color (weiss)
+        const newGrid = prev.grid.map((r, ri) =>
+          r.map((cell, ci) => {
+            if (ri === row && ci === col) {
+              return { ...cell, color: "weiss" as ColorKey }
+            }
+            return cell
+          }),
+        )
+
+        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
   const getColumnHeights = (grid: GridCell[][]): number[] => {
     const heights: number[] = []
     grid[0]?.forEach((_, colIndex) => {
@@ -152,7 +297,6 @@ export function ShelfConfigurator() {
   const isConnectedToExisting = (row: number, col: number, grid: GridCell[][], type?: GridCell["type"]): boolean => {
     const currentCell = grid[row]?.[col]
     if (type === "empty") {
-      // Allow clearing any non-empty cell
       return currentCell !== undefined && currentCell.type !== "empty"
     }
     if (!currentCell || currentCell.type !== "ghost") {
@@ -188,14 +332,12 @@ export function ShelfConfigurator() {
     let expandRight = false
     let expandUp = false
 
-    // Check if we need to expand left (if there's a filled module at col 0)
     const hasFilledAtCol0 = newGrid.some((row) => row[0] && row[0].type !== "empty" && row[0].type !== "ghost")
     if (hasFilledAtCol0) {
       expandLeft = true
       needsExpansion = true
     }
 
-    // Check if we need to expand right (if there's a filled module at last col)
     const lastColIdx = cols - 1
     const hasFilledAtLastCol = newGrid.some((row) => {
       const cell = row[lastColIdx]
@@ -206,7 +348,6 @@ export function ShelfConfigurator() {
       needsExpansion = true
     }
 
-    // Check if we need to expand up (if there's a filled module at top row)
     const topRowIdx = rows - 1
     const hasFilledAtTopRow = newGrid[topRowIdx].some((cell) => cell.type !== "empty" && cell.type !== "ghost")
     if (hasFilledAtTopRow) {
@@ -214,12 +355,11 @@ export function ShelfConfigurator() {
       needsExpansion = true
     }
 
-    // Perform expansions
     if (expandLeft) {
       newGrid = newGrid.map((row, ri) => {
         const newCell: GridCell = {
           id: `cell-${ri}--1-temp`,
-          type: "empty",
+          type: "empty" as const,
           row: ri,
           col: -1,
         }
@@ -259,12 +399,11 @@ export function ShelfConfigurator() {
       for (let c = 0; c < updatedCols; c++) {
         const cell = newGrid[r][c]
         if (cell.type !== "empty" && cell.type !== "ghost") {
-          // Create ghost cells in 4 adjacent positions
           const adjacentPositions = [
-            { nr: r - 1, nc: c }, // below
-            { nr: r + 1, nc: c }, // above
-            { nr: r, nc: c - 1 }, // left
-            { nr: r, nc: c + 1 }, // right
+            { nr: r - 1, nc: c },
+            { nr: r + 1, nc: c },
+            { nr: r, nc: c - 1 },
+            { nr: r, nc: c + 1 },
           ]
 
           adjacentPositions.forEach(({ nr, nc }) => {
@@ -289,7 +428,6 @@ export function ShelfConfigurator() {
       setConfig((prev) => {
         const currentCell = prev.grid[row]?.[col]
 
-        // Don't allow placement if not a ghost cell
         if (!currentCell || (currentCell.type !== "ghost" && currentCell.type !== "empty")) {
           console.log("[v0] Cannot place - cell is not ghost or empty")
           return prev
@@ -300,13 +438,11 @@ export function ShelfConfigurator() {
           return prev
         }
 
-        // Check if has support below (for non-ground level)
         if (!hasSupportBelow(row, col, prev.grid)) {
           console.log("[v0] Cannot place - no support below")
           return prev
         }
 
-        // Place the module
         let newGrid = prev.grid.map((r, ri) =>
           r.map((cell, ci) => {
             if (ri === row && ci === col) {
@@ -316,10 +452,8 @@ export function ShelfConfigurator() {
           }),
         )
 
-        // Expand grid with new ghost cells around the placement
         newGrid = expandGridAroundPlacement(newGrid, row, col)
 
-        // Update column widths and row heights based on new grid size
         const newColumns = newGrid[0]?.length || 1
         const newRows = newGrid.length
 
@@ -329,6 +463,9 @@ export function ShelfConfigurator() {
         const newRowHeights = [...prev.rowHeights]
         while (newRowHeights.length < newRows) newRowHeights.push(38)
 
+        const cellId = getCellId(row, col)
+        const newCellStyles = { ...(prev.cellStyles || {}), [cellId]: { color: selectedColor } }
+
         const newConfig = {
           ...prev,
           grid: newGrid,
@@ -336,6 +473,7 @@ export function ShelfConfigurator() {
           rows: newRows,
           columnWidths: newColumnWidths as (75 | 38)[],
           rowHeights: newRowHeights,
+          cellStyles: newCellStyles,
         }
 
         console.log("[v0] New grid size:", newRows, "x", newColumns)
@@ -343,22 +481,27 @@ export function ShelfConfigurator() {
         return newConfig
       })
     },
-    [saveToHistory, selectedColor], // Added selectedColor to dependencies
+    [saveToHistory, selectedColor],
   )
 
   const handleCellClick3D = useCallback(
     (row: number, col: number) => {
       console.log("[v0] Cell clicked:", row, col)
 
+      const cell = config.grid[row]?.[col]
+
+      if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+        setSelectedCell({ row, col })
+        return
+      }
+
       if (!selectedTool || selectedTool === "empty") {
-        // Clear the cell
         placeModule(row, col, "ghost")
       } else {
-        // Place the selected module
         placeModule(row, col, selectedTool)
       }
     },
-    [selectedTool, placeModule],
+    [selectedTool, placeModule, config.grid],
   )
 
   const clearCell = useCallback(
@@ -403,6 +546,8 @@ export function ShelfConfigurator() {
         while (newRowHeights.length < limitedRows) newRowHeights.push(38)
         while (newRowHeights.length > limitedRows) newRowHeights.pop()
 
+        const prunedCellStyles = pruneCellStyles(prev.cellStyles || {}, limitedRows, newCols)
+
         const newConfig = {
           ...prev,
           grid: newGrid,
@@ -410,20 +555,20 @@ export function ShelfConfigurator() {
           rows: limitedRows,
           columnWidths: newColumnWidths as (75 | 38)[],
           rowHeights: newRowHeights,
+          cellStyles: prunedCellStyles,
         }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
     },
-    [saveToHistory],
+    [saveToHistory, pruneCellStyles],
   )
 
   const setRowHeight = useCallback(
     (rowIndex: number, height: number) => {
-      // accept any number, not just 38 | 76
       setConfig((prev) => {
         const newHeights = [...prev.rowHeights]
-        newHeights[rowIndex] = Math.max(20, Math.min(120, height)) // Clamp between 20 and 120
+        newHeights[rowIndex] = Math.max(20, Math.min(120, height))
         const newConfig = { ...prev, rowHeights: newHeights }
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
@@ -469,12 +614,14 @@ export function ShelfConfigurator() {
       rows: 1,
       columnWidths: [75] as (75 | 38)[],
       rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+      cellStyles: {} as CellStyles,
     }
     setConfig(newConfig)
     setHistory([newConfig])
     setHistoryIndex(0)
     setSelectedTool("offenes-fach")
-    setSelectedColor("weiss") // Reset selected color
+    setSelectedColor("weiss")
+    setSelectedCell(null)
   }, [])
 
   const calculateBOM = (config: ShelfConfig) => {
@@ -499,7 +646,6 @@ export function ShelfConfigurator() {
       return { items: [], totalPrice: 0 }
     }
 
-    // Group filled cells by column
     const cellsByColumn: Map<number, typeof filledCells> = new Map()
     filledCells.forEach((cell) => {
       const existing = cellsByColumn.get(cell.col) || []
@@ -507,27 +653,19 @@ export function ShelfConfigurator() {
       cellsByColumn.set(cell.col, existing)
     })
 
-    // For each column, calculate the height based on the number of filled cells (rows)
     const columnHeights: Map<number, number> = new Map()
 
     cellsByColumn.forEach((cells, colIdx) => {
-      // Get all row indices for this column
       const rows = cells.map((c) => c.row).sort((a, b) => a - b)
-
-      // Calculate total height by summing the row heights for filled cells
       let heightCm = 0
       rows.forEach((rowIdx) => {
         heightCm += config.rowHeights[rowIdx] || 38
       })
-
       columnHeights.set(colIdx, heightCm)
-      console.log(`[v0] Column ${colIdx}: rows=${JSON.stringify(rows)}, height=${heightCm}cm`)
     })
 
-    // Find all column indices that have at least one filled cell
     const usedColIndices = Array.from(cellsByColumn.keys()).sort((a, b) => a - b)
 
-    // Group consecutive columns
     const columnGroups: number[][] = []
     let currentGroup: number[] = []
 
@@ -548,42 +686,31 @@ export function ShelfConfigurator() {
       columnGroups.push(currentGroup)
     }
 
-    console.log("[v0] Ladder calc - Used columns:", usedColIndices)
-    console.log("[v0] Ladder calc - Column groups:", columnGroups)
-
-    // A ladder between two columns needs to be as tall as the taller column
-    // A ladder at the edge needs to match the height of its adjacent column
     const ladderHeightsNeeded: number[] = []
+    let totalLadderCount = 0
 
     columnGroups.forEach((group) => {
-      // For a group of N columns, we need N+1 ladders
       for (let i = 0; i <= group.length; i++) {
         let ladderHeight: number
 
         if (i === 0) {
-          // Left edge ladder - height of first column in group
           ladderHeight = columnHeights.get(group[0]) || 0
         } else if (i === group.length) {
-          // Right edge ladder - height of last column in group
           ladderHeight = columnHeights.get(group[group.length - 1]) || 0
         } else {
-          // Middle ladder - max height of left and right columns
           const leftColHeight = columnHeights.get(group[i - 1]) || 0
           const rightColHeight = columnHeights.get(group[i]) || 0
           ladderHeight = Math.max(leftColHeight, rightColHeight)
         }
 
         ladderHeightsNeeded.push(ladderHeight)
+        totalLadderCount++
       }
     })
 
-    console.log("[v0] Ladder heights needed (cm):", ladderHeightsNeeded)
-
-    // Convert needed heights to actual ladder sizes and count them
     const ladderSizeCounts: Map<number, number> = new Map()
 
     ladderHeightsNeeded.forEach((heightCm) => {
-      // Find the appropriate ladder size (must be >= height)
       let leiterSize = 40
       if (heightCm > 160) leiterSize = 200
       else if (heightCm > 120) leiterSize = 160
@@ -594,9 +721,6 @@ export function ShelfConfigurator() {
       ladderSizeCounts.set(leiterSize, current + 1)
     })
 
-    console.log("[v0] Ladder size counts:", Object.fromEntries(ladderSizeCounts))
-
-    // Add ladders to shopping list
     ladderSizeCounts.forEach((count, size) => {
       const leiterProduct = leitern.find((l) => l.size === size)
       if (leiterProduct) {
@@ -604,175 +728,181 @@ export function ShelfConfigurator() {
       }
     })
 
-    // For each column, we need levels+1 tube sets (one above and one below each cell)
-    let tube80Levels = 0
-    let tube40Levels = 0
+    const adapterProduct = adapter.find((a) => a.category === "adapter")
+    if (adapterProduct && totalLadderCount > 0) {
+      addItem(adapterProduct, totalLadderCount * 2)
+    }
 
-    usedColIndices.forEach((colIdx) => {
-      const cells = cellsByColumn.get(colIdx) || []
-      if (cells.length === 0) return
+    const startSchraube = schrauben.find((s) => s.variant === "start")
+    const erweiterungsSchraube = schrauben.find((s) => s.variant === "erweiterung")
 
-      // Count actual cells in this column
-      const numCells = cells.length
-      // We need numCells + 1 tube sets for each column (top, between cells, bottom)
-      const tubesNeeded = numCells + 1
+    if (startSchraube) {
+      addItem(startSchraube, columnGroups.length)
+    }
 
-      if (config.columnWidths[colIdx] === 75) {
-        tube80Levels += tubesNeeded
-      } else {
-        tube40Levels += tubesNeeded
-      }
-    })
+    if (erweiterungsSchraube) {
+      columnGroups.forEach((group) => {
+        const laddersInGroup = group.length + 1
+        if (laddersInGroup > 2) {
+          addItem(erweiterungsSchraube, laddersInGroup - 2)
+        }
+      })
+    }
 
-    const stange80 = stangensets.find((s) => s.size === 80 && s.variant === "metall")
-    const stange40 = stangensets.find((s) => s.size === 40 && s.variant === "metall")
+    const panelCountByColor: Map<string, { color: string; width: number; count: number }> = new Map()
+    let glass80Count = 0
+    let glass40Count = 0
 
-    if (stange80 && tube80Levels > 0) addItem(stange80, tube80Levels)
-    if (stange40 && tube40Levels > 0) addItem(stange40, tube40Levels)
-
-    console.log("[v0] Tube sets - 80cm:", tube80Levels, "40cm:", tube40Levels)
-
-    const shelfCounts: Map<string, { product: Product; needed: number }> = new Map()
-
-    // Calculate shelves and accessories per cell
     filledCells.forEach((cell) => {
       const cellWidth = config.columnWidths[cell.col]
       const bodenSize = cellWidth === 75 ? 80 : 40
+      const cellColor = cell.color || "weiss"
 
-      let shelfProduct: Product | undefined
       if (config.material === "metal") {
-        // Try to find metallboden with the same color as the cell
-        const cellColor = cell.color || "weiss"
-        shelfProduct =
-          metallboeden.find((p) => p.size === bodenSize && p.color === cellColor) ||
-          metallboeden.find((p) => p.size === bodenSize && p.color === "weiss") ||
-          metallboeden.find((p) => p.size === bodenSize)
-      } else if (config.material === "glass") {
-        shelfProduct = glasboeden.find((p) => p.size === bodenSize)
-      }
-
-      if (shelfProduct) {
-        const key = shelfProduct.artNr
-        const existing = shelfCounts.get(key)
+        const key = `metal-${bodenSize}-${cellColor}`
+        const existing = panelCountByColor.get(key)
         if (existing) {
-          existing.needed += 1
+          existing.count += 1
         } else {
-          shelfCounts.set(key, { product: shelfProduct, needed: 1 })
+          panelCountByColor.set(key, { color: cellColor, width: bodenSize, count: 1 })
         }
+      } else if (config.material === "glass") {
+        if (bodenSize === 80) glass80Count++
+        else glass40Count++
+      }
+    })
+
+    if (config.material === "metal") {
+      panelCountByColor.forEach(({ color, width, count }) => {
+        const packs = Math.ceil(count / 2)
+        const shelfProduct =
+          metallboeden.find((p) => p.size === width && p.color === color) ||
+          metallboeden.find((p) => p.size === width && p.color === "weiss") ||
+          metallboeden.find((p) => p.size === width)
+        if (shelfProduct) {
+          addItem(shelfProduct, packs)
+        }
+      })
+    } else if (config.material === "glass") {
+      // Glass shelves also in 2-packs
+      const glass80Packs = Math.ceil(glass80Count / 2)
+      const glass40Packs = Math.ceil(glass40Count / 2)
+
+      const glass80Product = glasboeden.find((p) => p.size === 80)
+      const glass40Product = glasboeden.find((p) => p.size === 40)
+
+      if (glass80Product && glass80Packs > 0) addItem(glass80Product, glass80Packs)
+      if (glass40Product && glass40Packs > 0) addItem(glass40Product, glass40Packs)
+    }
+
+    const sidewallCountByColor: Map<string, { color: string; width: number; count: number }> = new Map()
+
+    config.grid.forEach((row, rowIndex) => {
+      const rowCells = row.filter((c) => c.type !== "empty" && c.type !== "ghost")
+      if (rowCells.length === 0) return
+
+      const needsSidewalls = (type: GridCell["type"]) =>
+        type !== "offenes-fach" && type !== "ohne-seitenwaende" && type !== "empty" && type !== "ghost"
+
+      const consecutiveGroups: { cols: number[]; width: number; color: string }[] = []
+      let currentGroup: number[] = []
+      let currentColor = ""
+      let currentWidth = 0
+
+      rowCells.forEach((cell, idx) => {
+        if (needsSidewalls(cell.type)) {
+          const cellWidth = config.columnWidths[cell.col] === 75 ? 80 : 40
+          const cellColor = cell.color || "weiss"
+
+          if (
+            idx === 0 ||
+            rowCells[idx - 1].col + 1 !== cell.col ||
+            cellWidth !== currentWidth ||
+            cellColor !== currentColor
+          ) {
+            if (currentGroup.length > 0) {
+              consecutiveGroups.push({ cols: currentGroup, width: currentWidth, color: currentColor })
+            }
+            currentGroup = [cell.col]
+            currentColor = cellColor
+            currentWidth = cellWidth
+          } else {
+            currentGroup.push(cell.col)
+          }
+        } else {
+          if (currentGroup.length > 0) {
+            consecutiveGroups.push({ cols: currentGroup, width: currentWidth, color: currentColor })
+            currentGroup = []
+            currentColor = ""
+            currentWidth = 0
+          }
+        }
+      })
+
+      if (currentGroup.length > 0) {
+        consecutiveGroups.push({ cols: currentGroup, width: currentWidth, color: currentColor })
       }
 
-      // Add accessories based on cell type
-      switch (cell.type) {
-        case "offenes-fach":
-          // No accessories needed - completely open
-          break
-
-        case "ohne-seitenwaende": {
-          const backPanel =
-            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
-            funktionswaende.find((p) => p.variant === "1-seitig")
-          if (backPanel) addItem(backPanel, 1)
-          break
+      // N+1 sidewalls for consecutive modules, aggregate by color
+      consecutiveGroups.forEach((group) => {
+        const sidewallsNeeded = group.cols.length + 1
+        const key = `sidewall-${group.width}-${group.color}`
+        const existing = sidewallCountByColor.get(key)
+        if (existing) {
+          existing.count += sidewallsNeeded
+        } else {
+          sidewallCountByColor.set(key, { color: group.color, width: group.width, count: sidewallsNeeded })
         }
+      })
+    })
 
-        case "mit-rueckwand": {
-          const sideWallSize = cellWidth === 75 ? 80 : 40
-          const cellColor = cell.color || "weiss"
-          const sideWall =
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
-            seitenwaende.find((p) => p.size === sideWallSize)
-          if (sideWall) addItem(sideWall, 2) // 2 side walls
+    sidewallCountByColor.forEach(({ color, width, count }) => {
+      const packs = Math.ceil(count / 2)
+      const sideWall =
+        seitenwaende.find((p) => p.size === width && p.color === color) ||
+        seitenwaende.find((p) => p.size === width && p.color === "weiss") ||
+        seitenwaende.find((p) => p.size === width)
+      if (sideWall) {
+        addItem(sideWall, packs)
+      }
+    })
 
-          const backPanel =
-            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
-            funktionswaende.find((p) => p.variant === "1-seitig")
-          if (backPanel) addItem(backPanel, 1)
-          break
-        }
+    const backwallCountByColor: Map<string, { color: string; width: number; count: number }> = new Map()
 
-        case "ohne-rueckwand": {
-          const sideWallSize = cellWidth === 75 ? 80 : 40
-          const cellColor = cell.color || "weiss"
-          const sideWall =
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
-            seitenwaende.find((p) => p.size === sideWallSize)
-          if (sideWall) addItem(sideWall, 2) // 2 side walls
-          break
-        }
+    filledCells.forEach((cell) => {
+      const needsBackwall = (type: GridCell["type"]) =>
+        type === "ohne-seitenwaende" || // has back wall, no side walls
+        type === "mit-rueckwand" || // has back wall + side walls
+        type === "mit-tuere-rechts" ||
+        type === "mit-tuere-links" ||
+        type === "abschliessbar-rechts" ||
+        type === "abschliessbar-links" ||
+        type === "klapptuer"
 
-        case "mit-tueren":
-        case "abschliessbare-tueren": {
-          const sideWallSize = cellWidth === 75 ? 80 : 40
-          const cellColor = cell.color || "weiss"
-          const sideWall =
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
-            seitenwaende.find((p) => p.size === sideWallSize)
-          if (sideWall) addItem(sideWall, 2)
+      if (needsBackwall(cell.type)) {
+        const cellWidth = config.columnWidths[cell.col] === 75 ? 80 : 40
+        const cellColor = cell.color || "weiss"
+        const key = `backwall-${cellWidth}-${cellColor}`
 
-          const backPanel =
-            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
-            funktionswaende.find((p) => p.variant === "1-seitig")
-          if (backPanel) addItem(backPanel, 1)
-
-          const door =
-            schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
-            schubladenTueren.find((p) => p.category === "tuer")
-          if (door) addItem(door, 2)
-          break
-        }
-        case "mit-klapptuer": {
-          const sideWallSize = cellWidth === 75 ? 80 : 40
-          const cellColor = cell.color || "weiss"
-          const sideWall =
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
-            seitenwaende.find((p) => p.size === sideWallSize)
-          if (sideWall) addItem(sideWall, 2)
-
-          const backPanel =
-            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
-            funktionswaende.find((p) => p.variant === "1-seitig")
-          if (backPanel) addItem(backPanel, 1)
-
-          const door =
-            schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
-            schubladenTueren.find((p) => p.category === "tuer")
-          if (door) addItem(door, 1)
-          break
-        }
-        case "mit-doppelschublade": {
-          const sideWallSize = cellWidth === 75 ? 80 : 40
-          const cellColor = cell.color || "weiss"
-          const sideWall =
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
-            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
-            seitenwaende.find((p) => p.size === sideWallSize)
-          if (sideWall) addItem(sideWall, 2)
-
-          const backPanel =
-            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
-            funktionswaende.find((p) => p.variant === "1-seitig")
-          if (backPanel) addItem(backPanel, 1)
-
-          const drawer =
-            schubladenTueren.find((p) => p.category === "schublade" && p.color === "weiss") ||
-            schubladenTueren.find((p) => p.category === "schublade")
-          if (drawer) addItem(drawer, 1)
-          break
+        const existing = backwallCountByColor.get(key)
+        if (existing) {
+          existing.count += 1
+        } else {
+          backwallCountByColor.set(key, { color: cellColor, width: cellWidth, count: 1 })
         }
       }
     })
 
-    shelfCounts.forEach(({ product, needed }) => {
-      // Panels come in 2-packs, so calculate packs needed
-      const packsNeeded = Math.ceil(needed / 2)
-      const delivered = packsNeeded * 2
-      console.log(`[v0] Shelf ${product.name}: needed=${needed}, packs=${packsNeeded}, delivered=${delivered}`)
-      // Add the actual needed quantity (price is per piece)
-      addItem(product, needed)
+    // Add back walls as 2-packs
+    backwallCountByColor.forEach(({ color, width, count }) => {
+      const packs = Math.ceil(count / 2)
+      const funktionswand =
+        funktionswaende.find((p) => p.size === width && p.color === color) ||
+        funktionswaende.find((p) => p.size === width && p.color === "weiss") ||
+        funktionswaende.find((p) => p.size === width)
+      if (funktionswand) {
+        addItem(funktionswand, packs)
+      }
     })
 
     const list = Array.from(items.values())
@@ -801,7 +931,7 @@ export function ShelfConfigurator() {
       total: item.subtotal,
     }))
     return { items: transformedItems, totalPrice: result.totalPrice }
-  }, [gridHash]) // Use gridHash instead of config to prevent unnecessary recalculations
+  }, [gridHash])
 
   function InvalidateOnChange({ gridHash }: { gridHash: string }) {
     const { invalidate } = useThree()
@@ -857,6 +987,9 @@ export function ShelfConfigurator() {
                 hoveredCell={hoveredCell}
                 onCellClick={handleCellClick3D}
                 onCellHover={setHoveredCell}
+                selectedCell={selectedCell} // Pass selectedCell to ShelfScene
+                onApplyCellColor={applyCellColor} // Pass applyCellColor handler
+                onClearCellColor={clearCellColor} // Pass clearCellColor handler
               />
             </Suspense>
 
@@ -928,6 +1061,47 @@ export function ShelfConfigurator() {
               </div>
             </div>
           )}
+
+          {/* Color selection UI */}
+          {selectedCell && (
+            <div className="absolute left-4 top-24 rounded-lg bg-black/70 px-3 py-2">
+              <div className="flex flex-col gap-2">
+                <div className="text-sm font-bold text-white">Farbe auswählen</div>
+                <div className="flex flex-wrap gap-1">
+                  {["weiss", "schwarz", "blau", "gruen", "gelb", "orange", "rot"].map((color) => (
+                    <button
+                      key={color}
+                      className={`h-6 w-6 rounded-full border-2 ${
+                        config.cellStyles?.[getCellId(selectedCell.row, selectedCell.col)]?.color === color
+                          ? "border-white"
+                          : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: getColorHex(color) }}
+                      onClick={() => {
+                        applyCellColor(selectedCell.row, selectedCell.col, color as ColorKey)
+                        setSelectedCell(null) // Close color picker after selection
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  className="text-sm text-red-500 hover:underline"
+                  onClick={() => {
+                    clearCellColor(selectedCell.row, selectedCell.col)
+                    setSelectedCell(null) // Close color picker
+                  }}
+                >
+                  Farbe löschen
+                </button>
+                <button
+                  className="text-sm text-gray-300 hover:underline"
+                  onClick={() => setSelectedCell(null)} // Close color picker
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <ConfiguratorPanel
@@ -936,6 +1110,7 @@ export function ShelfConfigurator() {
           selectedColor={selectedColor}
           onSelectTool={(tool) => {
             setSelectedTool(tool)
+            setSelectedCell(null) // Close color picker when tool changes
           }}
           onSelectColor={setSelectedColor}
           onPlaceModule={handleCellClick3D}
@@ -945,9 +1120,13 @@ export function ShelfConfigurator() {
           onSetRowHeight={setRowHeight}
           onUpdateConfig={updateConfig}
           shoppingList={bomData.items}
-          price={bomData.totalPrice} // Pass raw number instead of formatted string
+          price={bomData.totalPrice}
           showShoppingList={showShoppingList}
           onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
+          // Pass color applying functions to Panel
+          onApplyColorToRow={applyColorToRow}
+          onApplyColorToColumn={applyColorToColumn}
+          onApplyColorToAll={applyColorToAll}
         />
       </div>
     </div>
@@ -966,6 +1145,11 @@ function getToolLabel(tool: GridCell["type"]): string {
     "mit-klapptuer": "Mit Klapptür",
     "mit-doppelschublade": "Mit Schubladen",
     "abschliessbare-tueren": "Abschließbar",
+    "mit-tuere-rechts": "Mit Türen (rechts)",
+    "mit-tuere-links": "Mit Türen (links)",
+    "abschliessbar-rechts": "Abschließbar (rechts)",
+    "abschliessbar-links": "Abschließbar (links)",
+    klapptuer: "Klapptür",
   }
   return labels[tool] || tool
 }
