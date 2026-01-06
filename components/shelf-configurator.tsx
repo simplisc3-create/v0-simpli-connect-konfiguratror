@@ -979,7 +979,7 @@ export function ShelfConfigurator() {
         <div className="relative flex-1">
           <Canvas
             shadows={true}
-            camera={{ position: [0, 1.5, 4], fov: 50 }}
+            camera={{ position: [0, 1.2, 2.5], fov: 50 }}
             gl={{
               antialias: true,
               alpha: true,
@@ -993,10 +993,10 @@ export function ShelfConfigurator() {
           >
             <color attach="background" args={["#f5f5f5"]} />
 
-            <ambientLight intensity={0.55} />
+            <ambientLight intensity={0.44} />
             <directionalLight
               position={[5, 5, 5]}
-              intensity={0.75}
+              intensity={0.6}
               castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
@@ -1007,7 +1007,7 @@ export function ShelfConfigurator() {
               shadow-camera-bottom={-10}
               shadow-bias={-0.0001}
             />
-            <directionalLight position={[-5, 3, -5]} intensity={0.3} />
+            <directionalLight position={[-5, 3, -5]} intensity={0.24} />
 
             <Suspense
               fallback={
@@ -1034,7 +1034,7 @@ export function ShelfConfigurator() {
               makeDefault
               minPolarAngle={0.2}
               maxPolarAngle={Math.PI / 2.2}
-              minDistance={1.5}
+              minDistance={1}
               maxDistance={8}
             />
           </Canvas>

@@ -55,16 +55,105 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
 }
 
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(0.98, 0.98, 0.98),
-  black: new THREE.Color(0.08, 0.08, 0.08),
-  gray: new THREE.Color(0.55, 0.55, 0.55),
-  anthrazit: new THREE.Color(0.22, 0.22, 0.25),
-  blue: new THREE.Color(0.15, 0.45, 1.0),
-  green: new THREE.Color(0.05, 0.75, 0.25),
-  yellow: new THREE.Color(1.0, 0.9, 0.15),
-  orange: new THREE.Color(1.0, 0.45, 0.05),
-  red: new THREE.Color(0.95, 0.15, 0.15),
-  beige: new THREE.Color(0.88, 0.78, 0.62),
+  white: new THREE.Color(0.95, 0.95, 0.95),
+  black: new THREE.Color(0.05, 0.05, 0.05),
+  gray: new THREE.Color(0.45, 0.45, 0.45),
+  anthrazit: new THREE.Color(0.18, 0.18, 0.2),
+  blue: new THREE.Color(0.1, 0.4, 0.95),
+  green: new THREE.Color(0.0, 0.7, 0.2),
+  yellow: new THREE.Color(1.0, 0.85, 0.0),
+  orange: new THREE.Color(1.0, 0.4, 0.0),
+  red: new THREE.Color(0.92, 0.1, 0.1),
+  beige: new THREE.Color(0.85, 0.75, 0.58),
+}
+
+const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
+  color: new THREE.Color(0.7, 0.7, 0.73),
+  metalness: 0.98,
+  roughness: 0.1,
+  envMapIntensity: 1.2,
+  side: THREE.DoubleSide,
+})
+
+const FRAME_KEYWORDS = [
+  "frame",
+  "tube",
+  "pipe",
+  "chrome",
+  "metal",
+  "stahl",
+  "rohr",
+  "gestell",
+  "rahmen",
+  "leiter",
+  "stange",
+  "leg",
+  "upright",
+  "corner",
+  "ecke",
+  "verbinder",
+  "connector",
+]
+
+const PANEL_KEYWORDS = [
+  "panel",
+  "shelf",
+  "boden",
+  "platte",
+  "wand",
+  "back",
+  "side",
+  "rueckwand",
+  "seitenwand",
+  "tuer",
+  "door",
+  "schublade",
+  "drawer",
+  "klappe",
+  "flap",
+  "front",
+  "deckel",
+  "cover",
+]
+
+function isFramePart(meshName: string, geometry: THREE.BufferGeometry): boolean {
+  const nameLower = meshName.toLowerCase()
+
+  // Check name for frame keywords
+  for (const keyword of FRAME_KEYWORDS) {
+    if (nameLower.includes(keyword)) return true
+  }
+
+  // Check name for panel keywords (these are NOT frame)
+  for (const keyword of PANEL_KEYWORDS) {
+    if (nameLower.includes(keyword)) return false
+  }
+
+  // Heuristic: if geometry is cylindrical (tube-like), it's likely frame
+  // Tubes typically have more vertices relative to faces due to circular cross-section
+  if (geometry && geometry.attributes.position) {
+    const positions = geometry.attributes.position
+    const vertexCount = positions.count
+
+    // Calculate bounding box aspect ratio
+    geometry.computeBoundingBox()
+    const bbox = geometry.boundingBox
+    if (bbox) {
+      const size = new THREE.Vector3()
+      bbox.getSize(size)
+
+      // If one dimension is much larger than others, likely a tube
+      const dims = [size.x, size.y, size.z].sort((a, b) => b - a)
+      const aspectRatio = dims[0] / Math.max(dims[1], 0.001)
+
+      // Tubes are long and thin
+      if (aspectRatio > 5 && dims[1] < 0.1) {
+        return true
+      }
+    }
+  }
+
+  return false
 }
 
 function getColorName(hex: string): string {
@@ -216,18 +305,25 @@ const LoadedGLBModel = memo(
             }
           }
 
+          const meshName = child.name || ""
+          const isFrame = isFramePart(meshName, child.geometry)
+
           if (child.material) {
             const oldMat = child.material as THREE.MeshStandardMaterial
-            const texture = oldMat.map || null
 
-            child.material = new THREE.MeshStandardMaterial({
-              map: texture,
-              color: targetColorValue,
-              metalness: 0.25,
-              roughness: 0.55,
-              side: THREE.DoubleSide,
-              shadowSide: THREE.DoubleSide,
-            })
+            if (isFrame) {
+              child.material = CHROME_MATERIAL.clone()
+            } else {
+              const texture = oldMat.map || null
+              child.material = new THREE.MeshStandardMaterial({
+                map: texture,
+                color: targetColorValue,
+                metalness: 0.08,
+                roughness: 0.5,
+                side: THREE.DoubleSide,
+                shadowSide: THREE.DoubleSide,
+              })
+            }
           }
         }
       })
