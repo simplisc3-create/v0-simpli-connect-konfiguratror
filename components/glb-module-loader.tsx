@@ -93,6 +93,17 @@ const FRAME_KEYWORDS = [
   "ecke",
   "verbinder",
   "connector",
+  "cylinder",
+  "rod",
+  "bar",
+  "strut",
+  "support",
+  "vertical",
+  "horizontal",
+  "bein",
+  "fuss",
+  "feet",
+  "foot",
 ]
 
 const PANEL_KEYWORDS = [
@@ -125,40 +136,52 @@ const PANEL_KEYWORDS = [
 function isFramePart(meshName: string, geometry: THREE.BufferGeometry): boolean {
   const nameLower = meshName.toLowerCase()
 
-  // Check name for frame keywords
+  console.log(`[v0] Checking mesh: "${meshName}" (lowercase: "${nameLower}")`)
+
   for (const keyword of FRAME_KEYWORDS) {
-    if (nameLower.includes(keyword)) return true
+    if (nameLower.includes(keyword)) {
+      console.log(`[v0] Frame detected by keyword "${keyword}": ${meshName}`)
+      return true
+    }
   }
 
-  // Check name for panel keywords (these are NOT frame)
   for (const keyword of PANEL_KEYWORDS) {
-    if (nameLower.includes(keyword)) return false
+    if (nameLower.includes(keyword)) {
+      console.log(`[v0] Panel detected by keyword "${keyword}": ${meshName}`)
+      return false
+    }
   }
 
-  // Heuristic: if geometry is cylindrical (tube-like), it's likely frame
-  // Tubes typically have more vertices relative to faces due to circular cross-section
   if (geometry && geometry.attributes.position) {
     const positions = geometry.attributes.position
     const vertexCount = positions.count
 
-    // Calculate bounding box aspect ratio
     geometry.computeBoundingBox()
     const bbox = geometry.boundingBox
     if (bbox) {
       const size = new THREE.Vector3()
       bbox.getSize(size)
 
-      // If one dimension is much larger than others, likely a tube
       const dims = [size.x, size.y, size.z].sort((a, b) => b - a)
       const aspectRatio = dims[0] / Math.max(dims[1], 0.001)
 
-      // Tubes are long and thin
-      if (aspectRatio > 5 && dims[1] < 0.1) {
+      console.log(
+        `[v0] Geometry analysis for "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspectRatio=${aspectRatio.toFixed(2)}, vertexCount=${vertexCount}`,
+      )
+
+      if (aspectRatio > 4 && dims[1] < 0.15) {
+        console.log(`[v0] Frame detected by geometry (tube-like): ${meshName}`)
+        return true
+      }
+
+      if (vertexCount > 100 && aspectRatio > 3) {
+        console.log(`[v0] Frame detected by geometry (cylindrical high vertex): ${meshName}`)
         return true
       }
     }
   }
 
+  console.log(`[v0] Not a frame part: ${meshName}`)
   return false
 }
 
@@ -294,18 +317,18 @@ const LoadedGLBModel = memo(
       const clone = scene.clone(true)
       const targetColorValue = TARGET_COLORS[targetColor] || TARGET_COLORS.white
 
+      console.log(`[v0] Processing GLB model for module ${moduleKey}, target color: ${targetColor}`)
+
       clone.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.frustumCulled = false
           child.castShadow = true
           child.receiveShadow = true
 
-          // Fix geometry
           if (child.geometry) {
             if (!child.geometry.attributes.normal) {
               child.geometry.computeVertexNormals()
             }
-            // Remove vertex colors to prevent interference
             if (child.geometry.attributes.color) {
               child.geometry.deleteAttribute("color")
             }
@@ -315,14 +338,18 @@ const LoadedGLBModel = memo(
           const isFrame = isFramePart(meshName, child.geometry)
           const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
 
+          console.log(`[v0] Mesh "${meshName}": isFrame=${isFrame}, isBottom=${isBottom}`)
+
           if (child.material) {
             const oldMat = child.material as THREE.MeshStandardMaterial
 
             if (isFrame) {
+              console.log(`[v0] Applying CHROME material to: ${meshName}`)
               child.material = CHROME_MATERIAL.clone()
             } else {
               const texture = oldMat.map || null
               const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
+              console.log(`[v0] Applying panel material to: ${meshName}, color: ${isBottom ? "black" : targetColor}`)
               child.material = new THREE.MeshStandardMaterial({
                 map: texture,
                 color: finalColor,
@@ -339,7 +366,7 @@ const LoadedGLBModel = memo(
       })
 
       return clone
-    }, [scene, targetColor])
+    }, [scene, targetColor, moduleKey])
 
     return <primitive object={clonedScene} position={position} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
   },
