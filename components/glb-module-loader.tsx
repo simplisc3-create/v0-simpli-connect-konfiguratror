@@ -140,27 +140,7 @@ function isFramePart(
 ): boolean {
   const nameLower = meshName.toLowerCase()
 
-  // First check: original material metalness (most reliable for GLB models)
-  if (originalMaterial) {
-    const mat = Array.isArray(originalMaterial) ? originalMaterial[0] : originalMaterial
-    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
-      // High metalness in original = frame part
-      if (mat.metalness > 0.5) {
-        console.log(`[v0] FRAME by material metalness (${mat.metalness.toFixed(2)}): ${meshName}`)
-        return true
-      }
-      // Check original color - gray/silver colors are usually frame
-      const hsl = { h: 0, s: 0, l: 0 }
-      mat.color.getHSL(hsl)
-      // Low saturation + medium lightness = metallic gray
-      if (hsl.s < 0.15 && hsl.l > 0.3 && hsl.l < 0.8) {
-        console.log(`[v0] FRAME by color (gray/silver, s=${hsl.s.toFixed(2)}, l=${hsl.l.toFixed(2)}): ${meshName}`)
-        return true
-      }
-    }
-  }
-
-  // Check panel keywords first (panels should NOT be chrome)
+  // Check panel keywords first - panels should NEVER be chrome
   for (const keyword of PANEL_KEYWORDS) {
     if (nameLower.includes(keyword)) {
       console.log(`[v0] PANEL by keyword "${keyword}": ${meshName}`)
@@ -176,7 +156,17 @@ function isFramePart(
     }
   }
 
-  // Geometry-based detection
+  if (originalMaterial) {
+    const mat = Array.isArray(originalMaterial) ? originalMaterial[0] : originalMaterial
+    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+      // Only very high metalness = frame part (0.7+ is definitely metal)
+      if (mat.metalness > 0.7) {
+        console.log(`[v0] FRAME by material metalness (${mat.metalness.toFixed(2)}): ${meshName}`)
+        return true
+      }
+    }
+  }
+
   if (geometry && geometry.attributes.position) {
     geometry.computeBoundingBox()
     const bbox = geometry.boundingBox
@@ -192,23 +182,17 @@ function isFramePart(
         `[v0] Geometry "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspect=${aspectRatio.toFixed(2)}, minDim=${minDim.toFixed(4)}`,
       )
 
-      // Very thin = likely tube/frame
-      if (minDim < 0.03) {
-        console.log(`[v0] FRAME by geometry (thin, minDim=${minDim.toFixed(4)}): ${meshName}`)
-        return true
-      }
-
-      // Elongated shape = likely tube
-      if (aspectRatio > 2.5) {
-        console.log(`[v0] FRAME by geometry (elongated, aspect=${aspectRatio.toFixed(2)}): ${meshName}`)
+      // This prevents flat panels from being detected as frames
+      const isTubeLike = minDim < 0.02 && aspectRatio > 5
+      if (isTubeLike) {
+        console.log(`[v0] FRAME by geometry (tube-like): ${meshName}`)
         return true
       }
     }
   }
 
-  // Default to frame (safer - keeps chrome)
-  console.log(`[v0] FRAME by default: ${meshName}`)
-  return true
+  console.log(`[v0] PANEL by default: ${meshName}`)
+  return false
 }
 
 function getColorName(hex: string): string {
