@@ -22,6 +22,7 @@ import type { ShoppingItem } from "@/types/shopping-item"
 import { useThree } from "@react-three/fiber"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import * as THREE from "three"
+import { LoadingAnimation } from "./loading-animation"
 
 export type GridCell = {
   id: string
@@ -101,6 +102,7 @@ const initialConfig: ShelfConfig = {
 }
 
 export function ShelfConfigurator() {
+  const [isLoading, setIsLoading] = useState(true)
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
   const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("offenes-fach")
   const [selectedColor, setSelectedColor] = useState<GridCell["color"]>("weiss")
@@ -966,14 +968,18 @@ export function ShelfConfigurator() {
     return null
   }
 
+  if (isLoading) {
+    return <LoadingAnimation onComplete={() => setIsLoading(false)} />
+  }
+
   return (
-    <div className="flex h-screen w-screen flex-col">
+    <div className="flex h-screen flex-col bg-zinc-950">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
           <Canvas
             shadows={true}
-            camera={{ position: [0, 1.2, 2.5], fov: 50 }}
+            camera={{ position: [0, 1.5, 4], fov: 50 }}
             gl={{
               antialias: true,
               alpha: true,
@@ -1026,7 +1032,6 @@ export function ShelfConfigurator() {
 
             <OrbitControls
               makeDefault
-              target={[0, 0.8, 0]}
               minPolarAngle={0.2}
               maxPolarAngle={Math.PI / 2.2}
               minDistance={1.5}
