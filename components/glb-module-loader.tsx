@@ -138,17 +138,17 @@ function isFramePart(meshName: string, geometry: THREE.BufferGeometry): boolean 
 
   console.log(`[v0] Checking mesh: "${meshName}" (lowercase: "${nameLower}")`)
 
+  for (const keyword of PANEL_KEYWORDS) {
+    if (nameLower.includes(keyword)) {
+      console.log(`[v0] Panel detected by keyword "${keyword}": ${meshName}`)
+      return false // This is a panel, not frame
+    }
+  }
+
   for (const keyword of FRAME_KEYWORDS) {
     if (nameLower.includes(keyword)) {
       console.log(`[v0] Frame detected by keyword "${keyword}": ${meshName}`)
       return true
-    }
-  }
-
-  for (const keyword of PANEL_KEYWORDS) {
-    if (nameLower.includes(keyword)) {
-      console.log(`[v0] Panel detected by keyword "${keyword}": ${meshName}`)
-      return false
     }
   }
 
@@ -165,24 +165,37 @@ function isFramePart(meshName: string, geometry: THREE.BufferGeometry): boolean 
       const dims = [size.x, size.y, size.z].sort((a, b) => b - a)
       const aspectRatio = dims[0] / Math.max(dims[1], 0.001)
 
+      // Calculate volume to detect thin tubes vs thick panels
+      const volume = size.x * size.y * size.z
+      const minDim = Math.min(size.x, size.y, size.z)
+
       console.log(
-        `[v0] Geometry analysis for "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspectRatio=${aspectRatio.toFixed(2)}, vertexCount=${vertexCount}`,
+        `[v0] Geometry analysis for "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspectRatio=${aspectRatio.toFixed(2)}, vertexCount=${vertexCount}, volume=${volume.toFixed(6)}, minDim=${minDim.toFixed(4)}`,
       )
 
-      if (aspectRatio > 4 && dims[1] < 0.15) {
-        console.log(`[v0] Frame detected by geometry (tube-like): ${meshName}`)
+      // Tube-like: long and thin
+      if (aspectRatio > 3 && minDim < 0.05) {
+        console.log(`[v0] Frame detected by geometry (tube-like, thin): ${meshName}`)
         return true
       }
 
-      if (vertexCount > 100 && aspectRatio > 3) {
-        console.log(`[v0] Frame detected by geometry (cylindrical high vertex): ${meshName}`)
+      // High vertex count with elongated shape = likely cylinder/tube
+      if (vertexCount > 50 && aspectRatio > 2.5 && minDim < 0.08) {
+        console.log(`[v0] Frame detected by geometry (cylindrical): ${meshName}`)
         return true
+      }
+
+      // If it's relatively flat/square and has substantial thickness, it's a panel
+      if (aspectRatio < 2 && minDim > 0.01) {
+        console.log(`[v0] Panel detected by geometry (flat/square): ${meshName}`)
+        return false
       }
     }
   }
 
-  console.log(`[v0] Not a frame part: ${meshName}`)
-  return false
+  // This is safer because frames should stay chrome, and most panels have identifiable names
+  console.log(`[v0] Defaulting to FRAME (chrome) for unidentified mesh: ${meshName}`)
+  return true
 }
 
 function getColorName(hex: string): string {
