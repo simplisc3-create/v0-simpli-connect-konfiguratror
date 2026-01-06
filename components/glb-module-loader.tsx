@@ -39,17 +39,32 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#228b22": "green",
   "#eab308": "yellow",
   "#facc15": "yellow",
+  "#fbbf24": "yellow",
   "#f59e0b": "orange",
   "#ea580c": "orange",
   "#f97316": "orange",
   "#ef4444": "red",
   "#dc2626": "red",
+  "#b91c1c": "red",
   "#9ca3af": "gray",
   "#6b7280": "gray",
   "#4b5563": "anthrazit",
   "#374151": "anthrazit",
   "#f5f5dc": "beige",
   "#d2b48c": "beige",
+}
+
+const TARGET_COLORS: Record<string, THREE.Color> = {
+  white: new THREE.Color(0.95, 0.95, 0.95),
+  black: new THREE.Color(0.1, 0.1, 0.1),
+  gray: new THREE.Color(0.6, 0.6, 0.6),
+  anthrazit: new THREE.Color(0.25, 0.25, 0.28),
+  blue: new THREE.Color(0.2, 0.5, 0.9),
+  green: new THREE.Color(0.1, 0.7, 0.3),
+  yellow: new THREE.Color(0.95, 0.85, 0.2),
+  orange: new THREE.Color(0.95, 0.5, 0.1),
+  red: new THREE.Color(0.9, 0.2, 0.2),
+  beige: new THREE.Color(0.85, 0.75, 0.6),
 }
 
 function getColorName(hex: string): string {
@@ -75,7 +90,7 @@ export const GLBModule = memo(
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
-    const cacheKey = useMemo(() => `${cellType}-${standardWidth}-${colorName}`, [cellType, standardWidth, colorName])
+    const cacheKey = useMemo(() => `${cellType}-${standardWidth}-white`, [cellType, standardWidth])
 
     const [modelUrl, setModelUrl] = useState<string | null>(() => {
       if (explicitModelUrl) return explicitModelUrl
@@ -106,10 +121,10 @@ export const GLBModule = memo(
             moduleType: cellType,
             width: standardWidth.toString(),
             height: "40",
-            color: colorName,
+            color: "white",
           })
 
-          console.log(`[v0] Fetching GLB: ${cellType}, ${standardWidth}cm, ${colorName}`)
+          console.log(`[v0] Fetching GLB: ${cellType}, ${standardWidth}cm, white (will apply ${colorName})`)
 
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
@@ -151,7 +166,9 @@ export const GLBModule = memo(
 
     if (!modelUrl) return null
 
-    return <LoadedGLBModel modelUrl={modelUrl} position={position} moduleKey={`${row}-${col}`} />
+    return (
+      <LoadedGLBModel modelUrl={modelUrl} position={position} moduleKey={`${row}-${col}`} targetColor={colorName} />
+    )
   },
   (prev, next) =>
     prev.cellType === next.cellType &&
@@ -169,15 +186,18 @@ const LoadedGLBModel = memo(
     modelUrl,
     position,
     moduleKey,
+    targetColor,
   }: {
     modelUrl: string
     position: [number, number, number]
     moduleKey: string
+    targetColor: string
   }) {
     const { scene } = useGLTF(modelUrl)
 
     const clonedScene = useMemo(() => {
       const clone = scene.clone(true)
+      const targetColorValue = TARGET_COLORS[targetColor] || TARGET_COLORS.white
 
       clone.traverse((child) => {
         if (child instanceof THREE.Mesh) {
@@ -188,27 +208,28 @@ const LoadedGLBModel = memo(
             if (!child.geometry.attributes.normal) {
               child.geometry.computeVertexNormals()
             }
+            // Remove vertex colors to prevent interference
             if (child.geometry.attributes.color) {
               child.geometry.deleteAttribute("color")
             }
           }
 
-          // Convert to MeshBasicMaterial (unlit - ignores all lights)
           if (child.material) {
             const oldMat = child.material as THREE.MeshStandardMaterial
-            const baseColor = oldMat.color ? oldMat.color.clone() : new THREE.Color(0xffffff)
             const texture = oldMat.map || null
 
-            // Strong brightness boost - minimum 0.75 lightness
-            const hsl = { h: 0, s: 0, l: 0 }
-            baseColor.getHSL(hsl)
-            hsl.l = Math.max(0.75, Math.min(0.95, hsl.l * 2.5))
-            hsl.s = Math.min(1.0, hsl.s * 1.3)
-            baseColor.setHSL(hsl.h, hsl.s, hsl.l)
+            // Wenn es eine Textur gibt, behalte sie und töne sie
+            // Wenn nicht, verwende die Zielfarbe direkt
+            let finalColor = targetColorValue.clone()
+
+            // Für weiß: etwas heller machen
+            if (targetColor === "white") {
+              finalColor = new THREE.Color(0.98, 0.98, 0.98)
+            }
 
             child.material = new THREE.MeshBasicMaterial({
               map: texture,
-              color: baseColor,
+              color: finalColor,
               side: THREE.DoubleSide,
               toneMapped: false,
               depthWrite: true,
@@ -222,13 +243,14 @@ const LoadedGLBModel = memo(
       })
 
       return clone
-    }, [scene])
+    }, [scene, targetColor])
 
     return <primitive object={clonedScene} position={position} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
   },
   (prev, next) =>
     prev.modelUrl === next.modelUrl &&
     prev.moduleKey === next.moduleKey &&
+    prev.targetColor === next.targetColor &&
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],

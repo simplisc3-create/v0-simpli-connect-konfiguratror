@@ -748,7 +748,7 @@ export function ShelfConfigurator() {
             frameloop="always"
             flat={true}
           >
-            <color attach="background" args={["#1a1a1a"]} />
+            <color attach="background" args={["#f5f5f5"]} />
 
             <Suspense
               fallback={
