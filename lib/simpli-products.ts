@@ -9,6 +9,7 @@ export type ProductCategory =
   | "tuer"
   | "jalousie"
   | "funktionswand"
+  | "seitenwand"
   | "led"
 
 export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb"
@@ -169,6 +170,124 @@ export const ledUnits: Product[] = [
   { artNr: "sim022", name: "LED Unit 4 Stripes", category: "led", size: 4, price: 99.5 },
 ]
 
+// Seitenwände (Side walls)
+export const seitenwaende: Product[] = [
+  // 40cm side walls (for 40cm wide modules)
+  {
+    artNr: "sim025s-40",
+    name: "Seitenwand 40 Schwarz",
+    category: "seitenwand" as ProductCategory,
+    size: 40,
+    price: 15.5,
+    color: "schwarz",
+  },
+  {
+    artNr: "sim025w-40",
+    name: "Seitenwand 40 Weiß",
+    category: "seitenwand" as ProductCategory,
+    size: 40,
+    price: 15.5,
+    color: "weiss",
+  },
+  {
+    artNr: "sim025bl-40",
+    name: "Seitenwand 40 Blau",
+    category: "seitenwand" as ProductCategory,
+    size: 40,
+    price: 15.5,
+    color: "blau",
+  },
+  {
+    artNr: "sim025or-40",
+    name: "Seitenwand 40 Orange",
+    category: "seitenwand" as ProductCategory,
+    size: 40,
+    price: 15.5,
+    color: "orange",
+  },
+  {
+    artNr: "sim025rt-40",
+    name: "Seitenwand 40 Rot",
+    category: "seitenwand" as ProductCategory,
+    size: 40,
+    price: 15.5,
+    color: "rot",
+  },
+  {
+    artNr: "sim025gr-40",
+    name: "Seitenwand 40 Grün",
+    category: "seitenwand" as ProductCategory,
+    size: 40,
+    price: 15.5,
+    color: "gruen",
+  },
+  {
+    artNr: "sim025ge-40",
+    name: "Seitenwand 40 Gelb",
+    category: "seitenwand" as ProductCategory,
+    size: 40,
+    price: 15.5,
+    color: "gelb",
+  },
+  // 80cm side walls (for 80cm wide modules)
+  {
+    artNr: "sim025s-80",
+    name: "Seitenwand 80 Schwarz",
+    category: "seitenwand" as ProductCategory,
+    size: 80,
+    price: 22.5,
+    color: "schwarz",
+  },
+  {
+    artNr: "sim025w-80",
+    name: "Seitenwand 80 Weiß",
+    category: "seitenwand" as ProductCategory,
+    size: 80,
+    price: 22.5,
+    color: "weiss",
+  },
+  {
+    artNr: "sim025bl-80",
+    name: "Seitenwand 80 Blau",
+    category: "seitenwand" as ProductCategory,
+    size: 80,
+    price: 22.5,
+    color: "blau",
+  },
+  {
+    artNr: "sim025or-80",
+    name: "Seitenwand 80 Orange",
+    category: "seitenwand" as ProductCategory,
+    size: 80,
+    price: 22.5,
+    color: "orange",
+  },
+  {
+    artNr: "sim025rt-80",
+    name: "Seitenwand 80 Rot",
+    category: "seitenwand" as ProductCategory,
+    size: 80,
+    price: 22.5,
+    color: "rot",
+  },
+  {
+    artNr: "sim025gr-80",
+    name: "Seitenwand 80 Grün",
+    category: "seitenwand" as ProductCategory,
+    size: 80,
+    price: 22.5,
+    color: "gruen",
+  },
+  {
+    artNr: "sim025ge-80",
+    name: "Seitenwand 80 Gelb",
+    category: "seitenwand" as ProductCategory,
+    size: 80,
+    price: 22.5,
+    color: "gelb",
+  },
+]
+
 // All products combined
 export const allProducts: Product[] = [
   ...leitern,
@@ -177,6 +296,7 @@ export const allProducts: Product[] = [
   ...glasboeden,
   ...schubladenTueren,
   ...funktionswaende,
+  ...seitenwaende,
   ...ledUnits,
 ]
 

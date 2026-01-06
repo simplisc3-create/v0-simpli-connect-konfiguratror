@@ -16,6 +16,7 @@ import {
   glasboeden,
   schubladenTueren,
   funktionswaende,
+  seitenwaende, // Import seitenwaende
 } from "@/lib/simpli-products"
 import type { ShoppingItem } from "@/types/shopping-item" // Import ShoppingItem
 import { useThree } from "@react-three/fiber"
@@ -662,15 +663,60 @@ export function ShelfConfigurator() {
 
       // Add accessories based on cell type
       switch (cell.type) {
-        case "mit-rueckwand": {
+        case "offenes-fach":
+          // No accessories needed - completely open
+          break
+
+        case "ohne-seitenwaende": {
           const backPanel =
             funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
             funktionswaende.find((p) => p.variant === "1-seitig")
           if (backPanel) addItem(backPanel, 1)
           break
         }
+
+        case "mit-rueckwand": {
+          const sideWallSize = cellWidth === 75 ? 80 : 40
+          const cellColor = cell.color || "weiss"
+          const sideWall =
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
+            seitenwaende.find((p) => p.size === sideWallSize)
+          if (sideWall) addItem(sideWall, 2) // 2 side walls
+
+          const backPanel =
+            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
+            funktionswaende.find((p) => p.variant === "1-seitig")
+          if (backPanel) addItem(backPanel, 1)
+          break
+        }
+
+        case "ohne-rueckwand": {
+          const sideWallSize = cellWidth === 75 ? 80 : 40
+          const cellColor = cell.color || "weiss"
+          const sideWall =
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
+            seitenwaende.find((p) => p.size === sideWallSize)
+          if (sideWall) addItem(sideWall, 2) // 2 side walls
+          break
+        }
+
         case "mit-tueren":
         case "abschliessbare-tueren": {
+          const sideWallSize = cellWidth === 75 ? 80 : 40
+          const cellColor = cell.color || "weiss"
+          const sideWall =
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
+            seitenwaende.find((p) => p.size === sideWallSize)
+          if (sideWall) addItem(sideWall, 2)
+
+          const backPanel =
+            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
+            funktionswaende.find((p) => p.variant === "1-seitig")
+          if (backPanel) addItem(backPanel, 1)
+
           const door =
             schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
             schubladenTueren.find((p) => p.category === "tuer")
@@ -678,6 +724,19 @@ export function ShelfConfigurator() {
           break
         }
         case "mit-klapptuer": {
+          const sideWallSize = cellWidth === 75 ? 80 : 40
+          const cellColor = cell.color || "weiss"
+          const sideWall =
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
+            seitenwaende.find((p) => p.size === sideWallSize)
+          if (sideWall) addItem(sideWall, 2)
+
+          const backPanel =
+            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
+            funktionswaende.find((p) => p.variant === "1-seitig")
+          if (backPanel) addItem(backPanel, 1)
+
           const door =
             schubladenTueren.find((p) => p.category === "tuer" && p.color === "weiss") ||
             schubladenTueren.find((p) => p.category === "tuer")
@@ -685,6 +744,19 @@ export function ShelfConfigurator() {
           break
         }
         case "mit-doppelschublade": {
+          const sideWallSize = cellWidth === 75 ? 80 : 40
+          const cellColor = cell.color || "weiss"
+          const sideWall =
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === cellColor) ||
+            seitenwaende.find((p) => p.size === sideWallSize && p.color === "weiss") ||
+            seitenwaende.find((p) => p.size === sideWallSize)
+          if (sideWall) addItem(sideWall, 2)
+
+          const backPanel =
+            funktionswaende.find((p) => p.variant === "1-seitig" && p.color === "weiss") ||
+            funktionswaende.find((p) => p.variant === "1-seitig")
+          if (backPanel) addItem(backPanel, 1)
+
           const drawer =
             schubladenTueren.find((p) => p.category === "schublade" && p.color === "weiss") ||
             schubladenTueren.find((p) => p.category === "schublade")

@@ -26,9 +26,9 @@
 //   1-8 = ohne-rueckwand (HAT Seitenwände, KEINE Rückwand)
 //
 // 40cm Varianten (2-X):
-//   2-1 = offenes-fach (komplett offen)
-//   2-2 = mit-rueckwand
-//   2-3 = mit-seitenwaenden
+//   2-1 = offenes-fach (komplett offen - KEINE Seitenwände, KEINE Rückwand)
+//   2-2 = ohne-seitenwaende (KEINE Seitenwände, HAT Rückwand)
+//   2-3 = mit-rueckwand (HAT Seitenwände, HAT Rückwand)
 //   2-4 = mit-tuere-rechts
 //   2-5 = mit-tuere-links
 //   2-6 = abschliessbar-links
@@ -90,14 +90,14 @@ export const MODULE_TO_VARIANT_CODE_80: Record<ModuleType, string> = {
 
 export const MODULE_TO_VARIANT_CODE_40: Record<ModuleType, string> = {
   "offenes-fach": "2-1",
-  "mit-rueckwand": "2-2",
-  "mit-seitenwaenden": "2-3",
+  "ohne-seitenwaende": "2-2",
+  "mit-rueckwand": "2-3",
   "mit-tuere-rechts": "2-4",
   "mit-tuere-links": "2-5",
   "abschliessbar-links": "2-6",
   "abschliessbar-rechts": "2-7",
   // Diese existieren nicht bei 40cm - werden unten als ERROR behandelt
-  "ohne-seitenwaende": "",
+  "mit-seitenwaenden": "",
   "mit-klapptuer": "",
   "mit-doppelschublade": "",
   "mit-tueren": "",
