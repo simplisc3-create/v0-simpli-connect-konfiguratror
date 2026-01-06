@@ -43,7 +43,8 @@ const materialOptions = [
 ]
 
 const moduleTypes: Array<{ id: GridCell["type"]; label: string }> = [
-  { id: "ohne-seitenwaende", label: "Offenes Fach" },
+  { id: "offenes-fach", label: "Offenes Fach" },
+  { id: "ohne-seitenwaende", label: "Ohne Seitenwände" },
   { id: "ohne-rueckwand", label: "Ohne Rückwand" },
   { id: "mit-rueckwand", label: "Mit Rückwand" },
   { id: "mit-tueren", label: "Mit Türen" },
@@ -83,7 +84,8 @@ export function ConfiguratorPanel({
     const labels: Record<GridCell["type"], string> = {
       empty: "Leer",
       ghost: "Geisterzelle",
-      "ohne-seitenwaende": "Offenes Fach",
+      "offenes-fach": "Offenes Fach",
+      "ohne-seitenwaende": "Ohne Seitenwände",
       "ohne-rueckwand": "Ohne Rückwand",
       "mit-rueckwand": "Mit Rückwand",
       "mit-tueren": "Mit Türen",
@@ -98,7 +100,8 @@ export function ConfiguratorPanel({
     const labels: Record<GridCell["type"], string> = {
       empty: "",
       ghost: "",
-      "ohne-seitenwaende": "Offen",
+      "offenes-fach": "Offen",
+      "ohne-seitenwaende": "o.SW",
       "ohne-rueckwand": "o.RW",
       "mit-rueckwand": "m.RW",
       "mit-tueren": "Türen",

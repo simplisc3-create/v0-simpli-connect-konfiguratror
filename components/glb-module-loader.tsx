@@ -202,6 +202,8 @@ const LoadedGLBModel = memo(
       clone.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.frustumCulled = false
+          child.castShadow = true
+          child.receiveShadow = true
 
           // Fix geometry
           if (child.geometry) {
@@ -218,25 +220,13 @@ const LoadedGLBModel = memo(
             const oldMat = child.material as THREE.MeshStandardMaterial
             const texture = oldMat.map || null
 
-            // Wenn es eine Textur gibt, behalte sie und töne sie
-            // Wenn nicht, verwende die Zielfarbe direkt
-            let finalColor = targetColorValue.clone()
-
-            // Für weiß: etwas heller machen
-            if (targetColor === "white") {
-              finalColor = new THREE.Color(0.98, 0.98, 0.98)
-            }
-
-            child.material = new THREE.MeshBasicMaterial({
+            child.material = new THREE.MeshStandardMaterial({
               map: texture,
-              color: finalColor,
+              color: targetColorValue,
+              metalness: 0.1,
+              roughness: 0.8,
               side: THREE.DoubleSide,
-              toneMapped: false,
-              depthWrite: true,
-              depthTest: true,
-              polygonOffset: true,
-              polygonOffsetFactor: -1,
-              polygonOffsetUnits: -1,
+              shadowSide: THREE.DoubleSide,
             })
           }
         }

@@ -25,6 +25,7 @@ export type GridCell = {
   type:
     | "empty"
     | "ghost"
+    | "offenes-fach"
     | "ohne-seitenwaende"
     | "ohne-rueckwand"
     | "mit-rueckwand"
@@ -85,7 +86,7 @@ const initialConfig: ShelfConfig = {
 
 export function ShelfConfigurator() {
   const [config, setConfig] = useState<ShelfConfig>(initialConfig)
-  const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("ohne-seitenwaende")
+  const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("offenes-fach")
   const [selectedColor, setSelectedColor] = useState<GridCell["color"]>("weiss") // Add selected color state
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
@@ -471,7 +472,7 @@ export function ShelfConfigurator() {
     setConfig(newConfig)
     setHistory([newConfig])
     setHistoryIndex(0)
-    setSelectedTool("ohne-seitenwaende")
+    setSelectedTool("offenes-fach")
     setSelectedColor("weiss") // Reset selected color
   }, [])
 
@@ -639,7 +640,10 @@ export function ShelfConfigurator() {
 
       let shelfProduct: Product | undefined
       if (config.material === "metal") {
+        // Try to find metallboden with the same color as the cell
+        const cellColor = cell.color || "weiss"
         shelfProduct =
+          metallboeden.find((p) => p.size === bodenSize && p.color === cellColor) ||
           metallboeden.find((p) => p.size === bodenSize && p.color === "weiss") ||
           metallboeden.find((p) => p.size === bodenSize)
       } else if (config.material === "glass") {
@@ -741,14 +745,30 @@ export function ShelfConfigurator() {
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
           <Canvas
-            shadows={false}
+            shadows={true}
             camera={{ position: [3, 2.5, 3], fov: 45 }}
             gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
             dpr={[1, 2]}
-            frameloop="always"
-            flat={true}
+            frameloop="demand"
+            performance={{ min: 0.5 }}
           >
             <color attach="background" args={["#f5f5f5"]} />
+
+            <ambientLight intensity={0.6} />
+            <directionalLight
+              position={[5, 5, 5]}
+              intensity={0.8}
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+              shadow-camera-far={50}
+              shadow-camera-left={-10}
+              shadow-camera-right={10}
+              shadow-camera-top={10}
+              shadow-camera-bottom={-10}
+              shadow-bias={-0.0001}
+            />
+            <directionalLight position={[-5, 3, -5]} intensity={0.3} />
 
             <Suspense
               fallback={
@@ -866,6 +886,7 @@ function getToolLabel(tool: GridCell["type"]): string {
   const labels: Record<GridCell["type"], string> = {
     empty: "Leer",
     ghost: "Geisterzelle",
+    "offenes-fach": "Offenes Fach",
     "ohne-seitenwaende": "Offenes Fach",
     "ohne-rueckwand": "Ohne Rückwand",
     "mit-rueckwand": "Mit Rückwand",
