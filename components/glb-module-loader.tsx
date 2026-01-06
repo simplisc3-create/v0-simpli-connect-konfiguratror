@@ -133,29 +133,51 @@ const PANEL_KEYWORDS = [
   "bottom",
 ]
 
-function isFramePart(meshName: string, geometry: THREE.BufferGeometry): boolean {
+function isFramePart(
+  meshName: string,
+  geometry: THREE.BufferGeometry,
+  originalMaterial?: THREE.Material | THREE.Material[],
+): boolean {
   const nameLower = meshName.toLowerCase()
 
-  console.log(`[v0] Checking mesh: "${meshName}" (lowercase: "${nameLower}")`)
-
-  for (const keyword of PANEL_KEYWORDS) {
-    if (nameLower.includes(keyword)) {
-      console.log(`[v0] Panel detected by keyword "${keyword}": ${meshName}`)
-      return false // This is a panel, not frame
+  // First check: original material metalness (most reliable for GLB models)
+  if (originalMaterial) {
+    const mat = Array.isArray(originalMaterial) ? originalMaterial[0] : originalMaterial
+    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+      // High metalness in original = frame part
+      if (mat.metalness > 0.5) {
+        console.log(`[v0] FRAME by material metalness (${mat.metalness.toFixed(2)}): ${meshName}`)
+        return true
+      }
+      // Check original color - gray/silver colors are usually frame
+      const hsl = { h: 0, s: 0, l: 0 }
+      mat.color.getHSL(hsl)
+      // Low saturation + medium lightness = metallic gray
+      if (hsl.s < 0.15 && hsl.l > 0.3 && hsl.l < 0.8) {
+        console.log(`[v0] FRAME by color (gray/silver, s=${hsl.s.toFixed(2)}, l=${hsl.l.toFixed(2)}): ${meshName}`)
+        return true
+      }
     }
   }
 
+  // Check panel keywords first (panels should NOT be chrome)
+  for (const keyword of PANEL_KEYWORDS) {
+    if (nameLower.includes(keyword)) {
+      console.log(`[v0] PANEL by keyword "${keyword}": ${meshName}`)
+      return false
+    }
+  }
+
+  // Check frame keywords
   for (const keyword of FRAME_KEYWORDS) {
     if (nameLower.includes(keyword)) {
-      console.log(`[v0] Frame detected by keyword "${keyword}": ${meshName}`)
+      console.log(`[v0] FRAME by keyword "${keyword}": ${meshName}`)
       return true
     }
   }
 
+  // Geometry-based detection
   if (geometry && geometry.attributes.position) {
-    const positions = geometry.attributes.position
-    const vertexCount = positions.count
-
     geometry.computeBoundingBox()
     const bbox = geometry.boundingBox
     if (bbox) {
@@ -164,37 +186,28 @@ function isFramePart(meshName: string, geometry: THREE.BufferGeometry): boolean 
 
       const dims = [size.x, size.y, size.z].sort((a, b) => b - a)
       const aspectRatio = dims[0] / Math.max(dims[1], 0.001)
-
-      // Calculate volume to detect thin tubes vs thick panels
-      const volume = size.x * size.y * size.z
       const minDim = Math.min(size.x, size.y, size.z)
 
       console.log(
-        `[v0] Geometry analysis for "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspectRatio=${aspectRatio.toFixed(2)}, vertexCount=${vertexCount}, volume=${volume.toFixed(6)}, minDim=${minDim.toFixed(4)}`,
+        `[v0] Geometry "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspect=${aspectRatio.toFixed(2)}, minDim=${minDim.toFixed(4)}`,
       )
 
-      // Tube-like: long and thin
-      if (aspectRatio > 3 && minDim < 0.05) {
-        console.log(`[v0] Frame detected by geometry (tube-like, thin): ${meshName}`)
+      // Very thin = likely tube/frame
+      if (minDim < 0.03) {
+        console.log(`[v0] FRAME by geometry (thin, minDim=${minDim.toFixed(4)}): ${meshName}`)
         return true
       }
 
-      // High vertex count with elongated shape = likely cylinder/tube
-      if (vertexCount > 50 && aspectRatio > 2.5 && minDim < 0.08) {
-        console.log(`[v0] Frame detected by geometry (cylindrical): ${meshName}`)
+      // Elongated shape = likely tube
+      if (aspectRatio > 2.5) {
+        console.log(`[v0] FRAME by geometry (elongated, aspect=${aspectRatio.toFixed(2)}): ${meshName}`)
         return true
-      }
-
-      // If it's relatively flat/square and has substantial thickness, it's a panel
-      if (aspectRatio < 2 && minDim > 0.01) {
-        console.log(`[v0] Panel detected by geometry (flat/square): ${meshName}`)
-        return false
       }
     }
   }
 
-  // This is safer because frames should stay chrome, and most panels have identifiable names
-  console.log(`[v0] Defaulting to FRAME (chrome) for unidentified mesh: ${meshName}`)
+  // Default to frame (safer - keeps chrome)
+  console.log(`[v0] FRAME by default: ${meshName}`)
   return true
 }
 
@@ -330,7 +343,7 @@ const LoadedGLBModel = memo(
       const clone = scene.clone(true)
       const targetColorValue = TARGET_COLORS[targetColor] || TARGET_COLORS.white
 
-      console.log(`[v0] Processing GLB model for module ${moduleKey}, target color: ${targetColor}`)
+      console.log(`[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor} =====`)
 
       clone.traverse((child) => {
         if (child instanceof THREE.Mesh) {
@@ -348,21 +361,20 @@ const LoadedGLBModel = memo(
           }
 
           const meshName = child.name || ""
-          const isFrame = isFramePart(meshName, child.geometry)
+          const isFrame = isFramePart(meshName, child.geometry, child.material)
           const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
 
-          console.log(`[v0] Mesh "${meshName}": isFrame=${isFrame}, isBottom=${isBottom}`)
+          console.log(`[v0] >>> Mesh "${meshName}": isFrame=${isFrame}, isBottom=${isBottom}`)
 
           if (child.material) {
-            const oldMat = child.material as THREE.MeshStandardMaterial
-
             if (isFrame) {
-              console.log(`[v0] Applying CHROME material to: ${meshName}`)
+              console.log(`[v0] >>> Applying CHROME to: ${meshName}`)
               child.material = CHROME_MATERIAL.clone()
             } else {
+              const oldMat = child.material as THREE.MeshStandardMaterial
               const texture = oldMat.map || null
               const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
-              console.log(`[v0] Applying panel material to: ${meshName}, color: ${isBottom ? "black" : targetColor}`)
+              console.log(`[v0] >>> Applying COLOR (${isBottom ? "black" : targetColor}) to: ${meshName}`)
               child.material = new THREE.MeshStandardMaterial({
                 map: texture,
                 color: finalColor,
