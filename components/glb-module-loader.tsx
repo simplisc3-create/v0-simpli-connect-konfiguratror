@@ -313,6 +313,7 @@ const LoadedGLBModel = memo(
 
           const meshName = child.name || ""
           const isFrame = isFramePart(meshName, child.geometry)
+          const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
 
           if (child.material) {
             const oldMat = child.material as THREE.MeshStandardMaterial
@@ -321,9 +322,10 @@ const LoadedGLBModel = memo(
               child.material = CHROME_MATERIAL.clone()
             } else {
               const texture = oldMat.map || null
+              const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
               child.material = new THREE.MeshStandardMaterial({
                 map: texture,
-                color: targetColorValue,
+                color: finalColor,
                 metalness: 0.08,
                 roughness: 0.5,
                 side: THREE.DoubleSide,

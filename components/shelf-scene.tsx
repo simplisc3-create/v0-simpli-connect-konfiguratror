@@ -150,7 +150,12 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
       rowCells.forEach((cell, gridCol) => {
         const cellWidth = config.columnWidths[gridCol] / 100
         const cellHeight = config.rowHeights[gridRow] / 100
-        const position: [number, number, number] = [columnCenters[gridCol] + offsetX, rowCenters[gridRow], offsetZ]
+        const zOffset = gridRow === 0 ? -0.002 : -0.002
+        const position: [number, number, number] = [
+          columnCenters[gridCol] + offsetX,
+          rowCenters[gridRow],
+          offsetZ + zOffset,
+        ]
 
         if (cell.type === "ghost") {
           ghosts.push({

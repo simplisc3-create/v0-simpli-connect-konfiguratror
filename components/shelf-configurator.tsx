@@ -994,10 +994,10 @@ export function ShelfConfigurator() {
             <color attach="background" args={["#ffffff"]} />
             <fog attach="fog" args={["#ffffff", 5, 15]} />
 
-            <ambientLight intensity={0.44} />
+            <ambientLight intensity={0.35} />
             <directionalLight
               position={[5, 5, 5]}
-              intensity={0.6}
+              intensity={0.48}
               castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
@@ -1008,7 +1008,7 @@ export function ShelfConfigurator() {
               shadow-camera-bottom={-10}
               shadow-bias={-0.0001}
             />
-            <directionalLight position={[-5, 3, -5]} intensity={0.24} />
+            <directionalLight position={[-5, 3, -5]} intensity={0.19} />
 
             <Suspense
               fallback={
