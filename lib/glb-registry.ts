@@ -1,3 +1,29 @@
+// =============================================================================
+// SIMPLI-CONNECT GLB REGISTRY - SINGLE SOURCE OF TRUTH
+// =============================================================================
+//
+// WICHTIG: Jedes Modul hat NUR EINE zugeordnete GLB-Datei!
+//
+// 80cm Varianten (1-X):
+//   1-1 = offenes-fach (leeres Fach, keine Wände, keine Rückwand)
+//   1-2 = ohne-seitenwaende (hat Rückwand, keine Seitenwände)
+//   1-3 = mit-rueckwand (hat Rückwand)
+//   1-4 = mit-klapptuer
+//   1-5 = mit-doppelschublade
+//   1-6 = mit-tueren
+//   1-7 = abschliessbare-tueren
+//   1-8 = ohne-rueckwand (hat Seitenwände, KEINE Rückwand)
+//
+// 40cm Varianten (2-X):
+//   2-1 = offenes-fach (leeres Fach)
+//   2-2 = mit-rueckwand
+//   2-3 = mit-seitenwaenden
+//   2-4 = mit-tuere-rechts
+//   2-5 = mit-tuere-links
+//   2-6 = abschliessbar-links
+//   2-7 = abschliessbar-rechts
+// =============================================================================
+
 export type WidthKey = 40 | 80
 export type HeightKey = number
 export type ColorKey =
@@ -13,33 +39,59 @@ export type ColorKey =
   | "beige"
 
 export type ModuleType =
-  | "ohne-seitenwaende"
-  | "ohne-rueckwand"
-  | "mit-rueckwand"
-  | "mit-seitenwaenden"
-  | "mit-tueren"
-  | "mit-klapptuer"
-  | "mit-doppelschublade"
-  | "abschliessbare-tueren"
-  | "mit-tuere-links"
-  | "mit-tuere-rechts"
-  | "abschliessbar-links"
-  | "abschliessbar-rechts"
+  | "offenes-fach" // 1-1 / 2-1 = leeres Fach (empty open shelf)
+  | "ohne-seitenwaende" // 1-2 = hat Rückwand, keine Seitenwände
+  | "mit-rueckwand" // 1-3 / 2-2 = mit Rückwand
+  | "mit-klapptuer" // 1-4
+  | "mit-doppelschublade" // 1-5
+  | "mit-tueren" // 1-6
+  | "abschliessbare-tueren" // 1-7
+  | "ohne-rueckwand" // 1-8 = hat Seitenwände, KEINE Rückwand (mit-seitenwaenden)
+  | "mit-seitenwaenden" // 2-3
+  | "mit-tuere-links" // 2-5
+  | "mit-tuere-rechts" // 2-4
+  | "abschliessbar-links" // 2-6
+  | "abschliessbar-rechts" // 2-7
 
 export const MODULE_TYPES: ModuleType[] = [
+  "offenes-fach",
   "ohne-seitenwaende",
-  "ohne-rueckwand",
   "mit-rueckwand",
-  "mit-seitenwaenden",
-  "mit-tueren",
   "mit-klapptuer",
   "mit-doppelschublade",
+  "mit-tueren",
   "abschliessbare-tueren",
+  "ohne-rueckwand",
+  "mit-seitenwaenden",
   "mit-tuere-links",
   "mit-tuere-rechts",
   "abschliessbar-links",
   "abschliessbar-rechts",
 ]
+
+// 1-1 = offenes-fach (leeres Fach)
+// 1-8 = ohne-rueckwand (hat Seitenwände aber KEINE Rückwand)
+export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType, string>>> = {
+  80: {
+    "offenes-fach": "1-1", // leeres Fach (empty open shelf)
+    "ohne-seitenwaende": "1-2", // hat Rückwand, keine Seitenwände
+    "mit-rueckwand": "1-3", // mit Rückwand
+    "mit-klapptuer": "1-4", // mit Klapptür
+    "mit-doppelschublade": "1-5", // Doppelschublade
+    "mit-tueren": "1-6", // mit Türen
+    "abschliessbare-tueren": "1-7", // abschließbare Türen
+    "ohne-rueckwand": "1-8", // hat Seitenwände, KEINE Rückwand
+  },
+  40: {
+    "offenes-fach": "2-1", // leeres Fach
+    "mit-rueckwand": "2-2", // mit Rückwand
+    "mit-seitenwaenden": "2-3", // mit Seitenwänden
+    "mit-tuere-rechts": "2-4", // Tür rechts
+    "mit-tuere-links": "2-5", // Tür links
+    "abschliessbar-links": "2-6", // abschließbar links
+    "abschliessbar-rechts": "2-7", // abschließbar rechts
+  },
+}
 
 export const COLOR_KEYS: ColorKey[] = [
   "white",
@@ -54,76 +106,69 @@ export const COLOR_KEYS: ColorKey[] = [
   "beige",
 ]
 
-export const MODULE_TO_VARIANT_CODE: Record<WidthKey, Partial<Record<ModuleType, string>>> = {
-  80: {
-    "mit-seitenwaenden": "1-8",
-    "abschliessbare-tueren": "1-7",
-    "mit-tueren": "1-6",
-    "mit-doppelschublade": "1-5",
-    "mit-klapptuer": "1-4",
-    "mit-rueckwand": "1-3",
-    "ohne-seitenwaende": "1-2",
-    "ohne-rueckwand": "1-1",
-  },
-  40: {
-    "ohne-rueckwand": "2-1",
-    "mit-rueckwand": "2-2",
-    "mit-seitenwaenden": "2-3",
-    "mit-tuere-rechts": "2-4",
-    "mit-tuere-links": "2-5",
-    "abschliessbar-links": "2-6",
-    "abschliessbar-rechts": "2-7",
-  },
-}
-
 const GLB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
+const HEBBKX_BASE_URL = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com"
 
-// Format: "{width}x40x40-{variantCode}-{color}_optimized.glb" -> full URL
+// =============================================================================
+// DIRECT URL MAP - EINE URL PRO MODUL/FARBE KOMBINATION
+// =============================================================================
 const DIRECT_URL_MAP: Record<string, string> = {
-  // Orange 80cm - ohne Rückwand (variant 1-1) - shadow-free version
-  "80x40x40-1-1-orange_optimized.glb": "/images/ohne-rueckwand-orange80.glb",
-  // Orange 80cm - other variants (using Orns files)
-  "80x40x40-1-2-orange_optimized.glb": "/images/80x40x40-1-2-orns.glb",
-  "80x40x40-1-3-orange_optimized.glb": "/images/80x40x40-1-3-orns.glb",
-  "80x40x40-1-4-orange_optimized.glb": "/images/80x40x40-1-4-orns.glb",
-  "80x40x40-1-5-orange_optimized.glb": "/images/80x40x40-1-5-orns.glb",
-  "80x40x40-1-6-orange_optimized.glb": "/images/80x40x40-1-6-orns.glb",
-  "80x40x40-1-7-orange_optimized.glb": "/images/80x40x40-1-7-orns.glb",
-  "80x40x40-1-8-orange_optimized.glb": "/images/80x40x40-1-8-orns.glb",
+  // ===========================================================================
+  // WHITE 80cm - Alle 8 Varianten
+  // ===========================================================================
+  "80x40x40-1-1-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-1-white-optimized.glb`,
+  "80x40x40-1-2-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-2-white-optimized.glb`,
+  "80x40x40-1-3-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-3-white-optimized.glb`,
+  "80x40x40-1-4-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-4-white-optimized.glb`,
+  "80x40x40-1-5-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-5-white-optimized.glb`,
+  "80x40x40-1-6-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-6-white-optimized.glb`,
+  "80x40x40-1-7-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-7-white-optimized.glb`,
+  "80x40x40-1-8-white-optimized.glb": `${GLB_BASE_URL}/white80/80x40x40-1-8-white-optimized.glb`,
+
+  // ===========================================================================
+  // WHITE 40cm - Alle 7 Varianten
+  // ===========================================================================
+  "40x40x40-2-1-white-optimized.glb": `${HEBBKX_BASE_URL}/40x40x40-2-1-white_optimized-wl1xlV3BtsJMl5XuAvFjuaL4cFraRF.glb`,
+  "40x40x40-2-2-white-optimized.glb": `${HEBBKX_BASE_URL}/40x40x40-2-2-white_optimized-eUyKrDSaeIlg6V9j1OYmyqwKIx0V8v.glb`,
+  "40x40x40-2-3-white-optimized.glb": `${HEBBKX_BASE_URL}/40x40x40-2-3-white_optimized-EfXL1zmDhl1jBELSV6ZvOwTIJ8cqng.glb`,
+  "40x40x40-2-4-white-optimized.glb": `${HEBBKX_BASE_URL}/40x40x40-2-4-white_optimized-Q8XQy73ZtoXpAPlBKgN1J2O0KpXr74.glb`,
+  "40x40x40-2-5-white-optimized.glb": `${HEBBKX_BASE_URL}/40x40x40-2-5-white_optimized-4KTnjXMNppAJpLCvaJb9FsB6MQhC4P.glb`,
+  "40x40x40-2-6-white-optimized.glb": `${HEBBKX_BASE_URL}/40x40x40-2-6-white_optimized-ngpH8G24jzVhgDOz1b3WEjqXhnCNy4.glb`,
+  "40x40x40-2-7-white-optimized.glb": `${HEBBKX_BASE_URL}/40x40x40-2-7-white_optimized-9LscBaHqIkQTq2tt39oRwvQIJepMpA.glb`,
+
+  // ===========================================================================
+  // YELLOW 80cm - Verfügbare Varianten
+  // ===========================================================================
+  "80x40x40-1-1-yellow-optimized.glb": `${GLB_BASE_URL}/80x40x40-1-1-yellow_optimized-opt.glb`,
+  "80x40x40-1-2-yellow-optimized.glb": `${HEBBKX_BASE_URL}/80x40x40-1-2-yellow_optimized-opt%20%281%29-opt-iMMuFgJrMamhZVnMaa8jW5uAeiTBnD.glb`,
+  "80x40x40-1-3-yellow-optimized.glb": `${GLB_BASE_URL}/no%20shadows/80x40x40-1-3-yellow_optimized-opt.glb`,
+
+  // ===========================================================================
+  // YELLOW 40cm - Verfügbare Varianten
+  // ===========================================================================
+  "40x40x40-2-1-yellow-optimized.glb": `${GLB_BASE_URL}/yellow40/40x40x40-2-1-yellow-opt.glb`,
+
+  // ===========================================================================
+  // RED 80cm - Verfügbare Varianten
+  // ===========================================================================
+  "80x40x40-1-2-red-optimized.glb": `${HEBBKX_BASE_URL}/80x40x40-1-2-red_optimized-opt-hmR8AQhXtr8lAplbglJMehFFJHOa59.glb`,
+  "80x40x40-1-8-red-optimized.glb": `${GLB_BASE_URL}/80x40x40-1-8-red_optimized.glb`,
 }
 
+// Files stored at blob root without folder structure
 const ROOT_LEVEL_FILES: Set<string> = new Set([
-  // Blue 40cm modules - stored at root, not in blue40/ folder
-  "40x40x40-2-1-blue_optimized.glb",
-  "40x40x40-2-2-blue_optimized.glb",
-  "40x40x40-2-3-blue_optimized.glb",
-  "40x40x40-2-4-blue_optimized.glb",
-  "40x40x40-2-5-blue_optimized.glb",
-  "40x40x40-2-6-blue_optimized.glb",
-  "40x40x40-2-7-blue_optimized.glb",
+  "40x40x40-2-1-blue-optimized.glb",
+  "40x40x40-2-2-blue-optimized.glb",
+  "40x40x40-2-3-blue-optimized.glb",
+  "40x40x40-2-4-blue-optimized.glb",
+  "40x40x40-2-5-blue-optimized.glb",
+  "40x40x40-2-6-blue-optimized.glb",
+  "40x40x40-2-7-blue-optimized.glb",
 ])
-
-/**
- * HOW TO ADD NEW GLB FILES / COLORS:
- *
- * Option 1 - Files stored in folders (standard):
- * Upload files to Vercel Blob Storage in this folder structure:
- * - {color}{width}/{width}x40x40-{variantCode}-{color}_optimized.glb
- * Example: white80/80x40x40-1-1-white_optimized.glb
- *         red80/80x40x40-1-1-red_optimized.glb
- *
- * Option 2 - Files stored at root level:
- * Upload files to root and add filename to ROOT_LEVEL_FILES set below
- * Example: "80x40x40-1-1-anthrazit_optimized.glb"
- *
- * Available variant codes:
- * 80cm width: 1-1 to 1-8 (ohne-rueckwand to mit-seitenwaenden)
- * 40cm width: 2-1 to 2-7 (ohne-rueckwand to abschliessbar-rechts)
- */
 
 export function buildGlbFilename(args: { width: WidthKey; variantCode: string; color: ColorKey }): string {
   const { width, variantCode, color } = args
-  return `${width}x40x40-${variantCode}-${color}_optimized.glb`
+  return `${width}x40x40-${variantCode}-${color}-optimized.glb`
 }
 
 export function buildFolderPath(color: ColorKey, width: WidthKey): string {
@@ -158,23 +203,29 @@ export function resolveGlbUrl(args: {
 
   let url: string
 
+  // Priority 1: Direct URL mapping
   if (DIRECT_URL_MAP[filename]) {
     url = DIRECT_URL_MAP[filename]
-  } else if (ROOT_LEVEL_FILES.has(filename)) {
-    // Files stored at root level (no folder)
-    url = `${GLB_BASE_URL}/${filename}`
-  } else {
-    // Standard folder structure: {color}{width}/{filename}
-    const folder = buildFolderPath(color, width)
-    url = `${GLB_BASE_URL}/${folder}/${filename}`
   }
-
-  if (url.startsWith("/")) {
-    throw new Error(`[GLB Registry] CRITICAL: URL must be absolute. Got: ${url}`)
+  // Priority 2: Root level files
+  else if (ROOT_LEVEL_FILES.has(filename)) {
+    url = `${GLB_BASE_URL}/${filename}`
+  }
+  // Priority 3: Fallback to WHITE
+  else {
+    const whiteFilename = buildGlbFilename({ width, variantCode, color: "white" })
+    if (DIRECT_URL_MAP[whiteFilename]) {
+      console.warn(`[GLB Registry] Color "${color}" not available for ${filename}, falling back to white`)
+      url = DIRECT_URL_MAP[whiteFilename]
+    } else {
+      // Priority 4: Try folder structure
+      const folder = buildFolderPath(color, width)
+      url = `${GLB_BASE_URL}/${folder}/${filename}`
+    }
   }
 
   if (!url.startsWith("https://")) {
-    throw new Error(`[GLB Registry] CRITICAL: URL must start with https://. Got: ${url}`)
+    throw new Error(`[GLB Registry] URL must start with https://. Got: ${url}`)
   }
 
   return { url, filename, variantCode }

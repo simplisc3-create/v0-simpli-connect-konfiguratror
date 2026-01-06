@@ -745,16 +745,10 @@ export function ShelfConfigurator() {
             camera={{ position: [3, 2.5, 3], fov: 45 }}
             gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
             dpr={[1, 2]}
-            frameloop="demand"
+            frameloop="always"
+            flat={true}
           >
-            <color attach="background" args={["#ffffff"]} />
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[5, 5, 5]} intensity={0.5} />
-            <directionalLight position={[-5, 5, 5]} intensity={0.5} />
-            <directionalLight position={[5, 5, -5]} intensity={0.5} />
-            <directionalLight position={[-5, 5, -5]} intensity={0.5} />
-            <directionalLight position={[0, -5, 0]} intensity={0.3} />
-            <directionalLight position={[0, 5, 0]} intensity={0.5} />
+            <color attach="background" args={["#1a1a1a"]} />
 
             <Suspense
               fallback={
