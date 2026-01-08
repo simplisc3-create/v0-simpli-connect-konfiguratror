@@ -907,10 +907,12 @@ export function ShelfConfigurator() {
     // - Each door module (80cm wide) needs: 1x Flächenset 40 (for inner divider) + 1x Flächenset 80 (for back)
     // - Each drawer module needs similar setup
     // - Open modules just need the back panel
+    // - ADDITIONALLY: Modules that border ghost/empty cells need side panels (Flächensets) - BUT NOT for open modules
+    // - TOP PANELS: Every column that has a module at the top (bordering ghost/empty above) needs a top Flächenset
     let flaechenset40Count = 0
     let flaechenset80Count = 0
 
-    for (const { col, cell } of cells) {
+    for (const { col, row, cell } of cells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
       const color = cell.color || "weiss"
 
@@ -925,6 +927,47 @@ export function ShelfConfigurator() {
       if (cell.type === "mit-tueren" || cell.type === "mit-doppelschublade" || cell.type === "abschliessbare-tueren") {
         flaechenset40Count++ // Inner divider panel
       }
+
+      const needsSidePanels =
+        cell.type === "mit-tueren" ||
+        cell.type === "mit-doppelschublade" ||
+        cell.type === "abschliessbare-tueren" ||
+        cell.type === "abschliessbar-rechts" ||
+        cell.type === "abschliessbar-links" ||
+        cell.type === "mit-klapptuer" ||
+        cell.type === "mit-rueckwand"
+
+      if (needsSidePanels) {
+        // Check left side
+        const leftCell = config.grid[row]?.[col - 1]
+        const isLeftExposed = col === 0 || !leftCell || leftCell.type === "empty" || leftCell.type === "ghost"
+
+        // Check right side
+        const rightCell = config.grid[row]?.[col + 1]
+        const isRightExposed =
+          col === config.columns - 1 || !rightCell || rightCell.type === "empty" || rightCell.type === "ghost"
+
+        // Add Flächenset 40 for each exposed side (side panels are 40cm deep)
+        if (isLeftExposed) {
+          flaechenset40Count++
+        }
+        if (isRightExposed) {
+          flaechenset40Count++
+        }
+      }
+
+      // If so, it needs a top panel (Flächenset based on column width)
+      const aboveCell = config.grid[row - 1]?.[col]
+      const isTopExposed = !aboveCell || aboveCell.type === "empty" || aboveCell.type === "ghost"
+
+      if (isTopExposed) {
+        // Add top panel based on column width
+        if (widthCm === 40) {
+          flaechenset40Count++
+        } else {
+          flaechenset80Count++
+        }
+      }
     }
 
     // Add Flächenset 40 weiß
@@ -933,11 +976,10 @@ export function ShelfConfigurator() {
       addItem(artNr40, "Flächenset 40 weiß", flaechenset40Count, 15.0, 9)
     }
 
-    // Add Flächenset 80 weiß - need one extra for the top shelf
+    // Add Flächenset 80 weiß
     if (flaechenset80Count > 0) {
       const artNr80 = getFlaechensetArtNr(80, "weiss")
-      // Add 1 extra for top shelf surface
-      addItem(artNr80, "Flächenset 80 weiß", flaechenset80Count + 1, 22.0, 11)
+      addItem(artNr80, "Flächenset 80 weiß", flaechenset80Count, 22.0, 11)
     }
 
     // --- SCHUBLADEN (Drawers) ---
