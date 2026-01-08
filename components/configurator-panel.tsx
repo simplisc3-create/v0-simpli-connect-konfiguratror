@@ -20,7 +20,15 @@ type Props = {
   onSetColumnWidth: (col: number, width: 38 | 75) => void
   onSetRowHeight: (row: number, height: 38 | 76) => void
   onUpdateConfig: (updates: Partial<ShelfConfig>) => void
-  shoppingList: Array<{ id: string; name: string; quantity: number; pricePerUnit: number; total: number }>
+  shoppingList: Array<{
+    id: string
+    name: string
+    quantity: number
+    pricePerUnit: number
+    total: number
+    packSize?: number
+    totalPieces?: number
+  }>
   price: number
   showShoppingList: boolean
   onToggleShoppingList: () => void
@@ -446,8 +454,11 @@ export function ConfiguratorPanel({
                       <div className="flex-1">
                         <div className="text-neutral-100">{item.name}</div>
                         <div className="text-xs text-neutral-400">
-                          Art.Nr: {item.id} | {item.quantity}x à {(item.pricePerUnit || 0).toFixed(2).replace(".", ",")}{" "}
-                          €
+                          Art.Nr: {item.id} | {item.quantity}x
+                          {item.packSize && item.totalPieces && (
+                            <span className="text-blue-300"> ({item.totalPieces} Stück)</span>
+                          )}{" "}
+                          à {(item.pricePerUnit || 0).toFixed(2).replace(".", ",")} €
                         </div>
                       </div>
                       <div className="text-right font-medium text-neutral-100">
