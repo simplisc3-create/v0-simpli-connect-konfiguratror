@@ -902,32 +902,40 @@ export function ShelfConfigurator() {
       addItem("SIM007", "Stangenset 80", stangenset80Count, 12.0)
     }
 
-    // --- FLÄCHENSETS (Panel sets) - with pack sizes ---
-    // For modules with doors/drawers, we need BOTH 40cm AND 80cm Flächensets
-    // - Each door module (80cm wide) needs: 1x Flächenset 40 (for inner divider) + 1x Flächenset 80 (for back)
-    // - Each drawer module needs similar setup
-    // - Open modules just need the back panel
-    // - ADDITIONALLY: Modules that border ghost/empty cells need side panels (Flächensets) - BUT NOT for open modules
-    // - TOP PANELS: Every column that has a module at the top (bordering ghost/empty above) needs a top Flächenset
-    let flaechenset40Count = 0
-    let flaechenset80Count = 0
+    // --- FLÄCHENSETS (Panels) - with color tracking ---
+    const flaechenset40Counts: Record<string, number> = {}
+    const flaechenset80Counts: Record<string, number> = {}
 
-    for (const { col, row, cell } of cells) {
+    // Helper to add Flächenset with color
+    const addFlaechenset40 = (color: string) => {
+      const c = color || "weiss"
+      flaechenset40Counts[c] = (flaechenset40Counts[c] || 0) + 1
+    }
+    const addFlaechenset80 = (color: string) => {
+      const c = color || "weiss"
+      flaechenset80Counts[c] = (flaechenset80Counts[c] || 0) + 1
+    }
+
+    for (const { cell, row, col } of cells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
-      const color = cell.color || "weiss"
+      const moduleColor = cell.color || "weiss"
 
-      // Base panel for the cell
+      // Base Flächenset for the module itself (bottom panel)
       if (widthCm === 40) {
-        flaechenset40Count++
+        addFlaechenset40(moduleColor)
       } else {
-        flaechenset80Count++
+        addFlaechenset80(moduleColor)
       }
 
-      // Additional Flächenset 40 for door/drawer modules (inner divider between two doors/drawers)
-      if (cell.type === "mit-tueren" || cell.type === "mit-doppelschublade" || cell.type === "abschliessbare-tueren") {
-        flaechenset40Count++ // Inner divider panel
-      }
+      // Check if sides are exposed
+      const leftCell = config.grid[row]?.[col - 1]
+      const rightCell = config.grid[row]?.[col + 1]
 
+      const isLeftExposed = col === 0 || !leftCell || leftCell.type === "empty" || leftCell.type === "ghost"
+      const isRightExposed =
+        col === config.columns - 1 || !rightCell || rightCell.type === "empty" || rightCell.type === "ghost"
+
+      // For closed modules, add side panels in module color
       const needsSidePanels =
         cell.type === "mit-tueren" ||
         cell.type === "mit-doppelschublade" ||
@@ -938,48 +946,102 @@ export function ShelfConfigurator() {
         cell.type === "mit-rueckwand"
 
       if (needsSidePanels) {
-        // Check left side
-        const leftCell = config.grid[row]?.[col - 1]
-        const isLeftExposed = col === 0 || !leftCell || leftCell.type === "empty" || leftCell.type === "ghost"
-
-        // Check right side
-        const rightCell = config.grid[row]?.[col + 1]
-        const isRightExposed =
-          col === config.columns - 1 || !rightCell || rightCell.type === "empty" || rightCell.type === "ghost"
-
-        // Add Flächenset 40 for each exposed side (side panels are 40cm deep)
         if (isLeftExposed) {
-          flaechenset40Count++
+          addFlaechenset40(moduleColor)
         }
         if (isRightExposed) {
-          flaechenset40Count++
+          addFlaechenset40(moduleColor)
         }
       }
 
-      // If so, it needs a top panel (Flächenset based on column width)
+      // For open modules at steps - check if we need side covers at step transitions
+      if (!needsSidePanels) {
+        if (isLeftExposed && col > 0) {
+          let leftHasModulesBelow = false
+          for (let r = row + 1; r < config.rows; r++) {
+            const belowLeft = config.grid[r]?.[col - 1]
+            if (belowLeft && belowLeft.type !== "empty" && belowLeft.type !== "ghost") {
+              leftHasModulesBelow = true
+              break
+            }
+          }
+          if (leftHasModulesBelow) {
+            addFlaechenset40(moduleColor)
+          }
+        }
+
+        if (isRightExposed && col < config.columns - 1) {
+          let rightHasModulesBelow = false
+          for (let r = row + 1; r < config.rows; r++) {
+            const belowRight = config.grid[r]?.[col + 1]
+            if (belowRight && belowRight.type !== "empty" && belowRight.type !== "ghost") {
+              rightHasModulesBelow = true
+              break
+            }
+          }
+          if (rightHasModulesBelow) {
+            addFlaechenset40(moduleColor)
+          }
+        }
+      }
+
+      // Top panel check
       const aboveCell = config.grid[row - 1]?.[col]
       const isTopExposed = !aboveCell || aboveCell.type === "empty" || aboveCell.type === "ghost"
 
       if (isTopExposed) {
-        // Add top panel based on column width
         if (widthCm === 40) {
-          flaechenset40Count++
+          addFlaechenset40(moduleColor)
         } else {
-          flaechenset80Count++
+          addFlaechenset80(moduleColor)
         }
       }
     }
 
-    // Add Flächenset 40 weiß
-    if (flaechenset40Count > 0) {
-      const artNr40 = getFlaechensetArtNr(40, "weiss")
-      addItem(artNr40, "Flächenset 40 weiß", flaechenset40Count, 15.0, 9)
+    for (const [color, count] of Object.entries(flaechenset40Counts)) {
+      if (count > 0) {
+        const artNr = getFlaechensetArtNr(40, color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        addItem(artNr, `Flächenset 40 ${colorLabel}`, count, 15.0, 9)
+      }
     }
 
-    // Add Flächenset 80 weiß
-    if (flaechenset80Count > 0) {
-      const artNr80 = getFlaechensetArtNr(80, "weiss")
-      addItem(artNr80, "Flächenset 80 weiß", flaechenset80Count, 22.0, 11)
+    for (const [color, count] of Object.entries(flaechenset80Counts)) {
+      if (count > 0) {
+        const artNr = getFlaechensetArtNr(80, color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0, 11)
+      }
     }
 
     // --- SCHUBLADEN (Drawers) ---
