@@ -432,7 +432,20 @@ export function ShelfConfigurator() {
             if (nr >= 0 && nr < updatedRows && nc >= 0 && nc < updatedCols) {
               const adjacentCell = newGrid[nr][nc]
               if (adjacentCell.type === "empty") {
-                newGrid[nr][nc] = { ...adjacentCell, type: "ghost" }
+                const isHorizontal = nr === r // left or right
+                if (isHorizontal) {
+                  // For horizontal ghost cells, check if there's support below
+                  // Support means: either row 0 (ground) OR a filled module below
+                  const hasSupport =
+                    nr === 0 ||
+                    (nr > 0 && newGrid[nr - 1]?.[nc]?.type !== "empty" && newGrid[nr - 1]?.[nc]?.type !== "ghost")
+                  if (hasSupport) {
+                    newGrid[nr][nc] = { ...adjacentCell, type: "ghost" }
+                  }
+                } else {
+                  // Vertical (above/below) - always allow
+                  newGrid[nr][nc] = { ...adjacentCell, type: "ghost" }
+                }
               }
             }
           })
