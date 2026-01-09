@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ArrowRight, Palette, Box, Truck, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ImageUpload } from "@/components/image-upload"
+import { SiteHeader } from "@/components/site-header"
 
 const collections = [
   {
@@ -36,6 +37,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white">
+      <SiteHeader transparent />
+
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0 z-0">
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -52,34 +55,11 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/30" />
         </div>
 
-        {/* Navigation - minimal, just brand name */}
-        <nav className="absolute top-0 left-0 right-0 z-50 px-6 py-6">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <Link href="/" className="text-white/90 hover:text-white transition">
-              <span className="font-bold tracking-widest uppercase text-3xl">Simpli Connect</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-8 leading-10 text-5xl">
-              <Link href="/shop" className="font-medium text-white/80 hover:text-white transition text-2xl">
-                Shop
-              </Link>
-              <Link href="/konfigurator" className="font-medium text-white/80 hover:text-white transition text-2xl">
-                Konfigurator
-              </Link>
-              <Link href="/kontakt" className="font-medium text-white/80 hover:text-white transition text-2xl">
-                Kontakt
-              </Link>
-              <Link href="/warenkorb" className="font-medium text-white/80 hover:text-white transition text-2xl">
-                Warenkorb
-              </Link>
-            </div>
-          </div>
-        </nav>
-
         {/* Hero Content */}
         <div className="relative z-10 h-full flex flex-col justify-between px-6 pt-44 pb-24">
           {/* Main Content - Top left aligned, above the shelf */}
           <div className="max-w-7xl mx-auto w-full">
-            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 text-center lg:text-9xl px-2 py-2">
+            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 text-center lg:text-9xl px-3.5 py-20">
               {activeCollection.headline}
             </h1>
           </div>
@@ -118,7 +98,7 @@ export default function Home() {
       {/* Features Section */}
       <section className="py-20 px-6 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 py-[-10px]">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Warum Simpli Connect?</h2>
             <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
               Unser modulares System vereint deutsches Qualitätshandwerk mit zeitlosem Design.

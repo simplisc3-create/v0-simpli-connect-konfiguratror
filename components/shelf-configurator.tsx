@@ -6,6 +6,7 @@ import { OrbitControls } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
+import { ConfiguratorHelpBot } from "./configurator-help-bot"
 import { Undo2, Redo2, RotateCcw, AlertTriangle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -1400,6 +1401,8 @@ export function ShelfConfigurator() {
             >
               <RotateCcw className="h-5 w-5 text-white" />
             </Button>
+            {/* Added Help Bot Button */}
+            <ConfiguratorHelpBot />
           </div>
 
           <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg bg-black/70 px-4 py-2 text-sm text-neutral-300">

@@ -6,10 +6,11 @@ import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useCartStore } from "@/lib/cart-store"
-import { ChevronLeft, Check, CreditCard, Truck } from "lucide-react"
+import { Check, CreditCard, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { SiteHeader } from "@/components/site-header"
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -62,23 +63,9 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
-            <span className="font-semibold text-xl tracking-tight">Simpli Connect</span>
-          </Link>
-          <Link href="/warenkorb" className="flex items-center gap-1 text-sm text-gray-600 hover:text-black transition">
-            <ChevronLeft className="w-4 h-4" />
-            Zurück zum Warenkorb
-          </Link>
-        </div>
-      </nav>
+      <SiteHeader />
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 py-12 pt-24">
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-12">
           {[
@@ -226,7 +213,7 @@ export default function CheckoutPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 border border-gray-100 sticky top-6">
+            <div className="bg-white rounded-xl p-6 border border-gray-100 sticky top-24">
               <h2 className="font-semibold text-lg mb-4">Deine Bestellung</h2>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {items.map((item) => (

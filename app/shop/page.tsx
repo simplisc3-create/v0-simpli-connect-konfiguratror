@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ShoppingCart, Filter, ChevronDown, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/lib/cart-store"
+import { SiteHeader } from "@/components/site-header"
 
 const products = [
   {
@@ -177,38 +178,7 @@ export default function ShopPage() {
   return (
     <main className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
-            <span className="font-semibold text-xl tracking-tight">Simpli Connect</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
-              Home
-            </Link>
-            <Link href="/shop" className="text-sm font-medium text-gray-900 hover:text-gray-600 transition">
-              Shop
-            </Link>
-            <Link href="/konfigurator" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
-              Konfigurator
-            </Link>
-            <Link href="/kontakt" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
-              Kontakt
-            </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/warenkorb">
-              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                <ShoppingCart className="w-4 h-4" />
-                Warenkorb ({getTotalItems()})
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* Page Content */}
       <div className="pt-24 pb-20 px-6">
@@ -356,9 +326,7 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
 
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition">
-      <div className="aspect-square bg-gray-50 overflow-hidden">
-        
-      </div>
+      <div className="aspect-square bg-gray-50 overflow-hidden"></div>
       <div className="p-4">
         <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>
         <h3 className="font-semibold text-gray-900">{product.name}</h3>

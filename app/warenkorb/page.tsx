@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCartStore } from "@/lib/cart-store"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SiteHeader } from "@/components/site-header"
 
 export default function WarenkorbPage() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore()
@@ -13,28 +14,7 @@ export default function WarenkorbPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
-            <span className="font-semibold text-xl tracking-tight">Simpli Connect</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
-              Home
-            </Link>
-            <Link href="/shop" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
-              Shop
-            </Link>
-            <Link href="/konfigurator" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
-              Konfigurator
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       <div className="pt-24 pb-20 px-6">
         <div className="max-w-4xl mx-auto">
