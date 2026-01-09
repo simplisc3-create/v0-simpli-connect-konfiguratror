@@ -1035,7 +1035,10 @@ export function ShelfConfigurator() {
             cell.type === "mit-doppelschublade" ||
             cell.type === "mit-rueckwand" ||
             cell.type === "mit-tueren" ||
-            cell.type === "abschliessbare-tueren"
+            cell.type === "abschliessbare-tueren" ||
+            cell.type === "mit-klapptuer" ||
+            cell.type === "mit-klapptuer-oben" ||
+            cell.type === "ohne-seitenwaende"
           ) {
             backPanelCount++
           }
@@ -1072,10 +1075,15 @@ export function ShelfConfigurator() {
     // Module types that have side walls (and don't need extra side panels between them)
     const moduleTypesWithSideWalls = ["mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-klapptuer-oben"]
 
-    // For each module with doors, check if adjacent modules have side walls
+    // For each module with doors/flaps, check if adjacent modules have side walls
     for (const { row, col, cell } of cells) {
-      // Only door modules need side panels
-      if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
+      // Door and Klapptür modules need side panels
+      if (
+        cell.type === "mit-tueren" ||
+        cell.type === "abschliessbare-tueren" ||
+        cell.type === "mit-klapptuer" ||
+        cell.type === "mit-klapptuer-oben"
+      ) {
         const color = cell.color || "weiss"
 
         // Check left neighbor
@@ -1315,20 +1323,30 @@ export function ShelfConfigurator() {
 
     // --- FUNKTIONSWÄNDE (Back panels) ---
     let funktionswandCount = 0
-    for (const { cell } of cells) {
-      if (cell.type === "mit-rueckwand") {
-        funktionswandCount += 1
-      } else if (
+    let has40cmSingleDoor = false
+
+    for (const { col, cell } of cells) {
+      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
+
+      if (
         cell.type === "mit-tueren" ||
         cell.type === "mit-doppelschublade" ||
         cell.type === "abschliessbare-tueren" ||
         cell.type === "mit-klapptuer" ||
         cell.type === "mit-klapptuer-oben"
       ) {
-        // Modules with doors/drawers need 2 back panels
         funktionswandCount += 2
+
+        if (widthCm === 40 && (cell.type === "mit-klapptuer" || cell.type === "mit-klapptuer-oben")) {
+          has40cmSingleDoor = true
+        }
       }
     }
+
+    if (funktionswandCount > 0 && !has40cmSingleDoor && funktionswandCount % 2 !== 0) {
+      funktionswandCount = funktionswandCount + 1 // Round UP to next even number
+    }
+
     if (funktionswandCount > 0) {
       addItem("SIM023", "Funktionswand Edelstahl", funktionswandCount, 35.0)
     }
