@@ -148,7 +148,7 @@ const products = [
     description: "Abschließbares Schloss",
     price: 25.0,
     category: "zubehoer",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "/schloss-typ-a.jpg",
   },
 ]
 
@@ -357,11 +357,7 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition">
       <div className="aspect-square bg-gray-50 overflow-hidden">
-        <img
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-        />
+        
       </div>
       <div className="p-4">
         <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>

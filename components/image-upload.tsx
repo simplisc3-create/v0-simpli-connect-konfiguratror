@@ -7,11 +7,10 @@ import { Upload, X } from "lucide-react"
 
 interface ImageUploadProps {
   onImageUpload: (imageUrl: string) => void
-  fallbackImage?: string
   alt: string
 }
 
-export function ImageUpload({ onImageUpload, fallbackImage, alt }: ImageUploadProps) {
+export function ImageUpload({ onImageUpload, alt }: ImageUploadProps) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,14 +56,12 @@ export function ImageUpload({ onImageUpload, fallbackImage, alt }: ImageUploadPr
     setError(null)
   }
 
-  const imageToDisplay = uploadedImage || fallbackImage
-
   return (
     <div className="relative w-full h-full group bg-input">
-      {imageToDisplay ? (
+      {uploadedImage ? (
         <>
           <img
-            src={imageToDisplay || "/placeholder.svg"}
+            src={uploadedImage || "/placeholder.svg"}
             alt={alt}
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />

@@ -64,7 +64,7 @@ export default function WarenkorbPage() {
                   <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                     <div className="w-20 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0">
                       <img
-                        src={item.image || "/placeholder.svg?height=80&width=80"}
+                        src={item.image || "/placeholder.svg"}
                         alt={item.name}
                         className="w-full h-full object-cover"
                       />

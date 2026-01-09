@@ -11,7 +11,7 @@ const collections = [
   {
     id: "modular",
     name: "Modular",
-    headline: "Modular",
+    headline: "Modular Furniture Systems",
     description:
       "Jedes Stück beginnt mit den feinsten Materialien, sorgfältig ausgewählt für Schönheit, Langlebigkeit und nachhaltige Herkunft. Unsere Handwerker ehren traditionelle Techniken und nutzen moderne Präzision.",
   },
@@ -79,7 +79,7 @@ export default function Home() {
         <div className="relative z-10 h-full flex flex-col justify-between px-6 pt-44 pb-24">
           {/* Main Content - Top left aligned, above the shelf */}
           <div className="max-w-7xl mx-auto w-full">
-            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none lg:text-9xl tracking-tight px-px my-[-70px] mx-20">
+            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 lg:text-7xl text-center py-5 px-7">
               {activeCollection.headline}
             </h1>
           </div>
@@ -154,7 +154,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Beliebte Konfigurationen</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Bestseller</h2>
               <p className="mt-2 text-gray-600">Lass dich von unseren Bestsellern inspirieren.</p>
             </div>
             <Link
