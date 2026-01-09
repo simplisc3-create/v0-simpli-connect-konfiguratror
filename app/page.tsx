@@ -161,7 +161,7 @@ export default function Home() {
             />
             <ProductCard
               image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
-              video="/images/gen-4-20close-20up-2clogo-20static-20camera-20-2c-20cinematic-20minimalistic-20intro-20animation-2c-20a-20masterpiece-2c-20dynamic-20motion-201863552926-204k.mp4"
+              youtubeId="hUbkjGIyy2E"
               title="Wohnzimmer Set"
               description="4 Fächer, individuell gestaltbar"
               price="ab 899€"
@@ -283,6 +283,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
 function ProductCard({
   image,
   video,
+  youtubeId,
   title,
   description,
   price,
@@ -292,6 +293,7 @@ function ProductCard({
 }: {
   image: string
   video?: string
+  youtubeId?: string
   title: string
   description: string
   price: string
@@ -320,7 +322,15 @@ function ProductCard({
             </span>
           </div>
         )}
-        {video ? (
+        {youtubeId ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1`}
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full z-20 pointer-events-none"
+            style={{ border: "none" }}
+          />
+        ) : video ? (
           <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-20">
             <source src={video} type="video/mp4" />
           </video>
