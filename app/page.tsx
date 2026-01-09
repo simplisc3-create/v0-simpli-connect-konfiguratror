@@ -166,7 +166,7 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <ProductCard
-              image="/small-white-modular-shelf-2-levels-chrome-frame-mi.jpg"
+              image="/images/metanoia-ibiza-httpss.png"
               title="Starter Regal"
               description="2 Fächer, perfekt für den Einstieg"
               price="ab 299€"
