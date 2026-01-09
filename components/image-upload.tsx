@@ -64,10 +64,11 @@ export function ImageUpload({ onImageUpload, fallbackImage, alt }: ImageUploadPr
       {imageToDisplay ? (
         <>
           <img
-            src={imageToDisplay || "/placeholder.svg"}
+            src="/images/metanoia-ibiza-httpss.jpeg"
             alt={alt}
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />
+          {/* </CHANGE> */}
           <button
             onClick={handleRemove}
             className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
