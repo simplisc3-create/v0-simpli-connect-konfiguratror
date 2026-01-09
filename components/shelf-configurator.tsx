@@ -970,6 +970,11 @@ export function ShelfConfigurator() {
     }
 
     // --- FLÄCHENSETS (Panels) - with color tracking ---
+    // Each Flächenset contains 2 surfaces (top + bottom)
+    // For stacked modules, we count the number of surfaces needed:
+    // - Each module needs a bottom surface
+    // - The topmost module in each column needs a top surface
+    // - Shared surfaces between stacked modules count as one
     const flaechenset40Counts: Record<string, number> = {}
     const flaechenset80Counts: Record<string, number> = {}
 
@@ -983,38 +988,59 @@ export function ShelfConfigurator() {
       flaechenset80Counts[c] = (flaechenset80Counts[c] || 0) + 1
     }
 
-    // AND a top plate in the color of the module above (or own color if topmost)
-    for (const { cell, row, col } of cells) {
+    // Group cells by column to calculate surfaces needed
+    const columnCells: Map<number, Array<{ row: number; cell: GridCell }>> = new Map()
+    for (const { row, col, cell } of cells) {
+      if (!columnCells.has(col)) {
+        columnCells.set(col, [])
+      }
+      columnCells.get(col)!.push({ row, cell })
+    }
+
+    // Drawer modules have their own surfaces, so only count open/other modules
+    for (const [col, colCells] of columnCells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
+
+      // Sort cells by row
+      colCells.sort((a, b) => a.row - b.row)
+
+      // Count non-drawer modules in this column
+      const nonDrawerModules = colCells.filter((c) => c.cell.type !== "mit-doppelschublade")
+      const drawerModules = colCells.filter((c) => c.cell.type === "mit-doppelschublade")
+
+      // For non-drawer modules: n modules need n+1 surfaces (shared between stacks)
+      // But if there's a drawer above, the surface between drawer and open module is provided by drawer
+      // So we need: nonDrawerModules.length surfaces (one per module bottom) + 1 for floor if any non-drawer exists
+
+      if (nonDrawerModules.length > 0) {
+        // Check if there's a drawer directly above the topmost non-drawer module
+        const topNonDrawerRow = Math.max(...nonDrawerModules.map((c) => c.row))
+        const hasDrawerAbove = drawerModules.some((d) => d.row === topNonDrawerRow + 1)
+
+        // Surfaces needed: one per non-drawer module + 1 for top (unless drawer provides it)
+        const surfacesNeeded = nonDrawerModules.length + (hasDrawerAbove ? 0 : 1)
+
+        // Get the predominant color
+        const moduleColor = nonDrawerModules[nonDrawerModules.length - 1].cell.color || "weiss"
+
+        // Calculate Flächensets (each = 2 surfaces), round up
+        const flaechensetsNeeded = Math.ceil(surfacesNeeded / 2)
+
+        if (widthCm === 40) {
+          flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + flaechensetsNeeded
+        } else {
+          flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + flaechensetsNeeded
+        }
+      }
+    }
+
+    // Drawer modules use stainless steel functional walls between them
+    // Count exposed sides only for non-drawer modules that need enclosure
+    const sidePanelCount40: Record<string, number> = {}
+
+    // Group adjacent drawers to see if they share walls
+    for (const { cell, row, col } of cells) {
       const moduleColor = cell.color || "weiss"
-
-      // Bottom plate for this module - in module's own color
-      if (widthCm === 40) {
-        addFlaechenset40(moduleColor)
-      } else {
-        addFlaechenset80(moduleColor)
-      }
-
-      // Top plate - check what's above
-      const aboveCell = config.grid[row - 1]?.[col]
-      const isTopExposed = !aboveCell || aboveCell.type === "empty" || aboveCell.type === "ghost"
-
-      if (isTopExposed) {
-        // This is the topmost module - add ceiling plate in own color
-        if (widthCm === 40) {
-          addFlaechenset40(moduleColor)
-        } else {
-          addFlaechenset80(moduleColor)
-        }
-      } else if (aboveCell && aboveCell.type !== "empty" && aboveCell.type !== "ghost") {
-        // There's a module above - add intermediate plate in ABOVE module's color
-        const aboveColor = aboveCell.color || "weiss"
-        if (widthCm === 40) {
-          addFlaechenset40(aboveColor)
-        } else {
-          addFlaechenset80(aboveColor)
-        }
-      }
 
       // Check if sides are exposed
       const leftCell = config.grid[row]?.[col - 1]
@@ -1024,55 +1050,50 @@ export function ShelfConfigurator() {
       const isRightExposed =
         col === config.columns - 1 || !rightCell || rightCell.type === "empty" || rightCell.type === "ghost"
 
-      // For closed modules, add side panels in module color
+      // Only non-drawer closed module types need Flächenset 40 side panels
       const needsSidePanels =
         cell.type === "mit-tueren" ||
-        cell.type === "mit-doppelschublade" ||
         cell.type === "abschliessbare-tueren" ||
         cell.type === "abschliessbar-rechts" ||
         cell.type === "abschliessbar-links" ||
         cell.type === "mit-klapptuer" ||
         cell.type === "mit-rueckwand"
 
+      // Drawer modules do NOT need Flächenset 40 side panels - they use stainless steel walls
       if (needsSidePanels) {
         if (isLeftExposed) {
-          addFlaechenset40(moduleColor)
+          sidePanelCount40[moduleColor] = (sidePanelCount40[moduleColor] || 0) + 1
         }
         if (isRightExposed) {
-          addFlaechenset40(moduleColor)
+          sidePanelCount40[moduleColor] = (sidePanelCount40[moduleColor] || 0) + 1
         }
       }
+    }
 
-      // For open modules at steps - check if we need side covers at step transitions
-      if (!needsSidePanels) {
-        if (isLeftExposed && col > 0) {
-          let leftHasModulesBelow = false
-          for (let r = row + 1; r < config.rows; r++) {
-            const belowLeft = config.grid[r]?.[col - 1]
-            if (belowLeft && belowLeft.type !== "empty" && belowLeft.type !== "ghost") {
-              leftHasModulesBelow = true
-              break
-            }
-          }
-          if (leftHasModulesBelow) {
-            addFlaechenset40(moduleColor)
-          }
-        }
-
-        if (isRightExposed && col < config.columns - 1) {
-          let rightHasModulesBelow = false
-          for (let r = row + 1; r < config.rows; r++) {
-            const belowRight = config.grid[r]?.[col + 1]
-            if (belowRight && belowRight.type !== "empty" && belowRight.type !== "ghost") {
-              rightHasModulesBelow = true
-              break
-            }
-          }
-          if (rightHasModulesBelow) {
-            addFlaechenset40(moduleColor)
-          }
-        }
+    // The stainless steel functional wall acts as separator
+    // Check for adjacent drawer columns and add only 1 panel for shared boundary
+    const drawerColumns = new Set<number>()
+    for (const { cell, col } of cells) {
+      if (cell.type === "mit-doppelschublade") {
+        drawerColumns.add(col)
       }
+    }
+
+    // For adjacent drawer columns, add 1 Flächenset 40 as separator (shared wall)
+    const sortedDrawerCols = Array.from(drawerColumns).sort((a, b) => a - b)
+    for (let i = 0; i < sortedDrawerCols.length - 1; i++) {
+      if (sortedDrawerCols[i + 1] === sortedDrawerCols[i] + 1) {
+        // Adjacent drawer columns - add 1 shared panel
+        // Get the color from one of the drawer modules
+        const drawerCell = cells.find((c) => c.col === sortedDrawerCols[i] && c.cell.type === "mit-doppelschublade")
+        const color = drawerCell?.cell.color || "weiss"
+        sidePanelCount40[color] = (sidePanelCount40[color] || 0) + 1
+      }
+    }
+
+    // Merge side panel counts into flaechenset40Counts
+    for (const [color, count] of Object.entries(sidePanelCount40)) {
+      flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + count
     }
 
     for (const [color, count] of Object.entries(flaechenset40Counts)) {

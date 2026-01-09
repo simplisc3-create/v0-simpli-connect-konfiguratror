@@ -490,11 +490,8 @@ export function ConfiguratorPanel({
                       <div className="flex-1">
                         <div className="text-neutral-100">{item.name}</div>
                         <div className="text-xs text-neutral-400">
-                          Art.Nr: {item.id} | {item.quantity}x
-                          {item.packSize && item.totalPieces && (
-                            <span className="text-blue-300"> ({item.totalPieces} Stück)</span>
-                          )}{" "}
-                          à {(item.pricePerUnit || 0).toFixed(2).replace(".", ",")} €
+                          Art.Nr: {item.id} | {item.quantity}x à {(item.pricePerUnit || 0).toFixed(2).replace(".", ",")}{" "}
+                          €
                         </div>
                       </div>
                       <div className="text-right font-medium text-neutral-100">

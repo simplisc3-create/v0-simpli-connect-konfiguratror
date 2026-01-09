@@ -58,8 +58,8 @@ export default function Home() {
         {/* Hero Content */}
         <div className="relative z-10 h-full flex flex-col justify-between px-6 pt-44 pb-24">
           {/* Main Content - Top left aligned, above the shelf */}
-          <div className="max-w-7xl mx-auto w-full">
-            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 text-center lg:text-9xl px-3.5 py-20">
+          <div className="max-w-7xl mx-auto w-full py-[-0px] py-[-60px] py-[-30px]">
+            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 text-center lg:text-9xl px-3.5 py-[-8px] py-[-px] py-[-3px]">
               {activeCollection.headline}
             </h1>
           </div>
@@ -69,7 +69,7 @@ export default function Home() {
 
           {/* Collection Selector - Bottom center */}
           <div className="max-w-7xl mx-auto w-full flex justify-center">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full p-1.5 py-[-6px] py-[-36px] py-[-20px] py-[-36px]">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full p-1.5 py-[-6px] py-[-36px] py-[-20px] py-[-36px] py-[-px] py-[-6px] py-[-16px] py-[-8px] py-0">
               {collections.map((collection) => (
                 <button
                   key={collection.id}

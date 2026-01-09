@@ -75,7 +75,7 @@ export const leitern: Product[] = [
 // =============================================================================
 export const stangensets: Product[] = [
   { artNr: "SIM006", name: "Stangenset 40", category: "stangenset", size: 40, price: 6.95, variant: "metall" },
-  { artNr: "SIM007", name: "Stangenset 80", category: "stangenset", size: 80, price: 10.5, variant: "metall" },
+  { artNr: "SIM007", name: "Stangenset 80", category: "stangenset", size: 80, price: 12.0, variant: "metall" },
 ]
 
 // =============================================================================
@@ -104,86 +104,135 @@ const colorNames: Record<ShelfColor, string> = {
 }
 
 export const flaechensets: Product[] = [
-  // 40cm Flächensets - all colors (SIM010 base)
+  // 40cm Flächensets - all colors (SIM010 base) - 15,00 € per set
   {
     artNr: "SIM010",
     name: "Flächenset 40 weiß",
     category: "flaechenset",
     size: 40,
-    price: 19.5,
+    price: 15.0,
     color: "weiss",
-    packSize: 9,
+    packSize: 2,
   },
   {
     artNr: "SIM010-grey",
     name: "Flächenset 40 grau",
     category: "flaechenset",
     size: 40,
-    price: 19.5,
+    price: 15.0,
     color: "grau",
-    packSize: 9,
+    packSize: 2,
   },
   {
     artNr: "SIM010-red",
     name: "Flächenset 40 rot",
     category: "flaechenset",
     size: 40,
-    price: 19.5,
+    price: 15.0,
     color: "rot",
-    packSize: 9,
+    packSize: 2,
   },
   {
     artNr: "SIM010-orange",
     name: "Flächenset 40 orange",
     category: "flaechenset",
     size: 40,
-    price: 19.5,
+    price: 15.0,
     color: "orange",
-    packSize: 9,
+    packSize: 2,
   },
   {
     artNr: "SIM010-green",
     name: "Flächenset 40 grün",
     category: "flaechenset",
     size: 40,
-    price: 19.5,
+    price: 15.0,
     color: "gruen",
-    packSize: 9,
+    packSize: 2,
   },
   {
     artNr: "SIM010-blue",
     name: "Flächenset 40 blau",
     category: "flaechenset",
     size: 40,
-    price: 19.5,
+    price: 15.0,
     color: "blau",
-    packSize: 9,
+    packSize: 2,
   },
   {
     artNr: "SIM010-yellow",
     name: "Flächenset 40 gelb",
     category: "flaechenset",
     size: 40,
-    price: 19.5,
+    price: 15.0,
     color: "gelb",
-    packSize: 9,
+    packSize: 2,
   },
 
-  // 80cm Flächensets - all colors (SIM011 base)
-  { artNr: "SIM011", name: "Flächenset 80 weiß", category: "flaechenset", size: 80, price: 33.5, color: "weiss" },
-  { artNr: "SIM011-grey", name: "Flächenset 80 grau", category: "flaechenset", size: 80, price: 33.5, color: "grau" },
-  { artNr: "SIM011-red", name: "Flächenset 80 rot", category: "flaechenset", size: 80, price: 33.5, color: "rot" },
+  // 80cm Flächensets - all colors (SIM011 base) - 22,00 € per set
+  {
+    artNr: "SIM011",
+    name: "Flächenset 80 weiß",
+    category: "flaechenset",
+    size: 80,
+    price: 22.0,
+    color: "weiss",
+    packSize: 2,
+  },
+  {
+    artNr: "SIM011-grey",
+    name: "Flächenset 80 grau",
+    category: "flaechenset",
+    size: 80,
+    price: 22.0,
+    color: "grau",
+    packSize: 2,
+  },
+  {
+    artNr: "SIM011-red",
+    name: "Flächenset 80 rot",
+    category: "flaechenset",
+    size: 80,
+    price: 22.0,
+    color: "rot",
+    packSize: 2,
+  },
   {
     artNr: "SIM011-orange",
     name: "Flächenset 80 orange",
     category: "flaechenset",
     size: 80,
-    price: 33.5,
+    price: 22.0,
     color: "orange",
+    packSize: 2,
   },
-  { artNr: "SIM011-green", name: "Flächenset 80 grün", category: "flaechenset", size: 80, price: 33.5, color: "gruen" },
-  { artNr: "SIM011-blue", name: "Flächenset 80 blau", category: "flaechenset", size: 80, price: 33.5, color: "blau" },
-  { artNr: "SIM011-yellow", name: "Flächenset 80 gelb", category: "flaechenset", size: 80, price: 33.5, color: "gelb" },
+  {
+    artNr: "SIM011-green",
+    name: "Flächenset 80 grün",
+    category: "flaechenset",
+    size: 80,
+    price: 22.0,
+    color: "gruen",
+    packSize: 2,
+  },
+  {
+    artNr: "SIM011-blue",
+    name: "Flächenset 80 blau",
+    category: "flaechenset",
+    size: 80,
+    price: 22.0,
+    color: "blau",
+    packSize: 2,
+  },
+  {
+    artNr: "SIM011-yellow",
+    name: "Flächenset 80 gelb",
+    category: "flaechenset",
+    size: 80,
+    price: 22.0,
+    color: "gelb",
+    packSize: 2,
+  },
 ]
 
 // =============================================================================
@@ -861,7 +910,6 @@ function getColorSuffix(color: string): string {
 // =============================================================================
 // PRICE LOOKUP HELPERS
 // =============================================================================
-
 export function getLeiterPrice(height: number): number {
   const leiter = leitern.find((l) => l.size === height)
   return leiter?.price ?? 0
@@ -873,7 +921,7 @@ export function getStangensetPrice(width: number): number {
 }
 
 export function getFlaechensetPrice(size: number): number {
-  return size === 40 ? 19.5 : 33.5
+  return size === 40 ? 15.0 : 22.0
 }
 
 export function getFlaechensetGlasPrice(size: number): number {

@@ -148,16 +148,7 @@ export function ConfiguratorHelpBot() {
   return (
     <>
       {/* Chat Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl",
-          isOpen && "hidden",
-        )}
-      >
-        <MessageCircle className="h-5 w-5" />
-        <span className="text-sm font-medium">Hilfe</span>
-      </button>
+      null
 
       {/* Chat Window */}
       {isOpen && (
