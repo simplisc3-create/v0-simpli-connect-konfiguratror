@@ -45,6 +45,7 @@ export type ModuleType =
   | "ohne-seitenwaende"
   | "mit-rueckwand"
   | "mit-klapptuer"
+  | "mit-klapptuer-oben"
   | "mit-doppelschublade"
   | "mit-tueren"
   | "abschliessbare-tueren"
@@ -60,6 +61,7 @@ export const MODULE_TYPES: ModuleType[] = [
   "ohne-seitenwaende",
   "mit-rueckwand",
   "mit-klapptuer",
+  "mit-klapptuer-oben",
   "mit-doppelschublade",
   "mit-tueren",
   "abschliessbare-tueren",
@@ -76,6 +78,7 @@ export const MODULE_TO_VARIANT_CODE_80: Record<ModuleType, string> = {
   "ohne-seitenwaende": "1-2",
   "mit-rueckwand": "1-3",
   "mit-klapptuer": "1-4",
+  "mit-klapptuer-oben": "1-4",
   "mit-doppelschublade": "1-5",
   "mit-tueren": "1-6",
   "abschliessbare-tueren": "1-7",
@@ -99,6 +102,7 @@ export const MODULE_TO_VARIANT_CODE_40: Record<ModuleType, string> = {
   // Diese existieren nicht bei 40cm - werden unten als ERROR behandelt
   "mit-seitenwaenden": "",
   "mit-klapptuer": "",
+  "mit-klapptuer-oben": "",
   "mit-doppelschublade": "",
   "mit-tueren": "",
   "abschliessbare-tueren": "",

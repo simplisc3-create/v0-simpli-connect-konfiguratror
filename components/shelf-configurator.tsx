@@ -13,8 +13,8 @@ import {
   getFlaechensetArtNr,
   getSchubladeArtNr,
   getTuerArtNr,
-  getKlapptuerArtNr, // Added getKlapptuerArtNr
-  getLeiterArtNr, // Added getLeiterArtNr
+  getKlapptuerArtNr,
+  getLeiterArtNr,
 } from "@/lib/simpli-products"
 import { useThree } from "@react-three/fiber"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
@@ -32,6 +32,7 @@ export type GridCell = {
     | "mit-rueckwand"
     | "mit-tueren"
     | "mit-klapptuer"
+    | "mit-klapptuer-oben" // Added mit-klapptuer-oben
     | "mit-doppelschublade"
     | "abschliessbare-tueren"
     | "mit-tuere-rechts"
@@ -1062,56 +1063,33 @@ export function ShelfConfigurator() {
     }
 
     // --- FLÄCHENSETS 40 for Side Panels ---
+    // where no adjacent module with side walls exists
     const sidePanelsNeeded: Record<string, number> = {}
 
-    // Find the leftmost and rightmost active columns
-    const sortedActiveColumnsForSidePanels = [...activeColumns].sort((a, b) => a - b)
+    // Module types that have side walls (and don't need extra side panels between them)
+    const moduleTypesWithSideWalls = ["mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-klapptuer-oben"]
 
-    // Group adjacent columns to find shelf sections
-    const shelfSections: number[][] = []
-    let currentSection: number[] = []
-    if (sortedActiveColumnsForSidePanels.length > 0) {
-      currentSection.push(sortedActiveColumnsForSidePanels[0])
-      for (let i = 1; i < sortedActiveColumnsForSidePanels.length; i++) {
-        if (sortedActiveColumnsForSidePanels[i] === sortedActiveColumnsForSidePanels[i - 1] + 1) {
-          currentSection.push(sortedActiveColumnsForSidePanels[i])
-        } else {
-          shelfSections.push(currentSection)
-          currentSection = [sortedActiveColumnsForSidePanels[i]]
+    // For each module with doors, check if adjacent modules have side walls
+    for (const { row, col, cell } of cells) {
+      // Only door modules need side panels
+      if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
+        const color = cell.color || "weiss"
+
+        // Check left neighbor
+        const leftNeighbor = config.grid[row]?.[col - 1]
+        const leftHasSideWall = leftNeighbor && moduleTypesWithSideWalls.includes(leftNeighbor.type)
+        if (!leftHasSideWall) {
+          // Need left side panel
+          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
         }
-      }
-      shelfSections.push(currentSection)
-    }
 
-    for (const section of shelfSections) {
-      const leftmostCol = section[0]
-      const rightmostCol = section[section.length - 1]
-
-      // Find the topmost row that has modules in this section
-      let topmostRow = -1
-      for (const col of section) {
-        const colCells = columnCells.get(col) || []
-        for (const { row } of colCells) {
-          if (row > topmostRow) {
-            topmostRow = row
-          }
+        // Check right neighbor
+        const rightNeighbor = config.grid[row]?.[col + 1]
+        const rightHasSideWall = rightNeighbor && moduleTypesWithSideWalls.includes(rightNeighbor.type)
+        if (!rightHasSideWall) {
+          // Need right side panel
+          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
         }
-      }
-
-      // Get the module at topmost row in leftmost column (for left side panel)
-      const leftColCells = columnCells.get(leftmostCol) || []
-      const leftTopmostCell = leftColCells.find(({ row }) => row === topmostRow)
-      if (leftTopmostCell) {
-        const color = leftTopmostCell.cell.color || "weiss"
-        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // left side panel
-      }
-
-      // Get the module at topmost row in rightmost column (for right side panel)
-      const rightColCells = columnCells.get(rightmostCol) || []
-      const rightTopmostCell = rightColCells.find(({ row }) => row === topmostRow)
-      if (rightTopmostCell) {
-        const color = rightTopmostCell.cell.color || "weiss"
-        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // right side panel
       }
     }
 
@@ -1252,7 +1230,7 @@ export function ShelfConfigurator() {
       addItem("SIM1000a", "Schloss Typ A", lockCount, 25.0)
     }
 
-    // --- KLAPPTÜREN (Flap doors) ---
+    // --- KLAPPTÜREN (Flap doors - nach unten öffnend) ---
     const klapptuerCounts: Record<string, { count: number; name: string; price: number }> = {}
 
     for (const { cell } of cells) {
@@ -1288,6 +1266,50 @@ export function ShelfConfigurator() {
       addItem(artNr, data.name, data.count, data.price)
     }
 
+    // --- KLAPPTÜREN NACH OBEN (Upward-opening flip doors) ---
+    const klapptuerObenCounts: Record<string, { count: number; name: string; price: number }> = {}
+    let totalGasdruckdaempfer = 0
+
+    for (const { cell } of cells) {
+      if (cell.type === "mit-klapptuer-oben") {
+        const color = cell.color || "weiss"
+        const artNr = getKlapptuerArtNr(color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        const name = `Klapptür ${colorLabel} (nach oben)`
+
+        if (!klapptuerObenCounts[artNr]) {
+          klapptuerObenCounts[artNr] = { count: 0, name, price: 65.0 }
+        }
+        klapptuerObenCounts[artNr].count++
+        // Each upward-opening flip door requires 2 gas dampers
+        totalGasdruckdaempfer += 2
+      }
+    }
+
+    for (const [artNr, data] of Object.entries(klapptuerObenCounts)) {
+      addItem(artNr, data.name, data.count, data.price)
+    }
+
+    // Add Gasdruckdämpfer for upward-opening flip doors (mandatory)
+    if (totalGasdruckdaempfer > 0) {
+      addItem("SIM033", "Gasdruckdämpfer", totalGasdruckdaempfer, 18.5)
+    }
+
     // --- FUNKTIONSWÄNDE (Back panels) ---
     let funktionswandCount = 0
     for (const { cell } of cells) {
@@ -1297,7 +1319,8 @@ export function ShelfConfigurator() {
         cell.type === "mit-tueren" ||
         cell.type === "mit-doppelschublade" ||
         cell.type === "abschliessbare-tueren" ||
-        cell.type === "mit-klapptuer"
+        cell.type === "mit-klapptuer" ||
+        cell.type === "mit-klapptuer-oben"
       ) {
         // Modules with doors/drawers need 2 back panels
         funktionswandCount += 2
@@ -1577,6 +1600,7 @@ function getToolLabel(tool: GridCell["type"]): string {
     "mit-rueckwand": "Mit Rückwand",
     "mit-tueren": "Mit Türen",
     "mit-klapptuer": "Mit Klapptür",
+    "mit-klapptuer-oben": "Klapptür (nach oben)",
     "mit-doppelschublade": "Mit Schubladen",
     "abschliessbare-tueren": "Abschließbar",
     "mit-tuere-rechts": "Mit Türen (rechts)",

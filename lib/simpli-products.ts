@@ -33,6 +33,7 @@ export type ProductCategory =
   | "glasecke"
   | "spreizdübel"
   | "schloss"
+  | "gasdruckdaempfer"
 
 export interface Product {
   artNr: string // Official SKU (SIMxxx format)
@@ -549,6 +550,16 @@ export const zubehoer: Product[] = [
   // Hängeregisterschiene
   { artNr: "SIM031", name: "Schiene für Hängeregister", category: "haengeregisterschiene", size: 0, price: 18.5 },
 
+  // Gasdruckdämpfer for upward-opening flip doors
+  {
+    artNr: "SIM033",
+    name: "Gasdruckdämpfer",
+    category: "gasdruckdaempfer",
+    size: 0,
+    price: 18.5,
+    description: "Gasdruckdämpfer für nach oben öffnende Klappen (2 Stück pro Klapptür erforderlich)",
+  },
+
   // Eckverbinder
   {
     artNr: "SIM101",
@@ -603,6 +614,36 @@ export const zubehoer: Product[] = [
     price: 15.0,
     variant: "unterschiedlich",
     description: "Unterschiedlich schließendes Schloss",
+  },
+]
+
+// =============================================================================
+// GASDRUCKDÄMPFER (Gas dampers)
+// =============================================================================
+export const gasdruckdaempfer: Product[] = [
+  {
+    artNr: "SIM-GD-01",
+    name: "Gasdruckdaempfer Modell 1",
+    category: "gasdruckdaempfer",
+    size: 0,
+    price: 25.0,
+    description: "Daempfer für gasbedingte Spannungen",
+  },
+  {
+    artNr: "SIM-GD-02",
+    name: "Gasdruckdaempfer Modell 2",
+    category: "gasdruckdaempfer",
+    size: 0,
+    price: 30.0,
+    description: "Daempfer für gasbedingte Spannungen",
+  },
+  {
+    artNr: "SIM033",
+    name: "Gasdruckdämpfer",
+    category: "gasdruckdaempfer",
+    size: 0,
+    price: 18.5,
+    description: "Gasdruckdämpfer für nach oben öffnende Klappen (2 Stück pro Klapptür erforderlich)",
   },
 ]
 
@@ -781,6 +822,8 @@ export const allProducts: Product[] = [
   ...schrauben,
   ...metallstaebe,
   ...eckschutz,
+  // New category
+  ...gasdruckdaempfer,
 ]
 
 // =============================================================================
@@ -966,6 +1009,11 @@ export function getFunktionswandPrice(): number {
 
 export function getLedPrice(stripes: 2 | 4): number {
   return stripes === 2 ? 75.0 : 99.5
+}
+
+export function getGasdruckdaempferPrice(model: string): number {
+  const daempfer = gasdruckdaempfer.find((d) => d.name.includes(model))
+  return daempfer?.price ?? 0
 }
 
 // =============================================================================

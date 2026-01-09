@@ -78,6 +78,7 @@ const moduleTypes: Array<{ id: GridCell["type"]; label: string }> = [
   { id: "mit-rueckwand", label: "Mit Rückwand" },
   { id: "mit-tueren", label: "Mit Türen" },
   { id: "mit-klapptuer", label: "Mit Klapptür" },
+  { id: "mit-klapptuer-oben", label: "Klapptür (nach oben)" },
   { id: "mit-doppelschublade", label: "Mit Schubladen" },
   { id: "abschliessbare-tueren", label: "Abschließbar" },
 ]
@@ -128,6 +129,7 @@ export function ConfiguratorPanel({
       "mit-rueckwand": "Mit Rückwand",
       "mit-tueren": "Mit Türen",
       "mit-klapptuer": "Mit Klapptür",
+      "mit-klapptuer-oben": "Klapptür (nach oben)",
       "mit-doppelschublade": "Mit Schubladen",
       "abschliessbare-tueren": "Abschließbar",
     }
@@ -144,6 +146,7 @@ export function ConfiguratorPanel({
       "mit-rueckwand": "m.RW",
       "mit-tueren": "Türen",
       "mit-klapptuer": "Klapp",
+      "mit-klapptuer-oben": "Klapp↑",
       "mit-doppelschublade": "Schubl.",
       "abschliessbare-tueren": "Abschl.",
     }

@@ -133,6 +133,18 @@ const PANEL_KEYWORDS = [
   "bottom",
 ]
 
+const HANDLE_KEYWORDS = ["handle", "griff", "knob", "knauf", "handgriff", "pull", "zieh"]
+
+function isHandlePart(meshName: string): boolean {
+  const nameLower = meshName.toLowerCase()
+  for (const keyword of HANDLE_KEYWORDS) {
+    if (nameLower.includes(keyword)) {
+      return true
+    }
+  }
+  return false
+}
+
 function isFramePart(
   meshName: string,
   geometry: THREE.BufferGeometry,
@@ -218,7 +230,9 @@ export const GLBModule = memo(
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
-    const cacheKey = useMemo(() => `${cellType}-${standardWidth}-white`, [cellType, standardWidth])
+
+    const glbCellType = cellType === "mit-klapptuer-oben" ? "mit-klapptuer" : cellType
+    const cacheKey = useMemo(() => `${glbCellType}-${standardWidth}-white`, [glbCellType, standardWidth])
 
     const [modelUrl, setModelUrl] = useState<string | null>(() => {
       if (explicitModelUrl) return explicitModelUrl
@@ -239,20 +253,20 @@ export const GLBModule = memo(
         return
       }
 
-      if (cellType === "empty" || cellType === "ghost") return
+      if (glbCellType === "empty" || glbCellType === "ghost") return
       if (fetchedRef.current) return
       fetchedRef.current = true
 
       const fetchUrl = async () => {
         try {
           const params = new URLSearchParams({
-            moduleType: cellType,
+            moduleType: glbCellType,
             width: standardWidth.toString(),
             height: "40",
             color: "white",
           })
 
-          console.log(`[v0] Fetching GLB: ${cellType}, ${standardWidth}cm, white (will apply ${colorName})`)
+          console.log(`[v0] Fetching GLB: ${glbCellType}, ${standardWidth}cm, white (will apply ${colorName})`)
 
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
@@ -275,7 +289,7 @@ export const GLBModule = memo(
       }
 
       fetchUrl()
-    }, [cacheKey, explicitModelUrl, cellType, standardWidth, colorName])
+    }, [cacheKey, explicitModelUrl, glbCellType, standardWidth, colorName])
 
     useEffect(() => {
       fetchedRef.current = false
@@ -295,7 +309,13 @@ export const GLBModule = memo(
     if (!modelUrl) return null
 
     return (
-      <LoadedGLBModel modelUrl={modelUrl} position={position} moduleKey={`${row}-${col}`} targetColor={colorName} />
+      <LoadedGLBModel
+        modelUrl={modelUrl}
+        position={position}
+        moduleKey={`${row}-${col}`}
+        targetColor={colorName}
+        isKlapptuerOben={cellType === "mit-klapptuer-oben"}
+      />
     )
   },
   (prev, next) =>
@@ -315,11 +335,13 @@ const LoadedGLBModel = memo(
     position,
     moduleKey,
     targetColor,
+    isKlapptuerOben = false,
   }: {
     modelUrl: string
     position: [number, number, number]
     moduleKey: string
     targetColor: string
+    isKlapptuerOben?: boolean
   }) {
     const { scene } = useGLTF(modelUrl)
 
@@ -327,7 +349,12 @@ const LoadedGLBModel = memo(
       const clone = scene.clone(true)
       const targetColorValue = TARGET_COLORS[targetColor] || TARGET_COLORS.white
 
-      console.log(`[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor} =====`)
+      console.log(
+        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor}, isKlapptuerOben: ${isKlapptuerOben} =====`,
+      )
+
+      let handleMesh: THREE.Mesh | null = null
+      const moduleBounds: THREE.Box3 | null = null
 
       clone.traverse((child) => {
         if (child instanceof THREE.Mesh) {
@@ -347,8 +374,14 @@ const LoadedGLBModel = memo(
           const meshName = child.name || ""
           const isFrame = isFramePart(meshName, child.geometry, child.material)
           const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
+          const isHandle = isHandlePart(meshName)
 
-          console.log(`[v0] >>> Mesh "${meshName}": isFrame=${isFrame}, isBottom=${isBottom}`)
+          console.log(`[v0] >>> Mesh "${meshName}": isFrame=${isFrame}, isBottom=${isBottom}, isHandle=${isHandle}`)
+
+          if (isHandle && isKlapptuerOben) {
+            handleMesh = child
+            console.log(`[v0] >>> Found handle for Klapptür oben: ${meshName}`)
+          }
 
           if (child.material) {
             if (isFrame) {
@@ -374,8 +407,35 @@ const LoadedGLBModel = memo(
         }
       })
 
+      if (isKlapptuerOben && handleMesh) {
+        // Calculate module bounds to determine handle repositioning
+        const box = new THREE.Box3().setFromObject(clone)
+        const moduleHeight = box.max.y - box.min.y
+
+        // Get current handle position
+        const handleBox = new THREE.Box3().setFromObject(handleMesh)
+        const handleHeight = handleBox.max.y - handleBox.min.y
+
+        // Move handle from top to bottom (flip Y position)
+        // Handle is at top, move it to bottom
+        const currentY = handleMesh.position.y
+        const topY = box.max.y
+        const bottomY = box.min.y
+
+        // Calculate new position: mirror across center
+        const centerY = (topY + bottomY) / 2
+        const distanceFromCenter = currentY - centerY
+        const newY = centerY - distanceFromCenter
+
+        handleMesh.position.y = newY
+
+        console.log(
+          `[v0] >>> Repositioned handle from Y=${currentY.toFixed(3)} to Y=${newY.toFixed(3)} (moduleHeight=${moduleHeight.toFixed(3)})`,
+        )
+      }
+
       return clone
-    }, [scene, targetColor, moduleKey])
+    }, [scene, targetColor, moduleKey, isKlapptuerOben])
 
     return <primitive object={clonedScene} position={position} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
   },
@@ -383,6 +443,7 @@ const LoadedGLBModel = memo(
     prev.modelUrl === next.modelUrl &&
     prev.moduleKey === next.moduleKey &&
     prev.targetColor === next.targetColor &&
+    prev.isKlapptuerOben === next.isKlapptuerOben &&
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],
