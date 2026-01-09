@@ -78,6 +78,14 @@ export type ShelfConfig = {
   cellStyles?: CellStyles
 }
 
+type PresetConfig = {
+  columns: number
+  rows: number
+  columnWidths: (75 | 38)[]
+  rowHeights: (40 | 80 | 120 | 160 | 200)[]
+  grid: GridCell[][]
+}
+
 export const getCellId = (row: number, col: number): CellId => `c-${row}-${col}`
 
 const createInitialGrid = (): GridCell[][] => {
@@ -99,9 +107,24 @@ const initialConfig: ShelfConfig = {
   cellStyles: {}, // Initialize empty cellStyles
 }
 
-export function ShelfConfigurator() {
+export function ShelfConfigurator({ initialPreset }: { initialPreset?: PresetConfig } = {}) {
   const [isLoading, setIsLoading] = useState(true)
-  const [config, setConfig] = useState<ShelfConfig>(initialConfig)
+
+  const getInitialConfig = (): ShelfConfig => {
+    if (initialPreset) {
+      return {
+        ...initialConfig,
+        columns: initialPreset.columns,
+        rows: initialPreset.rows,
+        columnWidths: initialPreset.columnWidths,
+        rowHeights: initialPreset.rowHeights,
+        grid: initialPreset.grid,
+      }
+    }
+    return initialConfig
+  }
+
+  const [config, setConfig] = useState<ShelfConfig>(getInitialConfig)
   const [selectedTool, setSelectedTool] = useState<GridCell["type"] | null>("offenes-fach")
   const [selectedColor, setSelectedColor] = useState<GridCell["color"]>("weiss")
   const [showShoppingList, setShowShoppingList] = useState(false)
@@ -113,7 +136,7 @@ export function ShelfConfigurator() {
   const audioContextRef = useRef<AudioContext | null>(null)
 
   // State for undo/redo
-  const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
+  const [history, setHistory] = useState<ShelfConfig[]>([getInitialConfig()])
   const [historyIndex, setHistoryIndex] = useState(0)
   const isUndoRedo = useRef(false)
 
@@ -1083,6 +1106,7 @@ export function ShelfConfigurator() {
       "mit-klapptuer-oben",
       "ohne-seitenwaende",
       "mit-rueckwand",
+      "ohne-rueckwand", // Added "ohne-rueckwand" to the list
     ]
 
     // Find shelf sections (groups of adjacent occupied columns)

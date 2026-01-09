@@ -150,12 +150,14 @@ export default function Home() {
               title="Starter Regal"
               description="2 Fächer, perfekt für den Einstieg"
               price="ab 299€"
+              href="/konfigurator?preset=starter"
             />
             <ProductCard
               image="/medium-modular-shelf-system-4-compartments-chrome-.jpg"
               title="Home Office"
               description="4 Fächer mit Schubladen"
               price="ab 599€"
+              href="/konfigurator?preset=homeoffice"
             />
             <ProductCard
               image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
@@ -163,6 +165,7 @@ export default function Home() {
               title="Wohnzimmer Set"
               description="6 Fächer, individuell gestaltbar"
               price="ab 899€"
+              href="/konfigurator?preset=wohnzimmer"
             />
           </div>
         </div>
@@ -281,13 +284,14 @@ function ProductCard({
   title,
   description,
   price,
-}: { image: string; video?: string; title: string; description: string; price: string }) {
+  href,
+}: { image: string; video?: string; title: string; description: string; price: string; href?: string }) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
 
   const displayImage = uploadedImage || image
 
-  return (
-    <div className="group cursor-auto">
+  const CardContent = () => (
+    <>
       <div className="aspect-square bg-gray-50 rounded-2xl overflow-hidden mb-4">
         {video && !uploadedImage ? (
           <video
@@ -303,11 +307,23 @@ function ProductCard({
           <ImageUpload onImageUpload={setUploadedImage} fallbackImage={displayImage} alt={title} />
         )}
       </div>
-      <Link href="/konfigurator" className="group">
-        <h3 className="font-semibold text-lg">{title}</h3>
-        <p className="text-gray-600 text-sm">{description}</p>
-        <p className="mt-2 font-semibold text-black">{price}</p>
+      <h3 className="font-semibold text-lg">{title}</h3>
+      <p className="text-gray-600 text-sm">{description}</p>
+      <p className="mt-2 font-semibold text-black">{price}</p>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link href={href} className="group cursor-pointer block">
+        <CardContent />
       </Link>
+    )
+  }
+
+  return (
+    <div className="group cursor-auto">
+      <CardContent />
     </div>
   )
 }
