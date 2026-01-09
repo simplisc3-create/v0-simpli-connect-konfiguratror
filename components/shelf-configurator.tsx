@@ -842,9 +842,6 @@ export function ShelfConfigurator() {
     }
 
     // --- LEITERN (Ladders) ---
-    // For 2 columns with 7 rows (280cm):
-    // - 4 x Aufbaumodul (SIM001a) for extension parts
-    // - 3 x Leiter 200 (SIM005) for main height
     const leiterCounts: Record<string, { artNr: string; name: string; price: number; count: number }> = {}
 
     if (activeColumns.length > 0) {
@@ -969,26 +966,16 @@ export function ShelfConfigurator() {
       addItem("SIM007", "Stangenset 80", stangenset80Count, 12.0)
     }
 
-    // --- FLÄCHENSETS (Panels) - with color tracking ---
-    // Each Flächenset contains 2 surfaces (top + bottom)
-    // For stacked modules, we count the number of surfaces needed:
-    // - Each module needs a bottom surface
-    // - The topmost module in each column needs a top surface
-    // - Shared surfaces between stacked modules count as one
+    // --- FLÄCHENSETS (Panels) ---
+    // Rules:
+    // 1. Flächenset 80: Each module needs surfaces (bottom + top if topmost) + back panel if "mit-rueckwand"
+    // 2. Flächenset 40: Used for outer side panels of the entire shelf structure
+    // 3. Drawer modules use stainless steel functional walls for INTERNAL separations, NOT outer sides
+
     const flaechenset40Counts: Record<string, number> = {}
     const flaechenset80Counts: Record<string, number> = {}
 
-    // Helper to add Flächenset with color
-    const addFlaechenset40 = (color: string) => {
-      const c = color || "weiss"
-      flaechenset40Counts[c] = (flaechenset40Counts[c] || 0) + 1
-    }
-    const addFlaechenset80 = (color: string) => {
-      const c = color || "weiss"
-      flaechenset80Counts[c] = (flaechenset80Counts[c] || 0) + 1
-    }
-
-    // Group cells by column to calculate surfaces needed
+    // Group cells by column
     const columnCells: Map<number, Array<{ row: number; cell: GridCell }>> = new Map()
     for (const { row, col, cell } of cells) {
       if (!columnCells.has(col)) {
@@ -997,105 +984,127 @@ export function ShelfConfigurator() {
       columnCells.get(col)!.push({ row, cell })
     }
 
-    // Drawer modules have their own surfaces, so only count open/other modules
     for (const [col, colCells] of columnCells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
-
-      // Sort cells by row
       colCells.sort((a, b) => a.row - b.row)
 
-      // Count non-drawer modules in this column
-      const nonDrawerModules = colCells.filter((c) => c.cell.type !== "mit-doppelschublade")
-      const drawerModules = colCells.filter((c) => c.cell.type === "mit-doppelschublade")
+      const modulesInColumn = colCells.length
 
-      // For non-drawer modules: n modules need n+1 surfaces (shared between stacks)
-      // But if there's a drawer above, the surface between drawer and open module is provided by drawer
-      // So we need: nonDrawerModules.length surfaces (one per module bottom) + 1 for floor if any non-drawer exists
+      // Count back panels (Rückwand is also a Flächenset 80)
+      let backPanelCount = 0
+      for (const { cell } of colCells) {
+        if (cell.type === "mit-rueckwand") {
+          backPanelCount++
+        }
+      }
 
-      if (nonDrawerModules.length > 0) {
-        // Check if there's a drawer directly above the topmost non-drawer module
-        const topNonDrawerRow = Math.max(...nonDrawerModules.map((c) => c.row))
-        const hasDrawerAbove = drawerModules.some((d) => d.row === topNonDrawerRow + 1)
+      // Check if topmost module is a drawer
+      const topmostCell = colCells[colCells.length - 1]
+      const topmostIsDrawer = topmostCell.cell.type === "mit-doppelschublade"
 
-        // Surfaces needed: one per non-drawer module + 1 for top (unless drawer provides it)
-        const surfacesNeeded = nonDrawerModules.length + (hasDrawerAbove ? 0 : 1)
+      // Surface calculation:
+      // - modulesInColumn surfaces (floor + intermediates)
+      // - +1 for top surface IF topmost is not a drawer
+      const surfacesNeeded = modulesInColumn + (topmostIsDrawer ? 0 : 1)
 
-        // Get the predominant color
-        const moduleColor = nonDrawerModules[nonDrawerModules.length - 1].cell.color || "weiss"
+      // Each Flächenset = 2 surfaces
+      const flaechensetsForSurfaces = Math.ceil(surfacesNeeded / 2)
 
-        // Calculate Flächensets (each = 2 surfaces), round up
-        const flaechensetsNeeded = Math.ceil(surfacesNeeded / 2)
+      // Get predominant color
+      let moduleColor = "weiss"
+      for (let i = colCells.length - 1; i >= 0; i--) {
+        if (colCells[i].cell.type !== "mit-doppelschublade") {
+          moduleColor = colCells[i].cell.color || "weiss"
+          break
+        }
+      }
+      if (moduleColor === "weiss" && colCells.length > 0) {
+        moduleColor = colCells[0].cell.color || "weiss"
+      }
 
-        if (widthCm === 40) {
-          flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + flaechensetsNeeded
+      // Total Flächensets = surfaces + back panels
+      const totalFlaechensets = flaechensetsForSurfaces + backPanelCount
+
+      if (widthCm === 40) {
+        flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + totalFlaechensets
+      } else {
+        flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + totalFlaechensets
+      }
+    }
+
+    const columnsWithDrawersAtTop: number[] = []
+    for (const [col, colCells] of columnCells) {
+      colCells.sort((a, b) => a.row - b.row)
+      const topmostCell = colCells[colCells.length - 1]
+      if (topmostCell.cell.type === "mit-doppelschublade") {
+        columnsWithDrawersAtTop.push(col)
+      }
+    }
+
+    if (columnsWithDrawersAtTop.length >= 2) {
+      columnsWithDrawersAtTop.sort((a, b) => a - b)
+      let adjacentDrawerPairs = 0
+      for (let i = 1; i < columnsWithDrawersAtTop.length; i++) {
+        if (columnsWithDrawersAtTop[i] === columnsWithDrawersAtTop[i - 1] + 1) {
+          adjacentDrawerPairs++
+        }
+      }
+      // Add 1 extra Flächenset 80 for each pair of adjacent drawer columns
+      if (adjacentDrawerPairs > 0) {
+        flaechenset80Counts["weiss"] = (flaechenset80Counts["weiss"] || 0) + adjacentDrawerPairs
+      }
+    }
+
+    // The leftmost and rightmost columns need side panels on their exposed outer edges
+    // This applies to ALL module types (offen, drawer, etc.) not just enclosed ones
+    const sidePanelsNeeded: Record<string, number> = {}
+
+    // Find the leftmost and rightmost active columns
+    const sortedActiveColumns = [...activeColumns].sort((a, b) => a - b)
+
+    // Group adjacent columns to find shelf sections
+    const shelfSections: number[][] = []
+    let currentSection: number[] = []
+    if (sortedActiveColumns.length > 0) {
+      currentSection.push(sortedActiveColumns[0])
+      for (let i = 1; i < sortedActiveColumns.length; i++) {
+        if (sortedActiveColumns[i] === sortedActiveColumns[i - 1] + 1) {
+          currentSection.push(sortedActiveColumns[i])
         } else {
-          flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + flaechensetsNeeded
+          shelfSections.push(currentSection)
+          currentSection = [sortedActiveColumns[i]]
         }
       }
+      shelfSections.push(currentSection)
     }
 
-    // Drawer modules use stainless steel functional walls between them
-    // Count exposed sides only for non-drawer modules that need enclosure
-    const sidePanelCount40: Record<string, number> = {}
+    // For each shelf section, add side panels for the outer left and right edges
+    for (const section of shelfSections) {
+      const leftmostCol = section[0]
+      const rightmostCol = section[section.length - 1]
 
-    // Group adjacent drawers to see if they share walls
-    for (const { cell, row, col } of cells) {
-      const moduleColor = cell.color || "weiss"
+      // Count modules in leftmost column for left side panels
+      const leftColCells = columnCells.get(leftmostCol) || []
+      for (const { cell } of leftColCells) {
+        const color = cell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // left side
+      }
 
-      // Check if sides are exposed
-      const leftCell = config.grid[row]?.[col - 1]
-      const rightCell = config.grid[row]?.[col + 1]
-
-      const isLeftExposed = col === 0 || !leftCell || leftCell.type === "empty" || leftCell.type === "ghost"
-      const isRightExposed =
-        col === config.columns - 1 || !rightCell || rightCell.type === "empty" || rightCell.type === "ghost"
-
-      // Only non-drawer closed module types need Flächenset 40 side panels
-      const needsSidePanels =
-        cell.type === "mit-tueren" ||
-        cell.type === "abschliessbare-tueren" ||
-        cell.type === "abschliessbar-rechts" ||
-        cell.type === "abschliessbar-links" ||
-        cell.type === "mit-klapptuer" ||
-        cell.type === "mit-rueckwand"
-
-      // Drawer modules do NOT need Flächenset 40 side panels - they use stainless steel walls
-      if (needsSidePanels) {
-        if (isLeftExposed) {
-          sidePanelCount40[moduleColor] = (sidePanelCount40[moduleColor] || 0) + 1
-        }
-        if (isRightExposed) {
-          sidePanelCount40[moduleColor] = (sidePanelCount40[moduleColor] || 0) + 1
-        }
+      // Count modules in rightmost column for right side panels
+      const rightColCells = columnCells.get(rightmostCol) || []
+      for (const { cell } of rightColCells) {
+        const color = cell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // right side
       }
     }
 
-    // The stainless steel functional wall acts as separator
-    // Check for adjacent drawer columns and add only 1 panel for shared boundary
-    const drawerColumns = new Set<number>()
-    for (const { cell, col } of cells) {
-      if (cell.type === "mit-doppelschublade") {
-        drawerColumns.add(col)
-      }
+    // Convert individual panels to Flächensets 40 (1 set = 2 panels, round up)
+    for (const [color, panelCount] of Object.entries(sidePanelsNeeded)) {
+      const flaechensetsNeeded = Math.ceil(panelCount / 2)
+      flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + flaechensetsNeeded
     }
 
-    // For adjacent drawer columns, add 1 Flächenset 40 as separator (shared wall)
-    const sortedDrawerCols = Array.from(drawerColumns).sort((a, b) => a - b)
-    for (let i = 0; i < sortedDrawerCols.length - 1; i++) {
-      if (sortedDrawerCols[i + 1] === sortedDrawerCols[i] + 1) {
-        // Adjacent drawer columns - add 1 shared panel
-        // Get the color from one of the drawer modules
-        const drawerCell = cells.find((c) => c.col === sortedDrawerCols[i] && c.cell.type === "mit-doppelschublade")
-        const color = drawerCell?.cell.color || "weiss"
-        sidePanelCount40[color] = (sidePanelCount40[color] || 0) + 1
-      }
-    }
-
-    // Merge side panel counts into flaechenset40Counts
-    for (const [color, count] of Object.entries(sidePanelCount40)) {
-      flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + count
-    }
-
+    // Add Flächensets to BOM
     for (const [color, count] of Object.entries(flaechenset40Counts)) {
       if (count > 0) {
         const artNr = getFlaechensetArtNr(40, color)
@@ -1115,7 +1124,7 @@ export function ShelfConfigurator() {
                       : color === "orange"
                         ? "orange"
                         : color
-        addItem(artNr, `Flächenset 40 ${colorLabel}`, count, 15.0, 9)
+        addItem(artNr, `Flächenset 40 ${colorLabel}`, count, 15.0, 2)
       }
     }
 
@@ -1138,7 +1147,7 @@ export function ShelfConfigurator() {
                       : color === "orange"
                         ? "orange"
                         : color
-        addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0, 11)
+        addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0, 2)
       }
     }
 
@@ -1299,7 +1308,7 @@ export function ShelfConfigurator() {
   }, [config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
 
   const bomData = useMemo(() => {
-    const result = calculateBOM(config)
+    const result = calculateBOM()
     const transformedItems = result.items.map((item) => ({
       id: item.id,
       name: item.name,
