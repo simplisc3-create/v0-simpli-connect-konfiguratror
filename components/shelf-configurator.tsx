@@ -968,9 +968,8 @@ export function ShelfConfigurator() {
 
     // --- FLÄCHENSETS (Panels) ---
     // Rules:
-    // 1. Flächenset 80: Each module needs surfaces (bottom + top if topmost) + back panel if "mit-rueckwand"
+    // 1. Drawer modules need: bottom + top + back = 3 surfaces each, but adjacent drawers share floor/ceiling
     // 2. Flächenset 40: Used for outer side panels of the entire shelf structure
-    // 3. Drawer modules use stainless steel functional walls for INTERNAL separations, NOT outer sides
 
     const flaechenset40Counts: Record<string, number> = {}
     const flaechenset80Counts: Record<string, number> = {}
@@ -984,13 +983,71 @@ export function ShelfConfigurator() {
       columnCells.get(col)!.push({ row, cell })
     }
 
+    // Drawer modules: bottom + top + back = 3 surfaces, but adjacent drawers share floor/ceiling
+    const drawerOnlyColumns: number[] = []
+    const nonDrawerColumns: number[] = []
+
     for (const [col, colCells] of columnCells) {
+      const allDrawers = colCells.every(({ cell }) => cell.type === "mit-doppelschublade")
+      if (allDrawers) {
+        drawerOnlyColumns.push(col)
+      } else {
+        nonDrawerColumns.push(col)
+      }
+    }
+
+    // Process drawer-only columns - they share surfaces horizontally
+    if (drawerOnlyColumns.length > 0) {
+      drawerOnlyColumns.sort((a, b) => a - b)
+
+      // Group adjacent drawer columns
+      const drawerGroups: number[][] = []
+      let currentDrawerGroup: number[] = [drawerOnlyColumns[0]]
+      for (let i = 1; i < drawerOnlyColumns.length; i++) {
+        if (drawerOnlyColumns[i] === drawerOnlyColumns[i - 1] + 1) {
+          currentDrawerGroup.push(drawerOnlyColumns[i])
+        } else {
+          drawerGroups.push(currentDrawerGroup)
+          currentDrawerGroup = [drawerOnlyColumns[i]]
+        }
+      }
+      drawerGroups.push(currentDrawerGroup)
+
+      for (const group of drawerGroups) {
+        const numDrawersInGroup = group.length
+
+        // Get color from first drawer in group
+        const firstColCells = columnCells.get(group[0]) || []
+        const moduleColor = firstColCells[0]?.cell.color || "weiss"
+
+        // For n adjacent drawers sharing floor/ceiling:
+        // - Shared bottom: 1 Flächenset (covers n units width)
+        // - Shared top: 1 Flächenset
+        // - Back panels: ceil((n+1)/2) Flächensets (n individual backs + seam coverage)
+        // Total Flächensets = 1 + 1 + ceil((n+1)/2)
+        const floorSets = 1
+        const ceilingSets = 1
+        const backPanelSets = Math.ceil((numDrawersInGroup + 1) / 2)
+        const totalForDrawerGroup = floorSets + ceilingSets + backPanelSets
+
+        const widthCm = config.columnWidths[group[0]] === 75 ? 80 : 40
+        if (widthCm === 80) {
+          flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + totalForDrawerGroup
+        } else {
+          flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + totalForDrawerGroup
+        }
+      }
+    }
+
+    // Process non-drawer and mixed columns
+    for (const col of nonDrawerColumns) {
+      const colCells = columnCells.get(col) || []
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
       colCells.sort((a, b) => a.row - b.row)
 
       const modulesInColumn = colCells.length
 
-      // Count back panels (Rückwand is also a Flächenset 80)
+      // Count back panels (Rückwand is also a Flächenset)
       let backPanelCount = 0
       for (const { cell } of colCells) {
         if (cell.type === "mit-rueckwand") {
@@ -1000,12 +1057,15 @@ export function ShelfConfigurator() {
 
       // Check if topmost module is a drawer
       const topmostCell = colCells[colCells.length - 1]
-      const topmostIsDrawer = topmostCell.cell.type === "mit-doppelschublade"
+      const topmostIsDrawer = topmostCell?.cell.type === "mit-doppelschublade"
 
-      // Surface calculation:
-      // - modulesInColumn surfaces (floor + intermediates)
+      // Count non-drawer modules for surface calculation
+      const nonDrawerModulesInColumn = colCells.filter(({ cell }) => cell.type !== "mit-doppelschublade").length
+
+      // Surface calculation for non-drawer modules:
+      // - nonDrawerModulesInColumn surfaces (floor + intermediates)
       // - +1 for top surface IF topmost is not a drawer
-      const surfacesNeeded = modulesInColumn + (topmostIsDrawer ? 0 : 1)
+      const surfacesNeeded = nonDrawerModulesInColumn > 0 ? nonDrawerModulesInColumn + (topmostIsDrawer ? 0 : 1) : 0
 
       // Each Flächenset = 2 surfaces
       const flaechensetsForSurfaces = Math.ceil(surfacesNeeded / 2)
@@ -1030,33 +1090,21 @@ export function ShelfConfigurator() {
       } else {
         flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + totalFlaechensets
       }
-    }
 
-    const columnsWithDrawersAtTop: number[] = []
-    for (const [col, colCells] of columnCells) {
-      colCells.sort((a, b) => a.row - b.row)
-      const topmostCell = colCells[colCells.length - 1]
-      if (topmostCell.cell.type === "mit-doppelschublade") {
-        columnsWithDrawersAtTop.push(col)
-      }
-    }
-
-    if (columnsWithDrawersAtTop.length >= 2) {
-      columnsWithDrawersAtTop.sort((a, b) => a - b)
-      let adjacentDrawerPairs = 0
-      for (let i = 1; i < columnsWithDrawersAtTop.length; i++) {
-        if (columnsWithDrawersAtTop[i] === columnsWithDrawersAtTop[i - 1] + 1) {
-          adjacentDrawerPairs++
+      // If this column has drawers mixed with other modules, add drawer back panels
+      const drawersInColumn = colCells.filter(({ cell }) => cell.type === "mit-doppelschublade").length
+      if (drawersInColumn > 0) {
+        // Each drawer needs a back panel
+        const drawerBackPanelSets = Math.ceil(drawersInColumn / 2)
+        if (widthCm === 80) {
+          flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + drawerBackPanelSets
+        } else {
+          flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + drawerBackPanelSets
         }
       }
-      // Add 1 extra Flächenset 80 for each pair of adjacent drawer columns
-      if (adjacentDrawerPairs > 0) {
-        flaechenset80Counts["weiss"] = (flaechenset80Counts["weiss"] || 0) + adjacentDrawerPairs
-      }
     }
 
-    // The leftmost and rightmost columns need side panels on their exposed outer edges
-    // This applies to ALL module types (offen, drawer, etc.) not just enclosed ones
+    // --- FLÄCHENSETS 40 for Side Panels ---
     const sidePanelsNeeded: Record<string, number> = {}
 
     // Find the leftmost and rightmost active columns
@@ -1078,23 +1126,35 @@ export function ShelfConfigurator() {
       shelfSections.push(currentSection)
     }
 
-    // For each shelf section, add side panels for the outer left and right edges
     for (const section of shelfSections) {
       const leftmostCol = section[0]
       const rightmostCol = section[section.length - 1]
 
-      // Count modules in leftmost column for left side panels
-      const leftColCells = columnCells.get(leftmostCol) || []
-      for (const { cell } of leftColCells) {
-        const color = cell.color || "weiss"
-        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // left side
+      // Find the topmost row that has modules in this section
+      let topmostRow = -1
+      for (const col of section) {
+        const colCells = columnCells.get(col) || []
+        for (const { row } of colCells) {
+          if (row > topmostRow) {
+            topmostRow = row
+          }
+        }
       }
 
-      // Count modules in rightmost column for right side panels
+      // Get the module at topmost row in leftmost column (for left side panel)
+      const leftColCells = columnCells.get(leftmostCol) || []
+      const leftTopmostCell = leftColCells.find(({ row }) => row === topmostRow)
+      if (leftTopmostCell) {
+        const color = leftTopmostCell.cell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // left side panel
+      }
+
+      // Get the module at topmost row in rightmost column (for right side panel)
       const rightColCells = columnCells.get(rightmostCol) || []
-      for (const { cell } of rightColCells) {
-        const color = cell.color || "weiss"
-        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // right side
+      const rightTopmostCell = rightColCells.find(({ row }) => row === topmostRow)
+      if (rightTopmostCell) {
+        const color = rightTopmostCell.cell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // right side panel
       }
     }
 
