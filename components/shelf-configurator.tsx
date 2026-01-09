@@ -916,15 +916,37 @@ export function ShelfConfigurator() {
       flaechenset80Counts[c] = (flaechenset80Counts[c] || 0) + 1
     }
 
+    // AND a top plate in the color of the module above (or own color if topmost)
     for (const { cell, row, col } of cells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
       const moduleColor = cell.color || "weiss"
 
-      // Base Flächenset for the module itself (bottom panel)
+      // Bottom plate for this module - in module's own color
       if (widthCm === 40) {
         addFlaechenset40(moduleColor)
       } else {
         addFlaechenset80(moduleColor)
+      }
+
+      // Top plate - check what's above
+      const aboveCell = config.grid[row - 1]?.[col]
+      const isTopExposed = !aboveCell || aboveCell.type === "empty" || aboveCell.type === "ghost"
+
+      if (isTopExposed) {
+        // This is the topmost module - add ceiling plate in own color
+        if (widthCm === 40) {
+          addFlaechenset40(moduleColor)
+        } else {
+          addFlaechenset80(moduleColor)
+        }
+      } else if (aboveCell && aboveCell.type !== "empty" && aboveCell.type !== "ghost") {
+        // There's a module above - add intermediate plate in ABOVE module's color
+        const aboveColor = aboveCell.color || "weiss"
+        if (widthCm === 40) {
+          addFlaechenset40(aboveColor)
+        } else {
+          addFlaechenset80(aboveColor)
+        }
       }
 
       // Check if sides are exposed
@@ -982,18 +1004,6 @@ export function ShelfConfigurator() {
           if (rightHasModulesBelow) {
             addFlaechenset40(moduleColor)
           }
-        }
-      }
-
-      // Top panel check
-      const aboveCell = config.grid[row - 1]?.[col]
-      const isTopExposed = !aboveCell || aboveCell.type === "empty" || aboveCell.type === "ghost"
-
-      if (isTopExposed) {
-        if (widthCm === 40) {
-          addFlaechenset40(moduleColor)
-        } else {
-          addFlaechenset80(moduleColor)
         }
       }
     }
