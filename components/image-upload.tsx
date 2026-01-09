@@ -8,12 +8,15 @@ import { Upload, X } from "lucide-react"
 interface ImageUploadProps {
   onImageUpload: (imageUrl: string) => void
   alt: string
+  fallbackImage?: string
 }
 
-export function ImageUpload({ onImageUpload, alt }: ImageUploadProps) {
+export function ImageUpload({ onImageUpload, alt, fallbackImage }: ImageUploadProps) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const imageToDisplay = uploadedImage || fallbackImage
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -58,20 +61,18 @@ export function ImageUpload({ onImageUpload, alt }: ImageUploadProps) {
 
   return (
     <div className="relative w-full h-full group bg-input">
-      {uploadedImage ? (
+      {imageToDisplay ? (
         <>
-          <img
-            src={uploadedImage || "/placeholder.svg"}
-            alt={alt}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-300 text-muted bg-muted"
-          />
-          <button
-            onClick={handleRemove}
-            className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-            aria-label="Bild entfernen"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          
+          {uploadedImage && (
+            <button
+              onClick={handleRemove}
+              className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Bild entfernen"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </>
       ) : (
         <>
