@@ -487,8 +487,7 @@ export function ShelfConfigurator() {
 
     for (let r = 0; r < updatedRows; r++) {
       for (let c = 0; c < updatedCols; c++) {
-        const cell = newGrid[r][c]
-        if (cell.type !== "empty" && cell.type !== "ghost") {
+        if (newGrid[r][c].type !== "empty" && newGrid[r][c].type !== "ghost") {
           const adjacentPositions = [
             { nr: r - 1, nc: c }, // below
             { nr: r + 1, nc: c }, // above
@@ -1032,8 +1031,12 @@ export function ShelfConfigurator() {
           if (row < groupMinRow) groupMinRow = row
           moduleColor = cell.color || "weiss"
 
-          // Count back panels
-          if (cell.type === "mit-doppelschublade" || cell.type === "mit-rueckwand") {
+          if (
+            cell.type === "mit-doppelschublade" ||
+            cell.type === "mit-rueckwand" ||
+            cell.type === "mit-tueren" ||
+            cell.type === "abschliessbare-tueren"
+          ) {
             backPanelCount++
           }
         }
