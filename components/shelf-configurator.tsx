@@ -1075,12 +1075,14 @@ export function ShelfConfigurator() {
     // Module types that have side walls (and don't need extra side panels between them)
     const moduleTypesWithSideWalls = ["mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-klapptuer-oben"]
 
+    // Module types that need side panels if not covered by neighbors
     const moduleTypesNeedingSidePanels = [
       "mit-tueren",
       "abschliessbare-tueren",
       "mit-klapptuer",
       "mit-klapptuer-oben",
-      "ohne-seitenwaende", // Has back panel but no side walls
+      "ohne-seitenwaende",
+      "mit-rueckwand", // Has back panel but no side walls
     ]
 
     // For each module that needs side panels, check if adjacent modules provide coverage
@@ -1093,8 +1095,13 @@ export function ShelfConfigurator() {
         // Left is covered if neighbor exists AND has side walls
         const leftIsCovered = leftNeighbor && moduleTypesWithSideWalls.includes(leftNeighbor.type)
         if (!leftIsCovered) {
-          // Need left side panel
-          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+          const leftNeighborNeedsPanels = leftNeighbor && moduleTypesNeedingSidePanels.includes(leftNeighbor.type)
+          const leftNeighborHasNoWalls = leftNeighbor && !moduleTypesWithSideWalls.includes(leftNeighbor.type)
+
+          // If left neighbor also needs panels and has no walls, don't add (it will add from its right side)
+          if (!leftNeighborNeedsPanels || !leftNeighborHasNoWalls) {
+            sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+          }
         }
 
         // Check right neighbor
@@ -1102,8 +1109,18 @@ export function ShelfConfigurator() {
         // Right is covered if neighbor exists AND has side walls
         const rightIsCovered = rightNeighbor && moduleTypesWithSideWalls.includes(rightNeighbor.type)
         if (!rightIsCovered) {
-          // Need right side panel
-          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+          const rightNeighborNeedsPanels = rightNeighbor && moduleTypesNeedingSidePanels.includes(rightNeighbor.type)
+          const rightNeighborHasNoWalls = rightNeighbor && !moduleTypesWithSideWalls.includes(rightNeighbor.type)
+
+          // If right neighbor also needs panels and has no walls, add 1 shared panel (only from this side)
+          // If no right neighbor (exposed), add 1
+          // If right neighbor doesn't need panels, add 1
+          if (!rightNeighbor || !rightNeighborNeedsPanels || !rightNeighborHasNoWalls) {
+            sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+          } else {
+            // Both need panels and both have no walls - add 1 shared panel
+            sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+          }
         }
       }
     }
