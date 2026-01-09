@@ -63,7 +63,7 @@ export function ImageUpload({ onImageUpload, alt }: ImageUploadProps) {
           <img
             src={uploadedImage || "/placeholder.svg"}
             alt={alt}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition duration-300 text-muted bg-muted"
           />
           <button
             onClick={handleRemove}
