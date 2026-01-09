@@ -11,7 +11,7 @@ const collections = [
   {
     id: "modular",
     name: "Modular",
-    headline: "Modular Furniture Systems",
+    headline: "Modular Furniture",
     description:
       "Jedes Stück beginnt mit den feinsten Materialien, sorgfältig ausgewählt für Schönheit, Langlebigkeit und nachhaltige Herkunft. Unsere Handwerker ehren traditionelle Techniken und nutzen moderne Präzision.",
   },
@@ -89,7 +89,7 @@ export default function Home() {
 
           {/* Collection Selector - Bottom center */}
           <div className="max-w-7xl mx-auto w-full flex justify-center">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full p-1.5 py-[-6px] py-[-36px] py-0">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full p-1.5 py-[-6px] py-[-36px] py-[-20px] py-[-36px]">
               {collections.map((collection) => (
                 <button
                   key={collection.id}
