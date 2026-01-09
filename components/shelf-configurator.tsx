@@ -6,7 +6,7 @@ import { OrbitControls } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
-import { Undo2, Redo2, RotateCcw } from "lucide-react"
+import { Undo2, Redo2, RotateCcw, AlertTriangle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   getFlaechensetArtNr,
@@ -106,9 +106,75 @@ export function ShelfConfigurator() {
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
 
+  const [showHeightWarning, setShowHeightWarning] = useState(false)
+  const [heightWarningShown, setHeightWarningShown] = useState(false)
+  const audioContextRef = useRef<AudioContext | null>(null)
+
+  // State for undo/redo
   const [history, setHistory] = useState<ShelfConfig[]>([initialConfig])
   const [historyIndex, setHistoryIndex] = useState(0)
   const isUndoRedo = useRef(false)
+
+  const totalHeightCm = useMemo(() => {
+    // Find the maximum number of filled rows in any column
+    let maxFilledRows = 0
+    for (let col = 0; col < config.columns; col++) {
+      let filledRows = 0
+      for (let row = 0; row < config.rows; row++) {
+        const cell = config.grid[row]?.[col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          filledRows++
+        }
+      }
+      maxFilledRows = Math.max(maxFilledRows, filledRows)
+    }
+    // Each row is approximately 40cm
+    return maxFilledRows * 40
+  }, [config.grid, config.rows, config.columns])
+
+  const playDingSound = useCallback(() => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+      const ctx = audioContextRef.current
+
+      // Create oscillator for ding sound
+      const oscillator = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(ctx.destination)
+
+      // Bell-like ding sound
+      oscillator.frequency.setValueAtTime(830, ctx.currentTime) // High pitch
+      oscillator.type = "sine"
+
+      // Quick fade out for ding effect
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
+
+      oscillator.start(ctx.currentTime)
+      oscillator.stop(ctx.currentTime + 0.5)
+    } catch (e) {
+      // Audio not supported
+    }
+  }, [])
+
+  useEffect(() => {
+    if (totalHeightCm > 200 && !heightWarningShown) {
+      setShowHeightWarning(true)
+      setHeightWarningShown(true)
+
+      playDingSound()
+    }
+  }, [totalHeightCm, heightWarningShown, playDingSound])
+
+  useEffect(() => {
+    if (totalHeightCm <= 200) {
+      setHeightWarningShown(false)
+    }
+  }, [totalHeightCm])
 
   const saveToHistory = useCallback(
     (newConfig: ShelfConfig) => {
@@ -711,505 +777,494 @@ export function ShelfConfigurator() {
     totalPieces?: number // quantity * packSize
   }
 
-  const calculateBOM = useCallback(
-    (config: ShelfConfig): { items: BomItem[]; totalPrice: number } => {
-      const itemMap = new Map<string, BomItem>()
+  const calculateBOM = useCallback((): { items: BomItem[]; totalPrice: number } => {
+    const itemMap = new Map<string, BomItem>()
 
-      const addItem = (id: string, name: string, quantity: number, pricePerUnit: number, packSize?: number) => {
-        if (!id || id.trim() === "") return
+    const addItem = (id: string, name: string, quantity: number, pricePerUnit: number, packSize?: number) => {
+      if (!id || id.trim() === "") return
 
-        const existing = itemMap.get(id)
-        if (existing) {
-          existing.quantity += quantity
-          existing.total = existing.quantity * pricePerUnit
-          if (packSize && existing.packSize) {
-            existing.totalPieces = existing.quantity * packSize
-          }
-        } else {
-          const newItem: BomItem = {
-            id,
-            name,
-            quantity,
-            pricePerUnit,
-            total: quantity * pricePerUnit,
-            packSize,
-            totalPieces: packSize ? quantity * packSize : undefined,
-          }
-          itemMap.set(id, newItem)
+      const existing = itemMap.get(id)
+      if (existing) {
+        existing.quantity += quantity
+        existing.total = existing.quantity * pricePerUnit
+        if (packSize && existing.packSize) {
+          existing.totalPieces = existing.quantity * packSize
         }
-      }
-
-      // Collect all non-empty, non-ghost cells
-      const cells: Array<{ row: number; col: number; cell: GridCell }> = []
-      for (let row = 0; row < config.rows; row++) {
-        for (let col = 0; col < config.columns; col++) {
-          const cell = config.grid[row]?.[col]
-          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
-            cells.push({ row, col, cell })
-          }
+      } else {
+        const newItem: BomItem = {
+          id,
+          name,
+          quantity,
+          pricePerUnit,
+          total: quantity * pricePerUnit,
+          packSize,
+          totalPieces: packSize ? quantity * packSize : undefined,
         }
+        itemMap.set(id, newItem)
       }
+    }
 
-      if (cells.length === 0) {
-        return { items: [], totalPrice: 0 }
-      }
-
-      const columnsWithModules = new Set<number>()
-      for (const { col } of cells) {
-        columnsWithModules.add(col)
-      }
-      const activeColumns = Array.from(columnsWithModules).sort((a, b) => a - b)
-
-      // Calculate column heights only for active columns
-      const columnMaxRows: Map<number, number> = new Map()
+    // Collect all non-empty, non-ghost cells
+    const cells: Array<{ row: number; col: number; cell: GridCell }> = []
+    for (let row = 0; row < config.rows; row++) {
       for (let col = 0; col < config.columns; col++) {
-        let maxRow = -1
-        for (let row = 0; row < config.rows; row++) {
-          const cell = config.grid[row]?.[col]
-          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
-            maxRow = Math.max(maxRow, row)
-          }
-        }
-        if (maxRow >= 0) {
-          columnMaxRows.set(col, maxRow)
+        const cell = config.grid[row]?.[col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          cells.push({ row, col, cell })
         }
       }
+    }
 
-      // --- LEITERN (Ladders) ---
-      // For 2 columns with 7 rows (280cm):
-      // - 4 x Aufbaumodul (SIM001a) for extension parts
-      // - 3 x Leiter 200 (SIM005) for main height
-      const leiterCounts: Record<string, { artNr: string; name: string; price: number; count: number }> = {}
+    if (cells.length === 0) {
+      return { items: [], totalPrice: 0 }
+    }
 
-      if (activeColumns.length > 0) {
-        // Group adjacent columns together
-        const columnGroups: number[][] = []
-        let currentGroup: number[] = [activeColumns[0]]
+    const columnsWithModules = new Set<number>()
+    for (const { col } of cells) {
+      columnsWithModules.add(col)
+    }
+    const activeColumns = Array.from(columnsWithModules).sort((a, b) => a - b)
 
-        for (let i = 1; i < activeColumns.length; i++) {
-          if (activeColumns[i] === activeColumns[i - 1] + 1) {
-            currentGroup.push(activeColumns[i])
-          } else {
-            columnGroups.push(currentGroup)
-            currentGroup = [activeColumns[i]]
-          }
+    // Calculate column heights only for active columns
+    const columnMaxRows: Map<number, number> = new Map()
+    for (let col = 0; col < config.columns; col++) {
+      let maxRow = -1
+      for (let row = 0; row < config.rows; row++) {
+        const cell = config.grid[row]?.[col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          maxRow = Math.max(maxRow, row)
         }
-        columnGroups.push(currentGroup)
+      }
+      if (maxRow >= 0) {
+        columnMaxRows.set(col, maxRow)
+      }
+    }
 
-        // For each group of adjacent columns, add ladders at boundaries
-        for (const group of columnGroups) {
-          // For a group of n columns, we need n+1 ladder positions
-          for (let i = 0; i <= group.length; i++) {
-            const leftCol = i > 0 ? group[i - 1] : -1
-            const rightCol = i < group.length ? group[i] : -1
+    // --- LEITERN (Ladders) ---
+    // For 2 columns with 7 rows (280cm):
+    // - 4 x Aufbaumodul (SIM001a) for extension parts
+    // - 3 x Leiter 200 (SIM005) for main height
+    const leiterCounts: Record<string, { artNr: string; name: string; price: number; count: number }> = {}
 
-            const leftMaxRow = leftCol >= 0 ? (columnMaxRows.get(leftCol) ?? -1) : -1
-            const rightMaxRow = rightCol >= 0 ? (columnMaxRows.get(rightCol) ?? -1) : -1
-            const maxRow = Math.max(leftMaxRow, rightMaxRow)
+    if (activeColumns.length > 0) {
+      // Group adjacent columns together
+      const columnGroups: number[][] = []
+      let currentGroup: number[] = [activeColumns[0]]
 
-            if (maxRow >= 0) {
-              const totalHeightCm = (maxRow + 1) * 40
+      for (let i = 1; i < activeColumns.length; i++) {
+        if (activeColumns[i] === activeColumns[i - 1] + 1) {
+          currentGroup.push(activeColumns[i])
+        } else {
+          columnGroups.push(currentGroup)
+          currentGroup = [activeColumns[i]]
+        }
+      }
+      columnGroups.push(currentGroup)
 
-              if (totalHeightCm <= 200) {
-                // Normal height - just use appropriate ladder
-                const leiterInfo = getLeiterArtNr(totalHeightCm)
-                if (leiterInfo && leiterInfo.artNr) {
-                  const key = leiterInfo.artNr
-                  if (!leiterCounts[key]) {
-                    leiterCounts[key] = { ...leiterInfo, count: 0 }
-                  }
-                  leiterCounts[key].count++
+      // For each group of adjacent columns, add ladders at boundaries
+      for (const group of columnGroups) {
+        // For a group of n columns, we need n+1 ladder positions
+        for (let i = 0; i <= group.length; i++) {
+          const leftCol = i > 0 ? group[i - 1] : -1
+          const rightCol = i < group.length ? group[i] : -1
+
+          const leftMaxRow = leftCol >= 0 ? (columnMaxRows.get(leftCol) ?? -1) : -1
+          const rightMaxRow = rightCol >= 0 ? (columnMaxRows.get(rightCol) ?? -1) : -1
+          const maxRow = Math.max(leftMaxRow, rightMaxRow)
+
+          if (maxRow >= 0) {
+            const totalHeightCm = (maxRow + 1) * 40
+
+            if (totalHeightCm <= 200) {
+              // Normal height - just use appropriate ladder
+              const leiterInfo = getLeiterArtNr(totalHeightCm)
+              if (leiterInfo && leiterInfo.artNr) {
+                const key = leiterInfo.artNr
+                if (!leiterCounts[key]) {
+                  leiterCounts[key] = { ...leiterInfo, count: 0 }
                 }
+                leiterCounts[key].count++
               }
             }
           }
         }
       }
+    }
 
-      // For heights > 200cm (e.g., 7 rows = 280cm), we need:
-      // - Leiter 200 (SIM005) for main structure
-      // - Aufbaumodul (SIM001a) for extensions above 200cm
-      const maxRowsInConfig =
-        activeColumns.length > 0 ? Math.max(...activeColumns.map((col) => columnMaxRows.get(col) ?? -1)) + 1 : 0
-      const totalMaxHeight = maxRowsInConfig * 40
+    // For heights > 200cm (e.g., 7 rows = 280cm), we need:
+    // - Leiter 200 (SIM005) for main structure
+    // - Aufbaumodul (SIM001a) for extensions above 200cm
+    const maxRowsInConfig =
+      activeColumns.length > 0 ? Math.max(...activeColumns.map((col) => columnMaxRows.get(col) ?? -1)) + 1 : 0
+    const totalMaxHeight = maxRowsInConfig * 40
 
-      if (totalMaxHeight > 200) {
-        // For very tall shelves, we need Leiter 200 at all positions
-        const totalLadderPositions = activeColumns.length + 1 // n+1 for n columns
+    if (totalMaxHeight > 200) {
+      // For very tall shelves, we need Leiter 200 at all positions
+      const totalLadderPositions = activeColumns.length + 1 // n+1 for n columns
 
-        // Add Aufbaumodul for extension parts
-        const aufbaumodulKey = "SIM001a"
-        if (!leiterCounts[aufbaumodulKey]) {
-          leiterCounts[aufbaumodulKey] = { artNr: "SIM001a", name: "Aufbaumodul", price: 15.0, count: 0 }
-        }
-        // For 2 columns with 7 rows: 4 x Aufbaumodul (n+2 where n = number of active columns)
-        const neededAufbaumodule = activeColumns.length + 2
-        leiterCounts[aufbaumodulKey].count = neededAufbaumodule
-
-        // Add Leiter 200 for main structure
-        const leiter200Key = "SIM005"
-        if (!leiterCounts[leiter200Key]) {
-          leiterCounts[leiter200Key] = { artNr: "SIM005", name: "Leiter 200", price: 41.0, count: 0 }
-        }
-        // For 2 columns with 280cm height: 3 x Leiter 200 (one less than Aufbaumodule because outer positions share)
-        const neededLeiter200 = totalLadderPositions
-        leiterCounts[leiter200Key].count = neededLeiter200
+      // Add Aufbaumodul for extension parts
+      const aufbaumodulKey = "SIM001a"
+      if (!leiterCounts[aufbaumodulKey]) {
+        leiterCounts[aufbaumodulKey] = { artNr: "SIM001a", name: "Aufbaumodul", price: 15.0, count: 0 }
       }
+      // For 2 columns with 7 rows: 4 x Aufbaumodul (n+2 where n = number of active columns)
+      const neededAufbaumodule = activeColumns.length + 2
+      leiterCounts[aufbaumodulKey].count = neededAufbaumodule
 
-      // Add all leitern to BOM
-      for (const [artNr, data] of Object.entries(leiterCounts)) {
-        addItem(artNr, data.name, data.count, data.price)
+      // Add Leiter 200 for main structure
+      const leiter200Key = "SIM005"
+      if (!leiterCounts[leiter200Key]) {
+        leiterCounts[leiter200Key] = { artNr: "SIM005", name: "Leiter 200", price: 41.0, count: 0 }
       }
+      // For 2 columns with 280cm height: 3 x Leiter 200 (one less than Aufbaumodule because outer positions share)
+      const neededLeiter200 = totalLadderPositions
+      leiterCounts[leiter200Key].count = neededLeiter200
+    }
 
-      // --- STANGENSETS (Bar sets) ---
-      // For 2 columns with 7 rows each (14 cells total), we need:
-      // - Each cell needs top + bottom bars, but shared bars are counted once
-      // - For n rows in a column: (n+1) stangensets (one per horizontal level)
-      // - For 7 rows: 8 stangensets per column, 2 columns = 16 stangensets
-      let stangenset40Count = 0
-      let stangenset80Count = 0
+    // Add all leitern to BOM
+    for (const [artNr, data] of Object.entries(leiterCounts)) {
+      addItem(artNr, data.name, data.count, data.price)
+    }
 
-      for (const col of activeColumns) {
-        const widthCm = config.columnWidths[col] === 75 ? 80 : 40
+    // --- STANGENSETS (Bar sets) ---
+    // For 2 columns with 7 rows each (14 cells total), we need:
+    // - Each cell needs top + bottom bars, but shared bars are counted once
+    // - For n rows in a column: (n+1) stangensets (one per horizontal level)
+    // - For 7 rows: 8 stangensets per column, 2 columns = 16 stangensets
+    let stangenset40Count = 0
+    let stangenset80Count = 0
 
-        // Count filled rows in this column
-        let filledRowsInColumn = 0
-        for (let row = 0; row < config.rows; row++) {
-          const cell = config.grid[row]?.[col]
-          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
-            filledRowsInColumn++
-          }
-        }
+    for (const col of activeColumns) {
+      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
-        // For n filled rows in a column, we need n+1 horizontal bars (top of bottom cell + each cell boundary + top of top cell)
-        // But the formula is actually: (filledRows + 1) stangensets per column
-        // However, based on expected output: 2 columns x 7 rows = 16 stangensets 80
-        // That's (7 + 1) * 2 = 16, but that seems too simple
-        // Actually: each cell needs 2 bars, but adjacent cells share 1 bar
-        // So for 7 cells in a column: 7*2 - 6 = 8 bars per column, 2 columns = 16 bars
-        const barsInColumn = filledRowsInColumn > 0 ? filledRowsInColumn + 1 : 0
-
-        if (widthCm === 40) {
-          stangenset40Count += barsInColumn
-        } else {
-          stangenset80Count += barsInColumn
+      // Count filled rows in this column
+      let filledRowsInColumn = 0
+      for (let row = 0; row < config.rows; row++) {
+        const cell = config.grid[row]?.[col]
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          filledRowsInColumn++
         }
       }
 
-      if (stangenset40Count > 0) {
-        addItem("SIM006", "Stangenset 40", stangenset40Count, 8.0)
+      // For n filled rows in a column, we need n+1 horizontal bars (top of bottom cell + each cell boundary + top of top cell)
+      // But the formula is actually: (filledRows + 1) stangensets per column
+      // However, based on expected output: 2 columns x 7 rows = 16 stangensets 80
+      // That's (7 + 1) * 2 = 16, but that seems too simple
+      // Actually: each cell needs 2 bars, but adjacent cells share 1 bar
+      // So for 7 cells in a column: 7*2 - 6 = 8 bars per column, 2 columns = 16 bars
+      const barsInColumn = filledRowsInColumn > 0 ? filledRowsInColumn + 1 : 0
+
+      if (widthCm === 40) {
+        stangenset40Count += barsInColumn
+      } else {
+        stangenset80Count += barsInColumn
       }
-      if (stangenset80Count > 0) {
-        addItem("SIM007", "Stangenset 80", stangenset80Count, 12.0)
+    }
+
+    if (stangenset40Count > 0) {
+      addItem("SIM006", "Stangenset 40", stangenset40Count, 8.0)
+    }
+    if (stangenset80Count > 0) {
+      addItem("SIM007", "Stangenset 80", stangenset80Count, 12.0)
+    }
+
+    // --- FLÄCHENSETS (Panels) - with color tracking ---
+    const flaechenset40Counts: Record<string, number> = {}
+    const flaechenset80Counts: Record<string, number> = {}
+
+    // Helper to add Flächenset with color
+    const addFlaechenset40 = (color: string) => {
+      const c = color || "weiss"
+      flaechenset40Counts[c] = (flaechenset40Counts[c] || 0) + 1
+    }
+    const addFlaechenset80 = (color: string) => {
+      const c = color || "weiss"
+      flaechenset80Counts[c] = (flaechenset80Counts[c] || 0) + 1
+    }
+
+    // AND a top plate in the color of the module above (or own color if topmost)
+    for (const { cell, row, col } of cells) {
+      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
+      const moduleColor = cell.color || "weiss"
+
+      // Bottom plate for this module - in module's own color
+      if (widthCm === 40) {
+        addFlaechenset40(moduleColor)
+      } else {
+        addFlaechenset80(moduleColor)
       }
 
-      // --- FLÄCHENSETS (Panels) - with color tracking ---
-      const flaechenset40Counts: Record<string, number> = {}
-      const flaechenset80Counts: Record<string, number> = {}
+      // Top plate - check what's above
+      const aboveCell = config.grid[row - 1]?.[col]
+      const isTopExposed = !aboveCell || aboveCell.type === "empty" || aboveCell.type === "ghost"
 
-      // Helper to add Flächenset with color
-      const addFlaechenset40 = (color: string) => {
-        const c = color || "weiss"
-        flaechenset40Counts[c] = (flaechenset40Counts[c] || 0) + 1
-      }
-      const addFlaechenset80 = (color: string) => {
-        const c = color || "weiss"
-        flaechenset80Counts[c] = (flaechenset80Counts[c] || 0) + 1
-      }
-
-      // AND a top plate in the color of the module above (or own color if topmost)
-      for (const { cell, row, col } of cells) {
-        const widthCm = config.columnWidths[col] === 75 ? 80 : 40
-        const moduleColor = cell.color || "weiss"
-
-        // Bottom plate for this module - in module's own color
+      if (isTopExposed) {
+        // This is the topmost module - add ceiling plate in own color
         if (widthCm === 40) {
           addFlaechenset40(moduleColor)
         } else {
           addFlaechenset80(moduleColor)
         }
+      } else if (aboveCell && aboveCell.type !== "empty" && aboveCell.type !== "ghost") {
+        // There's a module above - add intermediate plate in ABOVE module's color
+        const aboveColor = aboveCell.color || "weiss"
+        if (widthCm === 40) {
+          addFlaechenset40(aboveColor)
+        } else {
+          addFlaechenset80(aboveColor)
+        }
+      }
 
-        // Top plate - check what's above
-        const aboveCell = config.grid[row - 1]?.[col]
-        const isTopExposed = !aboveCell || aboveCell.type === "empty" || aboveCell.type === "ghost"
+      // Check if sides are exposed
+      const leftCell = config.grid[row]?.[col - 1]
+      const rightCell = config.grid[row]?.[col + 1]
 
-        if (isTopExposed) {
-          // This is the topmost module - add ceiling plate in own color
-          if (widthCm === 40) {
+      const isLeftExposed = col === 0 || !leftCell || leftCell.type === "empty" || leftCell.type === "ghost"
+      const isRightExposed =
+        col === config.columns - 1 || !rightCell || rightCell.type === "empty" || rightCell.type === "ghost"
+
+      // For closed modules, add side panels in module color
+      const needsSidePanels =
+        cell.type === "mit-tueren" ||
+        cell.type === "mit-doppelschublade" ||
+        cell.type === "abschliessbare-tueren" ||
+        cell.type === "abschliessbar-rechts" ||
+        cell.type === "abschliessbar-links" ||
+        cell.type === "mit-klapptuer" ||
+        cell.type === "mit-rueckwand"
+
+      if (needsSidePanels) {
+        if (isLeftExposed) {
+          addFlaechenset40(moduleColor)
+        }
+        if (isRightExposed) {
+          addFlaechenset40(moduleColor)
+        }
+      }
+
+      // For open modules at steps - check if we need side covers at step transitions
+      if (!needsSidePanels) {
+        if (isLeftExposed && col > 0) {
+          let leftHasModulesBelow = false
+          for (let r = row + 1; r < config.rows; r++) {
+            const belowLeft = config.grid[r]?.[col - 1]
+            if (belowLeft && belowLeft.type !== "empty" && belowLeft.type !== "ghost") {
+              leftHasModulesBelow = true
+              break
+            }
+          }
+          if (leftHasModulesBelow) {
             addFlaechenset40(moduleColor)
-          } else {
-            addFlaechenset80(moduleColor)
-          }
-        } else if (aboveCell && aboveCell.type !== "empty" && aboveCell.type !== "ghost") {
-          // There's a module above - add intermediate plate in ABOVE module's color
-          const aboveColor = aboveCell.color || "weiss"
-          if (widthCm === 40) {
-            addFlaechenset40(aboveColor)
-          } else {
-            addFlaechenset80(aboveColor)
           }
         }
 
-        // Check if sides are exposed
-        const leftCell = config.grid[row]?.[col - 1]
-        const rightCell = config.grid[row]?.[col + 1]
-
-        const isLeftExposed = col === 0 || !leftCell || leftCell.type === "empty" || leftCell.type === "ghost"
-        const isRightExposed =
-          col === config.columns - 1 || !rightCell || rightCell.type === "empty" || rightCell.type === "ghost"
-
-        // For closed modules, add side panels in module color
-        const needsSidePanels =
-          cell.type === "mit-tueren" ||
-          cell.type === "mit-doppelschublade" ||
-          cell.type === "abschliessbare-tueren" ||
-          cell.type === "abschliessbar-rechts" ||
-          cell.type === "abschliessbar-links" ||
-          cell.type === "mit-klapptuer" ||
-          cell.type === "mit-rueckwand"
-
-        if (needsSidePanels) {
-          if (isLeftExposed) {
-            addFlaechenset40(moduleColor)
+        if (isRightExposed && col < config.columns - 1) {
+          let rightHasModulesBelow = false
+          for (let r = row + 1; r < config.rows; r++) {
+            const belowRight = config.grid[r]?.[col + 1]
+            if (belowRight && belowRight.type !== "empty" && belowRight.type !== "ghost") {
+              rightHasModulesBelow = true
+              break
+            }
           }
-          if (isRightExposed) {
+          if (rightHasModulesBelow) {
             addFlaechenset40(moduleColor)
           }
         }
+      }
+    }
 
-        // For open modules at steps - check if we need side covers at step transitions
-        if (!needsSidePanels) {
-          if (isLeftExposed && col > 0) {
-            let leftHasModulesBelow = false
-            for (let r = row + 1; r < config.rows; r++) {
-              const belowLeft = config.grid[r]?.[col - 1]
-              if (belowLeft && belowLeft.type !== "empty" && belowLeft.type !== "ghost") {
-                leftHasModulesBelow = true
-                break
-              }
-            }
-            if (leftHasModulesBelow) {
-              addFlaechenset40(moduleColor)
-            }
-          }
+    for (const [color, count] of Object.entries(flaechenset40Counts)) {
+      if (count > 0) {
+        const artNr = getFlaechensetArtNr(40, color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        addItem(artNr, `Flächenset 40 ${colorLabel}`, count, 15.0, 9)
+      }
+    }
 
-          if (isRightExposed && col < config.columns - 1) {
-            let rightHasModulesBelow = false
-            for (let r = row + 1; r < config.rows; r++) {
-              const belowRight = config.grid[r]?.[col + 1]
-              if (belowRight && belowRight.type !== "empty" && belowRight.type !== "ghost") {
-                rightHasModulesBelow = true
-                break
-              }
-            }
-            if (rightHasModulesBelow) {
-              addFlaechenset40(moduleColor)
-            }
-          }
+    for (const [color, count] of Object.entries(flaechenset80Counts)) {
+      if (count > 0) {
+        const artNr = getFlaechensetArtNr(80, color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0, 11)
+      }
+    }
+
+    // --- SCHUBLADEN (Drawers) ---
+    const schubladenCounts: Record<string, { count: number; name: string; price: number }> = {}
+
+    for (const { cell } of cells) {
+      if (cell.type === "mit-doppelschublade") {
+        const color = cell.color || "weiss"
+        const artNr = getSchubladeArtNr(color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        const name = `Doppelschublade ${colorLabel}`
+
+        if (!schubladenCounts[artNr]) {
+          schubladenCounts[artNr] = { count: 0, name, price: 85.0 }
         }
+        schubladenCounts[artNr].count++
       }
+    }
 
-      for (const [color, count] of Object.entries(flaechenset40Counts)) {
-        if (count > 0) {
-          const artNr = getFlaechensetArtNr(40, color)
-          const colorLabel =
-            color === "weiss"
-              ? "weiß"
-              : color === "schwarz"
-                ? "schwarz"
-                : color === "blau"
-                  ? "blau"
-                  : color === "rot"
-                    ? "rot"
-                    : color === "gruen"
-                      ? "grün"
-                      : color === "gelb"
-                        ? "gelb"
-                        : color === "orange"
-                          ? "orange"
-                          : color
-          addItem(artNr, `Flächenset 40 ${colorLabel}`, count, 15.0, 9)
+    for (const [artNr, data] of Object.entries(schubladenCounts)) {
+      addItem(artNr, data.name, data.count, data.price)
+    }
+
+    // --- TÜREN (Doors) ---
+    const tuerenCounts: Record<string, { count: number; name: string; price: number }> = {}
+
+    for (const { cell } of cells) {
+      if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
+        const color = cell.color || "weiss"
+        const artNr = getTuerArtNr(color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        const name = `Tür 40 cm ${colorLabel}`
+
+        if (!tuerenCounts[artNr]) {
+          tuerenCounts[artNr] = { count: 0, name, price: 45.0 }
         }
+        // 2 doors per door module
+        tuerenCounts[artNr].count += 2
       }
+    }
 
-      for (const [color, count] of Object.entries(flaechenset80Counts)) {
-        if (count > 0) {
-          const artNr = getFlaechensetArtNr(80, color)
-          const colorLabel =
-            color === "weiss"
-              ? "weiß"
-              : color === "schwarz"
-                ? "schwarz"
-                : color === "blau"
-                  ? "blau"
-                  : color === "rot"
-                    ? "rot"
-                    : color === "gruen"
-                      ? "grün"
-                      : color === "gelb"
-                        ? "gelb"
-                        : color === "orange"
-                          ? "orange"
-                          : color
-          addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0, 11)
+    for (const [artNr, data] of Object.entries(tuerenCounts)) {
+      addItem(artNr, data.name, data.count, data.price)
+    }
+
+    // --- SCHLÖSSER (Locks) ---
+    let lockCount = 0
+    for (const { cell } of cells) {
+      if (cell.type === "abschliessbare-tueren") {
+        lockCount++
+      }
+    }
+    if (lockCount > 0) {
+      addItem("SIM1000a", "Schloss Typ A", lockCount, 25.0)
+    }
+
+    // --- KLAPPTÜREN (Flap doors) ---
+    const klapptuerCounts: Record<string, { count: number; name: string; price: number }> = {}
+
+    for (const { cell } of cells) {
+      if (cell.type === "mit-klapptuer") {
+        const color = cell.color || "weiss"
+        const artNr = getKlapptuerArtNr(color)
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        const name = `Klapptür ${colorLabel}`
+
+        if (!klapptuerCounts[artNr]) {
+          klapptuerCounts[artNr] = { count: 0, name, price: 65.0 }
         }
+        klapptuerCounts[artNr].count++
       }
+    }
 
-      // --- SCHUBLADEN (Drawers) ---
-      const schubladenCounts: Record<string, { count: number; name: string; price: number }> = {}
+    for (const [artNr, data] of Object.entries(klapptuerCounts)) {
+      addItem(artNr, data.name, data.count, data.price)
+    }
 
-      for (const { cell } of cells) {
-        if (cell.type === "mit-doppelschublade") {
-          const color = cell.color || "weiss"
-          const artNr = getSchubladeArtNr(color)
-          const colorLabel =
-            color === "weiss"
-              ? "weiß"
-              : color === "schwarz"
-                ? "schwarz"
-                : color === "blau"
-                  ? "blau"
-                  : color === "rot"
-                    ? "rot"
-                    : color === "gruen"
-                      ? "grün"
-                      : color === "gelb"
-                        ? "gelb"
-                        : color === "orange"
-                          ? "orange"
-                          : color
-          const name = `Doppelschublade ${colorLabel}`
-
-          if (!schubladenCounts[artNr]) {
-            schubladenCounts[artNr] = { count: 0, name, price: 85.0 }
-          }
-          schubladenCounts[artNr].count++
-        }
+    // --- FUNKTIONSWÄNDE (Back panels) ---
+    let funktionswandCount = 0
+    for (const { cell } of cells) {
+      if (cell.type === "mit-rueckwand") {
+        funktionswandCount += 1
+      } else if (
+        cell.type === "mit-tueren" ||
+        cell.type === "mit-doppelschublade" ||
+        cell.type === "abschliessbare-tueren" ||
+        cell.type === "mit-klapptuer"
+      ) {
+        // Modules with doors/drawers need 2 back panels
+        funktionswandCount += 2
       }
+    }
+    if (funktionswandCount > 0) {
+      addItem("SIM023", "Funktionswand Edelstahl", funktionswandCount, 35.0)
+    }
 
-      for (const [artNr, data] of Object.entries(schubladenCounts)) {
-        addItem(artNr, data.name, data.count, data.price)
-      }
+    // Convert map to array and calculate total
+    const itemsArray = Array.from(itemMap.values())
+    const totalPrice = itemsArray.reduce((sum, item) => sum + item.total, 0)
 
-      // --- TÜREN (Doors) ---
-      const tuerenCounts: Record<string, { count: number; name: string; price: number }> = {}
-
-      for (const { cell } of cells) {
-        if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
-          const color = cell.color || "weiss"
-          const artNr = getTuerArtNr(color)
-          const colorLabel =
-            color === "weiss"
-              ? "weiß"
-              : color === "schwarz"
-                ? "schwarz"
-                : color === "blau"
-                  ? "blau"
-                  : color === "rot"
-                    ? "rot"
-                    : color === "gruen"
-                      ? "grün"
-                      : color === "gelb"
-                        ? "gelb"
-                        : color === "orange"
-                          ? "orange"
-                          : color
-          const name = `Tür 40 cm ${colorLabel}`
-
-          if (!tuerenCounts[artNr]) {
-            tuerenCounts[artNr] = { count: 0, name, price: 45.0 }
-          }
-          // 2 doors per door module
-          tuerenCounts[artNr].count += 2
-        }
-      }
-
-      for (const [artNr, data] of Object.entries(tuerenCounts)) {
-        addItem(artNr, data.name, data.count, data.price)
-      }
-
-      // --- SCHLÖSSER (Locks) ---
-      let lockCount = 0
-      for (const { cell } of cells) {
-        if (cell.type === "abschliessbare-tueren") {
-          lockCount++
-        }
-      }
-      if (lockCount > 0) {
-        addItem("SIM1000a", "Schloss Typ A", lockCount, 25.0)
-      }
-
-      // --- KLAPPTÜREN (Flap doors) ---
-      const klapptuerCounts: Record<string, { count: number; name: string; price: number }> = {}
-
-      for (const { cell } of cells) {
-        if (cell.type === "mit-klapptuer") {
-          const color = cell.color || "weiss"
-          const artNr = getKlapptuerArtNr(color)
-          const colorLabel =
-            color === "weiss"
-              ? "weiß"
-              : color === "schwarz"
-                ? "schwarz"
-                : color === "blau"
-                  ? "blau"
-                  : color === "rot"
-                    ? "rot"
-                    : color === "gruen"
-                      ? "grün"
-                      : color === "gelb"
-                        ? "gelb"
-                        : color === "orange"
-                          ? "orange"
-                          : color
-          const name = `Klapptür ${colorLabel}`
-
-          if (!klapptuerCounts[artNr]) {
-            klapptuerCounts[artNr] = { count: 0, name, price: 65.0 }
-          }
-          klapptuerCounts[artNr].count++
-        }
-      }
-
-      for (const [artNr, data] of Object.entries(klapptuerCounts)) {
-        addItem(artNr, data.name, data.count, data.price)
-      }
-
-      // --- FUNKTIONSWÄNDE (Back panels) ---
-      // Funktionswand Edelstahl is ONLY for modules with doors/drawers
-      let funktionswandCount = 0
-      for (const { cell } of cells) {
-        // mit-rueckwand uses Flächenset 40 - count it there instead
-        if (cell.type === "mit-rueckwand") {
-          // Add to Flächenset 40 count instead
-          const color = cell.color || "white"
-          const colorKey = color === "white" || color === "weiss" ? "white" : color
-          if (!flaechenset40Counts[colorKey]) {
-            flaechenset40Counts[colorKey] = 0
-          }
-          flaechenset40Counts[colorKey]++
-        } else if (
-          cell.type === "mit-tueren" ||
-          cell.type === "mit-doppelschublade" ||
-          cell.type === "abschliessbare-tueren" ||
-          cell.type === "mit-klapptuer"
-        ) {
-          // Modules with doors/drawers need 2 back panels (Funktionswand Edelstahl)
-          funktionswandCount += 2
-        }
-      }
-      if (funktionswandCount > 0) {
-        addItem("SIM023", "Funktionswand Edelstahl", funktionswandCount, 35.0)
-      }
-
-      // Convert map to array and calculate total
-      const itemsArray = Array.from(itemMap.values())
-      const totalPrice = itemsArray.reduce((sum, item) => sum + item.total, 0)
-
-      return { items: itemsArray, totalPrice }
-    },
-    [config],
-  )
+    return { items: itemsArray, totalPrice }
+  }, [config])
 
   const gridHash = useMemo(() => {
     return JSON.stringify({
@@ -1413,6 +1468,22 @@ export function ShelfConfigurator() {
                   Abbrechen
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Height Warning */}
+          {showHeightWarning && (
+            <div className="absolute bottom-4 left-1/2 top-4 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
+              <AlertTriangle className="h-5 w-5" />
+              <span>Die Regalhöhe überschreitet 200 cm.</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowHeightWarning(false)}
+                className="ml-2 text-white hover:text-gray-200"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </div>

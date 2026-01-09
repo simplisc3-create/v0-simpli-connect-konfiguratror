@@ -3,9 +3,22 @@
 import { useState } from "react"
 import type { ShelfConfig, GridCell, ColorKey } from "./shelf-configurator"
 import { cn } from "@/lib/utils"
-import { ShoppingCart, ChevronDown, ChevronRight, Plus, List, Paintbrush, X, Rows, Columns, Grid } from "lucide-react"
+import {
+  ShoppingCart,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  List,
+  Paintbrush,
+  X,
+  Rows,
+  Columns,
+  Grid,
+  Check,
+} from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
+import { useCartStore } from "@/lib/cart-store"
 
 type Props = {
   config: ShelfConfig
@@ -94,6 +107,8 @@ export function ConfiguratorPanel({
   onDeselectCell,
 }: Props) {
   const [expandedSection, setExpandedSection] = useState<string | null>("grid")
+  const { addItem } = useCartStore()
+  const [addedToCart, setAddedToCart] = useState(false)
 
   const handleCellClick = (row: number, col: number) => {
     if (selectedTool === "empty") {
@@ -139,6 +154,27 @@ export function ConfiguratorPanel({
 
   const usedWidths = Array.from(new Set(config.columnWidths))
   const allModulesAvailable = usedWidths.length === 0
+
+  const handleAddToCart = () => {
+    if (shoppingList.length === 0) return
+
+    for (const item of shoppingList) {
+      // Add each item with its quantity
+      for (let i = 0; i < item.quantity; i++) {
+        addItem({
+          id: item.id,
+          name: item.name,
+          artNr: item.id,
+          price: item.pricePerUnit || 0,
+        })
+      }
+    }
+
+    setAddedToCart(true)
+    setTimeout(() => setAddedToCart(false), 2000)
+  }
+
+  const totalPrice = price || 0
 
   return (
     <div className="flex w-96 flex-col border-l border-neutral-700 bg-neutral-800">
@@ -477,12 +513,37 @@ export function ConfiguratorPanel({
       <div className="border-t border-neutral-700 bg-neutral-800 p-4">
         <div className="mb-3 flex items-baseline justify-between">
           <span className="text-sm text-neutral-400">Preis:</span>
-          <span className="text-2xl font-bold text-neutral-100">{(price || 0).toFixed(2).replace(".", ",")} €</span>
+          <span className="text-2xl font-bold text-neutral-100">{totalPrice.toFixed(2).replace(".", ",")} €</span>
         </div>
-        <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 font-medium uppercase tracking-wide text-white transition-colors hover:bg-blue-500">
-          <ShoppingCart className="h-5 w-5" />
-          In den Warenkorb
+        <button
+          onClick={handleAddToCart}
+          disabled={shoppingList.length === 0}
+          className={cn(
+            "flex w-full items-center justify-center gap-2 rounded-lg py-3 font-semibold transition-all",
+            addedToCart
+              ? "bg-green-600 text-white"
+              : shoppingList.length === 0
+                ? "cursor-not-allowed bg-neutral-600 text-neutral-400"
+                : "bg-blue-600 text-white hover:bg-blue-700",
+          )}
+        >
+          {addedToCart ? (
+            <>
+              <Check className="h-5 w-5" />
+              Hinzugefügt!
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="h-5 w-5" />
+              In den Warenkorb
+            </>
+          )}
         </button>
+        {addedToCart && (
+          <a href="/warenkorb" className="mt-2 block text-center text-sm text-blue-400 hover:text-blue-300">
+            Zum Warenkorb →
+          </a>
+        )}
       </div>
     </div>
   )
