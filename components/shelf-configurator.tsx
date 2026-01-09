@@ -891,7 +891,7 @@ export function ShelfConfigurator() {
 
     // For heights > 200cm (e.g., 7 rows = 280cm), we need:
     // - Leiter 200 (SIM005) for main structure
-    // - Aufbaumodul (SIM001a) for extensions above 200cm
+    // - Aufbaumodul (SIM001a) for extension parts
     const maxRowsInConfig =
       activeColumns.length > 0 ? Math.max(...activeColumns.map((col) => columnMaxRows.get(col) ?? -1)) + 1 : 0
     const totalMaxHeight = maxRowsInConfig * 40
@@ -905,8 +905,8 @@ export function ShelfConfigurator() {
       if (!leiterCounts[aufbaumodulKey]) {
         leiterCounts[aufbaumodulKey] = { artNr: "SIM001a", name: "Aufbaumodul", price: 15.0, count: 0 }
       }
-      // For 2 columns with 7 rows: 4 x Aufbaumodul (n+2 where n = number of active columns)
-      const neededAufbaumodule = activeColumns.length + 2
+      // For 1 column: (1+1) * 2 = 4 Aufbaumodule (2 ladders × 2 corners each)
+      const neededAufbaumodule = (activeColumns.length + 1) * 2
       leiterCounts[aufbaumodulKey].count = neededAufbaumodule
 
       // Add Leiter 200 for main structure
@@ -1069,56 +1069,105 @@ export function ShelfConfigurator() {
     }
 
     // --- FLÄCHENSETS 40 for Side Panels ---
-    // where no adjacent module with side walls exists
+    // Module types that need side panels if not covered by neighbors with side walls
     const sidePanelsNeeded: Record<string, number> = {}
 
-    // Module types that have side walls (and don't need extra side panels between them)
+    // Module types that have their own side walls (door/flap modules)
     const moduleTypesWithSideWalls = ["mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-klapptuer-oben"]
 
-    // Module types that need side panels if not covered by neighbors
-    const moduleTypesNeedingSidePanels = [
+    // Module types that need Flächenset 40 side panels (not Funktionswand)
+    const moduleTypesNeedingFlaechenset40 = [
       "mit-tueren",
       "abschliessbare-tueren",
       "mit-klapptuer",
       "mit-klapptuer-oben",
       "ohne-seitenwaende",
-      "mit-rueckwand", // Has back panel but no side walls
+      "mit-rueckwand",
     ]
 
-    // For each module that needs side panels, check if adjacent modules provide coverage
+    // Find shelf sections (groups of adjacent occupied columns)
+    const occupiedColsSet = new Set<number>()
+    for (const { col } of cells) {
+      occupiedColsSet.add(col)
+    }
+    const occupiedCols = Array.from(occupiedColsSet).sort((a, b) => a - b)
+
+    // Group into contiguous sections
+    const sections: number[][] = []
+    let currentSection: number[] = []
+    for (const col of occupiedCols) {
+      if (currentSection.length === 0 || col === currentSection[currentSection.length - 1] + 1) {
+        currentSection.push(col)
+      } else {
+        sections.push(currentSection)
+        currentSection = [col]
+      }
+    }
+    if (currentSection.length > 0) {
+      sections.push(currentSection)
+    }
+
+    // For each section, add outer side panels (left of leftmost, right of rightmost) for topmost row
+    for (const section of sections) {
+      const leftmostCol = Math.min(...section)
+      const rightmostCol = Math.max(...section)
+
+      // Find the topmost row with modules in this section
+      let topmostRow = Number.POSITIVE_INFINITY
+      for (const { row, col } of cells) {
+        if (section.includes(col) && row < topmostRow) {
+          topmostRow = row
+        }
+      }
+
+      // Get the modules at the outer edges of the topmost row
+      const leftCell = config.grid[topmostRow]?.[leftmostCol]
+      const rightCell = config.grid[topmostRow]?.[rightmostCol]
+
+      // Add outer left panel if leftmost module doesn't have side walls
+      if (leftCell && !moduleTypesWithSideWalls.includes(leftCell.type)) {
+        const color = leftCell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+      }
+
+      // Add outer right panel if rightmost module doesn't have side walls
+      if (rightCell && !moduleTypesWithSideWalls.includes(rightCell.type)) {
+        const color = rightCell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+      }
+    }
+
+    // For each module that needs Flächenset 40 side panels, check neighbors
     for (const { row, col, cell } of cells) {
-      if (moduleTypesNeedingSidePanels.includes(cell.type)) {
+      if (moduleTypesNeedingFlaechenset40.includes(cell.type)) {
         const color = cell.color || "weiss"
 
         // Check left neighbor
         const leftNeighbor = config.grid[row]?.[col - 1]
-        // Left is covered if neighbor exists AND has side walls
-        const leftIsCovered = leftNeighbor && moduleTypesWithSideWalls.includes(leftNeighbor.type)
-        if (!leftIsCovered) {
-          const leftNeighborNeedsPanels = leftNeighbor && moduleTypesNeedingSidePanels.includes(leftNeighbor.type)
-          const leftNeighborHasNoWalls = leftNeighbor && !moduleTypesWithSideWalls.includes(leftNeighbor.type)
+        const leftHasSideWalls = leftNeighbor && moduleTypesWithSideWalls.includes(leftNeighbor.type)
 
-          // If left neighbor also needs panels and has no walls, don't add (it will add from its right side)
-          if (!leftNeighborNeedsPanels || !leftNeighborHasNoWalls) {
+        // Add left panel if:
+        // - Left neighbor exists but doesn't have side walls AND isn't a Flächenset40 module (to avoid double counting)
+        // - OR left neighbor is a drawer (Funktionswand doesn't cover Flächenset need)
+        if (leftNeighbor && !leftHasSideWalls) {
+          // If left is a drawer or other non-Flächenset40 module, we need a panel
+          if (!moduleTypesNeedingFlaechenset40.includes(leftNeighbor.type)) {
             sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
           }
+          // If left is also a Flächenset40 module without side walls, share panel (handled by that module's right side)
         }
 
         // Check right neighbor
         const rightNeighbor = config.grid[row]?.[col + 1]
-        // Right is covered if neighbor exists AND has side walls
-        const rightIsCovered = rightNeighbor && moduleTypesWithSideWalls.includes(rightNeighbor.type)
-        if (!rightIsCovered) {
-          const rightNeighborNeedsPanels = rightNeighbor && moduleTypesNeedingSidePanels.includes(rightNeighbor.type)
-          const rightNeighborHasNoWalls = rightNeighbor && !moduleTypesWithSideWalls.includes(rightNeighbor.type)
+        const rightHasSideWalls = rightNeighbor && moduleTypesWithSideWalls.includes(rightNeighbor.type)
 
-          // If right neighbor also needs panels and has no walls, add 1 shared panel (only from this side)
-          // If no right neighbor (exposed), add 1
-          // If right neighbor doesn't need panels, add 1
-          if (!rightNeighbor || !rightNeighborNeedsPanels || !rightNeighborHasNoWalls) {
+        if (rightNeighbor && !rightHasSideWalls) {
+          // If right is a drawer or other non-Flächenset40 module, we need a panel
+          if (!moduleTypesNeedingFlaechenset40.includes(rightNeighbor.type)) {
             sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
           } else {
-            // Both need panels and both have no walls - add 1 shared panel
+            // Both this and right neighbor need Flächenset40 and neither has side walls
+            // Add 1 panel (shared between them)
             sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
           }
         }
