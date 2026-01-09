@@ -159,6 +159,7 @@ export default function Home() {
             />
             <ProductCard
               image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
+              video="/images/gen-4-20close-20up-2clogo-20static-20camera-20-2c-20cinematic-20minimalistic-20intro-20animation-2c-20a-20masterpiece-2c-20dynamic-20motion-201863552926-204k-20-282-29.mp4"
               title="Wohnzimmer Set"
               description="6 Fächer, individuell gestaltbar"
               price="ab 899€"
@@ -276,10 +277,11 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
 
 function ProductCard({
   image,
+  video,
   title,
   description,
   price,
-}: { image: string; title: string; description: string; price: string }) {
+}: { image: string; video?: string; title: string; description: string; price: string }) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
 
   const displayImage = uploadedImage || image
@@ -287,7 +289,19 @@ function ProductCard({
   return (
     <div className="group cursor-auto">
       <div className="aspect-square bg-gray-50 rounded-2xl overflow-hidden mb-4">
-        <ImageUpload onImageUpload={setUploadedImage} fallbackImage={displayImage} alt={title} />
+        {video && !uploadedImage ? (
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+          >
+            <source src={video} type="video/mp4" />
+          </video>
+        ) : (
+          <ImageUpload onImageUpload={setUploadedImage} fallbackImage={displayImage} alt={title} />
+        )}
       </div>
       <Link href="/konfigurator" className="group">
         <h3 className="font-semibold text-lg">{title}</h3>
