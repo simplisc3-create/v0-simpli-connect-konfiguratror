@@ -7,7 +7,7 @@ import { Phone, X, Minus, Maximize2, Minimize2 } from "lucide-react"
 
 export function SosFloatingSphere() {
   const [isOpen, setIsOpen] = useState(false)
-  const [position, setPosition] = useState({ x: 20, y: window?.innerHeight ? window.innerHeight - 520 : 200 })
+  const [position, setPosition] = useState({ x: 20, y: 200 })
   const [size, setSize] = useState({ width: 280, height: 500 })
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
@@ -24,6 +24,10 @@ export function SosFloatingSphere() {
     startWidth: 0,
     startHeight: 0,
   })
+
+  useEffect(() => {
+    setPosition({ x: 20, y: window.innerHeight - 520 })
+  }, [])
 
   const handleDragStart = (e: React.MouseEvent) => {
     setIsDragging(true)
