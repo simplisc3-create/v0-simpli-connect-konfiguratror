@@ -56,19 +56,19 @@ export default function Home() {
         <nav className="absolute top-0 left-0 right-0 z-50 px-6 py-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <Link href="/" className="text-white/90 hover:text-white transition">
-              <span className="font-bold text-xl tracking-widest uppercase">Simpli Connect</span>
+              <span className="font-bold tracking-widest uppercase text-3xl">Simpli Connect</span>
             </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/shop" className="text-sm font-medium text-white/80 hover:text-white transition">
+            <div className="hidden md:flex items-center gap-8 leading-10 text-5xl">
+              <Link href="/shop" className="font-medium text-white/80 hover:text-white transition text-2xl">
                 Shop
               </Link>
-              <Link href="/konfigurator" className="text-sm font-medium text-white/80 hover:text-white transition">
+              <Link href="/konfigurator" className="font-medium text-white/80 hover:text-white transition text-2xl">
                 Konfigurator
               </Link>
-              <Link href="/kontakt" className="text-sm font-medium text-white/80 hover:text-white transition">
+              <Link href="/kontakt" className="font-medium text-white/80 hover:text-white transition text-2xl">
                 Kontakt
               </Link>
-              <Link href="/warenkorb" className="text-sm font-medium text-white/80 hover:text-white transition">
+              <Link href="/warenkorb" className="font-medium text-white/80 hover:text-white transition text-2xl">
                 Warenkorb
               </Link>
             </div>
@@ -79,7 +79,7 @@ export default function Home() {
         <div className="relative z-10 h-full flex flex-col justify-between px-6 pt-44 pb-24">
           {/* Main Content - Top left aligned, above the shelf */}
           <div className="max-w-7xl mx-auto w-full">
-            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 lg:text-7xl text-center py-5 px-7">
+            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 text-center lg:text-9xl px-2 py-2">
               {activeCollection.headline}
             </h1>
           </div>
@@ -166,7 +166,7 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <ProductCard
-              image="/images/metanoia-ibiza-httpss.png"
+              image="/images/5188225137160352909.jpg"
               title="Starter Regal"
               description="2 Fächer, perfekt für den Einstieg"
               price="ab 299€"
