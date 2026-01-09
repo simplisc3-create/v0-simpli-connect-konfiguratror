@@ -1075,29 +1075,33 @@ export function ShelfConfigurator() {
     // Module types that have side walls (and don't need extra side panels between them)
     const moduleTypesWithSideWalls = ["mit-tueren", "abschliessbare-tueren", "mit-klapptuer", "mit-klapptuer-oben"]
 
-    // For each module with doors/flaps, check if adjacent modules have side walls
+    const moduleTypesNeedingSidePanels = [
+      "mit-tueren",
+      "abschliessbare-tueren",
+      "mit-klapptuer",
+      "mit-klapptuer-oben",
+      "ohne-seitenwaende", // Has back panel but no side walls
+    ]
+
+    // For each module that needs side panels, check if adjacent modules provide coverage
     for (const { row, col, cell } of cells) {
-      // Door and Klapptür modules need side panels
-      if (
-        cell.type === "mit-tueren" ||
-        cell.type === "abschliessbare-tueren" ||
-        cell.type === "mit-klapptuer" ||
-        cell.type === "mit-klapptuer-oben"
-      ) {
+      if (moduleTypesNeedingSidePanels.includes(cell.type)) {
         const color = cell.color || "weiss"
 
         // Check left neighbor
         const leftNeighbor = config.grid[row]?.[col - 1]
-        const leftHasSideWall = leftNeighbor && moduleTypesWithSideWalls.includes(leftNeighbor.type)
-        if (!leftHasSideWall) {
+        // Left is covered if neighbor exists AND has side walls
+        const leftIsCovered = leftNeighbor && moduleTypesWithSideWalls.includes(leftNeighbor.type)
+        if (!leftIsCovered) {
           // Need left side panel
           sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
         }
 
         // Check right neighbor
         const rightNeighbor = config.grid[row]?.[col + 1]
-        const rightHasSideWall = rightNeighbor && moduleTypesWithSideWalls.includes(rightNeighbor.type)
-        if (!rightHasSideWall) {
+        // Right is covered if neighbor exists AND has side walls
+        const rightIsCovered = rightNeighbor && moduleTypesWithSideWalls.includes(rightNeighbor.type)
+        if (!rightIsCovered) {
           // Need right side panel
           sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
         }
