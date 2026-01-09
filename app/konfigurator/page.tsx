@@ -13,8 +13,7 @@ const presets = {
       [{ id: "cell-2-0", type: "mit-rueckwand" as const, row: 2, col: 0, color: "weiss" as const }],
       [{ id: "cell-3-0", type: "mit-rueckwand" as const, row: 3, col: 0, color: "weiss" as const }],
     ],
-    videoUrl:
-      "/images/gen-4-20close-20up-2clogo-20static-20camera-20-2c-20cinematic-20minimalistic-20intro-20animation-2c-20a-20masterpiece-2c-20dynamic-20motion-201863552926-204k.mp4",
+    youtubeId: "hUbkjGIyy2E",
   },
   starter: {
     // 2 stacked open shelves
@@ -28,21 +27,22 @@ const presets = {
     ],
   },
   homeoffice: {
-    // 4 compartments with drawers (2x2 grid)
+    // 4 compartments with blue drawers (2x2 grid)
     columns: 2,
     rows: 2,
     columnWidths: [75, 75] as (75 | 38)[],
     rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
       [
-        { id: "cell-0-0", type: "mit-doppelschublade" as const, row: 0, col: 0, color: "weiss" as const },
-        { id: "cell-0-1", type: "mit-doppelschublade" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-0", type: "mit-doppelschublade" as const, row: 0, col: 0, color: "blau" as const },
+        { id: "cell-0-1", type: "mit-doppelschublade" as const, row: 0, col: 1, color: "blau" as const },
       ],
       [
-        { id: "cell-1-0", type: "offenes-fach" as const, row: 1, col: 0, color: "weiss" as const },
-        { id: "cell-1-1", type: "offenes-fach" as const, row: 1, col: 1, color: "weiss" as const },
+        { id: "cell-1-0", type: "mit-doppelschublade" as const, row: 1, col: 0, color: "blau" as const },
+        { id: "cell-1-1", type: "mit-doppelschublade" as const, row: 1, col: 1, color: "blau" as const },
       ],
     ],
+    youtubeId: "E3ywae27tl0",
   },
 }
 
@@ -57,7 +57,7 @@ export default async function KonfiguratorPage({
 
   return (
     <main className="h-screen w-screen overflow-hidden bg-white">
-      <ShelfConfigurator initialPreset={preset} presetVideoUrl={preset?.videoUrl} />
+      <ShelfConfigurator initialPreset={preset} presetYoutubeId={preset?.youtubeId} />
     </main>
   )
 }

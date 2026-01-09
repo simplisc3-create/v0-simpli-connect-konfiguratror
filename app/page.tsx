@@ -154,10 +154,13 @@ export default function Home() {
             />
             <ProductCard
               image="/medium-modular-shelf-system-4-compartments-chrome-.jpg"
+              youtubeId="E3ywae27tl0"
               title="Home Office"
               description="4 Fächer mit Schubladen"
               price="ab 599€"
               href="/konfigurator?preset=homeoffice"
+              badge="NEU"
+              hoverMessage="selbst konfigurieren"
             />
             <ProductCard
               image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
@@ -323,13 +326,15 @@ function ProductCard({
           </div>
         )}
         {youtubeId ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1`}
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full z-20 pointer-events-none"
-            style={{ border: "none" }}
-          />
+          <div className="absolute inset-0 z-20 overflow-hidden pointer-events-none">
+            <iframe
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              className="absolute top-1/2 left-1/2 w-[300%] h-[300%] -translate-x-1/2 -translate-y-1/2"
+              style={{ border: "none" }}
+            />
+          </div>
         ) : video ? (
           <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-20">
             <source src={video} type="video/mp4" />

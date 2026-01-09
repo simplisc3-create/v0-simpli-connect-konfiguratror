@@ -136,25 +136,18 @@ const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (newGrid[r][c].type !== "empty") {
-        // Check cell above
+        // Check cell above - allows vertical stacking
         if (r + 1 < rows && newGrid[r + 1][c].type === "empty") {
           newGrid[r + 1][c] = { ...newGrid[r + 1][c], type: "ghost" }
         }
-        // Check cell to the left
-        if (c - 1 >= 0 && newGrid[r][c - 1].type === "empty") {
-          const hasSupportBelow =
-            r === 0 || (r > 0 && newGrid[r - 1]?.[c - 1]?.type !== "empty" && newGrid[r - 1]?.[c - 1]?.type !== "ghost")
-          if (hasSupportBelow) {
-            newGrid[r][c - 1] = { ...newGrid[r][c - 1], type: "ghost" }
-          }
+        // </CHANGE> Only add ghost cells to left/right at ground level (row 0) for horizontal expansion
+        // Check cell to the left - only at ground level
+        if (r === 0 && c - 1 >= 0 && newGrid[r][c - 1].type === "empty") {
+          newGrid[r][c - 1] = { ...newGrid[r][c - 1], type: "ghost" }
         }
-        // Check cell to the right
-        if (c + 1 < cols && newGrid[r][c + 1].type === "empty") {
-          const hasSupportBelow =
-            r === 0 || (r > 0 && newGrid[r - 1]?.[c + 1]?.type !== "empty" && newGrid[r - 1]?.[c + 1]?.type !== "ghost")
-          if (hasSupportBelow) {
-            newGrid[r][c + 1] = { ...newGrid[r][c + 1], type: "ghost" }
-          }
+        // Check cell to the right - only at ground level
+        if (r === 0 && c + 1 < cols && newGrid[r][c + 1].type === "empty") {
+          newGrid[r][c + 1] = { ...newGrid[r][c + 1], type: "ghost" }
         }
       }
     }
@@ -164,10 +157,10 @@ const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
 
 export function ShelfConfigurator({
   initialPreset,
-  presetVideoUrl,
-}: { initialPreset?: PresetConfig; presetVideoUrl?: string } = {}) {
+  presetYoutubeId,
+}: { initialPreset?: PresetConfig; presetYoutubeId?: string } = {}) {
   const [isLoading, setIsLoading] = useState(true)
-  const [showVideoPreview, setShowVideoPreview] = useState(!!presetVideoUrl)
+  const [showVideoPreview, setShowVideoPreview] = useState(!!presetYoutubeId)
 
   const getInitialConfig = (): ShelfConfig => {
     if (initialPreset) {
@@ -1613,7 +1606,7 @@ export function ShelfConfigurator({
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
-          {showVideoPreview && presetVideoUrl && (
+          {showVideoPreview && presetYoutubeId && (
             <div className="absolute top-20 left-4 z-50 w-48 h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
               <button
                 onClick={() => setShowVideoPreview(false)}
@@ -1621,9 +1614,13 @@ export function ShelfConfigurator({
               >
                 <X className="w-4 h-4" />
               </button>
-              <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-                <source src={presetVideoUrl} type="video/mp4" />
-              </video>
+              <iframe
+                src={`https://www.youtube.com/embed/${presetYoutubeId}?autoplay=1&mute=1&loop=1&playlist=${presetYoutubeId}&controls=0&showinfo=0&rel=0&modestbranding=1`}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                className="w-full h-full object-cover pointer-events-none"
+                style={{ border: "none" }}
+              />
             </div>
           )}
 
