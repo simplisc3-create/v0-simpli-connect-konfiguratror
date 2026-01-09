@@ -60,7 +60,7 @@ export function ImageUpload({ onImageUpload, fallbackImage, alt }: ImageUploadPr
   const imageToDisplay = uploadedImage || fallbackImage
 
   return (
-    <div className="relative w-full h-full group">
+    <div className="relative w-full h-full group bg-input">
       {imageToDisplay ? (
         <>
           
