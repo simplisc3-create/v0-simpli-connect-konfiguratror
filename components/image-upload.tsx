@@ -63,7 +63,11 @@ export function ImageUpload({ onImageUpload, fallbackImage, alt }: ImageUploadPr
     <div className="relative w-full h-full group">
       {imageToDisplay ? (
         <>
-          
+          <img
+            src={imageToDisplay || "/placeholder.svg"}
+            alt={alt}
+            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+          />
           <button
             onClick={handleRemove}
             className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
