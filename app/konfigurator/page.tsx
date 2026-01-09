@@ -13,6 +13,8 @@ const presets = {
       [{ id: "cell-2-0", type: "mit-rueckwand" as const, row: 2, col: 0, color: "weiss" as const }],
       [{ id: "cell-3-0", type: "mit-rueckwand" as const, row: 3, col: 0, color: "weiss" as const }],
     ],
+    videoUrl:
+      "/images/gen-4-20close-20up-2clogo-20static-20camera-20-2c-20cinematic-20minimalistic-20intro-20animation-2c-20a-20masterpiece-2c-20dynamic-20motion-201863552926-204k.mp4",
   },
   starter: {
     // 2 stacked open shelves
@@ -44,17 +46,18 @@ const presets = {
   },
 }
 
-export default function KonfiguratorPage({
+export default async function KonfiguratorPage({
   searchParams,
 }: {
-  searchParams: { preset?: string }
+  searchParams: Promise<{ preset?: string }>
 }) {
-  const presetKey = searchParams.preset as keyof typeof presets
-  const initialPreset = presetKey && presets[presetKey] ? presets[presetKey] : undefined
+  const params = await searchParams
+  const presetKey = params.preset as keyof typeof presets
+  const preset = presetKey && presets[presetKey] ? presets[presetKey] : undefined
 
   return (
     <main className="h-screen w-screen overflow-hidden bg-white">
-      <ShelfConfigurator initialPreset={initialPreset} />
+      <ShelfConfigurator initialPreset={preset} presetVideoUrl={preset?.videoUrl} />
     </main>
   )
 }

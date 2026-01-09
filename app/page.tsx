@@ -161,11 +161,13 @@ export default function Home() {
             />
             <ProductCard
               image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
-              video="/images/gen-4-20close-20up-2clogo-20static-20camera-20-2c-20cinematic-20minimalistic-20intro-20animation-2c-20a-20masterpiece-2c-20dynamic-20motion-201863552926-204k-20-282-29.mp4"
+              video="/images/gen-4-20close-20up-2clogo-20static-20camera-20-2c-20cinematic-20minimalistic-20intro-20animation-2c-20a-20masterpiece-2c-20dynamic-20motion-201863552926-204k.mp4"
               title="Wohnzimmer Set"
-              description="6 Fächer, individuell gestaltbar"
+              description="4 Fächer, individuell gestaltbar"
               price="ab 899€"
               href="/konfigurator?preset=wohnzimmer"
+              badge="NEU"
+              hoverMessage="selbst konfigurieren"
             />
           </div>
         </div>
@@ -285,22 +287,41 @@ function ProductCard({
   description,
   price,
   href,
-}: { image: string; video?: string; title: string; description: string; price: string; href?: string }) {
+  badge,
+  hoverMessage,
+}: {
+  image: string
+  video?: string
+  title: string
+  description: string
+  price: string
+  href?: string
+  badge?: string
+  hoverMessage?: string
+}) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
 
   const displayImage = uploadedImage || image
 
   const CardContent = () => (
     <>
-      <div className="aspect-square bg-gray-50 rounded-2xl overflow-hidden mb-4">
-        {video && !uploadedImage ? (
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-          >
+      <div className="aspect-square bg-gray-700 rounded-2xl overflow-hidden mb-4 relative group">
+        {badge && (
+          <div className="absolute top-4 left-4 z-40 animate-pulse hover:animate-none hover:scale-110 transition-transform cursor-pointer">
+            <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg hover:bg-red-700 transition-colors">
+              {badge}
+            </span>
+          </div>
+        )}
+        {hoverMessage && (
+          <div className="absolute inset-0 z-30 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <span className="text-white text-lg font-semibold px-6 py-3 border-2 border-white rounded-full hover:bg-white hover:text-black transition-colors">
+              {hoverMessage}
+            </span>
+          </div>
+        )}
+        {video ? (
+          <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-20">
             <source src={video} type="video/mp4" />
           </video>
         ) : (
@@ -315,14 +336,14 @@ function ProductCard({
 
   if (href) {
     return (
-      <Link href={href} className="group cursor-pointer block">
+      <Link href={href} className="group cursor-pointer block relative">
         <CardContent />
       </Link>
     )
   }
 
   return (
-    <div className="group cursor-auto">
+    <div className="group cursor-auto relative">
       <CardContent />
     </div>
   )

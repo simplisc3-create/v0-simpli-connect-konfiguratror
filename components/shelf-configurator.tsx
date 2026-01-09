@@ -107,8 +107,67 @@ const initialConfig: ShelfConfig = {
   cellStyles: {}, // Initialize empty cellStyles
 }
 
-export function ShelfConfigurator({ initialPreset }: { initialPreset?: PresetConfig } = {}) {
+const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
+  const rows = grid.length
+  const cols = grid[0]?.length || 0
+
+  // Initialize all cells as empty first
+  const newGrid = Array.from({ length: rows }, (_, r) =>
+    Array.from({ length: cols }, (_, c) => ({
+      id: `cell-${r}-${c}`,
+      type: "empty" as const,
+      row: r,
+      col: c,
+      color: grid[r]?.[c]?.color, // Preserve color if it exists
+    })),
+  )
+
+  // Re-add existing modules
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const originalCell = grid[r]?.[c]
+      if (originalCell && originalCell.type !== "empty" && originalCell.type !== "ghost") {
+        newGrid[r][c] = { ...originalCell, type: originalCell.type, color: originalCell.color }
+      }
+    }
+  }
+
+  // Now, intelligently add ghost cells based on occupied cells
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (newGrid[r][c].type !== "empty") {
+        // Check cell above
+        if (r + 1 < rows && newGrid[r + 1][c].type === "empty") {
+          newGrid[r + 1][c] = { ...newGrid[r + 1][c], type: "ghost" }
+        }
+        // Check cell to the left
+        if (c - 1 >= 0 && newGrid[r][c - 1].type === "empty") {
+          const hasSupportBelow =
+            r === 0 || (r > 0 && newGrid[r - 1]?.[c - 1]?.type !== "empty" && newGrid[r - 1]?.[c - 1]?.type !== "ghost")
+          if (hasSupportBelow) {
+            newGrid[r][c - 1] = { ...newGrid[r][c - 1], type: "ghost" }
+          }
+        }
+        // Check cell to the right
+        if (c + 1 < cols && newGrid[r][c + 1].type === "empty") {
+          const hasSupportBelow =
+            r === 0 || (r > 0 && newGrid[r - 1]?.[c + 1]?.type !== "empty" && newGrid[r - 1]?.[c + 1]?.type !== "ghost")
+          if (hasSupportBelow) {
+            newGrid[r][c + 1] = { ...newGrid[r][c + 1], type: "ghost" }
+          }
+        }
+      }
+    }
+  }
+  return newGrid
+}
+
+export function ShelfConfigurator({
+  initialPreset,
+  presetVideoUrl,
+}: { initialPreset?: PresetConfig; presetVideoUrl?: string } = {}) {
   const [isLoading, setIsLoading] = useState(true)
+  const [showVideoPreview, setShowVideoPreview] = useState(!!presetVideoUrl)
 
   const getInitialConfig = (): ShelfConfig => {
     if (initialPreset) {
@@ -139,6 +198,67 @@ export function ShelfConfigurator({ initialPreset }: { initialPreset?: PresetCon
   const [history, setHistory] = useState<ShelfConfig[]>([getInitialConfig()])
   const [historyIndex, setHistoryIndex] = useState(0)
   const isUndoRedo = useRef(false)
+
+  useEffect(() => {
+    if (initialPreset) {
+      setConfig((prev) => {
+        // First, ensure we have enough rows and columns for expansion
+        const expandedGrid = [...prev.grid.map((row) => [...row])]
+
+        // Add an extra row at the top for ghost cells
+        const newTopRow: GridCell[] = expandedGrid[0].map((_, colIndex) => ({
+          id: `cell-${expandedGrid.length}-${colIndex}`,
+          type: "empty" as const,
+          row: expandedGrid.length,
+          col: colIndex,
+        }))
+        expandedGrid.push(newTopRow)
+
+        // Add an extra column on both sides for ghost cells
+        for (let r = 0; r < expandedGrid.length; r++) {
+          // Add column on the left
+          expandedGrid[r].unshift({
+            id: `cell-${r}-left`,
+            type: "empty" as const,
+            row: r,
+            col: -1,
+          })
+          // Add column on the right
+          expandedGrid[r].push({
+            id: `cell-${r}-right`,
+            type: "empty" as const,
+            row: r,
+            col: expandedGrid[r].length,
+          })
+        }
+
+        // Recalculate cell positions
+        for (let r = 0; r < expandedGrid.length; r++) {
+          for (let c = 0; c < expandedGrid[r].length; c++) {
+            expandedGrid[r][c].row = r
+            expandedGrid[r][c].col = c
+            expandedGrid[r][c].id = `cell-${r}-${c}`
+          }
+        }
+
+        // Update column widths and row heights
+        const newColumnWidths = [75 as const, ...prev.columnWidths, 75 as const]
+        const newRowHeights = [...prev.rowHeights, 38 as const]
+
+        // Now apply ghost cell logic
+        const updatedGrid = updateGhostCells(expandedGrid)
+
+        return {
+          ...prev,
+          grid: updatedGrid,
+          rows: updatedGrid.length,
+          columns: updatedGrid[0]?.length || prev.columns,
+          columnWidths: newColumnWidths,
+          rowHeights: newRowHeights,
+        }
+      })
+    }
+  }, [initialPreset])
 
   const totalHeightCm = useMemo(() => {
     // Find the maximum number of filled rows in any column
@@ -1493,6 +1613,20 @@ export function ShelfConfigurator({ initialPreset }: { initialPreset?: PresetCon
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
+          {showVideoPreview && presetVideoUrl && (
+            <div className="absolute top-20 left-4 z-50 w-48 h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
+              <button
+                onClick={() => setShowVideoPreview(false)}
+                className="absolute top-1 right-1 z-10 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+                <source src={presetVideoUrl} type="video/mp4" />
+              </video>
+            </div>
+          )}
+
           <Canvas
             shadows={true}
             camera={{ position: [0, 1.2, 2.5], fov: 50 }}
