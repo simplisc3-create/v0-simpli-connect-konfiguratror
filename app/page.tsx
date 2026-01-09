@@ -79,7 +79,7 @@ export default function Home() {
         <div className="relative z-10 h-full flex flex-col justify-between px-6 pt-44 pb-24">
           {/* Main Content - Top left aligned, above the shelf */}
           <div className="max-w-7xl mx-auto w-full">
-            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none lg:text-9xl tracking-tight px-px my-[-70px] mx-[120px]">
+            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none lg:text-9xl tracking-tight px-px my-[-70px] mx-20">
               {activeCollection.headline}
             </h1>
           </div>
