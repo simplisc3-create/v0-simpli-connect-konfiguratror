@@ -15,6 +15,7 @@ import {
   getTuerArtNr,
   getKlapptuerArtNr,
   getLeiterArtNr,
+  getKlapptuerObenArtNr, // Add import for new function
 } from "@/lib/simpli-products"
 import { useThree } from "@react-three/fiber"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
@@ -1157,7 +1158,10 @@ export function ShelfConfigurator({
       columnGroups.push(currentGroup)
     }
 
-    // Calculate Flächenset 80 for each group of adjacent columns
+    // For each row level, modules SHARE horizontal surfaces
+    // Floor of row N = Ceiling of row N-1 (shared)
+    // Only count unique horizontal levels, not per column
+
     for (const group of columnGroups) {
       // Find height of this group and count back panels
       let backPanelCount = 0
@@ -1194,38 +1198,30 @@ export function ShelfConfigurator({
 
       if (rowsWithModules.size === 0) continue
 
-      // For each row, modules share horizontal surfaces
-      // Each row needs: floor (shared) + ceiling (shared)
-      // But ceiling of row N = floor of row N+1 (shared between stacked modules)
-
-      // Count total horizontal panels:
-      // - For each ROW with modules: count columns in that row for floor + ceiling
-      // - Adjacent stacked rows share the surface between them
-
       let totalHorizontalPanels = 0
       const sortedRows = [...rowsWithModules.keys()].sort((a, b) => a - b)
+
+      // Count unique floor/ceiling levels
+      // For a group of N rows, we need N+1 horizontal levels (N floors + 1 top ceiling)
+      // BUT: if rows are not contiguous, we need additional surfaces
 
       for (let i = 0; i < sortedRows.length; i++) {
         const row = sortedRows[i]
         const { cols } = rowsWithModules.get(row)!
         const numColsInRow = cols.length
 
-        // Floor of this row
+        // Check if this row is stacked directly on previous
         const prevRow = i > 0 ? sortedRows[i - 1] : -1
         const isStackedOnPrevious = prevRow === row - 1
 
-        if (!isStackedOnPrevious) {
-          // This row's floor is NOT shared with row below - add floor panels
+        if (isStackedOnPrevious) {
+          // Stacked: floor is shared with previous ceiling
+          // Only add ceiling for this row (which may be shared with next)
           totalHorizontalPanels += numColsInRow
+        } else {
+          // Not stacked: need both floor and ceiling
+          totalHorizontalPanels += numColsInRow * 2
         }
-        // If stacked on previous row, the floor is already counted as previous row's ceiling
-
-        // Ceiling of this row
-        const nextRow = i < sortedRows.length - 1 ? sortedRows[i + 1] : -1
-        const hasStackedAbove = nextRow === row + 1
-
-        // Always add ceiling panels (they become floor of row above if stacked)
-        totalHorizontalPanels += numColsInRow
       }
 
       // Total panels = horizontal surfaces + back panels
@@ -1243,7 +1239,10 @@ export function ShelfConfigurator({
     }
 
     // --- FLÄCHENSETS 40 for Side Panels ---
-    // Module types that need side panels if not covered by neighbors with side walls
+    // Side panels are needed for:
+    // 1. Outer edges of the shelf (leftmost and rightmost columns)
+    // 2. Between modules that need side panels and modules that don't provide them
+
     const sidePanelsNeeded: Record<string, number> = {}
 
     // Module types that have their own side walls (door/flap modules)
@@ -1257,7 +1256,7 @@ export function ShelfConfigurator({
       "mit-klapptuer-oben",
       "ohne-seitenwaende",
       "mit-rueckwand",
-      "ohne-rueckwand", // Added "ohne-rueckwand" to the list
+      "ohne-rueckwand",
     ]
 
     // Find shelf sections (groups of adjacent occupied columns)
@@ -1282,96 +1281,61 @@ export function ShelfConfigurator({
       sections.push(currentSection)
     }
 
-    // For each section, add outer side panels (left of leftmost, right of rightmost) for topmost row
+    // For each section, check outer edges only at ground level (row 0)
     for (const section of sections) {
       const leftmostCol = Math.min(...section)
       const rightmostCol = Math.max(...section)
 
-      // Find all unique rows in this section
-      const rowsInSection = new Set<number>()
-      for (const { row, col } of cells) {
-        if (section.includes(col)) {
-          rowsInSection.add(row)
-        }
+      // Only check ground level (row 0) for outer side panels
+      const groundCells = cells.filter(({ row, col }) => row === 0 && section.includes(col))
+
+      if (groundCells.length === 0) continue
+
+      // Left outer edge
+      const leftCell = groundCells.find(({ col }) => col === leftmostCol)
+      if (leftCell && !moduleTypesWithSideWalls.includes(leftCell.cell.type)) {
+        // Need side panel on left
+        const color = leftCell.cell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
       }
 
-      // For each row, check if modules at outer edges need side panels
-      for (const checkRow of rowsInSection) {
-        // Find leftmost and rightmost occupied columns at this row
-        let leftmostAtRow = Number.POSITIVE_INFINITY
-        let rightmostAtRow = -1
-        for (const col of section) {
-          const cell = config.grid[checkRow]?.[col]
-          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
-            if (col < leftmostAtRow) leftmostAtRow = col
-            if (col > rightmostAtRow) rightmostAtRow = col
-          }
-        }
-
-        if (leftmostAtRow === Number.POSITIVE_INFINITY) continue // No modules at this row
-
-        // Get the modules at the outer edges of this row
-        const leftCell = config.grid[checkRow]?.[leftmostAtRow]
-        const rightCell = config.grid[checkRow]?.[rightmostAtRow]
-
-        // Add outer left panel if leftmost module doesn't have side walls
-        if (leftCell && !moduleTypesWithSideWalls.includes(leftCell.type)) {
-          const color = leftCell.color || "weiss"
-          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
-        }
-
-        // Add outer right panel if rightmost module doesn't have side walls
-        // But avoid double-counting if left and right are the same cell
-        if (rightCell && !moduleTypesWithSideWalls.includes(rightCell.type) && rightmostAtRow !== leftmostAtRow) {
-          const color = rightCell.color || "weiss"
-          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
-        }
-        // If same cell (single module in row), it needs both sides
-        if (leftmostAtRow === rightmostAtRow && leftCell && !moduleTypesWithSideWalls.includes(leftCell.type)) {
-          const color = leftCell.color || "weiss"
-          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // Second side panel
-        }
+      // Right outer edge
+      const rightCell = groundCells.find(({ col }) => col === rightmostCol)
+      if (rightCell && !moduleTypesWithSideWalls.includes(rightCell.cell.type)) {
+        // Need side panel on right
+        const color = rightCell.cell.color || "weiss"
+        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
       }
     }
 
-    // For each module that needs Flächenset 40 side panels, check neighbors
+    // Also check modules that need side panels next to neighbors without side walls
     for (const { row, col, cell } of cells) {
-      if (moduleTypesNeedingFlaechenset40.includes(cell.type)) {
-        const color = cell.color || "weiss"
+      if (!moduleTypesNeedingFlaechenset40.includes(cell.type)) continue
 
-        // Check left neighbor
-        const leftNeighbor = config.grid[row]?.[col - 1]
-        const leftHasSideWalls = leftNeighbor && moduleTypesWithSideWalls.includes(leftNeighbor.type)
+      const color = cell.color || "weiss"
 
-        // Add left panel if:
-        // - Left neighbor exists but doesn't have side walls AND isn't a Flächenset40 module (to avoid double counting)
-        // - OR left neighbor is a drawer (Funktionswand doesn't cover Flächenset need)
-        if (leftNeighbor && !leftHasSideWalls) {
-          // If left is a drawer or other non-Flächenset40 module, we need a panel
-          if (!moduleTypesNeedingFlaechenset40.includes(leftNeighbor.type)) {
-            sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
-          }
-          // If left is also a Flächenset40 module without side walls, share panel (handled by that module's right side)
+      // Check left neighbor
+      const leftNeighbor = cells.find((c) => c.row === row && c.col === col - 1)
+      if (leftNeighbor && !moduleTypesWithSideWalls.includes(leftNeighbor.cell.type)) {
+        // This module needs side panel on left (neighbor doesn't provide it)
+        // But only if this module has side walls itself
+        if (moduleTypesWithSideWalls.includes(cell.type)) {
+          // Skip - side walls modules don't need Flächenset 40, they have their own walls
+        } else {
+          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
         }
+      }
 
-        // Check right neighbor
-        const rightNeighbor = config.grid[row]?.[col + 1]
-        const rightHasSideWalls = rightNeighbor && moduleTypesWithSideWalls.includes(rightNeighbor.type)
-
-        if (rightNeighbor && !rightHasSideWalls) {
-          // If right is a drawer or other non-Flächenset40 module, we need a panel
-          if (!moduleTypesNeedingFlaechenset40.includes(rightNeighbor.type)) {
-            sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
-          } else {
-            // Both this and right neighbor need Flächenset40 and neither has side walls
-            // Add 1 panel (shared between them)
-            sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
-          }
+      // Check right neighbor
+      const rightNeighbor = cells.find((c) => c.row === row && c.col === col + 1)
+      if (rightNeighbor && !moduleTypesWithSideWalls.includes(rightNeighbor.cell.type)) {
+        if (!moduleTypesWithSideWalls.includes(cell.type)) {
+          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
         }
       }
     }
 
-    // Convert individual panels to Flächensets 40 (1 set = 2 panels, round up)
+    // Convert side panels to Flächensets 40 (2 panels per set)
     for (const [color, panelCount] of Object.entries(sidePanelsNeeded)) {
       const flaechensetsNeeded = Math.ceil(panelCount / 2)
       flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + flaechensetsNeeded
@@ -1551,7 +1515,7 @@ export function ShelfConfigurator({
     for (const { cell } of cells) {
       if (cell.type === "mit-klapptuer-oben") {
         const color = cell.color || "weiss"
-        const artNr = getKlapptuerArtNr(color)
+        const artNr = getKlapptuerObenArtNr(color)
         const colorLabel =
           color === "weiss"
             ? "weiß"
@@ -1574,7 +1538,7 @@ export function ShelfConfigurator({
           klapptuerObenCounts[artNr] = { count: 0, name, price: 65.0 }
         }
         klapptuerObenCounts[artNr].count++
-        // Each upward-opening flip door requires 2 gas dampers
+        // Each upward-opening flip door requires 2 gas dampers (for Warenwirtschaft only)
         totalGasdruckdaempfer += 2
       }
     }
@@ -1583,10 +1547,11 @@ export function ShelfConfigurator({
       addItem(artNr, data.name, data.count, data.price)
     }
 
-    // Add Gasdruckdämpfer for upward-opening flip doors (mandatory)
-    if (totalGasdruckdaempfer > 0) {
-      addItem("SIM033", "Gasdruckdämpfer", totalGasdruckdaempfer, 18.5)
-    }
+    // The addItem function adds to BOM, but we'll filter it out of the display
+    // Store gasdruckdaempfer count for internal use but don't add to customer-visible items
+    // if (totalGasdruckdaempfer > 0) {
+    //   addItem("SIM033", "Gasdruckdämpfer", totalGasdruckdaempfer, 18.5)
+    // }
 
     // --- FUNKTIONSWÄNDE (Back panels) ---
     let funktionswandCount = 0
@@ -1646,7 +1611,10 @@ export function ShelfConfigurator({
       packSize: item.packSize,
       totalPieces: item.totalPieces,
     }))
-    return { items: transformedItems, totalPrice: result.totalPrice }
+    // Filter out Gasdruckdämpfer from customer-facing BOM
+    const filteredItems = transformedItems.filter((item) => item.id !== "SIM033")
+    const filteredTotalPrice = filteredItems.reduce((sum, item) => sum + item.total, 0)
+    return { items: filteredItems, totalPrice: filteredTotalPrice }
   }, [gridHash])
 
   function InvalidateOnChange({ gridHash }: { gridHash: string }) {
@@ -1852,7 +1820,7 @@ export function ShelfConfigurator({
 
           {/* Height Warning */}
           {showHeightWarning && (
-            <div className="absolute bottom-4 left-1/2 top-4 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
+            <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
               <AlertTriangle className="h-5 w-5" />
               <span>Die Regalhöhe überschreitet 200 cm.</span>
               <Button

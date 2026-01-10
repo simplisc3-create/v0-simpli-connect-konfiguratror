@@ -110,21 +110,25 @@ export default function Home() {
               icon={<Box className="w-6 h-6" />}
               title="Modulares System"
               description="Kombiniere Module nach deinen Wünschen. Erweitere jederzeit."
+              bgColor="bg-yellow-400"
             />
             <FeatureCard
               icon={<Palette className="w-6 h-6" />}
               title="Individuelle Farben"
               description="Wähle aus 6 Sonderfarben oder klassischem Weiß und Schwarz."
+              bgColor="bg-red-500"
             />
             <FeatureCard
               icon={<Truck className="w-6 h-6" />}
               title="Schnelle Lieferung"
               description="Versandfertig in 5-7 Werktagen. Kostenlos ab 500€."
+              bgColor="bg-green-500"
             />
             <FeatureCard
               icon={<Shield className="w-6 h-6" />}
               title="Premium Qualität"
               description="Robuste Chromrahmen und hochwertige Materialien."
+              bgColor="bg-orange-500"
             />
           </div>
         </div>
@@ -317,12 +321,19 @@ export default function Home() {
   )
 }
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function FeatureCard({
+  icon,
+  title,
+  description,
+  bgColor,
+}: { icon: React.ReactNode; title: string; description: string; bgColor?: string }) {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
-      <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4">{icon}</div>
-      <h3 className="font-semibold text-lg mb-2">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
+    <div
+      className={`${bgColor || "bg-white"} rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition`}
+    >
+      <div className="w-12 h-12 bg-white/80 rounded-xl flex items-center justify-center mb-4">{icon}</div>
+      <h3 className={`font-semibold text-lg mb-2 ${bgColor ? "text-white" : ""}`}>{title}</h3>
+      <p className={`text-sm ${bgColor ? "text-white/90" : "text-gray-600"}`}>{description}</p>
     </div>
   )
 }

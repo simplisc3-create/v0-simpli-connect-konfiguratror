@@ -897,6 +897,23 @@ export function getKlapptuerArtNr(color: string): string {
 }
 
 /**
+ * Get Klapptür B (nach oben öffnend) article number based on color
+ * Klapptür B uses SIM025 series (same as Einzelschublade front)
+ */
+export function getKlapptuerObenArtNr(color: string): string {
+  const colorMap: Record<string, string> = {
+    weiss: "SIM025-white",
+    grau: "SIM025-grey",
+    rot: "SIM025-red",
+    orange: "SIM025-orange",
+    gruen: "SIM025-green",
+    blau: "SIM025-blue",
+    gelb: "SIM025-yellow",
+  }
+  return colorMap[color] || "SIM025-white"
+}
+
+/**
  * Get Leiter article info based on height
  */
 export function getLeiterArtNr(height: number): { artNr: string; name: string; price: number } {
