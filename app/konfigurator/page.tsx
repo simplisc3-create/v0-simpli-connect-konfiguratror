@@ -16,15 +16,21 @@ const presets = {
     youtubeId: "hUbkjGIyy2E",
   },
   starter: {
-    // 2 stacked open shelves
-    columns: 1,
+    columns: 2,
     rows: 2,
-    columnWidths: [75] as (75 | 38)[],
+    columnWidths: [75, 75] as (75 | 38)[],
     rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
-      [{ id: "cell-0-0", type: "offenes-fach" as const, row: 0, col: 0, color: "weiss" as const }],
-      [{ id: "cell-1-0", type: "offenes-fach" as const, row: 1, col: 0, color: "weiss" as const }],
+      [
+        { id: "cell-0-0", type: "mit-rueckwand" as const, row: 0, col: 0, color: "gruen" as const },
+        { id: "cell-0-1", type: "mit-rueckwand" as const, row: 0, col: 1, color: "gruen" as const },
+      ],
+      [
+        { id: "cell-1-0", type: "mit-rueckwand" as const, row: 1, col: 0, color: "gruen" as const },
+        { id: "cell-1-1", type: "mit-rueckwand" as const, row: 1, col: 1, color: "gruen" as const },
+      ],
     ],
+    youtubeId: "ffjWvF61tJg",
   },
   homeoffice: {
     // 4 compartments with blue drawers (2x2 grid)
@@ -42,7 +48,7 @@ const presets = {
         { id: "cell-1-1", type: "mit-doppelschublade" as const, row: 1, col: 1, color: "blau" as const },
       ],
     ],
-    youtubeId: "E3ywae27tl0",
+    youtubeId: "gBCkDel4Jlc",
   },
 }
 

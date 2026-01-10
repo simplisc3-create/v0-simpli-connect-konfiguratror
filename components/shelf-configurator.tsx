@@ -110,55 +110,64 @@ const initialConfig: ShelfConfig = {
 const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
   const rows = grid.length
   const cols = grid[0]?.length || 0
+  const newGrid: GridCell[][] = []
 
-  // Initialize all cells as empty first
-  const newGrid = Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => ({
-      id: `cell-${r}-${c}`,
-      type: "empty" as const,
-      row: r,
-      col: c,
-      color: grid[r]?.[c]?.color, // Preserve color if it exists
-    })),
-  )
-
-  // Re-add existing modules
+  // First pass: copy all non-ghost cells
   for (let r = 0; r < rows; r++) {
+    newGrid[r] = []
     for (let c = 0; c < cols; c++) {
-      const originalCell = grid[r]?.[c]
-      if (originalCell && originalCell.type !== "empty" && originalCell.type !== "ghost") {
+      const originalCell = grid[r][c]
+      if (originalCell.type === "ghost") {
+        newGrid[r][c] = { ...originalCell, type: "empty" }
+      } else {
         newGrid[r][c] = { ...originalCell, type: originalCell.type, color: originalCell.color }
       }
     }
   }
 
-  // Now, intelligently add ghost cells based on occupied cells
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (newGrid[r][c].type !== "empty") {
-        // Check cell above - allows vertical stacking
-        if (r + 1 < rows && newGrid[r + 1][c].type === "empty") {
-          newGrid[r + 1][c] = { ...newGrid[r + 1][c], type: "ghost" }
-        }
-        // </CHANGE> Only add ghost cells to left/right at ground level (row 0) for horizontal expansion
-        // Check cell to the left - only at ground level
-        if (r === 0 && c - 1 >= 0 && newGrid[r][c - 1].type === "empty") {
-          newGrid[r][c - 1] = { ...newGrid[r][c - 1], type: "ghost" }
-        }
-        // Check cell to the right - only at ground level
-        if (r === 0 && c + 1 < cols && newGrid[r][c + 1].type === "empty") {
-          newGrid[r][c + 1] = { ...newGrid[r][c + 1], type: "ghost" }
-        }
+  // Second pass: add ghost cells ONLY for valid expansion points
+  // Rule 1: Vertical stacking - ghost cell directly above a filled module
+  // Rule 2: Horizontal expansion - ghost cell left/right ONLY at row 0 (ground level)
+
+  for (let c = 0; c < cols; c++) {
+    // Find the topmost filled cell in this column for vertical stacking
+    let topmostFilledRow = -1
+    for (let r = rows - 1; r >= 0; r--) {
+      if (newGrid[r][c].type !== "empty" && newGrid[r][c].type !== "ghost") {
+        topmostFilledRow = r
+        break
+      }
+    }
+
+    // Add ghost cell above the topmost filled cell
+    if (topmostFilledRow >= 0 && topmostFilledRow + 1 < rows) {
+      if (newGrid[topmostFilledRow + 1][c].type === "empty") {
+        newGrid[topmostFilledRow + 1][c] = { ...newGrid[topmostFilledRow + 1][c], type: "ghost" }
       }
     }
   }
+
+  // Horizontal expansion - ONLY at row 0
+  for (let c = 0; c < cols; c++) {
+    if (newGrid[0][c].type !== "empty" && newGrid[0][c].type !== "ghost") {
+      // Check left
+      if (c - 1 >= 0 && newGrid[0][c - 1].type === "empty") {
+        newGrid[0][c - 1] = { ...newGrid[0][c - 1], type: "ghost" }
+      }
+      // Check right
+      if (c + 1 < cols && newGrid[0][c + 1].type === "empty") {
+        newGrid[0][c + 1] = { ...newGrid[0][c + 1], type: "ghost" }
+      }
+    }
+  }
+
   return newGrid
 }
 
 export function ShelfConfigurator({
   initialPreset,
   presetYoutubeId,
-}: { initialPreset?: PresetConfig; presetYoutubeId?: string } = {}) {
+}: { initialPreset?: PresetConfig; presetYoutubeId?: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [showVideoPreview, setShowVideoPreview] = useState(!!presetYoutubeId)
 
@@ -637,12 +646,8 @@ export function ShelfConfigurator({
               if (adjacentCell.type === "empty") {
                 const isHorizontal = nr === r // left or right
                 if (isHorizontal) {
-                  // For horizontal ghost cells, check if there's support below
-                  // Support means: either row 0 (ground) OR a filled module below
-                  const hasSupport =
-                    nr === 0 ||
-                    (nr > 0 && newGrid[nr - 1]?.[nc]?.type !== "empty" && newGrid[nr - 1]?.[nc]?.type !== "ghost")
-                  if (hasSupport) {
+                  // Rule: No horizontal expansion above ground - only vertical stacking is allowed above row 0
+                  if (nr === 0) {
                     newGrid[nr][nc] = { ...adjacentCell, type: "ghost" }
                   }
                 } else {
@@ -1154,19 +1159,25 @@ export function ShelfConfigurator({
 
     // Calculate Flächenset 80 for each group of adjacent columns
     for (const group of columnGroups) {
-      // Find height of this group (max rows)
-      let groupMaxRow = -1
-      let groupMinRow = Number.POSITIVE_INFINITY
+      // Find height of this group and count back panels
       let backPanelCount = 0
       let moduleColor = "weiss"
+
+      const rowsWithModules: Map<number, { cols: number[]; cells: GridCell[] }> = new Map()
 
       for (const col of group) {
         const colCells = columnCells.get(col) || []
         for (const { row, cell } of colCells) {
-          if (row > groupMaxRow) groupMaxRow = row
-          if (row < groupMinRow) groupMinRow = row
           moduleColor = cell.color || "weiss"
 
+          // Track modules per row
+          if (!rowsWithModules.has(row)) {
+            rowsWithModules.set(row, { cols: [], cells: [] })
+          }
+          rowsWithModules.get(row)!.cols.push(col)
+          rowsWithModules.get(row)!.cells.push(cell)
+
+          // Only modules WITH back panels should be counted here
           if (
             cell.type === "mit-doppelschublade" ||
             cell.type === "mit-rueckwand" ||
@@ -1181,14 +1192,41 @@ export function ShelfConfigurator({
         }
       }
 
-      if (groupMaxRow < 0) continue
+      if (rowsWithModules.size === 0) continue
 
-      // Number of horizontal surface levels per column = rows + 1
-      const numRows = groupMaxRow - groupMinRow + 1
-      const horizontalSurfacesPerColumn = numRows + 1
+      // For each row, modules share horizontal surfaces
+      // Each row needs: floor (shared) + ceiling (shared)
+      // But ceiling of row N = floor of row N+1 (shared between stacked modules)
 
-      // Total horizontal panels = surfaces per column * number of columns
-      const totalHorizontalPanels = horizontalSurfacesPerColumn * group.length
+      // Count total horizontal panels:
+      // - For each ROW with modules: count columns in that row for floor + ceiling
+      // - Adjacent stacked rows share the surface between them
+
+      let totalHorizontalPanels = 0
+      const sortedRows = [...rowsWithModules.keys()].sort((a, b) => a - b)
+
+      for (let i = 0; i < sortedRows.length; i++) {
+        const row = sortedRows[i]
+        const { cols } = rowsWithModules.get(row)!
+        const numColsInRow = cols.length
+
+        // Floor of this row
+        const prevRow = i > 0 ? sortedRows[i - 1] : -1
+        const isStackedOnPrevious = prevRow === row - 1
+
+        if (!isStackedOnPrevious) {
+          // This row's floor is NOT shared with row below - add floor panels
+          totalHorizontalPanels += numColsInRow
+        }
+        // If stacked on previous row, the floor is already counted as previous row's ceiling
+
+        // Ceiling of this row
+        const nextRow = i < sortedRows.length - 1 ? sortedRows[i + 1] : -1
+        const hasStackedAbove = nextRow === row + 1
+
+        // Always add ceiling panels (they become floor of row above if stacked)
+        totalHorizontalPanels += numColsInRow
+      }
 
       // Total panels = horizontal surfaces + back panels
       const totalPanels = totalHorizontalPanels + backPanelCount
@@ -1249,28 +1287,50 @@ export function ShelfConfigurator({
       const leftmostCol = Math.min(...section)
       const rightmostCol = Math.max(...section)
 
-      // Find the topmost row with modules in this section
-      let topmostRow = Number.POSITIVE_INFINITY
+      // Find all unique rows in this section
+      const rowsInSection = new Set<number>()
       for (const { row, col } of cells) {
-        if (section.includes(col) && row < topmostRow) {
-          topmostRow = row
+        if (section.includes(col)) {
+          rowsInSection.add(row)
         }
       }
 
-      // Get the modules at the outer edges of the topmost row
-      const leftCell = config.grid[topmostRow]?.[leftmostCol]
-      const rightCell = config.grid[topmostRow]?.[rightmostCol]
+      // For each row, check if modules at outer edges need side panels
+      for (const checkRow of rowsInSection) {
+        // Find leftmost and rightmost occupied columns at this row
+        let leftmostAtRow = Number.POSITIVE_INFINITY
+        let rightmostAtRow = -1
+        for (const col of section) {
+          const cell = config.grid[checkRow]?.[col]
+          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+            if (col < leftmostAtRow) leftmostAtRow = col
+            if (col > rightmostAtRow) rightmostAtRow = col
+          }
+        }
 
-      // Add outer left panel if leftmost module doesn't have side walls
-      if (leftCell && !moduleTypesWithSideWalls.includes(leftCell.type)) {
-        const color = leftCell.color || "weiss"
-        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
-      }
+        if (leftmostAtRow === Number.POSITIVE_INFINITY) continue // No modules at this row
 
-      // Add outer right panel if rightmost module doesn't have side walls
-      if (rightCell && !moduleTypesWithSideWalls.includes(rightCell.type)) {
-        const color = rightCell.color || "weiss"
-        sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+        // Get the modules at the outer edges of this row
+        const leftCell = config.grid[checkRow]?.[leftmostAtRow]
+        const rightCell = config.grid[checkRow]?.[rightmostAtRow]
+
+        // Add outer left panel if leftmost module doesn't have side walls
+        if (leftCell && !moduleTypesWithSideWalls.includes(leftCell.type)) {
+          const color = leftCell.color || "weiss"
+          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+        }
+
+        // Add outer right panel if rightmost module doesn't have side walls
+        // But avoid double-counting if left and right are the same cell
+        if (rightCell && !moduleTypesWithSideWalls.includes(rightCell.type) && rightmostAtRow !== leftmostAtRow) {
+          const color = rightCell.color || "weiss"
+          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1
+        }
+        // If same cell (single module in row), it needs both sides
+        if (leftmostAtRow === rightmostAtRow && leftCell && !moduleTypesWithSideWalls.includes(leftCell.type)) {
+          const color = leftCell.color || "weiss"
+          sidePanelsNeeded[color] = (sidePanelsNeeded[color] || 0) + 1 // Second side panel
+        }
       }
     }
 

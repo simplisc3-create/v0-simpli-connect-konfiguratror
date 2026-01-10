@@ -3,10 +3,11 @@
 import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Palette, Box, Truck, Shield } from "lucide-react"
+import { ArrowRight, Palette, Box, Truck, Shield, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ImageUpload } from "@/components/image-upload"
 import { SiteHeader } from "@/components/site-header"
+import { useCartStore } from "@/lib/cart-store"
 
 const collections = [
   {
@@ -146,31 +147,74 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <ProductCard
-              image="/images/5188225137160352909.jpg"
+              youtubeId="ffjWvF61tJg"
+              videoCrop={true}
               title="Starter Regal"
-              description="2 Fächer, perfekt für den Einstieg"
-              price="ab 299€"
+              description="4 Fächer, perfekt für den Einstieg"
+              price="ab 399€"
               href="/konfigurator?preset=starter"
+              badge="NEU"
+              hoverMessage="selbst konfigurieren"
+              cartItems={[
+                { id: "SIM001", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                { id: "SIM001-2", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                { id: "SIM001-3", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM010", name: "Flächenset 40 weiß grün", artNr: "SIM010-green", price: 15.0 },
+                { id: "SIM010-2", name: "Flächenset 40 weiß grün", artNr: "SIM010-green", price: 15.0 },
+                { id: "SIM011", name: "Flächenset 80 weiß grün", artNr: "SIM011-green", price: 22.0 },
+                { id: "SIM011-2", name: "Flächenset 80 weiß grün", artNr: "SIM011-green", price: 22.0 },
+              ]}
             />
             <ProductCard
               image="/medium-modular-shelf-system-4-compartments-chrome-.jpg"
-              youtubeId="E3ywae27tl0"
+              youtubeId="gBCkDel4Jlc"
               title="Home Office"
               description="4 Fächer mit Schubladen"
               price="ab 599€"
               href="/konfigurator?preset=homeoffice"
               badge="NEU"
               hoverMessage="selbst konfigurieren"
+              cartItems={[
+                { id: "SIM002", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
+                { id: "SIM002-2", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
+                { id: "SIM002-3", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
+                { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM018-blau", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+                { id: "SIM018-blau-2", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+                { id: "SIM018-blau-3", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+                { id: "SIM018-blau-4", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+              ]}
             />
             <ProductCard
               image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
               youtubeId="hUbkjGIyy2E"
+              videoCrop={false}
               title="Wohnzimmer Set"
               description="4 Fächer, individuell gestaltbar"
               price="ab 899€"
               href="/konfigurator?preset=wohnzimmer"
               badge="NEU"
               hoverMessage="selbst konfigurieren"
+              cartItems={[
+                { id: "SIM001", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                { id: "SIM001-2", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                { id: "SIM010", name: "Flächenset 40 weiß", artNr: "SIM010", price: 15.0 },
+                { id: "SIM011", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+                { id: "SIM011-2", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+                { id: "SIM011-3", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+                { id: "SIM011-4", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+              ]}
             />
           </div>
         </div>
@@ -287,26 +331,42 @@ function ProductCard({
   image,
   video,
   youtubeId,
+  videoCrop = true,
   title,
   description,
   price,
   href,
   badge,
   hoverMessage,
+  cartItems,
 }: {
-  image: string
+  image?: string
   video?: string
   youtubeId?: string
+  videoCrop?: boolean
   title: string
   description: string
   price: string
   href?: string
   badge?: string
   hoverMessage?: string
+  cartItems?: { id: string; name: string; artNr: string; price: number; image?: string }[]
 }) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const addItems = useCartStore((state) => state.addItems)
+  const [addedToCart, setAddedToCart] = useState(false)
 
   const displayImage = uploadedImage || image
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (cartItems && cartItems.length > 0) {
+      addItems(cartItems)
+      setAddedToCart(true)
+      setTimeout(() => setAddedToCart(false), 2000)
+    }
+  }
 
   const CardContent = () => (
     <>
@@ -319,20 +379,43 @@ function ProductCard({
           </div>
         )}
         {hoverMessage && (
-          <div className="absolute inset-0 z-30 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <div className="absolute inset-0 z-30 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-4">
             <span className="text-white text-lg font-semibold px-6 py-3 border-2 border-white rounded-full hover:bg-white hover:text-black transition-colors">
               {hoverMessage}
             </span>
+            {/* Warenkorb button */}
+            {cartItems && cartItems.length > 0 && (
+              <button
+                onClick={handleAddToCart}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+                  addedToCart ? "bg-green-500 text-white" : "bg-white text-black hover:bg-gray-200"
+                }`}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {addedToCart ? "Hinzugefügt!" : "Warenkorb"}
+              </button>
+            )}
           </div>
         )}
         {youtubeId ? (
-          <div className="absolute inset-0 z-20 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 z-20 overflow-hidden pointer-events-none bg-black">
             <iframe
               src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
               allow="autoplay; encrypted-media"
               allowFullScreen
-              className="absolute top-1/2 left-1/2 w-[300%] h-[300%] -translate-x-1/2 -translate-y-1/2"
-              style={{ border: "none" }}
+              className={`pointer-events-none ${videoCrop ? "absolute top-1/2 left-1/2" : "w-full h-full"}`}
+              style={
+                videoCrop
+                  ? {
+                      border: "none",
+                      width: "300%",
+                      height: "300%",
+                      transform: "translate(-50%, -50%)",
+                    }
+                  : {
+                      border: "none",
+                    }
+              }
             />
           </div>
         ) : video ? (
