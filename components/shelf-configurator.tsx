@@ -751,7 +751,37 @@ export function ShelfConfigurator({
         const newRows = newGrid.length
 
         const newColumnWidths = [...prev.columnWidths]
-        while (newColumnWidths.length < newColumns) newColumnWidths.push(75)
+
+        // Calculate how many new columns were added
+        const addedColumns = newColumns - newColumnWidths.length
+
+        if (addedColumns > 0) {
+          // Determine the width that the placed module needs
+          let newColWidth: 75 | 38 = 75 // default to 80cm
+
+          if (type !== "empty" && type !== "ghost") {
+            // Check if this module type is available for 40cm
+            const availableFor40 = isModuleTypeAvailableForWidth(type, 40)
+            const availableFor80 = isModuleTypeAvailableForWidth(type, 80)
+
+            // If only available for 40cm, use 38 (40cm width)
+            // If only available for 80cm, use 75 (80cm width)
+            // If available for both, keep existing column width or default to 75
+            if (availableFor40 && !availableFor80) {
+              newColWidth = 38
+            } else if (!availableFor40 && availableFor80) {
+              newColWidth = 75
+            } else {
+              // Available for both or neither - preserve existing width at this column if exists
+              newColWidth = newColumnWidths[col] || 75
+            }
+          }
+
+          // Add the correct width for new columns
+          for (let i = 0; i < addedColumns; i++) {
+            newColumnWidths.push(newColWidth)
+          }
+        }
 
         const newRowHeights = [...prev.rowHeights]
         while (newRowHeights.length < newRows) newRowHeights.push(38)
@@ -1151,9 +1181,10 @@ export function ShelfConfigurator({
       columnCells.get(col)!.push({ row, cell })
     }
 
+    const sortedCols = Array.from(columnCells.keys()).sort((a, b) => a - b)
+
     // Calculate Flächenset 80 (horizontal panels + back panels)
     // Group adjacent columns into sections
-    const sortedCols = Array.from(columnCells.keys()).sort((a, b) => a - b)
     const sections: number[][] = []
     let currentSection: number[] = []
 
@@ -1251,18 +1282,71 @@ export function ShelfConfigurator({
     }
 
     // --- FLÄCHENSETS 40 for Side Panels ---
-    // Side panels are needed for outer edges of sections
     const sidePanelsNeeded: Record<string, number> = {}
 
-    for (const section of sections) {
-      // Get color from first cell in section
-      const firstColCells = columnCells.get(section[0]) || []
-      const moduleColor = firstColCells[0]?.cell.color || "weiss"
+    // Check each row independently for side panel requirements
+    for (let r = 0; r < config.grid.length; r++) {
+      const row = config.grid[r]
 
-      // Left edge of section needs side panel
-      // Right edge of section needs side panel
-      // That's 2 side panels per section (1 Flächenset 40 = 2 panels)
-      sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 2
+      // Find all filled cells in this row
+      const filledInRow: Array<{ col: number; cell: (typeof config.grid)[0][0] }> = []
+      for (let c = 0; c < row.length; c++) {
+        if (row[c].type !== "empty" && row[c].type !== "ghost") {
+          filledInRow.push({ col: c, cell: row[c] })
+        }
+      }
+
+      if (filledInRow.length === 0) continue
+
+      // Determine which modules need side panels based on module type
+      const needsSidePanels = (moduleType: string): boolean => {
+        // ALWAYS need side panels: modules with doors, drawers, or back panels
+        return [
+          "mit-tueren",
+          "abschliessbare-tueren",
+          "mit-klapptuer",
+          "mit-klapptuer-oben",
+          "mit-einzelschublade",
+          "mit-doppelschublade",
+          "mit-rueckwand",
+        ].includes(moduleType)
+      }
+
+      // For each adjacent pair in this row, check if they need a shared panel
+      for (let i = 0; i < filledInRow.length; i++) {
+        const { col, cell } = filledInRow[i]
+        const moduleColor = cell.color || "weiss"
+
+        if (!needsSidePanels(cell.type)) continue
+
+        // Check left side - add panel if no left neighbor OR if this module needs a panel on that side
+        const hasLeftNeighbor = i > 0 && filledInRow[i - 1].col === col - 1
+        if (!hasLeftNeighbor) {
+          // No left neighbor = outer edge panel
+          sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
+        } else {
+          // Has left neighbor - check if they both need panels (shared wall between them)
+          const leftNeighborCell = filledInRow[i - 1].cell
+          if (needsSidePanels(leftNeighborCell.type)) {
+            // Both modules need side panels = shared wall between them
+            // Only count once per pair (count on the right module's side)
+            const leftColor = leftNeighborCell.color || "weiss"
+            // Count the shared panel for the left module's color
+            sidePanelsNeeded[leftColor] = (sidePanelsNeeded[leftColor] || 0) + 1
+          } else {
+            // Left neighbor doesn't need panels, but this module does
+            // This module needs its own panel on the left side
+            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
+          }
+        }
+
+        // Check right side - only add outer edge panel (shared walls handled above)
+        const hasRightNeighbor = i < filledInRow.length - 1 && filledInRow[i + 1].col === col + 1
+        if (!hasRightNeighbor) {
+          // No right neighbor = outer edge panel
+          sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
+        }
+      }
     }
 
     // Convert side panels to Flächensets 40 (2 panels per set)
@@ -1476,12 +1560,6 @@ export function ShelfConfigurator({
     for (const [artNr, data] of Object.entries(klapptuerObenCounts)) {
       addItem(artNr, data.name, data.count, data.price)
     }
-
-    // The addItem function adds to BOM, but we'll filter it out of the display
-    // Store gasdruckdaempfer count for internal use but don't add to customer-visible items
-    // if (totalGasdruckdaempfer > 0) {
-    //   addItem("SIM033", "Gasdruckdämpfer", totalGasdruckdaempfer, 18.5)
-    // }
 
     // --- FUNKTIONSWÄNDE (Back panels) ---
     let funktionswandCount = 0
