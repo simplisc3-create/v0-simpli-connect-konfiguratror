@@ -1,25 +1,18 @@
 "use client"
 
-import type React from "react"
-
 import { useMemo, useState, memo, useCallback } from "react"
 import type { ThreeEvent } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
 import { ContactShadows } from "@react-three/drei"
-import type * as THREE from "three"
 
 type Props = {
   config: ShelfConfig
   selectedTool?: GridCell["type"] | null
   hoveredCell?: { row: number; col: number } | null
-  selectedCell?: { row: number; col: number } | null
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (cell: { row: number; col: number } | null) => void
-  onApplyCellColor?: (row: number, col: number, color: GridCell["color"]) => void
-  onClearCellColor?: (row: number, col: number) => void
-  sceneGroupRef?: React.RefObject<THREE.Group | null>
 }
 
 const colorMap: Record<string, string> = {
@@ -91,16 +84,7 @@ const InteractiveCell = memo(function InteractiveCell({
   )
 })
 
-export const ShelfScene = memo(function ShelfScene({
-  config,
-  hoveredCell,
-  selectedCell,
-  onCellClick,
-  onCellHover,
-  onApplyCellColor,
-  onClearCellColor,
-  sceneGroupRef,
-}: Props) {
+export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCellClick, onCellHover }: Props) {
   const gridHash = useMemo(() => {
     return JSON.stringify({
       grid: config.grid.map((row) => row.map((cell) => ({ type: cell.type, color: cell.color }))),
@@ -214,7 +198,7 @@ export const ShelfScene = memo(function ShelfScene({
   )
 
   return (
-    <group ref={sceneGroupRef}>
+    <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />
         <meshStandardMaterial color="#c0c0c0" roughness={0.9} metalness={0.05} />
