@@ -81,6 +81,10 @@ const moduleTypes: Array<{ id: GridCell["type"]; label: string }> = [
   { id: "mit-klapptuer-oben", label: "Klapptür (nach oben)" },
   { id: "mit-doppelschublade", label: "Mit Schubladen" },
   { id: "abschliessbare-tueren", label: "Abschließbar" },
+  { id: "mit-tuere-links", label: "Mit Türe Links" },
+  { id: "mit-tuere-rechts", label: "Mit Türe Rechts" },
+  { id: "abschliessbar-links", label: "Abschließbar Links" },
+  { id: "abschliessbar-rechts", label: "Abschließbar Rechts" },
 ]
 
 export function ConfiguratorPanel({
@@ -132,6 +136,10 @@ export function ConfiguratorPanel({
       "mit-klapptuer-oben": "Klapptür (nach oben)",
       "mit-doppelschublade": "Mit Schubladen",
       "abschliessbare-tueren": "Abschließbar",
+      "mit-tuere-links": "Mit Türe Links",
+      "mit-tuere-rechts": "Mit Türe Rechts",
+      "abschliessbar-links": "Abschließbar Links",
+      "abschliessbar-rechts": "Abschließbar Rechts",
     }
     return labels[type] || type
   }
@@ -149,6 +157,10 @@ export function ConfiguratorPanel({
       "mit-klapptuer-oben": "Klapp↑",
       "mit-doppelschublade": "Schubl.",
       "abschliessbare-tueren": "Abschl.",
+      "mit-tuere-links": "Türe Links",
+      "mit-tuere-rechts": "Türe Rechts",
+      "abschliessbar-links": "Abschl. Links",
+      "abschliessbar-rechts": "Abschl. Rechts",
     }
     return labels[type] || ""
   }
@@ -180,7 +192,7 @@ export function ConfiguratorPanel({
   const totalPrice = price || 0
 
   return (
-    <div className="flex w-96 flex-col border-l border-neutral-700 bg-neutral-800">
+    <div className="hidden md:flex w-96 flex-col border-l border-neutral-700 bg-neutral-800">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {selectedCell && selectedCellInfo && selectedCellInfo.type !== "empty" && selectedCellInfo.type !== "ghost" && (

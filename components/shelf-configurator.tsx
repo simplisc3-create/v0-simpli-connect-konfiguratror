@@ -21,6 +21,7 @@ import { useThree } from "@react-three/fiber"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import * as THREE from "three"
 import { LoadingAnimation } from "./loading-animation"
+import { MobileConfiguratorNav } from "./mobile-configurator-nav"
 
 export type GridCell = {
   id: string
@@ -141,6 +142,55 @@ const updateGhostCells = (
     return { grid: newGrid, columnWidths: newColumnWidths, shifted: false }
   }
 
+  let needsTopRow = false
+  const currentCols = newGrid[0]?.length || 0
+  for (let c = 0; c < currentCols; c++) {
+    if (newGrid[0][c].type !== "empty" && newGrid[0][c].type !== "ghost") {
+      needsTopRow = true
+      break
+    }
+  }
+
+  if (needsTopRow) {
+    // Prepend a new empty row at top
+    const newTopRow: GridCell[] = []
+    for (let c = 0; c < currentCols; c++) {
+      newTopRow.push({
+        id: `cell-0-${c}`,
+        type: "empty",
+        row: 0,
+        col: c,
+      })
+    }
+    newGrid.unshift(newTopRow)
+    // Update all row indices
+    for (let r = 0; r < newGrid.length; r++) {
+      for (let c = 0; c < newGrid[r].length; c++) {
+        newGrid[r][c].row = r
+        newGrid[r][c].id = `cell-${r}-${c}`
+      }
+    }
+    shifted = true
+  }
+
+  // Now add vertical stacking ghost cells (above topmost filled in each column)
+  const updatedRows = newGrid.length
+  const updatedCols = newGrid[0]?.length || 0
+  for (let c = 0; c < updatedCols; c++) {
+    let topmostFilledRow = -1
+    for (let r = 0; r < updatedRows; r++) {
+      if (newGrid[r][c].type !== "empty" && newGrid[r][c].type !== "ghost") {
+        topmostFilledRow = r
+        break
+      }
+    }
+    if (topmostFilledRow > 0) {
+      if (newGrid[topmostFilledRow - 1][c].type === "empty") {
+        newGrid[topmostFilledRow - 1][c] = { ...newGrid[topmostFilledRow - 1][c], type: "ghost" }
+      }
+    }
+  }
+
   // Find leftmost and rightmost filled columns at row 0
   let leftmostFilled = cols
   let rightmostFilled = -1
@@ -148,22 +198,6 @@ const updateGhostCells = (
     if (newGrid[0][c].type !== "empty" && newGrid[0][c].type !== "ghost") {
       leftmostFilled = Math.min(leftmostFilled, c)
       rightmostFilled = Math.max(rightmostFilled, c)
-    }
-  }
-
-  // Add vertical stacking ghost cells
-  for (let c = 0; c < cols; c++) {
-    let topmostFilledRow = -1
-    for (let r = rows - 1; r >= 0; r--) {
-      if (newGrid[r][c].type !== "empty" && newGrid[r][c].type !== "ghost") {
-        topmostFilledRow = r
-        break
-      }
-    }
-    if (topmostFilledRow >= 0 && topmostFilledRow + 1 < rows) {
-      if (newGrid[topmostFilledRow + 1][c].type === "empty") {
-        newGrid[topmostFilledRow + 1][c] = { ...newGrid[topmostFilledRow + 1][c], type: "ghost" }
-      }
     }
   }
 
@@ -194,26 +228,26 @@ const updateGhostCells = (
   }
 
   // Right expansion: add column if rightmost is at last column
-  const currentCols = newGrid[0]?.length || 0
+  const currentColsAfterLeftExpansion = newGrid[0]?.length || 0
   let currentRightmostFilled = -1
-  for (let c = 0; c < currentCols; c++) {
+  for (let c = 0; c < currentColsAfterLeftExpansion; c++) {
     if (newGrid[0][c].type !== "empty" && newGrid[0][c].type !== "ghost") {
       currentRightmostFilled = Math.max(currentRightmostFilled, c)
     }
   }
 
-  if (currentRightmostFilled === currentCols - 1) {
+  if (currentRightmostFilled === currentColsAfterLeftExpansion - 1) {
     // Append a new column
     for (let r = 0; r < newGrid.length; r++) {
       newGrid[r].push({
-        id: `cell-${r}-${currentCols}`,
+        id: `cell-${r}-${currentColsAfterLeftExpansion}`,
         type: r === 0 ? "ghost" : "empty",
         row: r,
-        col: currentCols,
+        col: currentColsAfterLeftExpansion,
       })
     }
     newColumnWidths.push(38)
-  } else if (currentRightmostFilled >= 0 && currentRightmostFilled + 1 < currentCols) {
+  } else if (currentRightmostFilled >= 0 && currentRightmostFilled + 1 < currentColsAfterLeftExpansion) {
     if (newGrid[0][currentRightmostFilled + 1].type === "empty") {
       newGrid[0][currentRightmostFilled + 1] = { ...newGrid[0][currentRightmostFilled + 1], type: "ghost" }
     }
@@ -1368,7 +1402,14 @@ export function ShelfConfigurator({
     const tuerenCounts: Record<string, { count: number; name: string; price: number }> = {}
 
     for (const { cell } of cells) {
-      if (cell.type === "mit-tueren" || cell.type === "abschliessbare-tueren") {
+      if (
+        cell.type === "mit-tueren" ||
+        cell.type === "abschliessbare-tueren" ||
+        cell.type === "mit-tuere-links" ||
+        cell.type === "mit-tuere-rechts" ||
+        cell.type === "abschliessbar-links" ||
+        cell.type === "abschliessbar-rechts"
+      ) {
         const color = cell.color || "weiss"
         const artNr = getTuerArtNr(color)
         const colorLabel =
@@ -1392,8 +1433,17 @@ export function ShelfConfigurator({
         if (!tuerenCounts[artNr]) {
           tuerenCounts[artNr] = { count: 0, name, price: 45.0 }
         }
-        // 2 doors per door module
-        tuerenCounts[artNr].count += 2
+        // 80cm modules have 2 doors, 40cm modules have 1 door
+        if (
+          cell.type === "mit-tuere-links" ||
+          cell.type === "mit-tuere-rechts" ||
+          cell.type === "abschliessbar-links" ||
+          cell.type === "abschliessbar-rechts"
+        ) {
+          tuerenCounts[artNr].count += 1
+        } else {
+          tuerenCounts[artNr].count += 2
+        }
       }
     }
 
@@ -1404,7 +1454,11 @@ export function ShelfConfigurator({
     // --- SCHLÖSSER (Locks) ---
     let lockCount = 0
     for (const { cell } of cells) {
-      if (cell.type === "abschliessbare-tueren") {
+      if (
+        cell.type === "abschliessbare-tueren" ||
+        cell.type === "abschliessbar-links" ||
+        cell.type === "abschliessbar-rechts"
+      ) {
         lockCount++
       }
     }
@@ -1499,11 +1553,23 @@ export function ShelfConfigurator({
         cell.type === "mit-doppelschublade" ||
         cell.type === "abschliessbare-tueren" ||
         cell.type === "mit-klapptuer" ||
-        cell.type === "mit-klapptuer-oben"
+        cell.type === "mit-klapptuer-oben" ||
+        cell.type === "mit-tuere-links" ||
+        cell.type === "mit-tuere-rechts" ||
+        cell.type === "abschliessbar-links" ||
+        cell.type === "abschliessbar-rechts"
       ) {
         funktionswandCount += 2
 
-        if (widthCm === 40 && (cell.type === "mit-klapptuer" || cell.type === "mit-klapptuer-oben")) {
+        if (
+          widthCm === 40 &&
+          (cell.type === "mit-klapptuer" ||
+            cell.type === "mit-klapptuer-oben" ||
+            cell.type === "mit-tuere-links" ||
+            cell.type === "mit-tuere-rechts" ||
+            cell.type === "abschliessbar-links" ||
+            cell.type === "abschliessbar-rechts")
+        ) {
           has40cmSingleDoor = true
         }
       }
@@ -1807,6 +1873,20 @@ export function ShelfConfigurator({
           onApplyColorToRow={applyColorToRow}
           onApplyColorToColumn={applyColorToColumn}
           onApplyColorToAll={applyColorToAll}
+        />
+
+        <MobileConfiguratorNav
+          config={config}
+          selectedTool={selectedTool}
+          selectedColor={selectedColor}
+          onSelectTool={(tool) => {
+            setSelectedTool(tool)
+            setSelectedCell(null)
+          }}
+          onSelectColor={setSelectedColor}
+          onUpdateConfig={updateConfig}
+          shoppingList={bomData.items}
+          price={bomData.totalPrice}
         />
       </div>
     </div>
