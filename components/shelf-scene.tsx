@@ -1,11 +1,13 @@
 "use client"
 
-import { useMemo, useState, memo, useCallback } from "react"
+import { useMemo, useState, memo, useCallback, useRef } from "react"
 import type { ThreeEvent } from "@react-three/fiber"
+import { useFrame } from "@react-three/fiber"
 import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
-import { ContactShadows } from "@react-three/drei"
+import { ContactShadows, Html } from "@react-three/drei"
+import type * as THREE from "three"
 
 type Props = {
   config: ShelfConfig
@@ -25,29 +27,39 @@ const colorMap: Record<string, string> = {
   gelb: colorHexMap.gelb,
 }
 
-const InteractiveCell = memo(function InteractiveCell({
+const SnapPoint = memo(function SnapPoint({
   position,
-  width,
-  height,
-  depth,
   row,
   col,
   isHovered,
   onClick,
   onHover,
+  isVertical = false,
 }: {
   position: [number, number, number]
-  width: number
-  height: number
-  depth: number
   row: number
   col: number
   isHovered: boolean
   onClick: (row: number, col: number) => void
   onHover: (cell: { row: number; col: number } | null) => void
+  isVertical?: boolean
 }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const glowRef = useRef<THREE.Mesh>(null)
   const [localHover, setLocalHover] = useState(false)
   const showHover = isHovered || localHover
+
+  // Animate the glow effect
+  useFrame((state) => {
+    if (glowRef.current) {
+      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1
+      glowRef.current.scale.setScalar(showHover ? scale * 1.5 : scale)
+    }
+    if (meshRef.current) {
+      const material = meshRef.current.material as THREE.MeshStandardMaterial
+      material.emissiveIntensity = showHover ? 2 : 0.8 + Math.sin(state.clock.elapsedTime * 3) * 0.2
+    }
+  })
 
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
@@ -62,6 +74,7 @@ const InteractiveCell = memo(function InteractiveCell({
       e.stopPropagation()
       setLocalHover(true)
       onHover({ row, col })
+      document.body.style.cursor = "pointer"
     },
     [onHover, row, col],
   )
@@ -69,18 +82,63 @@ const InteractiveCell = memo(function InteractiveCell({
   const handlePointerOut = useCallback(() => {
     setLocalHover(false)
     onHover(null)
+    document.body.style.cursor = "auto"
   }, [onHover])
 
+  // Simpli Connect brand colors: white for structure, green for valid
+  const baseColor = "#10b981" // emerald green
+  const hoverColor = "#22c55e" // lighter green
+  const glowColor = showHover ? "#4ade80" : "#34d399"
+
   return (
-    <mesh position={position} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
-      <boxGeometry args={[width - 0.01, height - 0.01, depth - 0.01]} />
-      <meshStandardMaterial
-        color={showHover ? "#22c55e" : "#10b981"}
-        transparent
-        opacity={showHover ? 0.6 : 0.4}
-        depthWrite={false}
-      />
-    </mesh>
+    <group position={position}>
+      {/* Outer glow ring */}
+      <mesh ref={glowRef} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.06, 0.008, 8, 32]} />
+        <meshStandardMaterial
+          color={glowColor}
+          transparent
+          opacity={showHover ? 0.8 : 0.4}
+          emissive={glowColor}
+          emissiveIntensity={showHover ? 1.5 : 0.5}
+        />
+      </mesh>
+
+      {/* Central dot */}
+      <mesh ref={meshRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+        <sphereGeometry args={[0.04, 16, 16]} />
+        <meshStandardMaterial
+          color={showHover ? hoverColor : baseColor}
+          emissive={showHover ? hoverColor : baseColor}
+          emissiveIntensity={showHover ? 2 : 1}
+          metalness={0.3}
+          roughness={0.2}
+        />
+      </mesh>
+
+      {/* Plus icon on hover */}
+      {showHover && (
+        <Html center distanceFactor={3} style={{ pointerEvents: "none" }}>
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/90 text-white font-bold text-lg shadow-lg shadow-emerald-500/50 animate-pulse">
+            +
+          </div>
+        </Html>
+      )}
+
+      {/* Direction indicator for vertical stacking */}
+      {isVertical && (
+        <mesh position={[0, 0.08, 0]}>
+          <coneGeometry args={[0.02, 0.04, 8]} />
+          <meshStandardMaterial
+            color={baseColor}
+            emissive={baseColor}
+            emissiveIntensity={0.5}
+            transparent
+            opacity={0.7}
+          />
+        </mesh>
+      )}
+    </group>
   )
 })
 
@@ -95,7 +153,7 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
     })
   }, [config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
 
-  const { glbModules, ghostCells } = useMemo(() => {
+  const { glbModules, snapPoints } = useMemo(() => {
     const glbs: {
       key: string
       position: [number, number, number]
@@ -105,13 +163,12 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
       width: number
       height: number
     }[] = []
-    const ghosts: {
+    const snaps: {
       key: string
       position: [number, number, number]
       row: number
       col: number
-      width: number
-      height: number
+      isVertical: boolean
     }[] = []
 
     const depth = 0.38
@@ -158,13 +215,22 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
         ]
 
         if (cell.type === "ghost") {
-          ghosts.push({
-            key: `ghost-${gridRow}-${gridCol}`,
-            position,
+          const isAboveModule =
+            gridRow > 0 &&
+            config.grid[gridRow - 1]?.[gridCol]?.type !== "empty" &&
+            config.grid[gridRow - 1]?.[gridCol]?.type !== "ghost"
+
+          // Position snap points at the edge of where the module would be placed
+          const snapPosition: [number, number, number] = isAboveModule
+            ? [position[0], position[1] - cellHeight / 2 + 0.05, position[2]] // Bottom edge for vertical
+            : [position[0], position[1], position[2] + depth / 2 + 0.05] // Front center for horizontal
+
+          snaps.push({
+            key: `snap-${gridRow}-${gridCol}`,
+            position: snapPosition,
             row: gridRow,
             col: gridCol,
-            width: cellWidth,
-            height: cellHeight,
+            isVertical: isAboveModule,
           })
         } else if (cell.type !== "empty") {
           glbs.push({
@@ -180,7 +246,7 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
       })
     })
 
-    return { glbModules: glbs, ghostCells: ghosts }
+    return { glbModules: glbs, snapPoints: snaps }
   }, [gridHash, config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
 
   const handleClick = useCallback(
@@ -228,18 +294,17 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
           gridConfig={config}
         />
       ))}
-      {ghostCells.map(({ key, position, row, col, width, height }) => (
-        <InteractiveCell
+
+      {snapPoints.map(({ key, position, row, col, isVertical }) => (
+        <SnapPoint
           key={key}
           position={position}
-          width={width}
-          height={height}
-          depth={0.38}
           row={row}
           col={col}
           isHovered={hoveredCell?.row === row && hoveredCell?.col === col}
           onClick={handleClick}
           onHover={handleHover}
+          isVertical={isVertical}
         />
       ))}
     </group>

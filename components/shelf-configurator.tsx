@@ -108,10 +108,15 @@ const initialConfig: ShelfConfig = {
   cellStyles: {}, // Initialize empty cellStyles
 }
 
-const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
+const updateGhostCells = (
+  grid: GridCell[][],
+  columnWidths: (75 | 38)[],
+): { grid: GridCell[][]; columnWidths: (75 | 38)[]; shifted: boolean } => {
   const rows = grid.length
   const cols = grid[0]?.length || 0
   const newGrid: GridCell[][] = []
+  const newColumnWidths = [...columnWidths]
+  let shifted = false
 
   // First pass: copy all non-ghost cells
   for (let r = 0; r < rows; r++) {
@@ -129,18 +134,12 @@ const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
   // Check if there are any filled modules
   const hasFilledModules = newGrid.some((row) => row.some((cell) => cell.type !== "empty" && cell.type !== "ghost"))
 
-  // If no filled modules, just add one ghost cell at position [0,0]
   if (!hasFilledModules) {
     if (newGrid[0] && newGrid[0][0]) {
       newGrid[0][0] = { ...newGrid[0][0], type: "ghost" }
     }
-    return newGrid
+    return { grid: newGrid, columnWidths: newColumnWidths, shifted: false }
   }
-
-  // Second pass: add ghost cells ONLY for valid expansion points
-  // Rule 1: Vertical stacking - ghost cell directly above a filled module
-  // Rule 2: Horizontal expansion - ghost cell left/right ONLY at row 0 (ground level)
-  // Rule 3: Limit to 1 ghost cell on each side horizontally
 
   // Find leftmost and rightmost filled columns at row 0
   let leftmostFilled = cols
@@ -152,8 +151,8 @@ const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
     }
   }
 
+  // Add vertical stacking ghost cells
   for (let c = 0; c < cols; c++) {
-    // Find the topmost filled cell in this column for vertical stacking
     let topmostFilledRow = -1
     for (let r = rows - 1; r >= 0; r--) {
       if (newGrid[r][c].type !== "empty" && newGrid[r][c].type !== "ghost") {
@@ -161,8 +160,6 @@ const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
         break
       }
     }
-
-    // Add ghost cell above the topmost filled cell
     if (topmostFilledRow >= 0 && topmostFilledRow + 1 < rows) {
       if (newGrid[topmostFilledRow + 1][c].type === "empty") {
         newGrid[topmostFilledRow + 1][c] = { ...newGrid[topmostFilledRow + 1][c], type: "ghost" }
@@ -170,22 +167,59 @@ const updateGhostCells = (grid: GridCell[][]): GridCell[][] => {
     }
   }
 
-  // Horizontal expansion - ONLY at row 0, only 1 ghost on each side
-  // Only add ghost to the left of the leftmost filled cell
-  if (leftmostFilled > 0 && leftmostFilled < cols) {
+  if (leftmostFilled === 0) {
+    // Prepend a new column
+    for (let r = 0; r < newGrid.length; r++) {
+      newGrid[r].unshift({
+        id: `cell-${r}-0`,
+        type: r === 0 ? "ghost" : "empty",
+        row: r,
+        col: 0,
+      })
+    }
+    // Update all cell IDs and cols
+    for (let r = 0; r < newGrid.length; r++) {
+      for (let c = 0; c < newGrid[r].length; c++) {
+        newGrid[r][c].col = c
+        newGrid[r][c].id = `cell-${r}-${c}`
+      }
+    }
+    // Prepend column width (default 38 for 40cm)
+    newColumnWidths.unshift(38)
+    shifted = true
+  } else if (leftmostFilled > 0) {
     if (newGrid[0][leftmostFilled - 1].type === "empty") {
       newGrid[0][leftmostFilled - 1] = { ...newGrid[0][leftmostFilled - 1], type: "ghost" }
     }
   }
 
-  // Only add ghost to the right of the rightmost filled cell
-  if (rightmostFilled >= 0 && rightmostFilled + 1 < cols) {
-    if (newGrid[0][rightmostFilled + 1].type === "empty") {
-      newGrid[0][rightmostFilled + 1] = { ...newGrid[0][rightmostFilled + 1], type: "ghost" }
+  // Right expansion: add column if rightmost is at last column
+  const currentCols = newGrid[0]?.length || 0
+  let currentRightmostFilled = -1
+  for (let c = 0; c < currentCols; c++) {
+    if (newGrid[0][c].type !== "empty" && newGrid[0][c].type !== "ghost") {
+      currentRightmostFilled = Math.max(currentRightmostFilled, c)
     }
   }
 
-  return newGrid
+  if (currentRightmostFilled === currentCols - 1) {
+    // Append a new column
+    for (let r = 0; r < newGrid.length; r++) {
+      newGrid[r].push({
+        id: `cell-${r}-${currentCols}`,
+        type: r === 0 ? "ghost" : "empty",
+        row: r,
+        col: currentCols,
+      })
+    }
+    newColumnWidths.push(38)
+  } else if (currentRightmostFilled >= 0 && currentRightmostFilled + 1 < currentCols) {
+    if (newGrid[0][currentRightmostFilled + 1].type === "empty") {
+      newGrid[0][currentRightmostFilled + 1] = { ...newGrid[0][currentRightmostFilled + 1], type: "ghost" }
+    }
+  }
+
+  return { grid: newGrid, columnWidths: newColumnWidths, shifted }
 }
 
 export function ShelfConfigurator({
@@ -227,62 +261,20 @@ export function ShelfConfigurator({
 
   useEffect(() => {
     if (initialPreset) {
-      setConfig((prev) => {
-        // First, ensure we have enough rows and columns for expansion
-        const expandedGrid = [...prev.grid.map((row) => [...row])]
+      // Pass initial preset columnWidths to updateGhostCells
+      const {
+        grid: updatedGrid,
+        columnWidths: updatedColumnWidths,
+        shifted,
+      } = updateGhostCells(initialPreset.grid, initialPreset.columnWidths)
 
-        // Add an extra row at the top for ghost cells
-        const newTopRow: GridCell[] = expandedGrid[0].map((_, colIndex) => ({
-          id: `cell-${expandedGrid.length}-${colIndex}`,
-          type: "empty" as const,
-          row: expandedGrid.length,
-          col: colIndex,
-        }))
-        expandedGrid.push(newTopRow)
-
-        // Add an extra column on both sides for ghost cells
-        for (let r = 0; r < expandedGrid.length; r++) {
-          // Add column on the left
-          expandedGrid[r].unshift({
-            id: `cell-${r}-left`,
-            type: "empty" as const,
-            row: r,
-            col: -1,
-          })
-          // Add column on the right
-          expandedGrid[r].push({
-            id: `cell-${r}-right`,
-            type: "empty" as const,
-            row: r,
-            col: expandedGrid[r].length,
-          })
-        }
-
-        // Recalculate cell positions
-        for (let r = 0; r < expandedGrid.length; r++) {
-          for (let c = 0; c < expandedGrid[r].length; c++) {
-            expandedGrid[r][c].row = r
-            expandedGrid[r][c].col = c
-            expandedGrid[r][c].id = `cell-${r}-${c}`
-          }
-        }
-
-        // Update column widths and row heights
-        const newColumnWidths = [75 as const, ...prev.columnWidths, 75 as const]
-        const newRowHeights = [...prev.rowHeights, 38 as const]
-
-        // Now apply ghost cell logic
-        const updatedGrid = updateGhostCells(expandedGrid)
-
-        return {
-          ...prev,
-          grid: updatedGrid,
-          rows: updatedGrid.length,
-          columns: updatedGrid[0]?.length || prev.columns,
-          columnWidths: newColumnWidths,
-          rowHeights: newRowHeights,
-        }
-      })
+      setConfig((prev) => ({
+        ...prev,
+        grid: updatedGrid,
+        columns: updatedGrid[0]?.length || prev.columns,
+        rows: updatedGrid.length,
+        columnWidths: updatedColumnWidths, // Use updated columnWidths
+      }))
     }
   }, [initialPreset])
 
@@ -577,8 +569,15 @@ export function ShelfConfigurator({
     return false
   }
 
-  const expandGridAroundPlacement = (grid: GridCell[][], placedRow: number, placedCol: number): GridCell[][] => {
+  const expandGridAroundPlacement = (
+    grid: GridCell[][],
+    placedRow: number,
+    placedCol: number,
+    columnWidths: (75 | 38)[] = [],
+  ): { grid: GridCell[][]; columnWidths: (75 | 38)[]; shifted: boolean } => {
     let newGrid = grid.map((row) => [...row])
+    let newColumnWidths = [...columnWidths]
+    let shifted = false
     const rows = newGrid.length
     const cols = newGrid[0]?.length || 0
 
@@ -609,12 +608,13 @@ export function ShelfConfigurator({
     }
 
     const topRowIdx = rows - 1
-    const hasFilledAtTopRow = newGrid[topRowIdx].some((cell) => cell.type !== "empty" && cell.type !== "ghost")
+    const hasFilledAtTopRow = newGrid[topRowIdx]?.some((cell) => cell.type !== "empty" && cell.type !== "ghost")
     if (hasFilledAtTopRow) {
       expandUp = true
     }
 
     if (expandLeft) {
+      shifted = true
       newGrid = newGrid.map((row, ri) => {
         const newCell: GridCell = {
           id: `cell-${ri}--1-temp`,
@@ -624,6 +624,7 @@ export function ShelfConfigurator({
         }
         return [newCell, ...row.map((c) => ({ ...c, col: c.col + 1, id: `cell-${c.row}-${c.col + 1}` }))]
       })
+      newColumnWidths = [38 as const, ...newColumnWidths]
     }
 
     if (expandRight) {
@@ -637,6 +638,7 @@ export function ShelfConfigurator({
         }
         return [...row, newCell]
       })
+      newColumnWidths.push(38 as const)
     }
 
     if (expandUp) {
@@ -654,37 +656,9 @@ export function ShelfConfigurator({
     const updatedRows = newGrid.length
     const updatedCols = newGrid[0]?.length || 0
 
-    for (let r = 0; r < updatedRows; r++) {
-      for (let c = 0; c < updatedCols; c++) {
-        if (newGrid[r][c].type !== "empty" && newGrid[r][c].type !== "ghost") {
-          const adjacentPositions = [
-            { nr: r - 1, nc: c }, // below
-            { nr: r + 1, nc: c }, // above
-            { nr: r, nc: c - 1 }, // left
-            { nr: r, nc: c + 1 }, // right
-          ]
-
-          adjacentPositions.forEach(({ nr, nc }) => {
-            if (nr >= 0 && nr < updatedRows && nc >= 0 && nc < updatedCols) {
-              const adjacentCell = newGrid[nr][nc]
-              if (adjacentCell.type === "empty") {
-                const isHorizontal = nr === r // left or right
-                if (isHorizontal) {
-                  // Rule: No horizontal expansion above ground - only vertical stacking is allowed above row 0
-                  if (nr === 0) {
-                    newGrid[nr][nc] = { ...adjacentCell, type: "ghost" }
-                  }
-                } else {
-                  // Vertical (above/below) - always allow
-                  newGrid[nr][nc] = { ...adjacentCell, type: "ghost" }
-                }
-              }
-            }
-          })
-        }
-      }
-    }
-
+    // Rule: Ghost cells only appear:
+    // 1. Directly above a filled cell (for vertical stacking)
+    // 2. Left/right of horizontal groups at row 0 (for horizontal expansion)
     for (let c = 0; c < updatedCols; c++) {
       // Find the topmost filled cell in this column
       let topmostFilledRow = -1
@@ -695,7 +669,7 @@ export function ShelfConfigurator({
         }
       }
 
-      // If there's a filled cell and there's a row above it, mark it as ghost
+      // Add ghost cell directly above for vertical stacking
       if (topmostFilledRow >= 0 && topmostFilledRow < updatedRows - 1) {
         const aboveCell = newGrid[topmostFilledRow + 1][c]
         if (aboveCell.type === "empty") {
@@ -704,35 +678,56 @@ export function ShelfConfigurator({
       }
     }
 
-    return newGrid
+    // Horizontal expansion - add ghosts only at row 0 (ground level), adjacent to filled groups
+    if (updatedRows > 0) {
+      // Find leftmost and rightmost filled cells at row 0
+      let leftmostFilled = -1
+      let rightmostFilled = -1
+      for (let c = 0; c < updatedCols; c++) {
+        if (newGrid[0][c].type !== "empty" && newGrid[0][c].type !== "ghost") {
+          if (leftmostFilled === -1) leftmostFilled = c
+          rightmostFilled = c
+        }
+      }
+
+      // Add ghost only to the left of leftmost filled cell
+      if (leftmostFilled > 0 && newGrid[0][leftmostFilled - 1].type === "empty") {
+        newGrid[0][leftmostFilled - 1] = { ...newGrid[0][leftmostFilled - 1], type: "ghost" }
+      }
+
+      // Add ghost only to the right of rightmost filled cell
+      if (
+        rightmostFilled >= 0 &&
+        rightmostFilled + 1 < updatedCols &&
+        newGrid[0][rightmostFilled + 1].type === "empty"
+      ) {
+        newGrid[0][rightmostFilled + 1] = { ...newGrid[0][rightmostFilled + 1], type: "ghost" }
+      }
+    }
+
+    return { grid: newGrid, columnWidths: newColumnWidths, shifted }
   }
 
   const placeModule = useCallback(
     (row: number, col: number, type: GridCell["type"]) => {
-      console.log("[v0] Placing module at", row, col, type)
-
       setConfig((prev) => {
         const currentCell = prev.grid[row]?.[col]
 
         if (!currentCell || (currentCell.type !== "ghost" && currentCell.type !== "empty")) {
-          console.log("[v0] Cannot place - cell is not ghost or empty")
           return prev
         }
 
         if (!isConnectedToExisting(row, col, prev.grid, type)) {
-          console.log("[v0] Cannot place - not connected to existing modules")
           return prev
         }
 
         if (!hasSupportBelow(row, col, prev.grid)) {
-          console.log("[v0] Cannot place - no support below")
           return prev
         }
 
         const columnWidth = prev.columnWidths[col]
         const widthInCm = columnWidth === 75 ? 80 : 40
         if (type !== "empty" && type !== "ghost" && !isModuleTypeAvailableForWidth(type, widthInCm)) {
-          console.log(`[v0] Cannot place - module type "${type}" not available for ${widthInCm}cm width`)
           return prev
         }
 
@@ -745,46 +740,29 @@ export function ShelfConfigurator({
           }),
         )
 
-        newGrid = expandGridAroundPlacement(newGrid, row, col)
+        const {
+          grid: expandedGrid,
+          columnWidths: updatedColumnWidths,
+          shifted,
+        } = expandGridAroundPlacement(newGrid, row, col, prev.columnWidths)
+        newGrid = expandedGrid
 
         const newColumns = newGrid[0]?.length || 1
         const newRows = newGrid.length
 
-        const newColumnWidths = [...prev.columnWidths]
+        const newColumnWidths = [...updatedColumnWidths] // Use updated columnWidths
 
-        // Calculate how many new columns were added
-        const addedColumns = newColumns - newColumnWidths.length
-
-        if (addedColumns > 0) {
-          // Determine the width that the placed module needs
-          let newColWidth: 75 | 38 = 75 // default to 80cm
-
-          if (type !== "empty" && type !== "ghost") {
-            // Check if this module type is available for 40cm
-            const availableFor40 = isModuleTypeAvailableForWidth(type, 40)
-            const availableFor80 = isModuleTypeAvailableForWidth(type, 80)
-
-            // If only available for 40cm, use 38 (40cm width)
-            // If only available for 80cm, use 75 (80cm width)
-            // If available for both, keep existing column width or default to 75
-            if (availableFor40 && !availableFor80) {
-              newColWidth = 38
-            } else if (!availableFor40 && availableFor80) {
-              newColWidth = 75
-            } else {
-              // Available for both or neither - preserve existing width at this column if exists
-              newColWidth = newColumnWidths[col] || 75
-            }
-          }
-
-          // Add the correct width for new columns
-          for (let i = 0; i < addedColumns; i++) {
-            newColumnWidths.push(newColWidth)
-          }
+        // If columns were shifted, we might need to adjust columnWidths more carefully
+        // This logic needs to be more robust if columns can be inserted in the middle
+        if (shifted) {
+          // If a column was prepended, the original columnWidths array needs to reflect this.
+          // The 'updateGhostCells' function now handles prepending/appending a width of 38.
+          // This part might need further refinement if complex column reordering occurs.
         }
 
         const newRowHeights = [...prev.rowHeights]
         while (newRowHeights.length < newRows) newRowHeights.push(38)
+        while (newRowHeights.length > newRows) newRowHeights.pop()
 
         const cellId = getCellId(row, col)
         const newCellStyles = { ...(prev.cellStyles || {}), [cellId]: { color: selectedColor } }
@@ -799,7 +777,6 @@ export function ShelfConfigurator({
           cellStyles: newCellStyles,
         }
 
-        console.log("[v0] New grid size:", newRows, "x", newColumns)
         setTimeout(() => saveToHistory(newConfig), 0)
         return newConfig
       })
@@ -838,19 +815,14 @@ export function ShelfConfigurator({
     (newRows: number, newCols: number) => {
       const limitedRows = Math.min(Math.max(1, newRows), 8)
 
-      setConfig((prev) => {
-        const newGrid = Array.from({ length: limitedRows }, (_, rowIndex) =>
+      // Pass columnWidths to updateGhostCells when resizing
+      const { grid: newGrid, columnWidths: newColumnWidths } = updateGhostCells(
+        Array.from({ length: limitedRows }, (_, rowIndex) =>
           Array.from({ length: newCols }, (_, colIndex) => {
-            if (rowIndex < prev.rows && colIndex < prev.columns) {
-              return prev.grid[rowIndex][colIndex]
-            }
-            if (rowIndex === 0) {
-              return {
-                id: `cell-${rowIndex}-${colIndex}`,
-                type: "empty" as const,
-                row: rowIndex,
-                col: colIndex,
-              }
+            // Create a placeholder grid for updateGhostCells
+            // This might need a more sophisticated approach if we want to preserve existing content precisely
+            if (rowIndex < config.rows && colIndex < config.columns) {
+              return config.grid[rowIndex][colIndex]
             }
             return {
               id: `cell-${rowIndex}-${colIndex}`,
@@ -859,32 +831,38 @@ export function ShelfConfigurator({
               col: colIndex,
             }
           }),
-        )
+        ),
+        Array.from({ length: newCols }, () => 38), // Default to 38 for new columns
+      )
 
-        const newColumnWidths = [...prev.columnWidths]
-        while (newColumnWidths.length < newCols) newColumnWidths.push(75)
-        while (newColumnWidths.length > newCols) newColumnWidths.pop()
+      const newRowHeights = [...config.rowHeights]
+      while (newRowHeights.length < limitedRows) newRowHeights.push(38)
+      while (newRowHeights.length > limitedRows) newRowHeights.pop()
 
-        const newRowHeights = [...prev.rowHeights]
-        while (newRowHeights.length < limitedRows) newRowHeights.push(38)
-        while (newRowHeights.length > limitedRows) newRowHeights.pop()
+      const prunedCellStyles = pruneCellStyles(config.cellStyles || {}, limitedRows, newCols)
 
-        const prunedCellStyles = pruneCellStyles(prev.cellStyles || {}, limitedRows, newCols)
-
-        const newConfig = {
-          ...prev,
-          grid: newGrid,
-          columns: newCols,
-          rows: limitedRows,
-          columnWidths: newColumnWidths as (75 | 38)[],
-          rowHeights: newRowHeights,
-          cellStyles: prunedCellStyles,
-        }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
+      const newConfig = {
+        ...config,
+        grid: newGrid,
+        columns: newCols,
+        rows: limitedRows,
+        columnWidths: newColumnWidths as (75 | 38)[],
+        rowHeights: newRowHeights,
+        cellStyles: prunedCellStyles,
+      }
+      setTimeout(() => saveToHistory(newConfig), 0)
+      setConfig(newConfig)
     },
-    [saveToHistory, pruneCellStyles],
+    [
+      saveToHistory,
+      pruneCellStyles,
+      config,
+      config.rows,
+      config.columns,
+      config.grid,
+      config.cellStyles,
+      config.rowHeights,
+    ],
   )
 
   const setRowHeight = useCallback(
@@ -1163,11 +1141,9 @@ export function ShelfConfigurator({
 
     // --- FLÄCHENSETS (Panels) ---
     // Rules:
-    // Flächenset 80: For horizontal surfaces (shelves)
-    //   - Each row needs ceiling panels (shared between stacked modules)
-    //   - Bottom row needs floor panels
-    //   - Back panels for modules with backwall
-    // Flächenset 40: For side panels on outer edges
+    // Flächenset 80: For horizontal surfaces (shelves) - ONLY for 80cm columns
+    // Flächenset 40: For horizontal surfaces (shelves) - ONLY for 40cm columns
+    //   + Side panels on outer edges for modules that need them
 
     const flaechenset40Counts: Record<string, number> = {}
     const flaechenset80Counts: Record<string, number> = {}
@@ -1183,97 +1159,39 @@ export function ShelfConfigurator({
 
     const sortedCols = Array.from(columnCells.keys()).sort((a, b) => a - b)
 
-    // Calculate Flächenset 80 (horizontal panels + back panels)
-    // Group adjacent columns into sections
-    const sections: number[][] = []
-    let currentSection: number[] = []
-
     for (const col of sortedCols) {
-      if (currentSection.length === 0) {
-        currentSection.push(col)
-      } else {
-        const lastCol = currentSection[currentSection.length - 1]
-        if (col === lastCol + 1) {
-          currentSection.push(col)
-        } else {
-          sections.push(currentSection)
-          currentSection = [col]
-        }
-      }
-    }
-    if (currentSection.length > 0) {
-      sections.push(currentSection)
-    }
+      const colCells = columnCells.get(col) || []
+      if (colCells.length === 0) continue
 
-    // Process each section
-    for (const section of sections) {
-      // Get color from first cell in section
-      const firstColCells = columnCells.get(section[0]) || []
-      const moduleColor = firstColCells[0]?.cell.color || "weiss"
+      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
+      const moduleColor = colCells[0]?.cell.color || "weiss"
 
-      // Find all rows in this section
-      const allRowsInSection = new Set<number>()
-      for (const col of section) {
-        const colCells = columnCells.get(col) || []
-        for (const { row } of colCells) {
-          allRowsInSection.add(row)
-        }
-      }
-      const sortedRows = Array.from(allRowsInSection).sort((a, b) => a - b)
+      // Sort rows
+      const sortedRows = colCells.map((c) => c.row).sort((a, b) => a - b)
 
-      // Count back panels (modules with backwall)
-      let backPanelCount = 0
-      for (const col of section) {
-        const colCells = columnCells.get(col) || []
-        for (const { cell } of colCells) {
-          // Modules that have back panels
-          if (
-            [
-              "mit-rueckwand",
-              "mit-tueren",
-              "abschliessbare-tueren",
-              "mit-klapptuer",
-              "mit-klapptuer-oben",
-              "mit-doppelschublade",
-              "ohne-seitenwaende",
-            ].includes(cell.type)
-          ) {
-            backPanelCount++
-          }
-        }
-      }
+      // Backpanels (Funktionswand) are counted separately as their own product
 
-      // Calculate horizontal panels per row
-      // For each row: count columns that have modules in that row
+      // Calculate horizontal panels (floor + ceiling per module)
       let totalHorizontalPanels = 0
       for (let i = 0; i < sortedRows.length; i++) {
         const currentRow = sortedRows[i]
-        let numColsInRow = 0
-        for (const col of section) {
-          const colCells = columnCells.get(col) || []
-          if (colCells.some(({ row }) => row === currentRow)) {
-            numColsInRow++
-          }
-        }
+        const nextRow = i < sortedRows.length - 1 ? sortedRows[i + 1] : -1
+        const isStackedAbove = nextRow === currentRow + 1
 
-        // Check if this row has modules stacked above it
-        const hasRowAbove = i < sortedRows.length - 1 && sortedRows[i + 1] === currentRow + 1
-        if (hasRowAbove) {
-          // Stacked: shared ceiling/floor between rows - count just ceiling
-          totalHorizontalPanels += numColsInRow
+        if (isStackedAbove) {
+          // Stacked: shared ceiling/floor - count just 1
+          totalHorizontalPanels += 1
         } else {
           // Top row or not stacked: need both floor and ceiling
-          totalHorizontalPanels += numColsInRow * 2
+          totalHorizontalPanels += 2
         }
       }
 
-      // Total panels = horizontal surfaces + back panels
-      const totalPanels = totalHorizontalPanels + backPanelCount
+      const totalPanels = totalHorizontalPanels
 
       // Each Flächenset = 2 panels
       const flaechensetsNeeded = Math.ceil(totalPanels / 2)
 
-      const widthCm = config.columnWidths[section[0]] === 75 ? 80 : 40
       if (widthCm === 40) {
         flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + flaechensetsNeeded
       } else {
@@ -1281,7 +1199,6 @@ export function ShelfConfigurator({
       }
     }
 
-    // --- FLÄCHENSETS 40 for Side Panels ---
     const sidePanelsNeeded: Record<string, number> = {}
 
     // Check each row independently for side panel requirements
@@ -1299,7 +1216,7 @@ export function ShelfConfigurator({
       if (filledInRow.length === 0) continue
 
       // Determine which modules need side panels based on module type
-      const needsSidePanels = (moduleType: string): boolean => {
+      const needsSidePanelsAlways = (moduleType: string): boolean => {
         // ALWAYS need side panels: modules with doors, drawers, or back panels
         return [
           "mit-tueren",
@@ -1312,40 +1229,49 @@ export function ShelfConfigurator({
         ].includes(moduleType)
       }
 
-      // For each adjacent pair in this row, check if they need a shared panel
+      const needsSidePanelsAtEdge = (moduleType: string): boolean => {
+        // Need side panels ONLY at outer edges
+        return ["offenes-fach", "ohne-rueckwand"].includes(moduleType)
+      }
+
+      // For each module in this row, check its left and right side panel requirements
       for (let i = 0; i < filledInRow.length; i++) {
         const { col, cell } = filledInRow[i]
         const moduleColor = cell.color || "weiss"
 
-        if (!needsSidePanels(cell.type)) continue
-
-        // Check left side - add panel if no left neighbor OR if this module needs a panel on that side
         const hasLeftNeighbor = i > 0 && filledInRow[i - 1].col === col - 1
-        if (!hasLeftNeighbor) {
-          // No left neighbor = outer edge panel
-          sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-        } else {
-          // Has left neighbor - check if they both need panels (shared wall between them)
-          const leftNeighborCell = filledInRow[i - 1].cell
-          if (needsSidePanels(leftNeighborCell.type)) {
-            // Both modules need side panels = shared wall between them
-            // Only count once per pair (count on the right module's side)
-            const leftColor = leftNeighborCell.color || "weiss"
-            // Count the shared panel for the left module's color
-            sidePanelsNeeded[leftColor] = (sidePanelsNeeded[leftColor] || 0) + 1
+        const hasRightNeighbor = i < filledInRow.length - 1 && filledInRow[i + 1].col === col + 1
+
+        if (needsSidePanelsAlways(cell.type)) {
+          // This module ALWAYS needs side panels
+          if (!hasLeftNeighbor) {
+            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
           } else {
-            // Left neighbor doesn't need panels, but this module does
-            // This module needs its own panel on the left side
+            const leftNeighborCell = filledInRow[i - 1].cell
+            if (!needsSidePanelsAlways(leftNeighborCell.type)) {
+              // Left neighbor doesn't need panels, but this module does
+              sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
+            }
+          }
+
+          if (!hasRightNeighbor) {
+            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
+          } else {
+            const rightNeighborCell = filledInRow[i + 1].cell
+            if (!needsSidePanelsAlways(rightNeighborCell.type)) {
+              sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
+            }
+          }
+        } else if (needsSidePanelsAtEdge(cell.type)) {
+          // This module needs side panels ONLY at outer edges (leftmost/rightmost in row)
+          if (!hasLeftNeighbor) {
+            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
+          }
+          if (!hasRightNeighbor) {
             sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
           }
         }
-
-        // Check right side - only add outer edge panel (shared walls handled above)
-        const hasRightNeighbor = i < filledInRow.length - 1 && filledInRow[i + 1].col === col + 1
-        if (!hasRightNeighbor) {
-          // No right neighbor = outer edge panel
-          sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-        }
+        // ohne-seitenwaende: NEVER needs side panels
       }
     }
 
@@ -1590,6 +1516,21 @@ export function ShelfConfigurator({
     if (funktionswandCount > 0) {
       addItem("SIM023", "Funktionswand Edelstahl", funktionswandCount, 35.0)
     }
+
+    const cellsForDebug = config.grid.flatMap((row, ri) =>
+      row.map((cell, ci) => ({
+        row: ri,
+        col: ci,
+        cell: cell,
+      })),
+    )
+
+    console.log("[v0] BOM Calculation - Grid size:", config.grid.length, "x", config.grid[0]?.length)
+    console.log("[v0] BOM Calculation - columnWidths:", config.columnWidths)
+    console.log(
+      "[v0] BOM Calculation - Filled cells:",
+      cellsForDebug.filter((c) => c.cell.type !== "empty" && c.cell.type !== "ghost").length,
+    )
 
     // Convert map to array and calculate total
     const itemsArray = Array.from(itemMap.values())
