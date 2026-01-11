@@ -114,6 +114,7 @@ const initialConfig: ShelfConfig = {
 const updateGhostCells = (
   grid: GridCell[][],
   columnWidths: (75 | 38)[],
+  defaultNewColumnWidth: 75 | 38 = 75, // Add parameter for default width, default to 80cm (75)
 ): { grid: GridCell[][]; columnWidths: (75 | 38)[]; shifted: boolean } => {
   const rows = grid.length
   const cols = grid[0]?.length || 0
@@ -220,8 +221,7 @@ const updateGhostCells = (
         newGrid[r][c].id = `cell-${r}-${c}`
       }
     }
-    // Prepend column width (default 38 for 40cm)
-    newColumnWidths.unshift(38)
+    newColumnWidths.unshift(defaultNewColumnWidth)
     shifted = true
   } else if (leftmostFilled > 0) {
     if (newGrid[0][leftmostFilled - 1].type === "empty") {
@@ -248,7 +248,7 @@ const updateGhostCells = (
         col: currentColsAfterLeftExpansion,
       })
     }
-    newColumnWidths.push(38)
+    newColumnWidths.push(defaultNewColumnWidth)
   } else if (currentRightmostFilled >= 0 && currentRightmostFilled + 1 < currentColsAfterLeftExpansion) {
     if (newGrid[0][currentRightmostFilled + 1].type === "empty") {
       newGrid[0][currentRightmostFilled + 1] = { ...newGrid[0][currentRightmostFilled + 1], type: "ghost" }
@@ -264,6 +264,8 @@ export function ShelfConfigurator({
 }: { initialPreset?: PresetConfig; presetYoutubeId?: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [showVideoPreview, setShowVideoPreview] = useState(!!presetYoutubeId)
+
+  const [defaultNewColumnWidth, setDefaultNewColumnWidth] = useState<75 | 38>(75)
 
   const getInitialConfig = (): ShelfConfig => {
     if (initialPreset) {
@@ -299,12 +301,11 @@ export function ShelfConfigurator({
 
   useEffect(() => {
     if (initialPreset) {
-      // Pass initial preset columnWidths to updateGhostCells
       const {
         grid: updatedGrid,
         columnWidths: updatedColumnWidths,
         shifted,
-      } = updateGhostCells(initialPreset.grid, initialPreset.columnWidths)
+      } = updateGhostCells(initialPreset.grid, initialPreset.columnWidths, defaultNewColumnWidth)
 
       setConfig((prev) => ({
         ...prev,
@@ -662,7 +663,7 @@ export function ShelfConfigurator({
         }
         return [newCell, ...row.map((c) => ({ ...c, col: c.col + 1, id: `cell-${c.row}-${c.col + 1}` }))]
       })
-      newColumnWidths = [38 as const, ...newColumnWidths]
+      newColumnWidths = [defaultNewColumnWidth as const, ...newColumnWidths]
     }
 
     if (expandRight) {
@@ -676,7 +677,7 @@ export function ShelfConfigurator({
         }
         return [...row, newCell]
       })
-      newColumnWidths.push(38 as const)
+      newColumnWidths.push(defaultNewColumnWidth as const)
     }
 
     if (expandUp) {
@@ -819,7 +820,7 @@ export function ShelfConfigurator({
         return newConfig
       })
     },
-    [saveToHistory, selectedColor],
+    [saveToHistory, selectedColor, defaultNewColumnWidth],
   )
 
   const handleCellClick3D = useCallback(
@@ -926,7 +927,7 @@ export function ShelfConfigurator({
             }
           }),
         ),
-        Array.from({ length: newCols }, () => 38), // Default to 38 for new columns
+        Array.from({ length: newCols }, () => defaultNewColumnWidth), // Default to the selected default width
       )
 
       const newRowHeights = [...config.rowHeights]
@@ -956,6 +957,7 @@ export function ShelfConfigurator({
       config.grid,
       config.cellStyles,
       config.rowHeights,
+      defaultNewColumnWidth,
     ],
   )
 
@@ -973,7 +975,8 @@ export function ShelfConfigurator({
   )
 
   const setColumnWidth = useCallback(
-    (colIndex: 75 | 38, width: number) => {
+    (colIndex: number, width: 75 | 38) => {
+      // Changed type to number for colIndex
       setConfig((prev) => {
         const newWidths = [...prev.columnWidths]
         newWidths[colIndex] = width
@@ -1824,12 +1827,16 @@ export function ShelfConfigurator({
     return null
   }
 
+  const toggleDefaultColumnWidth = () => {
+    setDefaultNewColumnWidth((prev) => (prev === 75 ? 38 : 75))
+  }
+
   if (isLoading) {
     return <LoadingAnimation onComplete={() => setIsLoading(false)} />
   }
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-950">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
@@ -2060,6 +2067,21 @@ export function ShelfConfigurator({
           shoppingList={bomData.items}
           price={bomData.totalPrice}
         />
+      </div>
+      {/* Sticky toggle button for column width */}
+      <div className="fixed left-4 bottom-20 z-50 flex flex-col gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleDefaultColumnWidth}
+          className={`rounded-full px-4 py-2 text-xs font-medium shadow-lg transition-all ${
+            defaultNewColumnWidth === 75
+              ? "bg-teal-600 text-white border-teal-500 hover:bg-teal-700"
+              : "bg-amber-600 text-white border-amber-500 hover:bg-amber-700"
+          }`}
+        >
+          Neue Spalten: {defaultNewColumnWidth === 75 ? "80cm" : "40cm"}
+        </Button>
       </div>
     </div>
   )
