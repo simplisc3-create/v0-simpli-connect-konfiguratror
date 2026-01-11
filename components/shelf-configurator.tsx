@@ -1262,6 +1262,7 @@ export function ShelfConfigurator({
     const flaechenset80Counts: Record<string, number> = {}
     let total40cmPanels = 0
     const panels40cmByColor: Record<string, number> = {}
+    const panels80cmByColor: Record<string, number> = {} // New map for 80cm panels
 
     const columnData: Record<
       number,
@@ -1401,14 +1402,20 @@ export function ShelfConfigurator({
         panels40cmByColor[data.moduleColor] = (panels40cmByColor[data.moduleColor] || 0) + totalPanels40
         total40cmPanels += totalPanels40
       } else {
-        // 80cm modules: horizontal + backwall go to Flächenset 80, sidewalls to Flächenset 40
+        // 80cm modules: horizontal + backwall panels first, convert to sets later
         const total80cmPanels = data.horizontalPanels + data.backwallPanels
-        flaechenset80Counts[data.moduleColor] =
-          (flaechenset80Counts[data.moduleColor] || 0) + Math.ceil(total80cmPanels / 2)
+        panels80cmByColor[data.moduleColor] = (panels80cmByColor[data.moduleColor] || 0) + total80cmPanels
 
         // Side walls (40cm) go to Flächenset 40
         panels40cmByColor[data.moduleColor] = (panels40cmByColor[data.moduleColor] || 0) + adjustedSideWalls
         total40cmPanels += adjustedSideWalls
+      }
+    }
+
+    for (const [colorKey, panelCount] of Object.entries(panels80cmByColor)) {
+      if (panelCount > 0) {
+        const setsNeeded = Math.ceil(panelCount / 2)
+        flaechenset80Counts[colorKey] = (flaechenset80Counts[colorKey] || 0) + setsNeeded
       }
     }
 
@@ -1692,7 +1699,7 @@ export function ShelfConfigurator({
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
       if (
-        cell.type === "mit-tueren" ||
+        cell.type === "mit-tuere" ||
         cell.type === "mit-doppelschublade" ||
         cell.type === "abschliessbare-tueren" ||
         cell.type === "mit-klapptuer" ||
