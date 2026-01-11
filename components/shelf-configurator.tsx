@@ -1262,16 +1262,30 @@ export function ShelfConfigurator({
       // Sort rows
       const sortedRows = colCells.map((c) => c.row).sort((a, b) => a - b)
 
-      // Backpanels (Funktionswand) are counted separately as their own product
+      // Adjacent stacked modules share the ceiling/floor between them
+      // Non-adjacent modules (gaps between rows) each need their own floor AND ceiling
 
-      // Adjacent stacked modules share the ceiling/floor between them, so we don't double count
-      // Beispiel: 2 Module übereinander = Boden(unten) + Shared(mitte) + Decke(oben) = 3 Flächen
-      const numberOfModulesInColumn = sortedRows.length
-      let totalHorizontalPanels = numberOfModulesInColumn + 1 // Shared floor/ceiling panels
+      let totalHorizontalPanels = 0
+
+      for (let i = 0; i < sortedRows.length; i++) {
+        const currentRow = sortedRows[i]
+        const prevRow = i > 0 ? sortedRows[i - 1] : null
+
+        // Check if this module is directly below the previous one (adjacent = row difference of 1)
+        const isAdjacentToPrevious = prevRow !== null && currentRow - prevRow === 1
+
+        if (isAdjacentToPrevious) {
+          // Only add ceiling (floor is shared with module above)
+          totalHorizontalPanels += 1
+        } else {
+          // Not adjacent - needs both floor AND ceiling
+          totalHorizontalPanels += 2
+        }
+      }
 
       // Add Rückwände (back panels) for closed modules
       for (let i = 0; i < sortedRows.length; i++) {
-        const moduleType = colCells[i].cell.type
+        const moduleType = colCells.find((c) => c.row === sortedRows[i])?.cell.type
         const hasBackPanel =
           moduleType === "mit-tueren" ||
           moduleType === "mit-doppelschublade" ||
