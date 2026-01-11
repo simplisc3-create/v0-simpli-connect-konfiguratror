@@ -109,6 +109,15 @@ export const MODULE_TO_VARIANT_CODE_40: Record<ModuleType, string> = {
   "ohne-rueckwand": "",
 }
 
+// These files have a different naming pattern: 80x40x40b-1-2-{color}-optimized.glb
+const KLAPPTUER_OBEN_URLS: Record<ColorKey, string> = {
+  white: "/images/80x40x40b-1-2-white-optimized.glb",
+  green: "/images/80x40x40b-1-2-green-optimized.glb",
+  yellow: "/images/80x40x40b-1-2-yellow-optimized.glb",
+  red: "/images/80x40x40b-1-2-red-optimized.glb",
+  blue: "/images/80x40x40b-1-2-blue-optimized.glb",
+}
+
 export const COLOR_KEYS: ColorKey[] = ["white", "green", "yellow", "red", "blue"]
 
 const GLB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
@@ -135,6 +144,14 @@ export function resolveGlbUrl(args: {
   // Validiere Farbe
   if (!COLOR_KEYS.includes(color)) {
     throw new Error(`[GLB Registry] Farbe "${color}" nicht verfügbar. Verfügbar: ${COLOR_KEYS.join(", ")}`)
+  }
+
+  if (moduleType === "mit-klapptuer-oben" && width === 80) {
+    const url = KLAPPTUER_OBEN_URLS[color]
+    if (!url) {
+      throw new Error(`[GLB Registry] mit-klapptuer-oben nicht verfügbar für Farbe "${color}"`)
+    }
+    return { url, variantCode: "1-2b" }
   }
 
   // Hole Varianten-Code basierend auf Breite
