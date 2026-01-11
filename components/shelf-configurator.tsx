@@ -1274,6 +1274,7 @@ export function ShelfConfigurator({
         horizontalPanels: number
         moduleColor: string
         rows: number[]
+        rowsWithSideWalls: number[] // Track which specific rows have sidewalls
       }
     > = {}
 
@@ -1332,11 +1333,13 @@ export function ShelfConfigurator({
         "mit-einzelschublade",
       ]
 
-      const hasSideWallModules = modulesInCol.some(({ cell }) => modulesWithSideWalls.includes(cell.type))
-
       let sideWallPanels = 0
-      if (hasSideWallModules) {
-        sideWallPanels = modulesInCol.length * 2 // 2 sides × number of modules
+      const rowsWithSideWalls: number[] = []
+      for (const { cell, row } of modulesInCol) {
+        if (modulesWithSideWalls.includes(cell.type)) {
+          sideWallPanels += 2 // 2 sides per module
+          rowsWithSideWalls.push(row)
+        }
       }
 
       columnData[col] = {
@@ -1347,6 +1350,7 @@ export function ShelfConfigurator({
         horizontalPanels: totalHorizontalPanels,
         moduleColor,
         rows: sortedRows,
+        rowsWithSideWalls, // Track which specific rows have sidewalls
       }
 
       console.log(
@@ -1368,9 +1372,9 @@ export function ShelfConfigurator({
         const leftData = columnData[leftCol]
         // Only share walls if left neighbor also has side walls (sideWallPanels > 0)
         if (leftData.sideWallPanels > 0 && data.sideWallPanels > 0) {
-          const leftRows = leftData.rows
-          const thisRows = data.rows
-          const sharedRowsLeft = thisRows.filter((r) => leftRows.includes(r))
+          const leftRowsWithSideWalls = leftData.rowsWithSideWalls || []
+          const thisRowsWithSideWalls = data.rowsWithSideWalls || []
+          const sharedRowsLeft = thisRowsWithSideWalls.filter((r) => leftRowsWithSideWalls.includes(r))
           if (sharedRowsLeft.length > 0) {
             // Subtract shared walls with left neighbor
             adjustedSideWalls -= sharedRowsLeft.length
@@ -1386,9 +1390,9 @@ export function ShelfConfigurator({
         const rightData = columnData[rightCol]
         // Only share walls if right neighbor also has side walls (sideWallPanels > 0)
         if (rightData.sideWallPanels > 0 && data.sideWallPanels > 0) {
-          const rightRows = rightData.rows
-          const thisRows = data.rows
-          const sharedRowsRight = thisRows.filter((r) => rightRows.includes(r))
+          const rightRowsWithSideWalls = rightData.rowsWithSideWalls || []
+          const thisRowsWithSideWalls = data.rowsWithSideWalls || []
+          const sharedRowsRight = thisRowsWithSideWalls.filter((r) => rightRowsWithSideWalls.includes(r))
           if (sharedRowsRight.length > 0) {
             // Subtract shared walls with right neighbor
             adjustedSideWalls -= sharedRowsRight.length
