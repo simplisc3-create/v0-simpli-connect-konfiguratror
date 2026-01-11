@@ -1403,7 +1403,7 @@ export function ShelfConfigurator({
 
     // When 2 adjacent modules both have Funktionswände, they share a wall panel
     const modulesWithFunktionswand = [
-      "mit-tuere",
+      "mit-tueren",
       "mit-doppelschublade",
       "abschliessbare-tueren",
       "mit-klapptuer",
@@ -1739,7 +1739,7 @@ export function ShelfConfigurator({
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
       if (
-        cell.type === "mit-tuere" ||
+        cell.type === "mit-tueren" ||
         cell.type === "mit-doppelschublade" ||
         cell.type === "abschliessbare-tueren" ||
         cell.type === "mit-klapptuer" ||
