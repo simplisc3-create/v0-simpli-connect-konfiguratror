@@ -1304,6 +1304,7 @@ export function ShelfConfigurator({
         "mit-doppelschublade", // Corrected from 'mit-schubladen'
         "mit-klapptuer-oben",
         "mit-einzelschublade",
+        "mit-tueren", // Added mit-tueren - same logic as doppelschublade
       ]
       let backwallPanels = 0
       for (const { cell } of modulesInCol) {
@@ -1325,6 +1326,7 @@ export function ShelfConfigurator({
         "mit-doppelschublade",
         "mit-klapptuer-oben",
         "mit-einzelschublade",
+        "mit-tueren", // Added mit-tueren - same logic as doppelschublade
       ]
 
       let sideWallPanels = 0
