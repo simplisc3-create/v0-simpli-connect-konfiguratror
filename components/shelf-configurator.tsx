@@ -1367,23 +1367,8 @@ export function ShelfConfigurator({
       const data = columnData[col]
       let adjustedSideWalls = data.sideWallPanels
 
-      const leftCol = colKeys[i - 1]
-      if (leftCol !== undefined && columnData[leftCol]) {
-        const leftData = columnData[leftCol]
-        // Only share walls if left neighbor also has side walls (sideWallPanels > 0)
-        if (leftData.sideWallPanels > 0 && data.sideWallPanels > 0) {
-          const leftRowsWithSideWalls = leftData.rowsWithSideWalls || []
-          const thisRowsWithSideWalls = data.rowsWithSideWalls || []
-          const sharedRowsLeft = thisRowsWithSideWalls.filter((r) => leftRowsWithSideWalls.includes(r))
-          if (sharedRowsLeft.length > 0) {
-            // Subtract shared walls with left neighbor
-            adjustedSideWalls -= sharedRowsLeft.length
-            console.log(
-              `[v0] Column ${col}: subtracting ${sharedRowsLeft.length} shared walls with LEFT column ${leftCol}`,
-            )
-          }
-        }
-      }
+      // This ensures shared walls are counted exactly once - by the LEFT column
+      // Previously we subtracted from both sides, which removed shared walls entirely
 
       const rightCol = colKeys[i + 1]
       if (rightCol !== undefined && columnData[rightCol]) {
@@ -1394,7 +1379,7 @@ export function ShelfConfigurator({
           const thisRowsWithSideWalls = data.rowsWithSideWalls || []
           const sharedRowsRight = thisRowsWithSideWalls.filter((r) => rightRowsWithSideWalls.includes(r))
           if (sharedRowsRight.length > 0) {
-            // Subtract shared walls with right neighbor
+            // Subtract shared walls with right neighbor (shared wall will be counted by this column)
             adjustedSideWalls -= sharedRowsRight.length
             console.log(
               `[v0] Column ${col}: subtracting ${sharedRowsRight.length} shared walls with RIGHT column ${rightCol}`,
