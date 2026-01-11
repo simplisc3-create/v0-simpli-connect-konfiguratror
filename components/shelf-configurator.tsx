@@ -1173,8 +1173,7 @@ export function ShelfConfigurator({
       if (!leiterCounts[aufbaumodulKey]) {
         leiterCounts[aufbaumodulKey] = { artNr: "SIM001a", name: "Aufbaumodul", price: 15.0, count: 0 }
       }
-      // For 1 column: (1+1) * 2 = 4 Aufbaumodule (2 ladders × 2 corners each)
-      const neededAufbaumodule = (activeColumns.length + 1) * 2
+      const neededAufbaumodule = activeColumns.length + 1
       leiterCounts[aufbaumodulKey].count = neededAufbaumodule
 
       // Add Leiter 200 for main structure
