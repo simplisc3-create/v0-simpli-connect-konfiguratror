@@ -1296,7 +1296,18 @@ export function ShelfConfigurator({
       }
 
       // Calculate backwall panels - only for modules with backwall
-      const modulesWithBackwall = ["mit-rueckwand"]
+      const modulesWithBackwall = [
+        "mit-rueckwand",
+        "abschliessbare-tueren",
+        "abschliessbar-links",
+        "abschliessbar-rechts",
+        "mit-tuere-links",
+        "mit-tuere-rechts",
+        "mit-klapptuer",
+        "mit-doppelschublade", // Corrected from 'mit-schubladen'
+        "mit-klapptuer-oben",
+        "mit-einzelschublade",
+      ]
       let backwallPanels = 0
       for (const { cell } of modulesInCol) {
         if (modulesWithBackwall.includes(cell.type)) {
@@ -1305,9 +1316,21 @@ export function ShelfConfigurator({
       }
 
       // Calculate side wall panels (40cm) - each module has 2 side walls
-      const hasSideWallModules = modulesInCol.some(({ cell }) =>
-        ["mit-rueckwand", "ohne-rueckwand", "offen", "ohne-seitenwaende"].includes(cell.type),
-      )
+      const modulesWithSideWalls = [
+        "mit-rueckwand",
+        "ohne-rueckwand",
+        "abschliessbare-tueren",
+        "abschliessbar-links",
+        "abschliessbar-rechts",
+        "mit-tuere-links",
+        "mit-tuere-rechts",
+        "mit-klapptuer",
+        "mit-doppelschublade",
+        "mit-klapptuer-oben",
+        "mit-einzelschublade",
+      ]
+
+      const hasSideWallModules = modulesInCol.some(({ cell }) => modulesWithSideWalls.includes(cell.type))
 
       let sideWallPanels = 0
       if (hasSideWallModules) {
@@ -1338,17 +1361,31 @@ export function ShelfConfigurator({
       const data = columnData[col]
       let adjustedSideWalls = data.sideWallPanels
 
-      // The shared wall between two columns should only be subtracted once
+      const leftCol = colKeys[i - 1]
+      if (leftCol !== undefined && columnData[leftCol]) {
+        const leftRows = columnData[leftCol].rows
+        const thisRows = data.rows
+        const sharedRowsLeft = thisRows.filter((r) => leftRows.includes(r))
+        if (sharedRowsLeft.length > 0) {
+          // Subtract shared walls with left neighbor
+          adjustedSideWalls -= sharedRowsLeft.length
+          console.log(
+            `[v0] Column ${col}: subtracting ${sharedRowsLeft.length} shared walls with LEFT column ${leftCol}`,
+          )
+        }
+      }
+
       const rightCol = colKeys[i + 1]
       if (rightCol !== undefined && columnData[rightCol]) {
-        // Find overlapping rows between this column and right neighbor
         const rightRows = columnData[rightCol].rows
         const thisRows = data.rows
-        const sharedRows = thisRows.filter((r) => rightRows.includes(r))
-        if (sharedRows.length > 0) {
-          // Subtract shared walls (1 per shared row) - only from this column
-          adjustedSideWalls -= sharedRows.length
-          console.log(`[v0] Column ${col}: subtracting ${sharedRows.length} shared walls with right column ${rightCol}`)
+        const sharedRowsRight = thisRows.filter((r) => rightRows.includes(r))
+        if (sharedRowsRight.length > 0) {
+          // Subtract shared walls with right neighbor
+          adjustedSideWalls -= sharedRowsRight.length
+          console.log(
+            `[v0] Column ${col}: subtracting ${sharedRowsRight.length} shared walls with RIGHT column ${rightCol}`,
+          )
         }
       }
 
