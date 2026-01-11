@@ -1265,19 +1265,28 @@ export function ShelfConfigurator({
       // Backpanels (Funktionswand) are counted separately as their own product
 
       // Adjacent stacked modules share the ceiling/floor between them, so we don't double count
-      let totalHorizontalPanels = 0
+      // Beispiel: 2 Module übereinander = Boden(unten) + Shared(mitte) + Decke(oben) = 3 Flächen
+      const numberOfModulesInColumn = sortedRows.length
+      let totalHorizontalPanels = numberOfModulesInColumn + 1 // Shared floor/ceiling panels
+
+      // Add Rückwände (back panels) for closed modules
       for (let i = 0; i < sortedRows.length; i++) {
-        const currentRow = sortedRows[i]
-        const nextRow = i < sortedRows.length - 1 ? sortedRows[i + 1] : -1
-        const isStackedAbove = nextRow === currentRow + 1
+        const moduleType = colCells[i].cell.type
+        const hasBackPanel =
+          moduleType === "mit-tueren" ||
+          moduleType === "mit-doppelschublade" ||
+          moduleType === "abschliessbare-tueren" ||
+          moduleType === "mit-klapptuer" ||
+          moduleType === "mit-klapptuer-oben" ||
+          moduleType === "mit-tuere-links" ||
+          moduleType === "mit-tuere-rechts" ||
+          moduleType === "abschliessbar-links" ||
+          moduleType === "abschliessbar-rechts" ||
+          moduleType === "mit-einzelschublade"
 
-        if (i === 0) {
-          // First module always needs a floor
-          totalHorizontalPanels += 1
+        if (hasBackPanel) {
+          totalHorizontalPanels += 1 // Rückwand
         }
-
-        // Every module needs a ceiling (top panel)
-        totalHorizontalPanels += 1
       }
 
       const totalPanels = totalHorizontalPanels
@@ -1292,14 +1301,50 @@ export function ShelfConfigurator({
       }
     }
 
-    // Each 80cm Klapptür nach oben has 2 side panels (left and right) that are 40cm wide
-    for (const { col, cell } of cells) {
+    // Each 80cm Klapptür nach oben or Einzelschublade has 2 side panels (left and right) that are 40cm wide
+    // BUT: When two such modules are next to each other horizontally, the middle side panels are replaced
+    // by the Edelstahl-Funktionswände (steel functional walls), so NO Flächenset 40 is needed at the junction
+
+    const sidePanelCounts: Record<string, number> = {}
+
+    for (const { row, col, cell } of cells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
-      if (cell.type === "mit-klapptuer-oben" && widthCm === 80) {
+      if ((cell.type === "mit-klapptuer-oben" || cell.type === "mit-einzelschublade") && widthCm === 80) {
         const moduleColor = cell.color || "weiss"
-        // Add 2 side panels (= 1 Flächenset 40, since they come in packs of 2)
-        flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + 1
+
+        // Check if there's an adjacent side-panel module to the LEFT (col - 1)
+        const leftNeighbor = cells.find(
+          (c) =>
+            c.row === row &&
+            c.col === col - 1 &&
+            (c.cell.type === "mit-klapptuer-oben" || c.cell.type === "mit-einzelschublade"),
+        )
+
+        // Check if there's an adjacent side-panel module to the RIGHT (col + 1)
+        const rightNeighbor = cells.find(
+          (c) =>
+            c.row === row &&
+            c.col === col + 1 &&
+            (c.cell.type === "mit-klapptuer-oben" || c.cell.type === "mit-einzelschublade"),
+        )
+
+        // Count side panels needed: only on outer edges
+        let sidePanelsNeeded = 0
+        if (!leftNeighbor) sidePanelsNeeded++ // Need left side panel
+        if (!rightNeighbor) sidePanelsNeeded++ // Need right side panel
+
+        if (sidePanelsNeeded > 0) {
+          sidePanelCounts[moduleColor] = (sidePanelCounts[moduleColor] || 0) + sidePanelsNeeded
+        }
+      }
+    }
+
+    // Convert side panels to Flächensets 40 (each Flächenset = 2 panels)
+    for (const [color, panelCount] of Object.entries(sidePanelCounts)) {
+      const flaechensetsNeeded = Math.ceil(panelCount / 2)
+      if (flaechensetsNeeded > 0) {
+        flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + flaechensetsNeeded
       }
     }
 
@@ -1806,20 +1851,6 @@ export function ShelfConfigurator({
               "Wähle ein Modul aus der rechten Seite"
             )}
           </div>
-
-          {selectedTool && selectedTool !== "empty" && (
-            <div className="absolute left-4 top-4 rounded-lg bg-black/70 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-6 w-6 rounded"
-                  style={{
-                    backgroundColor: config.finish !== "none" ? getColorHex(config.finish) : getColorHex("white"),
-                  }}
-                />
-                <span className="text-sm text-white">{getToolLabel(selectedTool)}</span>
-              </div>
-            </div>
-          )}
 
           {/* Color selection UI */}
           {selectedCell && (
