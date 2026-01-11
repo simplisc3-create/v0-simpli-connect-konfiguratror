@@ -1366,6 +1366,13 @@ export function ShelfConfigurator({
       if (widthCm === 40) {
         total40cmPanels += totalPanels
         panels40cmByColor[moduleColor] = (panels40cmByColor[moduleColor] || 0) + totalPanels
+
+        total40cmPanels += backwallPanels40cm
+        panels40cmByColor[moduleColor] = (panels40cmByColor[moduleColor] || 0) + backwallPanels40cm
+
+        const sideWalls40cm = 2 // Every 40cm module has left + right side walls
+        total40cmPanels += sideWalls40cm
+        panels40cmByColor[moduleColor] = (panels40cmByColor[moduleColor] || 0) + sideWalls40cm
       } else {
         // 80cm columns - each horizontal panel is a separate Flächenset 80
         flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + totalPanels
