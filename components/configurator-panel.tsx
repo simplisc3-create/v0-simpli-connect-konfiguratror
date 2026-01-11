@@ -189,14 +189,15 @@ export function ConfiguratorPanel({
     if (shoppingList.length === 0) return
 
     for (const item of shoppingList) {
-      for (let i = 0; i < item.quantity; i++) {
-        addItem({
+      addItem(
+        {
           id: item.id,
           name: item.name,
           artNr: item.id,
           price: item.pricePerUnit || 0,
-        })
-      }
+        },
+        item.quantity,
+      )
     }
 
     setAddedToCart(true)
