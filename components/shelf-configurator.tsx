@@ -11,7 +11,6 @@ import { ConfiguratorHelpBot } from "./configurator-help-bot"
 import { Undo2, Redo2, RotateCcw, AlertTriangle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  getFlaechensetArtNr,
   getSchubladeArtNr,
   getTuerArtNr,
   getKlapptuerArtNr,
@@ -47,7 +46,7 @@ export type GridCell = {
     | "mit-einzelschublade"
   row: number
   col: number
-  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
+  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "red"
 }
 
 export type CellId = `c-${number}-${number}`
@@ -1265,6 +1264,8 @@ export function ShelfConfigurator({
     let total40cmPanels = 0
     let color40cm = "weiss"
 
+    const panels40cmByColor: Record<string, number> = {}
+
     for (const [colStr, colCells] of Object.entries(columnGroups)) {
       const col = Number.parseInt(colStr)
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
@@ -1283,6 +1284,8 @@ export function ShelfConfigurator({
       // Non-adjacent modules (gaps between rows) each need their own floor AND ceiling
 
       let totalHorizontalPanels = 0
+      let backwallPanels40cm = 0
+      let sideWallPanels40cm = 0
 
       for (let i = 0; i < sortedRows.length; i++) {
         const currentRow = sortedRows[i]
@@ -1303,7 +1306,7 @@ export function ShelfConfigurator({
       // Add Rückwände (back panels) for closed modules
       for (let i = 0; i < sortedRows.length; i++) {
         const moduleType = colCells.find((c) => c.row === sortedRows[i])?.cell.type
-        const hasBackPanel =
+        const hasBackPanel80cm =
           moduleType === "mit-tueren" ||
           moduleType === "mit-doppelschublade" ||
           moduleType === "abschliessbare-tueren" ||
@@ -1315,77 +1318,124 @@ export function ShelfConfigurator({
           moduleType === "abschliessbar-rechts" ||
           moduleType === "mit-einzelschublade"
 
-        if (hasBackPanel) {
-          totalHorizontalPanels += 1 // Rückwand
+        const hasBackPanel40cm = moduleType === "mit-rueckwand"
+
+        if (hasBackPanel80cm) {
+          totalHorizontalPanels += 1 // Rückwand (80cm)
+        }
+        if (hasBackPanel40cm) {
+          backwallPanels40cm += 1 // Rückwand (40cm) - counted separately
+        }
+      }
+
+      // These modules have left and right side walls that are 40cm each
+      if (widthCm === 80) {
+        // Check if any module in this column needs side walls
+        let hasSideWallModules = false
+        for (const cellData of colCells) {
+          const moduleType = cellData.cell.type
+          // All 80cm modules with visible sides need side panels
+          if (
+            moduleType === "ohne-rueckwand" ||
+            moduleType === "mit-rueckwand" ||
+            moduleType === "offenes-fach" ||
+            moduleType === "ohne-seiten" ||
+            moduleType === "mit-tueren" ||
+            moduleType === "mit-doppelschublade" ||
+            moduleType === "abschliessbare-tueren" ||
+            moduleType === "mit-klapptuer" ||
+            moduleType === "mit-klapptuer-oben" ||
+            moduleType === "mit-einzelschublade"
+          ) {
+            hasSideWallModules = true
+            break
+          }
+        }
+
+        if (hasSideWallModules) {
+          sideWallPanels40cm = 2 // Just left + right side wall, regardless of how many modules
         }
       }
 
       const totalPanels = totalHorizontalPanels
 
-      console.log(`[v0] Column ${col}: totalPanels=${totalPanels}, widthCm=${widthCm}`)
+      console.log(
+        `[v0] Column ${col}: totalPanels=${totalPanels}, widthCm=${widthCm}, backwallPanels40cm=${backwallPanels40cm}, sideWallPanels40cm=${sideWallPanels40cm}`,
+      )
 
       if (widthCm === 40) {
         total40cmPanels += totalPanels
+        panels40cmByColor[moduleColor] = (panels40cmByColor[moduleColor] || 0) + totalPanels
       } else {
-        // 80cm columns - calculate sets per column
-        const flaechensetsNeeded = Math.ceil(totalPanels / 2)
-        flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + flaechensetsNeeded
+        // 80cm columns - each horizontal panel is a separate Flächenset 80
+        flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + totalPanels
+
+        // Add backwall panels (40cm) to total
+        total40cmPanels += backwallPanels40cm
+        panels40cmByColor[moduleColor] = (panels40cmByColor[moduleColor] || 0) + backwallPanels40cm
+
+        total40cmPanels += sideWallPanels40cm
+        panels40cmByColor[moduleColor] = (panels40cmByColor[moduleColor] || 0) + sideWallPanels40cm
       }
     }
 
-    // This way, panels across all 40cm columns are combined before dividing by 2
-    if (total40cmPanels > 0) {
-      const flaechensetsNeeded = Math.ceil(total40cmPanels / 2)
-      flaechenset40Counts[color40cm] = (flaechenset40Counts[color40cm] || 0) + flaechensetsNeeded
-      console.log(`[v0] Total 40cm panels: ${total40cmPanels}, Flächensets needed: ${flaechensetsNeeded}`)
+    for (const [colorKey, panelCount] of Object.entries(panels40cmByColor)) {
+      if (panelCount > 0) {
+        const setsNeeded = Math.ceil(panelCount / 2)
+        flaechenset40Counts[colorKey] = (flaechenset40Counts[colorKey] || 0) + setsNeeded
+      }
     }
 
-    // Add Flächensets to BOM
-    for (const [color, count] of Object.entries(flaechenset40Counts)) {
+    // Add Flächenset 40 products
+    for (const [colorKey, count] of Object.entries(flaechenset40Counts)) {
       if (count > 0) {
-        const artNr = getFlaechensetArtNr(40, color)
         const colorLabel =
-          color === "weiss"
+          colorKey === "weiss" || colorKey === "white"
             ? "weiß"
-            : color === "schwarz"
+            : colorKey === "schwarz" || colorKey === "black"
               ? "schwarz"
-              : color === "blau"
+              : colorKey === "blau"
                 ? "blau"
-                : color === "rot"
+                : colorKey === "rot"
                   ? "rot"
-                  : color === "gruen"
+                  : colorKey === "gruen"
                     ? "grün"
-                    : color === "gelb"
+                    : colorKey === "gelb"
                       ? "gelb"
-                      : color === "orange"
+                      : colorKey === "orange"
                         ? "orange"
-                        : color
-        addItem(artNr, `Flächenset 40 ${colorLabel}`, count, 15.0, 2)
+                        : colorKey
+        const artNr = colorKey === "schwarz" || colorKey === "black" ? "SIM010-black" : "SIM010"
+        addItem(artNr, `Flächenset 40 ${colorLabel}`, count, 15.0)
       }
     }
 
-    for (const [color, count] of Object.entries(flaechenset80Counts)) {
+    // Add Flächenset 80 products
+    for (const [colorKey, count] of Object.entries(flaechenset80Counts)) {
       if (count > 0) {
-        const artNr = getFlaechensetArtNr(80, color)
         const colorLabel =
-          color === "weiss"
+          colorKey === "weiss" || colorKey === "white"
             ? "weiß"
-            : color === "schwarz"
+            : colorKey === "schwarz" || colorKey === "black"
               ? "schwarz"
-              : color === "blau"
+              : colorKey === "blau"
                 ? "blau"
-                : color === "rot"
+                : colorKey === "rot"
                   ? "rot"
-                  : color === "gruen"
+                  : colorKey === "gruen"
                     ? "grün"
-                    : color === "gelb"
+                    : colorKey === "gelb"
                       ? "gelb"
-                      : color === "orange"
+                      : colorKey === "orange"
                         ? "orange"
-                        : color
-        addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0, 2)
+                        : colorKey
+        const artNr = colorKey === "schwarz" || colorKey === "black" ? "SIM011-black" : "SIM011"
+        addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0)
       }
     }
+
+    console.log(`[v0] Final Flächenset 40 counts: ${JSON.stringify(flaechenset40Counts)}`)
+    console.log(`[v0] Final Flächenset 80 counts: ${JSON.stringify(flaechenset80Counts)}`)
 
     // --- SCHUBLADEN (Drawers) ---
     const schubladenCounts: Record<string, { count: number; name: string; price: number }> = {}
