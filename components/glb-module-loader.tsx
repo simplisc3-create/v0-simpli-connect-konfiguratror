@@ -209,7 +209,12 @@ function isFramePart(
   return false
 }
 
-function isFeetPart(meshName: string, geometry?: THREE.BufferGeometry, parentBoundingBox?: THREE.Box3): boolean {
+function isFeetPart(
+  meshName: string,
+  geometry?: THREE.BufferGeometry,
+  parentBoundingBox?: THREE.Box3,
+  material?: THREE.Material | THREE.Material[],
+): boolean {
   const nameLower = meshName.toLowerCase()
 
   // Check by keyword first
@@ -219,7 +224,7 @@ function isFeetPart(meshName: string, geometry?: THREE.BufferGeometry, parentBou
     }
   }
 
-  // Position-based detection: feet are small objects at the bottom corners
+  // Position and color-based detection: feet are small black objects at the bottom corners
   if (geometry && parentBoundingBox) {
     geometry.computeBoundingBox()
     const meshBox = geometry.boundingBox
@@ -234,10 +239,21 @@ function isFeetPart(meshName: string, geometry?: THREE.BufferGeometry, parentBou
       parentBoundingBox.getSize(parentSize)
       parentBoundingBox.getCenter(parentCenter)
 
+      // Check if the material is black/dark (feet are black plastic)
+      let isBlackMaterial = false
+      if (material) {
+        const mat = Array.isArray(material) ? material[0] : material
+        if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
+          const color = mat.color
+          // Black/dark is when all RGB values are low (< 0.2)
+          isBlackMaterial = color.r < 0.2 && color.g < 0.2 && color.b < 0.2
+        }
+      }
+
       // Feet are typically:
-      // 1. Small (less than 5% of parent size in each dimension)
-      // 2. At the bottom (mesh center Y is in the lower 10% of parent)
-      // 3. At corners (mesh center X and Z are near edges)
+      // 1. Small (less than 15% of parent size in each dimension)
+      // 2. At the bottom (mesh center Y is in the lower 15% of parent)
+      // 3. At corners (mesh center X or Z are near edges)
       const isSmall =
         meshSize.x < parentSize.x * 0.15 && meshSize.y < parentSize.y * 0.15 && meshSize.z < parentSize.z * 0.15
 
@@ -247,6 +263,12 @@ function isFeetPart(meshName: string, geometry?: THREE.BufferGeometry, parentBou
       const isAtCornerX = Math.abs(meshCenter.x - parentCenter.x) > parentSize.x * 0.3
       const isAtCornerZ = Math.abs(meshCenter.z - parentCenter.z) > parentSize.z * 0.3
       const isAtCorner = isAtCornerX || isAtCornerZ
+
+      // If it's black/dark material at the bottom, it's likely feet
+      if (isBlackMaterial && isAtBottom) {
+        console.log(`[v0] FEET by black material at bottom: ${meshName}`)
+        return true
+      }
 
       if (isSmall && isAtBottom && isAtCorner) {
         console.log(`[v0] FEET by position: ${meshName} (small=${isSmall}, bottom=${isAtBottom}, corner=${isAtCorner})`)
@@ -438,7 +460,7 @@ const LoadedGLBModel = memo(
           const isFrame = isFramePart(meshName, child.geometry, child.material)
           const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
           const isHandle = isHandlePart(meshName)
-          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox)
+          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material)
 
           if (isHandle && isKlapptuerOben) {
             handleMesh = child

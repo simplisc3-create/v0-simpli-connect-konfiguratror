@@ -845,6 +845,62 @@ export function ShelfConfigurator({
     [placeModule],
   )
 
+  const swapModules = useCallback(
+    (row: number, col1: number, col2: number) => {
+      setConfig((prev) => {
+        const cell1 = prev.grid[row]?.[col1]
+        const cell2 = prev.grid[row]?.[col2]
+
+        if (!cell1 || !cell2) return prev
+        if (cell1.type === "empty" || cell1.type === "ghost") return prev
+        if (cell2.type === "empty" || cell2.type === "ghost") return prev
+
+        const newGrid = prev.grid.map((r, ri) =>
+          r.map((cell, ci) => {
+            if (ri === row && ci === col1) {
+              return { ...cell2 }
+            }
+            if (ri === row && ci === col2) {
+              return { ...cell1 }
+            }
+            return cell
+          }),
+        )
+
+        // Also swap column widths if they differ
+        const newColumnWidths = [...prev.columnWidths] as (75 | 38)[]
+        const tempWidth = newColumnWidths[col1]
+        newColumnWidths[col1] = newColumnWidths[col2]
+        newColumnWidths[col2] = tempWidth
+
+        // Swap cell styles
+        const cellId1 = getCellId(row, col1)
+        const cellId2 = getCellId(row, col2)
+        const newCellStyles = { ...(prev.cellStyles || {}) }
+        const tempStyle = newCellStyles[cellId1]
+        newCellStyles[cellId1] = newCellStyles[cellId2]
+        newCellStyles[cellId2] = tempStyle
+
+        const newConfig = {
+          ...prev,
+          grid: newGrid,
+          columnWidths: newColumnWidths,
+          cellStyles: newCellStyles,
+        }
+
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  // Execute swap for row 1, columns 1 and 3 (0-indexed: row 1, cols 1 and 3)
+  useEffect(() => {
+    // This is a one-time swap - remove after execution
+    // swapModules(1, 1, 3)
+  }, [])
+
   const resizeGrid = useCallback(
     (newRows: number, newCols: number) => {
       const limitedRows = Math.min(Math.max(1, newRows), 8)
