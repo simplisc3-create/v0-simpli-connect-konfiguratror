@@ -1231,36 +1231,45 @@ export function ShelfConfigurator({
       addItem("SIM007", "Stangenset 80", stangenset80Count, 12.0)
     }
 
-    // --- FLÄCHENSETS (Panels) ---
+    // --- FLÄCHENSETS (Surface sets) ---
     // Rules:
     // Flächenset 80: For horizontal surfaces (shelves) - ONLY for 80cm columns
     // Flächenset 40: For horizontal surfaces (shelves) - ONLY for 40cm columns
     //   + Side panels on outer edges for modules that need them
     // SPECIAL: 80cm Klapptür nach oben has 2 additional side panels (40cm) that fold up
 
+    // ==========================================
+    // --- FLÄCHENSETS (Surface sets) ---
+    // ==========================================
+
     const flaechenset40Counts: Record<string, number> = {}
     const flaechenset80Counts: Record<string, number> = {}
 
-    // Group cells by column
-    const columnCells: Map<number, Array<{ row: number; cell: GridCell }>> = new Map()
+    console.log(`[v0] All columnWidths: ${JSON.stringify(config.columnWidths)}`)
+
+    // Group cells by column to calculate horizontal panels (Boden/Decke)
+    const columnGroups: Record<number, { row: number; cell: GridCell }[]> = {}
     for (const { row, col, cell } of cells) {
-      if (!columnCells.has(col)) {
-        columnCells.set(col, [])
+      if (!columnGroups[col]) {
+        columnGroups[col] = []
       }
-      columnCells.get(col)!.push({ row, cell })
+      columnGroups[col].push({ row, cell })
     }
 
-    const sortedCols = Array.from(columnCells.keys()).sort((a, b) => a - b)
+    console.log(`[v0] Column groups keys: ${Object.keys(columnGroups).join(", ")}`)
 
-    for (const col of sortedCols) {
-      const colCells = columnCells.get(col) || []
+    for (const [colStr, colCells] of Object.entries(columnGroups)) {
+      const col = Number.parseInt(colStr)
+      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
+
       if (colCells.length === 0) continue
 
-      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
       const moduleColor = colCells[0]?.cell.color || "weiss"
 
       // Sort rows
       const sortedRows = colCells.map((c) => c.row).sort((a, b) => a - b)
+
+      console.log(`[v0] Column ${col}: width=${widthCm}cm, modules=${sortedRows.length}, rows=${sortedRows.join(",")}`)
 
       // Adjacent stacked modules share the ceiling/floor between them
       // Non-adjacent modules (gaps between rows) each need their own floor AND ceiling
@@ -1305,42 +1314,44 @@ export function ShelfConfigurator({
 
       const totalPanels = totalHorizontalPanels
 
-      // Each Flächenset = 2 panels
-      const flaechensetsNeeded = Math.ceil(totalPanels / 2)
+      console.log(
+        `[v0] Column ${col}: totalPanels=${totalPanels}, flaechensetsNeeded=${Math.ceil(totalPanels / 2)}, widthCm=${widthCm}`,
+      )
 
+      // Each column's panels are counted separately
       if (widthCm === 40) {
+        // Each Flächenset = 2 panels, but 40cm modules each need their own sets
+        // Don't combine across columns - each 40cm column is independent
+        const flaechensetsNeeded = Math.ceil(totalPanels / 2)
         flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + flaechensetsNeeded
       } else {
+        // 80cm columns
+        const flaechensetsNeeded = Math.ceil(totalPanels / 2)
         flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + flaechensetsNeeded
       }
     }
 
-    // Each 80cm Klapptür nach oben or Einzelschublade has 2 side panels (left and right) that are 40cm wide
+    // Each 80cm Klapptür nach oben, Einzelschublade, or Abschließbar has 2 side panels (left and right) that are 40cm wide
     // BUT: When two such modules are next to each other horizontally, the middle side panels are replaced
     // by the Edelstahl-Funktionswände (steel functional walls), so NO Flächenset 40 is needed at the junction
 
+    const sidePanelModules = ["mit-klapptuer-oben", "mit-einzelschublade", "abschliessbar"]
     const sidePanelCounts: Record<string, number> = {}
 
     for (const { row, col, cell } of cells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
-      if ((cell.type === "mit-klapptuer-oben" || cell.type === "mit-einzelschublade") && widthCm === 80) {
+      if (sidePanelModules.includes(cell.type) && widthCm === 80) {
         const moduleColor = cell.color || "weiss"
 
         // Check if there's an adjacent side-panel module to the LEFT (col - 1)
         const leftNeighbor = cells.find(
-          (c) =>
-            c.row === row &&
-            c.col === col - 1 &&
-            (c.cell.type === "mit-klapptuer-oben" || c.cell.type === "mit-einzelschublade"),
+          (c) => c.row === row && c.col === col - 1 && sidePanelModules.includes(c.cell.type),
         )
 
         // Check if there's an adjacent side-panel module to the RIGHT (col + 1)
         const rightNeighbor = cells.find(
-          (c) =>
-            c.row === row &&
-            c.col === col + 1 &&
-            (c.cell.type === "mit-klapptuer-oben" || c.cell.type === "mit-einzelschublade"),
+          (c) => c.row === row && c.col === col + 1 && sidePanelModules.includes(c.cell.type),
         )
 
         // Count side panels needed: only on outer edges
@@ -1361,6 +1372,9 @@ export function ShelfConfigurator({
         flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + flaechensetsNeeded
       }
     }
+
+    console.log(`[v0] Side panel counts:`, JSON.stringify(sidePanelCounts))
+    console.log(`[v0] Final Flächenset 40 counts:`, JSON.stringify(flaechenset40Counts))
 
     // Add Flächensets to BOM
     for (const [color, count] of Object.entries(flaechenset40Counts)) {
