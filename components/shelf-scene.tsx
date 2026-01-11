@@ -280,20 +280,31 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
         color="#000000"
       />
 
-      {glbModules.map(({ key, position, cell, row, col, width, height }) => (
-        <GLBModule
-          key={key}
-          position={position}
-          cellType={cell.type}
-          width={width}
-          height={height}
-          depth={0.38}
-          color={cell.color ? colorMap[cell.color] || colorMap.weiss : colorMap.weiss}
-          row={row}
-          col={col}
-          gridConfig={config}
-        />
-      ))}
+      {glbModules.map(({ key, position, cell, row, col, width, height }) => {
+        const maxRowInColumn = config.grid.reduce((max, gridRow, rowIndex) => {
+          if (gridRow[col] && gridRow[col].type !== "empty" && gridRow[col].type !== "ghost") {
+            return Math.max(max, rowIndex)
+          }
+          return max
+        }, -1)
+        const isBottomModule = row === maxRowInColumn
+
+        return (
+          <GLBModule
+            key={key}
+            position={position}
+            cellType={cell.type}
+            width={width}
+            height={height}
+            depth={0.38}
+            color={cell.color ? colorMap[cell.color] || colorMap.weiss : colorMap.weiss}
+            row={row}
+            col={col}
+            gridConfig={config}
+            isBottomModule={isBottomModule}
+          />
+        )
+      })}
 
       {snapPoints.map(({ key, position, row, col, isVertical }) => (
         <SnapPoint

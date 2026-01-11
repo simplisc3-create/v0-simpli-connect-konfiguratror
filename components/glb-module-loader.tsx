@@ -17,6 +17,7 @@ type GLBModuleProps = {
   col: number
   gridConfig: ShelfConfig
   modelUrl?: string
+  isBottomModule?: boolean // Added prop to indicate if this module is at the bottom of its column
 }
 
 const urlCache = new Map<string, string>()
@@ -103,7 +104,6 @@ const FRAME_KEYWORDS = [
   "bein",
   "fuss",
   "feet",
-  "foot",
 ]
 
 const PANEL_KEYWORDS = [
@@ -134,6 +134,8 @@ const PANEL_KEYWORDS = [
 ]
 
 const HANDLE_KEYWORDS = ["handle", "griff", "knob", "knauf", "handgriff", "pull", "zieh"]
+
+const FEET_KEYWORDS = ["feet", "foot", "fuss", "fuß", "fuse", "bein", "leg", "standfuß", "standfuss"]
 
 function isHandlePart(meshName: string): boolean {
   const nameLower = meshName.toLowerCase()
@@ -207,6 +209,55 @@ function isFramePart(
   return false
 }
 
+function isFeetPart(meshName: string, geometry?: THREE.BufferGeometry, parentBoundingBox?: THREE.Box3): boolean {
+  const nameLower = meshName.toLowerCase()
+
+  // Check by keyword first
+  for (const keyword of FEET_KEYWORDS) {
+    if (nameLower.includes(keyword)) {
+      return true
+    }
+  }
+
+  // Position-based detection: feet are small objects at the bottom corners
+  if (geometry && parentBoundingBox) {
+    geometry.computeBoundingBox()
+    const meshBox = geometry.boundingBox
+    if (meshBox) {
+      const meshSize = new THREE.Vector3()
+      const meshCenter = new THREE.Vector3()
+      meshBox.getSize(meshSize)
+      meshBox.getCenter(meshCenter)
+
+      const parentSize = new THREE.Vector3()
+      const parentCenter = new THREE.Vector3()
+      parentBoundingBox.getSize(parentSize)
+      parentBoundingBox.getCenter(parentCenter)
+
+      // Feet are typically:
+      // 1. Small (less than 5% of parent size in each dimension)
+      // 2. At the bottom (mesh center Y is in the lower 10% of parent)
+      // 3. At corners (mesh center X and Z are near edges)
+      const isSmall =
+        meshSize.x < parentSize.x * 0.15 && meshSize.y < parentSize.y * 0.15 && meshSize.z < parentSize.z * 0.15
+
+      const parentBottom = parentCenter.y - parentSize.y / 2
+      const isAtBottom = meshCenter.y < parentBottom + parentSize.y * 0.15
+
+      const isAtCornerX = Math.abs(meshCenter.x - parentCenter.x) > parentSize.x * 0.3
+      const isAtCornerZ = Math.abs(meshCenter.z - parentCenter.z) > parentSize.z * 0.3
+      const isAtCorner = isAtCornerX || isAtCornerZ
+
+      if (isSmall && isAtBottom && isAtCorner) {
+        console.log(`[v0] FEET by position: ${meshName} (small=${isSmall}, bottom=${isAtBottom}, corner=${isAtCorner})`)
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
 function getColorName(hex: string): string {
   return HEX_TO_COLOR_NAME[hex.toLowerCase()] || "white"
 }
@@ -227,12 +278,12 @@ export const GLBModule = memo(
     col,
     gridConfig,
     modelUrl: explicitModelUrl,
+    isBottomModule = false, // Default to false
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
 
-    const glbCellType = cellType === "mit-klapptuer-oben" ? "mit-klapptuer" : cellType
-    const cacheKey = useMemo(() => `${glbCellType}-${standardWidth}-white`, [glbCellType, standardWidth])
+    const cacheKey = useMemo(() => `${cellType}-${standardWidth}-white`, [cellType, standardWidth])
 
     const [modelUrl, setModelUrl] = useState<string | null>(() => {
       if (explicitModelUrl) return explicitModelUrl
@@ -253,20 +304,20 @@ export const GLBModule = memo(
         return
       }
 
-      if (glbCellType === "empty" || glbCellType === "ghost") return
+      if (cellType === "empty" || cellType === "ghost") return
       if (fetchedRef.current) return
       fetchedRef.current = true
 
       const fetchUrl = async () => {
         try {
           const params = new URLSearchParams({
-            moduleType: glbCellType,
+            moduleType: cellType,
             width: standardWidth.toString(),
             height: "40",
             color: "white",
           })
 
-          console.log(`[v0] Fetching GLB: ${glbCellType}, ${standardWidth}cm, white (will apply ${colorName})`)
+          console.log(`[v0] Fetching GLB: ${cellType}, ${standardWidth}cm, white (will apply ${colorName})`)
 
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
@@ -275,7 +326,7 @@ export const GLBModule = memo(
             throw new Error(data.error || "Failed to resolve model")
           }
 
-          if (!data.url.startsWith("https://")) {
+          if (!data.url.startsWith("https://") && !data.url.startsWith("/")) {
             throw new Error(`Invalid URL: ${data.url}`)
           }
 
@@ -289,7 +340,7 @@ export const GLBModule = memo(
       }
 
       fetchUrl()
-    }, [cacheKey, explicitModelUrl, glbCellType, standardWidth, colorName])
+    }, [cacheKey, explicitModelUrl, cellType, standardWidth, colorName])
 
     useEffect(() => {
       fetchedRef.current = false
@@ -315,6 +366,8 @@ export const GLBModule = memo(
         moduleKey={`${row}-${col}`}
         targetColor={colorName}
         isKlapptuerOben={cellType === "mit-klapptuer-oben"}
+        row={row}
+        isBottomModule={isBottomModule}
       />
     )
   },
@@ -326,7 +379,8 @@ export const GLBModule = memo(
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2] &&
     prev.row === next.row &&
-    prev.col === next.col,
+    prev.col === next.col &&
+    prev.isBottomModule === next.isBottomModule, // Added to memo comparison
 )
 
 const LoadedGLBModel = memo(
@@ -336,28 +390,66 @@ const LoadedGLBModel = memo(
     moduleKey,
     targetColor,
     isKlapptuerOben = false,
+    row = 0,
+    isBottomModule = false, // Added prop
   }: {
     modelUrl: string
     position: [number, number, number]
     moduleKey: string
     targetColor: string
     isKlapptuerOben?: boolean
+    row?: number
+    isBottomModule?: boolean // Added to type
   }) {
     const { scene } = useGLTF(modelUrl)
+
+    const yOffset = useMemo(() => {
+      if (!isKlapptuerOben) return 0
+
+      const boundingBox = new THREE.Box3().setFromObject(scene)
+      const center = boundingBox.getCenter(new THREE.Vector3())
+      // The model's pivot is not centered - subtract the center.y to align the bottom
+      return -center.y
+    }, [scene, isKlapptuerOben])
 
     const clonedScene = useMemo(() => {
       const clone = scene.clone(true)
       const targetColorValue = TARGET_COLORS[targetColor] || TARGET_COLORS.white
 
       console.log(
-        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor}, isKlapptuerOben: ${isKlapptuerOben} =====`,
+        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor}, isKlapptuerOben: ${isKlapptuerOben}, row: ${row} =====`,
+      )
+
+      const parentBoundingBox = new THREE.Box3().setFromObject(clone)
+      const size = parentBoundingBox.getSize(new THREE.Vector3())
+      const center = parentBoundingBox.getCenter(new THREE.Vector3())
+      console.log(
+        `[v0] Model bounding box - size: x=${size.x.toFixed(4)}, y=${size.y.toFixed(4)}, z=${size.z.toFixed(4)}`,
+      )
+      console.log(
+        `[v0] Model bounding box - center: x=${center.x.toFixed(4)}, y=${center.y.toFixed(4)}, z=${center.z.toFixed(4)}`,
       )
 
       let handleMesh: THREE.Mesh | null = null
-      const moduleBounds: THREE.Box3 | null = null
 
       clone.traverse((child) => {
         if (child instanceof THREE.Mesh) {
+          const meshName = child.name || ""
+          const isFrame = isFramePart(meshName, child.geometry, child.material)
+          const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
+          const isHandle = isHandlePart(meshName)
+          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox)
+
+          if (isHandle && isKlapptuerOben) {
+            handleMesh = child
+          }
+
+          if (isFeet && !isBottomModule) {
+            child.visible = false
+            console.log(`[v0] Hiding feet mesh: ${meshName} (row ${row}, isBottomModule=${isBottomModule})`)
+            return
+          }
+
           child.frustumCulled = false
           child.castShadow = true
           child.receiveShadow = true
@@ -371,27 +463,13 @@ const LoadedGLBModel = memo(
             }
           }
 
-          const meshName = child.name || ""
-          const isFrame = isFramePart(meshName, child.geometry, child.material)
-          const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
-          const isHandle = isHandlePart(meshName)
-
-          console.log(`[v0] >>> Mesh "${meshName}": isFrame=${isFrame}, isBottom=${isBottom}, isHandle=${isHandle}`)
-
-          if (isHandle && isKlapptuerOben) {
-            handleMesh = child
-            console.log(`[v0] >>> Found handle for Klapptür oben: ${meshName}`)
-          }
-
           if (child.material) {
             if (isFrame) {
-              console.log(`[v0] >>> Applying CHROME to: ${meshName}`)
               child.material = CHROME_MATERIAL.clone()
             } else {
               const oldMat = child.material as THREE.MeshStandardMaterial
               const texture = oldMat.map || null
               const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
-              console.log(`[v0] >>> Applying COLOR (${isBottom ? "black" : targetColor}) to: ${meshName}`)
               child.material = new THREE.MeshStandardMaterial({
                 map: texture,
                 color: finalColor,
@@ -407,43 +485,22 @@ const LoadedGLBModel = memo(
         }
       })
 
-      if (isKlapptuerOben && handleMesh) {
-        // Calculate module bounds to determine handle repositioning
-        const box = new THREE.Box3().setFromObject(clone)
-        const moduleHeight = box.max.y - box.min.y
-
-        // Get current handle position
-        const handleBox = new THREE.Box3().setFromObject(handleMesh)
-        const handleHeight = handleBox.max.y - handleBox.min.y
-
-        // Move handle from top to bottom (flip Y position)
-        // Handle is at top, move it to bottom
-        const currentY = handleMesh.position.y
-        const topY = box.max.y
-        const bottomY = box.min.y
-
-        // Calculate new position: mirror across center
-        const centerY = (topY + bottomY) / 2
-        const distanceFromCenter = currentY - centerY
-        const newY = centerY - distanceFromCenter
-
-        handleMesh.position.y = newY
-
-        console.log(
-          `[v0] >>> Repositioned handle from Y=${currentY.toFixed(3)} to Y=${newY.toFixed(3)} (moduleHeight=${moduleHeight.toFixed(3)})`,
-        )
-      }
-
       return clone
-    }, [scene, targetColor, moduleKey, isKlapptuerOben])
+    }, [scene, targetColor, moduleKey, isKlapptuerOben, row, isBottomModule])
 
-    return <primitive object={clonedScene} position={position} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
+    const adjustedPosition: [number, number, number] = useMemo(() => {
+      return [position[0], position[1] + yOffset, position[2]]
+    }, [position, yOffset])
+
+    return <primitive object={clonedScene} position={adjustedPosition} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
   },
   (prev, next) =>
     prev.modelUrl === next.modelUrl &&
     prev.moduleKey === next.moduleKey &&
     prev.targetColor === next.targetColor &&
     prev.isKlapptuerOben === next.isKlapptuerOben &&
+    prev.row === next.row &&
+    prev.isBottomModule === next.isBottomModule && // Added to memo comparison
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],
