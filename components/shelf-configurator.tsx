@@ -973,7 +973,7 @@ export function ShelfConfigurator({
   )
 
   const setColumnWidth = useCallback(
-    (colIndex: number, width: 75 | 38) => {
+    (colIndex: 75 | 38, width: number) => {
       setConfig((prev) => {
         const newWidths = [...prev.columnWidths]
         newWidths[colIndex] = width
@@ -1255,14 +1255,6 @@ export function ShelfConfigurator({
       columnGroups[col].rows.push(row)
     }
 
-    console.log(`[v0] Column groups keys: ${Object.keys(columnGroups).join(", ")}`)
-
-    const flaechenset40Counts: Record<string, number> = {}
-    const flaechenset80Counts: Record<string, number> = {}
-    let total40cmPanels = 0
-    const panels40cmByColor: Record<string, number> = {}
-    const panels80cmByColor: Record<string, number> = {} // New map for 80cm panels
-
     const columnData: Record<
       number,
       {
@@ -1351,15 +1343,17 @@ export function ShelfConfigurator({
         rows: sortedRows,
         rowsWithSideWalls, // Track which specific rows have sidewalls
       }
-
-      console.log(
-        `[v0] Column ${col}: width=${widthCm}cm, modules=${modulesInCol.length}, rows=${sortedRows.join(",")}, horizontal=${totalHorizontalPanels}, backwall=${backwallPanels}, sideWalls=${sideWallPanels}`,
-      )
     }
 
     const colKeys = Object.keys(columnData)
       .map(Number)
       .sort((a, b) => a - b)
+
+    let total40cmPanels = 0
+    const panels40cmByColor: Record<string, number> = {}
+    const panels80cmByColor: Record<string, number> = {} // New map for 80cm panels
+    const flaechenset40Counts: Record<string, number> = {}
+    const flaechenset80Counts: Record<string, number> = {}
 
     for (let i = 0; i < colKeys.length; i++) {
       const col = colKeys[i]
@@ -1367,8 +1361,6 @@ export function ShelfConfigurator({
       let adjustedSideWalls = data.sideWallPanels
 
       // This ensures shared walls are counted exactly once - by the LEFT column
-      // Previously we subtracted from both sides, which removed shared walls entirely
-
       const rightCol = colKeys[i + 1]
       if (rightCol !== undefined && columnData[rightCol]) {
         const rightData = columnData[rightCol]
@@ -1380,17 +1372,12 @@ export function ShelfConfigurator({
           if (sharedRowsRight.length > 0) {
             // Subtract shared walls with right neighbor (shared wall will be counted by this column)
             adjustedSideWalls -= sharedRowsRight.length
-            console.log(
-              `[v0] Column ${col}: subtracting ${sharedRowsRight.length} shared walls with RIGHT column ${rightCol}`,
-            )
           }
         }
       }
 
       // Ensure non-negative
       adjustedSideWalls = Math.max(0, adjustedSideWalls)
-
-      console.log(`[v0] Column ${col}: adjustedSideWalls=${adjustedSideWalls}`)
 
       // Add to totals based on width
       if (data.widthCm === 40) {
@@ -1409,14 +1396,61 @@ export function ShelfConfigurator({
       }
     }
 
-    for (const [colorKey, panelCount] of Object.entries(panels80cmByColor)) {
-      if (panelCount > 0) {
-        const setsNeeded = Math.ceil(panelCount / 2)
-        flaechenset80Counts[colorKey] = (flaechenset80Counts[colorKey] || 0) + setsNeeded
+    // When 2 adjacent modules both have Funktionswände, they share a wall panel
+    const modulesWithFunktionswand = [
+      "mit-tuere",
+      "mit-doppelschublade",
+      "abschliessbare-tueren",
+      "mit-klapptuer",
+      "mit-klapptuer-oben",
+      "mit-tuere-links",
+      "mit-tuere-rechts",
+      "abschliessbar-links",
+      "abschliessbar-rechts",
+      "mit-einzelschublade",
+    ]
+
+    // Count meeting points where 2 Funktionswände meet
+    let meetingFunktionswaendeCount = 0
+    const activeColIndices = Object.keys(columnGroups)
+      .map(Number)
+      .sort((a, b) => a - b)
+
+    // For each row, check adjacent columns
+    for (let rowIdx = 0; rowIdx < config.rows; rowIdx++) {
+      for (let i = 0; i < activeColIndices.length - 1; i++) {
+        const leftCol = activeColIndices[i]
+        const rightCol = activeColIndices[i + 1]
+
+        // Check if these columns are actually adjacent (no gap between them)
+        if (rightCol !== leftCol + 1) continue
+
+        const leftCell = config.grid[rowIdx]?.[leftCol]
+        const rightCell = config.grid[rowIdx]?.[rightCol]
+
+        if (!leftCell || !rightCell) continue
+
+        const leftHasFunktionswand = modulesWithFunktionswand.includes(leftCell.type)
+        const rightHasFunktionswand = modulesWithFunktionswand.includes(rightCell.type)
+
+        if (leftHasFunktionswand && rightHasFunktionswand) {
+          meetingFunktionswaendeCount++
+        }
       }
     }
 
-    // Convert total 40cm panels to Flächensets (2 panels = 1 set)
+    // Reduce panels from panels40cmByColor before calculating sets
+    if (meetingFunktionswaendeCount > 0) {
+      let remainingReduction = meetingFunktionswaendeCount
+      for (const colorKey of Object.keys(panels40cmByColor)) {
+        const reduction = Math.min(panels40cmByColor[colorKey], remainingReduction)
+        panels40cmByColor[colorKey] -= reduction
+        remainingReduction -= reduction
+        if (remainingReduction <= 0) break
+      }
+    }
+
+    // Now calculate Flächenset 40 from reduced panels
     for (const [colorKey, panelCount] of Object.entries(panels40cmByColor)) {
       if (panelCount > 0) {
         const setsNeeded = Math.ceil(panelCount / 2)
@@ -1449,6 +1483,13 @@ export function ShelfConfigurator({
     }
 
     // Add Flächenset 80 products
+    for (const [colorKey, count] of Object.entries(panels80cmByColor)) {
+      if (count > 0) {
+        const setsNeeded = Math.ceil(count / 2)
+        flaechenset80Counts[colorKey] = (flaechenset80Counts[colorKey] || 0) + setsNeeded
+      }
+    }
+
     for (const [colorKey, count] of Object.entries(flaechenset80Counts)) {
       if (count > 0) {
         const colorLabel =
@@ -1471,9 +1512,6 @@ export function ShelfConfigurator({
         addItem(artNr, `Flächenset 80 ${colorLabel}`, count, 22.0)
       }
     }
-
-    console.log(`[v0] Final Flächenset 40 counts: ${JSON.stringify(flaechenset40Counts)}`)
-    console.log(`[v0] Final Flächenset 80 counts: ${JSON.stringify(flaechenset80Counts)}`)
 
     // --- SCHUBLADEN (Drawers) ---
     const schubladenCounts: Record<string, { count: number; name: string; price: number }> = {}
