@@ -1335,23 +1335,25 @@ export function ShelfConfigurator({
     // BUT: When two such modules are next to each other horizontally, the middle side panels are replaced
     // by the Edelstahl-Funktionswände (steel functional walls), so NO Flächenset 40 is needed at the junction
 
-    const sidePanelModules = ["mit-klapptuer-oben", "mit-einzelschublade", "abschliessbar"]
+    const sidePanelModules80cm = ["mit-klapptuer-oben", "mit-einzelschublade", "abschliessbar"]
+    const sidePanelModules40cm = ["mit-tuere-links", "mit-tuere-rechts", "abschliessbar-links", "abschliessbar-rechts"]
     const sidePanelCounts: Record<string, number> = {}
 
     for (const { row, col, cell } of cells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
-      if (sidePanelModules.includes(cell.type) && widthCm === 80) {
+      // 80cm modules with side panels
+      if (sidePanelModules80cm.includes(cell.type) && widthCm === 80) {
         const moduleColor = cell.color || "weiss"
 
         // Check if there's an adjacent side-panel module to the LEFT (col - 1)
         const leftNeighbor = cells.find(
-          (c) => c.row === row && c.col === col - 1 && sidePanelModules.includes(c.cell.type),
+          (c) => c.row === row && c.col === col - 1 && sidePanelModules80cm.includes(c.cell.type),
         )
 
         // Check if there's an adjacent side-panel module to the RIGHT (col + 1)
         const rightNeighbor = cells.find(
-          (c) => c.row === row && c.col === col + 1 && sidePanelModules.includes(c.cell.type),
+          (c) => c.row === row && c.col === col + 1 && sidePanelModules80cm.includes(c.cell.type),
         )
 
         // Count side panels needed: only on outer edges
@@ -1362,6 +1364,12 @@ export function ShelfConfigurator({
         if (sidePanelsNeeded > 0) {
           sidePanelCounts[moduleColor] = (sidePanelCounts[moduleColor] || 0) + sidePanelsNeeded
         }
+      }
+
+      if (sidePanelModules40cm.includes(cell.type) && widthCm === 40) {
+        const moduleColor = cell.color || "weiss"
+        // 40cm door module: always needs 2 side panels (left + right)
+        sidePanelCounts[moduleColor] = (sidePanelCounts[moduleColor] || 0) + 2
       }
     }
 
@@ -1639,7 +1647,6 @@ export function ShelfConfigurator({
 
     // --- FUNKTIONSWÄNDE (Back panels) ---
     let funktionswandCount = 0
-    let has40cmSingleDoor = false
 
     for (const { col, cell } of cells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
@@ -1656,25 +1663,18 @@ export function ShelfConfigurator({
         cell.type === "abschliessbar-rechts" ||
         cell.type === "mit-einzelschublade"
       ) {
-        funktionswandCount += 2
-
         if (
           widthCm === 40 &&
-          (cell.type === "mit-klapptuer" ||
-            cell.type === "mit-klapptuer-oben" ||
-            cell.type === "mit-tuere-links" ||
+          (cell.type === "mit-tuere-links" ||
             cell.type === "mit-tuere-rechts" ||
             cell.type === "abschliessbar-links" ||
-            cell.type === "abschliessbar-rechts" ||
-            cell.type === "mit-einzelschublade")
+            cell.type === "abschliessbar-rechts")
         ) {
-          has40cmSingleDoor = true
+          funktionswandCount += 1 // 40cm door module = 1 Funktionswand
+        } else {
+          funktionswandCount += 2 // 80cm module = 2 Funktionswände
         }
       }
-    }
-
-    if (funktionswandCount > 0 && !has40cmSingleDoor && funktionswandCount % 2 !== 0) {
-      funktionswandCount = funktionswandCount + 1 // Round UP to next even number
     }
 
     if (funktionswandCount > 0) {
