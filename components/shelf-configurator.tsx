@@ -1418,8 +1418,14 @@ export function ShelfConfigurator({
       "mit-einzelschublade",
     ]
 
+    const modulesWithLeftFunktionswandOnly = ["mit-tuere-links", "abschliessbar-links"]
+
+    const modulesWithRightFunktionswandOnly = ["mit-tuere-rechts", "abschliessbar-rechts"]
+
     // Count meeting points where 2 Funktionswände meet
     let meetingFunktionswaendeCount = 0
+    let singleFunktionswandMeetingCount = 0
+
     const activeColIndices = Object.keys(columnGroups)
       .map(Number)
       .sort((a, b) => a - b)
@@ -1441,15 +1447,44 @@ export function ShelfConfigurator({
         const leftHasFunktionswand = modulesWithFunktionswand.includes(leftCell.type)
         const rightHasFunktionswand = modulesWithFunktionswand.includes(rightCell.type)
 
-        if (leftHasFunktionswand && rightHasFunktionswand) {
+        const leftHasRightFunktionswand =
+          leftHasFunktionswand && !modulesWithLeftFunktionswandOnly.includes(leftCell.type) // Has right side unless it's left-only
+        const rightHasLeftFunktionswand =
+          rightHasFunktionswand && !modulesWithRightFunktionswandOnly.includes(rightCell.type) // Has left side unless it's right-only
+
+        console.log(`[v0] Row ${rowIdx}, Col ${leftCol}-${rightCol}: left=${leftCell.type}, right=${rightCell.type}`)
+        console.log(
+          `[v0]   leftHasFunktionswand=${leftHasFunktionswand}, rightHasFunktionswand=${rightHasFunktionswand}`,
+        )
+        console.log(
+          `[v0]   leftHasRightFunktionswand=${leftHasRightFunktionswand}, rightHasLeftFunktionswand=${rightHasLeftFunktionswand}`,
+        )
+
+        if (leftHasRightFunktionswand && rightHasLeftFunktionswand) {
+          // Both modules have Funktionswand on meeting side - reduce 1 panel (shared)
           meetingFunktionswaendeCount++
+          console.log(`[v0]   -> meetingFunktionswaendeCount++ (both have Funktionswand on meeting side)`)
+        } else if (leftHasRightFunktionswand || rightHasLeftFunktionswand) {
+          if (leftHasFunktionswand && rightHasFunktionswand) {
+            // Both are Funktionswand modules, but only one has it on the meeting side
+            singleFunktionswandMeetingCount++
+            console.log(`[v0]   -> singleFunktionswandMeetingCount++ (one-sided meeting)`)
+          }
         }
       }
     }
 
-    // Reduce panels from panels40cmByColor before calculating sets
-    if (meetingFunktionswaendeCount > 0) {
-      let remainingReduction = meetingFunktionswaendeCount
+    console.log(
+      `[v0] Final: meetingFunktionswaendeCount=${meetingFunktionswaendeCount}, singleFunktionswandMeetingCount=${singleFunktionswandMeetingCount}`,
+    )
+
+    // - meetingFunktionswaendeCount: 2 Funktionswände treffen sich → 1 Panel wird geteilt/erspart
+    // - singleFunktionswandMeetingCount: 1 Funktionswand trifft auf Seitenwand → Seitenwand bleibt (KEINE Reduktion)
+    const totalReduction = meetingFunktionswaendeCount // singleFunktionswandMeetingCount has NO effect
+    if (totalReduction > 0) {
+      let remainingReduction = totalReduction
+
+      // </CHANGE>
       for (const colorKey of Object.keys(panels40cmByColor)) {
         const reduction = Math.min(panels40cmByColor[colorKey], remainingReduction)
         panels40cmByColor[colorKey] -= reduction
@@ -1457,6 +1492,8 @@ export function ShelfConfigurator({
         if (remainingReduction <= 0) break
       }
     }
+
+    console.log(`[v0] panels40cmByColor after reduction:`, JSON.stringify(panels40cmByColor))
 
     // Now calculate Flächenset 40 from reduced panels
     for (const [colorKey, panelCount] of Object.entries(panels40cmByColor)) {
