@@ -510,6 +510,62 @@ export const klapptueren: Product[] = [
 ]
 
 // =============================================================================
+// KLAPPTÜREN nach oben (Upward-opening flip doors) - neue SKU-Serie
+// =============================================================================
+export const klapptuerenOben: Product[] = [
+  {
+    artNr: "SIM025-white",
+    name: "Klapptür weiß (nach oben)",
+    category: "klapptuer",
+    size: 80,
+    price: 65.0,
+    color: "weiss",
+    description: "Klapptür für nach oben öffnende Module",
+  },
+  {
+    artNr: "SIM025-grey",
+    name: "Klapptür grau (nach oben)",
+    category: "klapptuer",
+    size: 80,
+    price: 65.0,
+    color: "grau",
+  },
+  { artNr: "SIM025-red", name: "Klapptür rot (nach oben)", category: "klapptuer", size: 80, price: 65.0, color: "rot" },
+  {
+    artNr: "SIM025-orange",
+    name: "Klapptür orange (nach oben)",
+    category: "klapptuer",
+    size: 80,
+    price: 65.0,
+    color: "orange",
+  },
+  {
+    artNr: "SIM025-green",
+    name: "Klapptür grün (nach oben)",
+    category: "klapptuer",
+    size: 80,
+    price: 65.0,
+    color: "gruen",
+  },
+  {
+    artNr: "SIM025-blue",
+    name: "Klapptür blau (nach oben)",
+    category: "klapptuer",
+    size: 80,
+    price: 65.0,
+    color: "blau",
+  },
+  {
+    artNr: "SIM025-yellow",
+    name: "Klapptür gelb (nach oben)",
+    category: "klapptuer",
+    size: 80,
+    price: 65.0,
+    color: "gelb",
+  },
+]
+
+// =============================================================================
 // FUNKTIONSWÄNDE (Back panels - Stainless steel)
 // =============================================================================
 export const funktionswaende: Product[] = [
@@ -810,6 +866,7 @@ export const allProducts: Product[] = [
   ...einzelschubladen,
   ...tueren,
   ...klapptueren,
+  ...klapptuerenOben,
   ...funktionswaende,
   ...zubehoer,
   // Legacy
@@ -861,6 +918,22 @@ export function getFlaechensetGlasArtNr(size: number, variant: "satiniert" | "kl
 export function getSchubladeArtNr(color: string): string {
   const colorSuffix = getColorSuffix(color)
   return colorSuffix ? `SIM018${colorSuffix}` : "SIM018"
+}
+
+/**
+ * Get Einzelschublade article number based on color
+ */
+export function getEinzelschubladeArtNr(color: string): string {
+  const colorMap: Record<string, string> = {
+    weiss: "SIM025-white",
+    grau: "SIM025-grey",
+    rot: "SIM025-red",
+    orange: "SIM025-orange",
+    gruen: "SIM025-green",
+    blau: "SIM025-blue",
+    gelb: "SIM025-yellow",
+  }
+  return colorMap[color] || "SIM025-white"
 }
 
 /**
@@ -1014,6 +1087,10 @@ export function getTuerPrice(): number {
 
 export function getKlapptuerPrice(): number {
   return 52.0
+}
+
+export function getKlapptuerObenPrice(): number {
+  return 65.0
 }
 
 export function getJalousiePrice(): number {

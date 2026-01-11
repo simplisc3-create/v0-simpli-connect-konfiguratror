@@ -224,55 +224,33 @@ function isFeetPart(
     }
   }
 
-  // Position and color-based detection: feet are small black objects at the bottom corners
-  if (geometry && parentBoundingBox) {
-    geometry.computeBoundingBox()
-    const meshBox = geometry.boundingBox
-    if (meshBox) {
-      const meshSize = new THREE.Vector3()
-      const meshCenter = new THREE.Vector3()
-      meshBox.getSize(meshSize)
-      meshBox.getCenter(meshCenter)
+  // The feet are small black plastic caps at the bottom corners
+  if (material) {
+    const mat = Array.isArray(material) ? material[0] : material
+    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
+      const color = mat.color
+      // Black/dark is when all RGB values are low (< 0.15)
+      const isBlackMaterial = color.r < 0.15 && color.g < 0.15 && color.b < 0.15
 
-      const parentSize = new THREE.Vector3()
-      const parentCenter = new THREE.Vector3()
-      parentBoundingBox.getSize(parentSize)
-      parentBoundingBox.getCenter(parentCenter)
+      if (isBlackMaterial && geometry && parentBoundingBox) {
+        geometry.computeBoundingBox()
+        const meshBox = geometry.boundingBox
+        if (meshBox) {
+          const meshSize = new THREE.Vector3()
+          meshBox.getSize(meshSize)
 
-      // Check if the material is black/dark (feet are black plastic)
-      let isBlackMaterial = false
-      if (material) {
-        const mat = Array.isArray(material) ? material[0] : material
-        if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
-          const color = mat.color
-          // Black/dark is when all RGB values are low (< 0.2)
-          isBlackMaterial = color.r < 0.2 && color.g < 0.2 && color.b < 0.2
+          const parentSize = new THREE.Vector3()
+          parentBoundingBox.getSize(parentSize)
+
+          // Small black parts are likely feet (less than 20% of parent size)
+          const isSmall =
+            meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
+
+          if (isSmall) {
+            console.log(`[v0] FEET detected by small black material: ${meshName}`)
+            return true
+          }
         }
-      }
-
-      // Feet are typically:
-      // 1. Small (less than 15% of parent size in each dimension)
-      // 2. At the bottom (mesh center Y is in the lower 15% of parent)
-      // 3. At corners (mesh center X or Z are near edges)
-      const isSmall =
-        meshSize.x < parentSize.x * 0.15 && meshSize.y < parentSize.y * 0.15 && meshSize.z < parentSize.z * 0.15
-
-      const parentBottom = parentCenter.y - parentSize.y / 2
-      const isAtBottom = meshCenter.y < parentBottom + parentSize.y * 0.15
-
-      const isAtCornerX = Math.abs(meshCenter.x - parentCenter.x) > parentSize.x * 0.3
-      const isAtCornerZ = Math.abs(meshCenter.z - parentCenter.z) > parentSize.z * 0.3
-      const isAtCorner = isAtCornerX || isAtCornerZ
-
-      // If it's black/dark material at the bottom, it's likely feet
-      if (isBlackMaterial && isAtBottom) {
-        console.log(`[v0] FEET by black material at bottom: ${meshName}`)
-        return true
-      }
-
-      if (isSmall && isAtBottom && isAtCorner) {
-        console.log(`[v0] FEET by position: ${meshName} (small=${isSmall}, bottom=${isAtBottom}, corner=${isAtCorner})`)
-        return true
       }
     }
   }
@@ -425,13 +403,19 @@ const LoadedGLBModel = memo(
   }) {
     const { scene } = useGLTF(modelUrl)
 
-    const yOffset = useMemo(() => {
-      if (!isKlapptuerOben) return 0
+    const { xOffset, yOffset } = useMemo(() => {
+      if (!isKlapptuerOben) return { xOffset: 0, yOffset: 0 }
 
       const boundingBox = new THREE.Box3().setFromObject(scene)
       const center = boundingBox.getCenter(new THREE.Vector3())
-      // The model's pivot is not centered - subtract the center.y to align the bottom
-      return -center.y
+
+      console.log(`[v0] Klapptür offset calculation: center.x=${center.x.toFixed(4)}, center.y=${center.y.toFixed(4)}`)
+
+      // The model has its origin offset from center, so we need to compensate
+      return {
+        xOffset: -center.x,
+        yOffset: -center.y,
+      }
     }, [scene, isKlapptuerOben])
 
     const clonedScene = useMemo(() => {
@@ -511,8 +495,9 @@ const LoadedGLBModel = memo(
     }, [scene, targetColor, moduleKey, isKlapptuerOben, row, isBottomModule])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
-      return [position[0], position[1] + yOffset, position[2]]
-    }, [position, yOffset])
+      const zOffset = isKlapptuerOben ? 0.01 : 0
+      return [position[0] + xOffset, position[1] + yOffset, position[2] + zOffset]
+    }, [position, xOffset, yOffset, isKlapptuerOben])
 
     return <primitive object={clonedScene} position={adjustedPosition} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
   },

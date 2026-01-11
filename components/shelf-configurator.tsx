@@ -15,7 +15,8 @@ import {
   getTuerArtNr,
   getKlapptuerArtNr,
   getLeiterArtNr,
-  getKlapptuerObenArtNr, // Add import for new function
+  getKlapptuerObenArtNr,
+  getEinzelschubladeArtNr,
 } from "@/lib/simpli-products"
 import { useThree } from "@react-three/fiber"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
@@ -34,7 +35,7 @@ export type GridCell = {
     | "mit-rueckwand"
     | "mit-tueren"
     | "mit-klapptuer"
-    | "mit-klapptuer-oben" // Added mit-klapptuer-oben
+    | "mit-klapptuer-oben"
     | "mit-doppelschublade"
     | "abschliessbare-tueren"
     | "mit-tuere-rechts"
@@ -42,6 +43,7 @@ export type GridCell = {
     | "abschliessbar-rechts"
     | "abschliessbar-links"
     | "klapptuer"
+    | "mit-einzelschublade"
   row: number
   col: number
   color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
@@ -1234,6 +1236,7 @@ export function ShelfConfigurator({
     // Flächenset 80: For horizontal surfaces (shelves) - ONLY for 80cm columns
     // Flächenset 40: For horizontal surfaces (shelves) - ONLY for 40cm columns
     //   + Side panels on outer edges for modules that need them
+    // SPECIAL: 80cm Klapptür nach oben has 2 additional side panels (40cm) that fold up
 
     const flaechenset40Counts: Record<string, number> = {}
     const flaechenset80Counts: Record<string, number> = {}
@@ -1261,20 +1264,20 @@ export function ShelfConfigurator({
 
       // Backpanels (Funktionswand) are counted separately as their own product
 
-      // Calculate horizontal panels (floor + ceiling per module)
+      // Adjacent stacked modules share the ceiling/floor between them, so we don't double count
       let totalHorizontalPanels = 0
       for (let i = 0; i < sortedRows.length; i++) {
         const currentRow = sortedRows[i]
         const nextRow = i < sortedRows.length - 1 ? sortedRows[i + 1] : -1
         const isStackedAbove = nextRow === currentRow + 1
 
-        if (isStackedAbove) {
-          // Stacked: shared ceiling/floor - count just 1
+        if (i === 0) {
+          // First module always needs a floor
           totalHorizontalPanels += 1
-        } else {
-          // Top row or not stacked: need both floor and ceiling
-          totalHorizontalPanels += 2
         }
+
+        // Every module needs a ceiling (top panel)
+        totalHorizontalPanels += 1
       }
 
       const totalPanels = totalHorizontalPanels
@@ -1289,86 +1292,15 @@ export function ShelfConfigurator({
       }
     }
 
-    const sidePanelsNeeded: Record<string, number> = {}
+    // Each 80cm Klapptür nach oben has 2 side panels (left and right) that are 40cm wide
+    for (const { col, cell } of cells) {
+      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
-    // Check each row independently for side panel requirements
-    for (let r = 0; r < config.grid.length; r++) {
-      const row = config.grid[r]
-
-      // Find all filled cells in this row
-      const filledInRow: Array<{ col: number; cell: (typeof config.grid)[0][0] }> = []
-      for (let c = 0; c < row.length; c++) {
-        if (row[c].type !== "empty" && row[c].type !== "ghost") {
-          filledInRow.push({ col: c, cell: row[c] })
-        }
-      }
-
-      if (filledInRow.length === 0) continue
-
-      // Determine which modules need side panels based on module type
-      const needsSidePanelsAlways = (moduleType: string): boolean => {
-        // ALWAYS need side panels: modules with doors, drawers, or back panels
-        return [
-          "mit-tueren",
-          "abschliessbare-tueren",
-          "mit-klapptuer",
-          "mit-klapptuer-oben",
-          "mit-einzelschublade",
-          "mit-doppelschublade",
-          "mit-rueckwand",
-        ].includes(moduleType)
-      }
-
-      const needsSidePanelsAtEdge = (moduleType: string): boolean => {
-        // Need side panels ONLY at outer edges
-        return ["offenes-fach", "ohne-rueckwand"].includes(moduleType)
-      }
-
-      // For each module in this row, check its left and right side panel requirements
-      for (let i = 0; i < filledInRow.length; i++) {
-        const { col, cell } = filledInRow[i]
+      if (cell.type === "mit-klapptuer-oben" && widthCm === 80) {
         const moduleColor = cell.color || "weiss"
-
-        const hasLeftNeighbor = i > 0 && filledInRow[i - 1].col === col - 1
-        const hasRightNeighbor = i < filledInRow.length - 1 && filledInRow[i + 1].col === col + 1
-
-        if (needsSidePanelsAlways(cell.type)) {
-          // This module ALWAYS needs side panels
-          if (!hasLeftNeighbor) {
-            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-          } else {
-            const leftNeighborCell = filledInRow[i - 1].cell
-            if (!needsSidePanelsAlways(leftNeighborCell.type)) {
-              // Left neighbor doesn't need panels, but this module does
-              sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-            }
-          }
-
-          if (!hasRightNeighbor) {
-            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-          } else {
-            const rightNeighborCell = filledInRow[i + 1].cell
-            if (!needsSidePanelsAlways(rightNeighborCell.type)) {
-              sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-            }
-          }
-        } else if (needsSidePanelsAtEdge(cell.type)) {
-          // This module needs side panels ONLY at outer edges (leftmost/rightmost in row)
-          if (!hasLeftNeighbor) {
-            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-          }
-          if (!hasRightNeighbor) {
-            sidePanelsNeeded[moduleColor] = (sidePanelsNeeded[moduleColor] || 0) + 1
-          }
-        }
-        // ohne-seitenwaende: NEVER needs side panels
+        // Add 2 side panels (= 1 Flächenset 40, since they come in packs of 2)
+        flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + 1
       }
-    }
-
-    // Convert side panels to Flächensets 40 (2 panels per set)
-    for (const [color, panelCount] of Object.entries(sidePanelsNeeded)) {
-      const flaechensetsNeeded = Math.ceil(panelCount / 2)
-      flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + flaechensetsNeeded
     }
 
     // Add Flächensets to BOM
@@ -1597,6 +1529,41 @@ export function ShelfConfigurator({
       addItem(artNr, data.name, data.count, data.price)
     }
 
+    const einzelschubladeCounts: Record<string, { count: number; name: string; price: number }> = {}
+
+    for (const { cell } of cells) {
+      if (cell.type === "mit-einzelschublade") {
+        const color = cell.color || "weiss"
+        const artNr = `ES-${getEinzelschubladeArtNr(color)}` // Prefix to differentiate from Klapptür oben
+        const colorLabel =
+          color === "weiss"
+            ? "weiß"
+            : color === "schwarz"
+              ? "schwarz"
+              : color === "blau"
+                ? "blau"
+                : color === "rot"
+                  ? "rot"
+                  : color === "gruen"
+                    ? "grün"
+                    : color === "gelb"
+                      ? "gelb"
+                      : color === "orange"
+                        ? "orange"
+                        : color
+        const name = `Einzelschublade ${colorLabel}`
+
+        if (!einzelschubladeCounts[artNr]) {
+          einzelschubladeCounts[artNr] = { count: 0, name, price: 55.0 }
+        }
+        einzelschubladeCounts[artNr].count++
+      }
+    }
+
+    for (const [artNr, data] of Object.entries(einzelschubladeCounts)) {
+      addItem(artNr, data.name, data.count, data.price)
+    }
+
     // --- FUNKTIONSWÄNDE (Back panels) ---
     let funktionswandCount = 0
     let has40cmSingleDoor = false
@@ -1613,7 +1580,8 @@ export function ShelfConfigurator({
         cell.type === "mit-tuere-links" ||
         cell.type === "mit-tuere-rechts" ||
         cell.type === "abschliessbar-links" ||
-        cell.type === "abschliessbar-rechts"
+        cell.type === "abschliessbar-rechts" ||
+        cell.type === "mit-einzelschublade"
       ) {
         funktionswandCount += 2
 
@@ -1624,7 +1592,8 @@ export function ShelfConfigurator({
             cell.type === "mit-tuere-links" ||
             cell.type === "mit-tuere-rechts" ||
             cell.type === "abschliessbar-links" ||
-            cell.type === "abschliessbar-rechts")
+            cell.type === "abschliessbar-rechts" ||
+            cell.type === "mit-einzelschublade")
         ) {
           has40cmSingleDoor = true
         }
@@ -1652,6 +1621,10 @@ export function ShelfConfigurator({
     console.log(
       "[v0] BOM Calculation - Filled cells:",
       cellsForDebug.filter((c) => c.cell.type !== "empty" && c.cell.type !== "ghost").length,
+    )
+    console.log(
+      "[v0] BOM Calculation - Einzelschubladen:",
+      Object.keys(einzelschubladeCounts).length > 0 ? einzelschubladeCounts : "none",
     )
 
     // Convert map to array and calculate total
@@ -1949,6 +1922,29 @@ export function ShelfConfigurator({
   )
 }
 
+// Function to get the user-friendly name of a module type
+function getModuleName(type: GridCell["type"]) {
+  const moduleNames: Record<GridCell["type"], string> = {
+    empty: "Leer",
+    ghost: "Geisterzelle",
+    "offenes-fach": "Offenes Fach",
+    "ohne-seitenwaende": "Ohne Seitenwände",
+    "ohne-rueckwand": "Ohne Rückwand",
+    "mit-rueckwand": "Mit Rückwand",
+    "mit-tueren": "Mit Türen",
+    "mit-klapptuer": "Mit Klapptür",
+    "mit-klapptuer-oben": "Klapptür (nach oben)",
+    "mit-doppelschublade": "Mit Schubladen",
+    "abschliessbare-tueren": "Abschließbar",
+    "mit-tuere-rechts": "Mit Türen (rechts)",
+    "mit-tuere-links": "Mit Türen (links)",
+    "abschliessbar-rechts": "Abschließbar (rechts)",
+    "abschliessbar-links": "Abschließbar (links)",
+    "mit-einzelschublade": "Einzelschublade",
+  }
+  return moduleNames[type] ?? type
+}
+
 function getToolLabel(tool: GridCell["type"]): string {
   const labels: Record<GridCell["type"], string> = {
     empty: "Leer",
@@ -1967,6 +1963,7 @@ function getToolLabel(tool: GridCell["type"]): string {
     "abschliessbar-rechts": "Abschließbar (rechts)",
     "abschliessbar-links": "Abschließbar (links)",
     klapptuer: "Klapptür",
+    "mit-einzelschublade": "Mit Einzelschublade",
   }
   return labels[tool] || tool
 }

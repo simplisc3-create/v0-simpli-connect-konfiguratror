@@ -55,6 +55,7 @@ export type ModuleType =
   | "mit-tuere-rechts"
   | "abschliessbar-links"
   | "abschliessbar-rechts"
+  | "mit-einzelschublade"
 
 export const MODULE_TYPES: ModuleType[] = [
   "offenes-fach",
@@ -71,6 +72,7 @@ export const MODULE_TYPES: ModuleType[] = [
   "mit-tuere-rechts",
   "abschliessbar-links",
   "abschliessbar-rechts",
+  "mit-einzelschublade",
 ]
 
 export const MODULE_TO_VARIANT_CODE_80: Record<ModuleType, string> = {
@@ -89,6 +91,7 @@ export const MODULE_TO_VARIANT_CODE_80: Record<ModuleType, string> = {
   "mit-tuere-rechts": "",
   "abschliessbar-links": "",
   "abschliessbar-rechts": "",
+  "mit-einzelschublade": "1-4",
 }
 
 export const MODULE_TO_VARIANT_CODE_40: Record<ModuleType, string> = {
@@ -107,6 +110,7 @@ export const MODULE_TO_VARIANT_CODE_40: Record<ModuleType, string> = {
   "mit-tueren": "",
   "abschliessbare-tueren": "",
   "ohne-rueckwand": "",
+  "mit-einzelschublade": "",
 }
 
 // These files have a different naming pattern: 80x40x40b-1-2-{color}-optimized.glb

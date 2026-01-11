@@ -47,6 +47,7 @@ const moduleTypes: Array<{ id: GridCell["type"]; label: string; icon: string }> 
   { id: "mit-klapptuer", label: "Klappe", icon: "▥" },
   { id: "mit-klapptuer-oben", label: "Klappe↑", icon: "▦" },
   { id: "mit-doppelschublade", label: "Schubladen", icon: "≡" },
+  { id: "mit-einzelschublade", label: "Einzelschubl.", icon: "▭" },
   { id: "abschliessbare-tueren", label: "Abschließ", icon: "🔒" },
   { id: "mit-tuere-links", label: "Tür L", icon: "◧" },
   { id: "mit-tuere-rechts", label: "Tür R", icon: "◨" },
