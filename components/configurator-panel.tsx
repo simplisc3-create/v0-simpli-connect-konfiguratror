@@ -15,10 +15,14 @@ import {
   Columns,
   Grid,
   Check,
+  Eraser,
+  MousePointer,
 } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
+
+export type ToolMode = "select" | "brush" | "eraser"
 
 type Props = {
   config: ShelfConfig
@@ -51,6 +55,8 @@ type Props = {
   onApplyColorToAll?: (color: ColorKey) => void
   onClearCellColor?: (row: number, col: number) => void
   onDeselectCell?: () => void
+  toolMode?: ToolMode
+  onSetToolMode?: (mode: ToolMode) => void
 }
 
 const baseColors = [
@@ -71,21 +77,21 @@ const materialOptions = [
   { id: "glas" as const, label: "Glas" },
 ]
 
-const moduleTypes: Array<{ id: GridCell["type"]; label: string }> = [
-  { id: "offenes-fach", label: "Offenes Fach" },
-  { id: "ohne-seitenwaende", label: "Ohne Seitenwände" },
-  { id: "ohne-rueckwand", label: "Ohne Rückwand" },
-  { id: "mit-rueckwand", label: "Mit Rückwand" },
-  { id: "mit-tueren", label: "Mit Türen" },
-  { id: "mit-klapptuer", label: "Mit Klapptür" },
-  { id: "mit-klapptuer-oben", label: "Klapptür (nach oben)" },
-  { id: "mit-doppelschublade", label: "Mit Schubladen" },
-  { id: "mit-einzelschublade", label: "Einzelschublade" },
-  { id: "abschliessbare-tueren", label: "Abschließbar" },
-  { id: "mit-tuere-links", label: "Mit Türe Links" },
-  { id: "mit-tuere-rechts", label: "Mit Türe Rechts" },
-  { id: "abschliessbar-links", label: "Abschließbar Links" },
-  { id: "abschliessbar-rechts", label: "Abschließbar Rechts" },
+const moduleTypes: Array<{ id: GridCell["type"]; label: string; shortLabel: string; icon: string }> = [
+  { id: "offenes-fach", label: "Offenes Fach", shortLabel: "Offen", icon: "□" },
+  { id: "ohne-seitenwaende", label: "Ohne Seitenwände", shortLabel: "Ohne Seiten", icon: "⊏⊐" },
+  { id: "ohne-rueckwand", label: "Ohne Rückwand", shortLabel: "Ohne Rück", icon: "⊔" },
+  { id: "mit-rueckwand", label: "Mit Rückwand", shortLabel: "Mit Rück", icon: "▣" },
+  { id: "mit-tueren", label: "Mit Türen", shortLabel: "Mit Türen", icon: "▤" },
+  { id: "mit-klapptuer", label: "Mit Klapptür", shortLabel: "Mit Klapptür", icon: "▥" },
+  { id: "mit-klapptuer-oben", label: "Klapptür (nach oben)", shortLabel: "Klapptür (nach oben)", icon: "▦" },
+  { id: "mit-doppelschublade", label: "Mit Schubladen", shortLabel: "Mit Schubladen", icon: "≡" },
+  { id: "mit-einzelschublade", label: "Einzelschublade", shortLabel: "Einzelschublade", icon: "▭" },
+  { id: "abschliessbare-tueren", label: "Abschließbar", shortLabel: "Abschließbar", icon: "🔒" },
+  { id: "mit-tuere-links", label: "Mit Türe Links", shortLabel: "Mit Türe Links", icon: "◧" },
+  { id: "mit-tuere-rechts", label: "Mit Türe Rechts", shortLabel: "Mit Türe Rechts", icon: "◨" },
+  { id: "abschliessbar-links", label: "Abschließbar Links", shortLabel: "Abschließbar Links", icon: "🔐" },
+  { id: "abschliessbar-rechts", label: "Abschließbar Rechts", shortLabel: "Abschließbar Rechts", icon: "🔐" },
 ]
 
 export function ConfiguratorPanel({
@@ -111,13 +117,19 @@ export function ConfiguratorPanel({
   onApplyColorToAll,
   onClearCellColor,
   onDeselectCell,
+  toolMode = "select",
+  onSetToolMode,
 }: Props) {
   const [expandedSection, setExpandedSection] = useState<string | null>("grid")
   const { addItem } = useCartStore()
   const [addedToCart, setAddedToCart] = useState(false)
 
   const handleCellClick = (row: number, col: number) => {
-    if (selectedTool === "empty") {
+    if (toolMode === "eraser") {
+      onClearCell(row, col)
+    } else if (toolMode === "brush" && selectedTool && selectedTool !== "empty") {
+      onPlaceModule(row, col, selectedTool)
+    } else if (selectedTool === "empty") {
       onClearCell(row, col)
     } else if (selectedTool) {
       onPlaceModule(row, col, selectedTool)
@@ -177,7 +189,6 @@ export function ConfiguratorPanel({
     if (shoppingList.length === 0) return
 
     for (const item of shoppingList) {
-      // Add each item with its quantity
       for (let i = 0; i < item.quantity; i++) {
         addItem({
           id: item.id,
@@ -195,25 +206,25 @@ export function ConfiguratorPanel({
   const totalPrice = price || 0
 
   return (
-    <div className="hidden md:flex w-96 flex-col border-l border-neutral-700 bg-neutral-800">
+    <div className="hidden md:flex w-96 flex-col border-l border-neutral-700 bg-neutral-900">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {selectedCell && selectedCellInfo && selectedCellInfo.type !== "empty" && selectedCellInfo.type !== "ghost" && (
-          <div className="border-b border-neutral-700 bg-neutral-900 p-4">
+          <div className="border-b border-neutral-700 bg-neutral-800 p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Paintbrush className="h-4 w-4 text-blue-400" />
+                <Paintbrush className="h-4 w-4 text-teal-400" />
                 <h3 className="text-sm font-medium text-neutral-100">Zelle bearbeiten</h3>
               </div>
               <button
                 onClick={onDeselectCell}
-                className="rounded p-1 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200"
+                className="rounded-full p-1.5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="mb-3 rounded bg-neutral-800 p-2 text-xs text-neutral-300">
+            <div className="mb-3 rounded-xl bg-neutral-900 p-3 text-xs text-neutral-300">
               <span className="font-medium">{getModuleLabel(selectedCellInfo.type)}</span>
               <span className="ml-2 text-neutral-500">
                 Zeile {selectedCell.row + 1}, Spalte {selectedCell.col + 1}
@@ -229,14 +240,23 @@ export function ConfiguratorPanel({
                     key={color.id}
                     onClick={() => onApplyCellColor?.(selectedCell.row, selectedCell.col, color.id)}
                     className={cn(
-                      "h-8 w-8 rounded border-2 transition-all",
+                      "relative h-10 w-10 rounded-xl transition-all",
                       selectedCellInfo.color === color.id
-                        ? "border-white ring-2 ring-white ring-offset-1 ring-offset-neutral-900"
-                        : "border-neutral-600 hover:border-neutral-400",
+                        ? "ring-2 ring-white ring-offset-2 ring-offset-neutral-800"
+                        : "ring-1 ring-neutral-600 hover:ring-neutral-400",
                     )}
                     style={{ backgroundColor: color.color }}
                     title={color.label}
-                  />
+                  >
+                    {selectedCellInfo.color === color.id && (
+                      <Check
+                        className={cn(
+                          "absolute inset-0 m-auto h-5 w-5",
+                          color.id === "weiss" ? "text-neutral-800" : "text-white",
+                        )}
+                      />
+                    )}
+                  </button>
                 ))}
               </div>
             </div>
@@ -247,30 +267,30 @@ export function ConfiguratorPanel({
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onApplyColorToRow?.(selectedCell.row, selectedColor)}
-                  className="flex items-center justify-center gap-1 rounded border border-neutral-600 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-700"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-neutral-600 px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-700 transition-all"
                 >
-                  <Rows className="h-3 w-3" />
+                  <Rows className="h-3.5 w-3.5" />
                   Zeile färben
                 </button>
                 <button
                   onClick={() => onApplyColorToColumn?.(selectedCell.col, selectedColor)}
-                  className="flex items-center justify-center gap-1 rounded border border-neutral-600 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-700"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-neutral-600 px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-700 transition-all"
                 >
-                  <Columns className="h-3 w-3" />
+                  <Columns className="h-3.5 w-3.5" />
                   Spalte färben
                 </button>
                 <button
                   onClick={() => onApplyColorToAll?.(selectedColor)}
-                  className="flex items-center justify-center gap-1 rounded border border-neutral-600 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-700"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-neutral-600 px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-700 transition-all"
                 >
-                  <Grid className="h-3 w-3" />
+                  <Grid className="h-3.5 w-3.5" />
                   Alle färben
                 </button>
                 <button
                   onClick={() => onClearCellColor?.(selectedCell.row, selectedCell.col)}
-                  className="flex items-center justify-center gap-1 rounded border border-red-600/50 px-2 py-1.5 text-xs text-red-400 hover:bg-red-900/20"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-red-600/50 px-3 py-2 text-xs text-red-400 hover:bg-red-900/20 transition-all"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3.5 w-3.5" />
                   Zurücksetzen
                 </button>
               </div>
@@ -278,87 +298,67 @@ export function ConfiguratorPanel({
           </div>
         )}
 
-        {/* Farbe Section */}
         <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Farbe für neues Modul</h3>
-          <div className="flex items-start gap-3">
-            <div className="flex gap-2">
-              {baseColors.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => onSelectColor(color.id)}
-                  className={cn(
-                    "h-10 w-10 rounded border-2 transition-all",
-                    selectedColor === color.id
-                      ? "border-white ring-2 ring-white ring-offset-2 ring-offset-neutral-800"
-                      : "border-neutral-600 hover:border-neutral-400",
-                  )}
-                  style={{ backgroundColor: color.color }}
-                  title={color.label}
-                />
-              ))}
-            </div>
-            <div className="ml-auto flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600">
-              <span className="text-2xl font-bold text-white">S</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sonderfarbe Section */}
-        <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Sonderfarbe für neues Modul</h3>
-          <div className="flex flex-wrap gap-2">
-            {specialColors.map((color) => (
-              <button
-                key={color.id}
-                onClick={() => onSelectColor(color.id)}
-                className={cn(
-                  "h-10 w-10 rounded border-2 transition-all",
-                  selectedColor === color.id
-                    ? "border-white ring-2 ring-white ring-offset-2 ring-offset-neutral-800"
-                    : "border-neutral-600 hover:border-neutral-400",
-                )}
-                style={{ backgroundColor: color.color }}
-                title={color.label}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Material Section */}
-        <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Bodenmaterial</h3>
+          <h3 className="mb-3 text-sm font-medium text-neutral-100">Werkzeuge</h3>
           <div className="flex gap-2">
-            {materialOptions.map((mat) => (
-              <button
-                key={mat.id}
-                onClick={() => onUpdateConfig({ shelfMaterial: mat.id })}
-                className={cn(
-                  "rounded-lg border px-4 py-2 text-sm transition-all",
-                  config.shelfMaterial === mat.id
-                    ? "border-white bg-neutral-700 text-white"
-                    : "border-neutral-600 text-neutral-300 hover:border-neutral-400",
-                )}
-              >
-                {mat.label}
-              </button>
-            ))}
+            <button
+              onClick={() => onSetToolMode?.("select")}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-1.5 rounded-xl p-3 transition-all",
+                toolMode === "select"
+                  ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                  : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
+              )}
+              title="Auswahl-Modus: Klicken um einzelne Module zu platzieren"
+            >
+              <MousePointer className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Auswahl</span>
+            </button>
+            <button
+              onClick={() => onSetToolMode?.("brush")}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-1.5 rounded-xl p-3 transition-all",
+                toolMode === "brush"
+                  ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                  : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
+              )}
+              title="Pinsel-Modus: Ziehen um mehrere Module zu platzieren"
+            >
+              <Paintbrush className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Pinsel</span>
+            </button>
+            <button
+              onClick={() => onSetToolMode?.("eraser")}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-1.5 rounded-xl p-3 transition-all",
+                toolMode === "eraser"
+                  ? "bg-red-600 text-white ring-2 ring-red-400"
+                  : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
+              )}
+              title="Radiergummi-Modus: Klicken oder Ziehen um Module zu entfernen"
+            >
+              <Eraser className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Radierer</span>
+            </button>
           </div>
+          <p className="mt-2 text-[10px] text-neutral-500">
+            {toolMode === "select" && "Klicke auf Zellen um Module einzeln zu platzieren"}
+            {toolMode === "brush" && "Wähle ein Modul und ziehe über die Zellen"}
+            {toolMode === "eraser" && "Klicke oder ziehe um Module zu entfernen"}
+          </p>
         </div>
 
-        {/* Module Type Selector */}
         <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Modultyp auswählen</h3>
           {!allModulesAvailable && usedWidths.length > 0 && (
-            <p className="mb-3 rounded bg-blue-900/20 border border-blue-500/30 px-3 py-2 text-xs text-blue-200">
+            <p className="mb-3 rounded-xl bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
               {usedWidths.length === 1 ? (
-                <>Nur Module für {usedWidths[0] === 75 ? "80" : "40"}cm Breite verfügbar</>
+                <>Module für {usedWidths[0] === 75 ? "80" : "40"}cm verfügbar</>
               ) : (
-                <>Module für 40cm und 80cm Breite verfügbar</>
+                <>40cm und 80cm Module verfügbar</>
               )}
             </p>
           )}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {moduleTypes.map((moduleType) => {
               const isAvailable =
                 allModulesAvailable ||
@@ -372,35 +372,34 @@ export function ConfiguratorPanel({
                   }
                   disabled={!isAvailable}
                   className={cn(
-                    "rounded-lg border px-3 py-2 text-sm transition-all",
-                    !isAvailable && "cursor-not-allowed opacity-40 grayscale",
-                    isAvailable && selectedTool === moduleType.id
-                      ? "border-white bg-neutral-700 text-white ring-2 ring-white"
+                    "flex flex-col items-center gap-1 rounded-xl p-2 transition-all",
+                    !isAvailable && "opacity-30 cursor-not-allowed",
+                    selectedTool === moduleType.id
+                      ? "bg-teal-600 text-white ring-2 ring-teal-400"
                       : isAvailable
-                        ? "border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:bg-neutral-700"
-                        : "border-neutral-700 text-neutral-600",
+                        ? "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+                        : "bg-neutral-800/50 text-neutral-500",
                   )}
-                  title={
-                    !isAvailable
-                      ? `Nicht verfügbar für ${usedWidths.map((w) => (w === 75 ? "80cm" : "40cm")).join(" und ")}`
-                      : moduleType.label
-                  }
+                  title={moduleType.label}
                 >
-                  {moduleType.label}
+                  <span className="text-lg">{moduleType.icon}</span>
+                  <span className="text-[9px] font-medium leading-tight text-center line-clamp-2">
+                    {moduleType.shortLabel}
+                  </span>
                 </button>
               )
             })}
           </div>
-          <p className="mt-2 text-xs text-neutral-400">
+          <p className="mt-3 text-[10px] text-neutral-500">
             {allModulesAvailable
-              ? "Wähle einen Modultyp und klicke auf grüne Geister-Zellen"
+              ? "Ausgegraute Module sind für die gewählte Breite nicht verfügbar"
               : "Ausgegraute Module sind für die gewählte Breite nicht verfügbar"}
           </p>
         </div>
 
         {/* Visual Grid Editor */}
         <div className="border-b border-neutral-700 p-4">
-          <h3 className="mb-3 text-sm font-medium text-neutral-100">Konfigurations-Raster</h3>
+          <h3 className="mb-2 text-sm font-medium text-neutral-100">Konfigurations-Raster</h3>
           <p className="mb-3 text-xs text-neutral-400">
             Klicke auf grüne Geister-Zellen im 3D-Modell um Module zu platzieren
           </p>
@@ -411,7 +410,7 @@ export function ConfiguratorPanel({
               <button
                 key={`col-width-${colIndex}`}
                 onClick={() => onSetColumnWidth(colIndex, width === 75 ? 38 : 75)}
-                className="flex-1 rounded bg-neutral-700 px-1 py-0.5 text-[10px] text-neutral-300 hover:bg-neutral-600"
+                className="flex-1 rounded-lg bg-neutral-800 px-1 py-0.5 text-[10px] text-neutral-300 hover:bg-neutral-700 transition-all"
               >
                 {width}cm
               </button>
@@ -425,7 +424,7 @@ export function ConfiguratorPanel({
                 return (
                   <div
                     key={`row-height-${rowIndex}`}
-                    className="flex h-12 w-10 items-center justify-center rounded bg-neutral-700 text-[10px] text-neutral-300"
+                    className="flex h-12 w-10 items-center justify-center rounded-lg bg-neutral-800 text-[10px] text-neutral-300"
                   >
                     {height}cm
                   </div>
@@ -454,12 +453,12 @@ export function ConfiguratorPanel({
                     <div
                       key={cell.id}
                       className={cn(
-                        "relative flex items-center justify-center rounded border-2 text-[8px] font-medium",
+                        "relative flex items-center justify-center rounded-lg border-2 text-[8px] font-medium cursor-pointer transition-all",
                         isEmpty
                           ? isGhost
-                            ? "border-dashed border-green-400/50 bg-green-500/10"
+                            ? "border-dashed border-green-400/50 bg-green-500/10 hover:bg-green-500/20"
                             : "border-dashed border-neutral-600"
-                          : "border-solid border-neutral-500",
+                          : "border-solid border-neutral-500 hover:border-neutral-400",
                       )}
                       style={{ backgroundColor: isEmpty ? undefined : bgColor }}
                       title={isGhost ? "Geister-Zelle" : isEmpty ? "Leer" : getModuleLabel(cell.type)}
@@ -487,7 +486,7 @@ export function ConfiguratorPanel({
         <div className="border-b border-neutral-700">
           <button
             onClick={onToggleShoppingList}
-            className="flex w-full items-center gap-2 p-4 text-left text-neutral-100 transition-colors hover:bg-neutral-700/50"
+            className="flex w-full items-center gap-2 p-4 text-left text-neutral-100 transition-colors hover:bg-neutral-800"
           >
             {showShoppingList ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <List className="h-4 w-4" />
@@ -497,22 +496,25 @@ export function ConfiguratorPanel({
           {showShoppingList && (
             <div className="px-4 pb-4">
               {shoppingList.length === 0 ? (
-                <p className="text-sm text-neutral-400">Füge Module hinzu um die Einkaufsliste zu sehen</p>
+                <div className="py-6 text-center">
+                  <ShoppingCart className="mx-auto mb-2 h-10 w-10 text-neutral-600" />
+                  <p className="text-sm text-neutral-400">Noch keine Module hinzugefügt</p>
+                </div>
               ) : (
                 <div className="space-y-2">
                   {shoppingList.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded bg-neutral-700 px-3 py-2 text-sm"
+                      className="flex items-center justify-between rounded-xl bg-neutral-800 px-3 py-2 text-sm"
                     >
                       <div className="flex-1">
-                        <div className="text-neutral-100">{item.name}</div>
+                        <div className="text-neutral-100 font-medium">{item.name}</div>
                         <div className="text-xs text-neutral-400">
                           Art.Nr: {item.id} | {item.quantity}x à {(item.pricePerUnit || 0).toFixed(2).replace(".", ",")}{" "}
                           €
                         </div>
                       </div>
-                      <div className="text-right font-medium text-neutral-100">
+                      <div className="text-right font-semibold text-teal-400">
                         {(item.total || 0).toFixed(2).replace(".", ",")} €
                       </div>
                     </div>
@@ -525,21 +527,21 @@ export function ConfiguratorPanel({
       </div>
 
       {/* Price & Cart - Fixed at bottom */}
-      <div className="border-t border-neutral-700 bg-neutral-800 p-4">
+      <div className="border-t border-neutral-700 bg-neutral-900 p-4">
         <div className="mb-3 flex items-baseline justify-between">
           <span className="text-sm text-neutral-400">Preis:</span>
-          <span className="text-2xl font-bold text-neutral-100">{totalPrice.toFixed(2).replace(".", ",")} €</span>
+          <span className="text-3xl font-bold text-neutral-100">{totalPrice.toFixed(2).replace(".", ",")} €</span>
         </div>
         <button
           onClick={handleAddToCart}
           disabled={shoppingList.length === 0}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-lg py-3 font-semibold transition-all",
+            "flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-semibold transition-all",
             addedToCart
               ? "bg-green-600 text-white"
               : shoppingList.length === 0
-                ? "cursor-not-allowed bg-neutral-600 text-neutral-400"
-                : "bg-blue-600 text-white hover:bg-blue-700",
+                ? "cursor-not-allowed bg-neutral-700 text-neutral-500"
+                : "bg-teal-600 text-white hover:bg-teal-700",
           )}
         >
           {addedToCart ? (
@@ -555,7 +557,10 @@ export function ConfiguratorPanel({
           )}
         </button>
         {addedToCart && (
-          <a href="/warenkorb" className="mt-2 block text-center text-sm text-blue-400 hover:text-blue-300">
+          <a
+            href="/warenkorb"
+            className="mt-2 block text-center text-sm text-teal-400 hover:text-teal-300 transition-colors"
+          >
             Zum Warenkorb →
           </a>
         )}

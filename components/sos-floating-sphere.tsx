@@ -90,7 +90,7 @@ export function SosFloatingSphere() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-[3.25rem] left-6 z-50 w-14 h-14 rounded-full bg-red-600 shadow-lg flex items-center justify-center animate-pulse hover:scale-110 transition-transform my-10 ${isOpen ? "hidden" : ""}`}
+        className={`fixed bottom-[3.25rem] left-6 z-50 w-14 h-14 rounded-full bg-red-600 shadow-lg flex items-center justify-center animate-pulse hover:scale-110 transition-transform my-10 px-0 mx-96 ${isOpen ? "hidden" : ""}`}
         aria-label="SOS Hotline öffnen"
       >
         <div className="relative">

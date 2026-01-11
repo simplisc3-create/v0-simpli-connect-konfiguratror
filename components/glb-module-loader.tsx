@@ -103,7 +103,8 @@ const FRAME_KEYWORDS = [
   "horizontal",
   "bein",
   "fuss",
-  "feet",
+  "fuß",
+  "fuse",
 ]
 
 const PANEL_KEYWORDS = [
@@ -266,6 +267,24 @@ function getStandardWidth(width: number): 40 | 80 {
   return Math.round(width * 100) <= 50 ? 40 : 80
 }
 
+const CLOSED_MODULE_TYPES = [
+  "mit-klapptuer",
+  "mit-klapptuer-oben",
+  "mit-schubladen",
+  "mit-einzelschublade",
+  "mit-tueren",
+  "mit-tuere-links",
+  "mit-tuere-rechts",
+  "abschliessbar",
+  "abschliessbar-links",
+  "abschliessbar-rechts",
+  "mit-rueckwand",
+]
+
+const isClosedModule = (cellType: string): boolean => {
+  return CLOSED_MODULE_TYPES.includes(cellType)
+}
+
 export const GLBModule = memo(
   function GLBModule({
     position,
@@ -365,7 +384,7 @@ export const GLBModule = memo(
         position={position}
         moduleKey={`${row}-${col}`}
         targetColor={colorName}
-        isKlapptuerOben={cellType === "mit-klapptuer-oben"}
+        cellType={cellType}
         row={row}
         isBottomModule={isBottomModule}
       />
@@ -389,7 +408,7 @@ const LoadedGLBModel = memo(
     position,
     moduleKey,
     targetColor,
-    isKlapptuerOben = false,
+    cellType = "offen",
     row = 0,
     isBottomModule = false, // Added prop
   }: {
@@ -397,11 +416,13 @@ const LoadedGLBModel = memo(
     position: [number, number, number]
     moduleKey: string
     targetColor: string
-    isKlapptuerOben?: boolean
+    cellType?: string
     row?: number
-    isBottomModule?: boolean // Added to type
+    isBottomModule?: boolean
   }) {
     const { scene } = useGLTF(modelUrl)
+
+    const isKlapptuerOben = cellType === "mit-klapptuer-oben"
 
     const { xOffset, yOffset } = useMemo(() => {
       if (!isKlapptuerOben) return { xOffset: 0, yOffset: 0 }
@@ -411,7 +432,6 @@ const LoadedGLBModel = memo(
 
       console.log(`[v0] Klapptür offset calculation: center.x=${center.x.toFixed(4)}, center.y=${center.y.toFixed(4)}`)
 
-      // The model has its origin offset from center, so we need to compensate
       return {
         xOffset: -center.x,
         yOffset: -center.y,
@@ -423,7 +443,7 @@ const LoadedGLBModel = memo(
       const targetColorValue = TARGET_COLORS[targetColor] || TARGET_COLORS.white
 
       console.log(
-        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor}, isKlapptuerOben: ${isKlapptuerOben}, row: ${row} =====`,
+        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor}, cellType: ${cellType}, row: ${row} =====`,
       )
 
       const parentBoundingBox = new THREE.Box3().setFromObject(clone)
@@ -492,12 +512,14 @@ const LoadedGLBModel = memo(
       })
 
       return clone
-    }, [scene, targetColor, moduleKey, isKlapptuerOben, row, isBottomModule])
+    }, [scene, targetColor, moduleKey, cellType, row, isBottomModule])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
-      const zOffset = isKlapptuerOben ? 0.01 : 0
+      const BAR_THICKNESS = 0.01 // ~1cm bar thickness (50% of original 2cm)
+      const isSchubladen = cellType === "mit-schubladen"
+      const zOffset = isClosedModule(cellType) ? (isSchubladen ? BAR_THICKNESS + 0.01 : BAR_THICKNESS) : 0
       return [position[0] + xOffset, position[1] + yOffset, position[2] + zOffset]
-    }, [position, xOffset, yOffset, isKlapptuerOben])
+    }, [position, xOffset, yOffset, cellType])
 
     return <primitive object={clonedScene} position={adjustedPosition} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
   },
@@ -505,9 +527,9 @@ const LoadedGLBModel = memo(
     prev.modelUrl === next.modelUrl &&
     prev.moduleKey === next.moduleKey &&
     prev.targetColor === next.targetColor &&
-    prev.isKlapptuerOben === next.isKlapptuerOben &&
+    prev.cellType === next.cellType &&
     prev.row === next.row &&
-    prev.isBottomModule === next.isBottomModule && // Added to memo comparison
+    prev.isBottomModule === next.isBottomModule &&
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],

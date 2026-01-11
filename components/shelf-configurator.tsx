@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useRef, Suspense, useEffect } from "rea
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
+import type { ToolMode } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
 import { ConfiguratorHelpBot } from "./configurator-help-bot"
@@ -285,6 +286,8 @@ export function ShelfConfigurator({
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
+
+  const [toolMode, setToolMode] = useState<ToolMode>("select")
 
   const [showHeightWarning, setShowHeightWarning] = useState(false)
   const [heightWarningShown, setHeightWarningShown] = useState(false)
@@ -1031,6 +1034,7 @@ export function ShelfConfigurator({
     setSelectedTool("offenes-fach")
     setSelectedColor("weiss")
     setSelectedCell(null)
+    setToolMode("select") // Reset tool mode
   }, [])
 
   type BomItem = {
@@ -1258,6 +1262,9 @@ export function ShelfConfigurator({
 
     console.log(`[v0] Column groups keys: ${Object.keys(columnGroups).join(", ")}`)
 
+    let total40cmPanels = 0
+    let color40cm = "weiss"
+
     for (const [colStr, colCells] of Object.entries(columnGroups)) {
       const col = Number.parseInt(colStr)
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
@@ -1265,6 +1272,7 @@ export function ShelfConfigurator({
       if (colCells.length === 0) continue
 
       const moduleColor = colCells[0]?.cell.color || "weiss"
+      if (widthCm === 40) color40cm = moduleColor
 
       // Sort rows
       const sortedRows = colCells.map((c) => c.row).sort((a, b) => a - b)
@@ -1314,75 +1322,23 @@ export function ShelfConfigurator({
 
       const totalPanels = totalHorizontalPanels
 
-      console.log(
-        `[v0] Column ${col}: totalPanels=${totalPanels}, flaechensetsNeeded=${Math.ceil(totalPanels / 2)}, widthCm=${widthCm}`,
-      )
+      console.log(`[v0] Column ${col}: totalPanels=${totalPanels}, widthCm=${widthCm}`)
 
-      // Each column's panels are counted separately
       if (widthCm === 40) {
-        // Each Flächenset = 2 panels, but 40cm modules each need their own sets
-        // Don't combine across columns - each 40cm column is independent
-        const flaechensetsNeeded = Math.ceil(totalPanels / 2)
-        flaechenset40Counts[moduleColor] = (flaechenset40Counts[moduleColor] || 0) + flaechensetsNeeded
+        total40cmPanels += totalPanels
       } else {
-        // 80cm columns
+        // 80cm columns - calculate sets per column
         const flaechensetsNeeded = Math.ceil(totalPanels / 2)
         flaechenset80Counts[moduleColor] = (flaechenset80Counts[moduleColor] || 0) + flaechensetsNeeded
       }
     }
 
-    // Each 80cm Klapptür nach oben, Einzelschublade, or Abschließbar has 2 side panels (left and right) that are 40cm wide
-    // BUT: When two such modules are next to each other horizontally, the middle side panels are replaced
-    // by the Edelstahl-Funktionswände (steel functional walls), so NO Flächenset 40 is needed at the junction
-
-    const sidePanelModules80cm = ["mit-klapptuer-oben", "mit-einzelschublade", "abschliessbar"]
-    const sidePanelModules40cm = ["mit-tuere-links", "mit-tuere-rechts", "abschliessbar-links", "abschliessbar-rechts"]
-    const sidePanelCounts: Record<string, number> = {}
-
-    for (const { row, col, cell } of cells) {
-      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
-
-      // 80cm modules with side panels
-      if (sidePanelModules80cm.includes(cell.type) && widthCm === 80) {
-        const moduleColor = cell.color || "weiss"
-
-        // Check if there's an adjacent side-panel module to the LEFT (col - 1)
-        const leftNeighbor = cells.find(
-          (c) => c.row === row && c.col === col - 1 && sidePanelModules80cm.includes(c.cell.type),
-        )
-
-        // Check if there's an adjacent side-panel module to the RIGHT (col + 1)
-        const rightNeighbor = cells.find(
-          (c) => c.row === row && c.col === col + 1 && sidePanelModules80cm.includes(c.cell.type),
-        )
-
-        // Count side panels needed: only on outer edges
-        let sidePanelsNeeded = 0
-        if (!leftNeighbor) sidePanelsNeeded++ // Need left side panel
-        if (!rightNeighbor) sidePanelsNeeded++ // Need right side panel
-
-        if (sidePanelsNeeded > 0) {
-          sidePanelCounts[moduleColor] = (sidePanelCounts[moduleColor] || 0) + sidePanelsNeeded
-        }
-      }
-
-      if (sidePanelModules40cm.includes(cell.type) && widthCm === 40) {
-        const moduleColor = cell.color || "weiss"
-        // 40cm door module: always needs 2 side panels (left + right)
-        sidePanelCounts[moduleColor] = (sidePanelCounts[moduleColor] || 0) + 2
-      }
+    // This way, panels across all 40cm columns are combined before dividing by 2
+    if (total40cmPanels > 0) {
+      const flaechensetsNeeded = Math.ceil(total40cmPanels / 2)
+      flaechenset40Counts[color40cm] = (flaechenset40Counts[color40cm] || 0) + flaechensetsNeeded
+      console.log(`[v0] Total 40cm panels: ${total40cmPanels}, Flächensets needed: ${flaechensetsNeeded}`)
     }
-
-    // Convert side panels to Flächensets 40 (each Flächenset = 2 panels)
-    for (const [color, panelCount] of Object.entries(sidePanelCounts)) {
-      const flaechensetsNeeded = Math.ceil(panelCount / 2)
-      if (flaechensetsNeeded > 0) {
-        flaechenset40Counts[color] = (flaechenset40Counts[color] || 0) + flaechensetsNeeded
-      }
-    }
-
-    console.log(`[v0] Side panel counts:`, JSON.stringify(sidePanelCounts))
-    console.log(`[v0] Final Flächenset 40 counts:`, JSON.stringify(flaechenset40Counts))
 
     // Add Flächensets to BOM
     for (const [color, count] of Object.entries(flaechenset40Counts)) {
@@ -1832,7 +1788,7 @@ export function ShelfConfigurator({
             />
           </Canvas>
 
-          <div className="absolute right-4 top-4 flex gap-2">
+          <div className="absolute right-4 top-4 flex gap-2 mx-0 px-0 py-0">
             <Button
               variant="outline"
               size="icon"
@@ -1942,25 +1898,27 @@ export function ShelfConfigurator({
           config={config}
           selectedTool={selectedTool}
           selectedColor={selectedColor}
-          onSelectTool={(tool) => {
-            setSelectedTool(tool)
-            setSelectedCell(null) // Close color picker when tool changes
-          }}
+          selectedCell={selectedCell}
+          onSelectTool={setSelectedTool}
           onSelectColor={setSelectedColor}
-          onPlaceModule={handleCellClick3D}
-          onClearCell={clearCell}
-          onResizeGrid={resizeGrid}
-          onSetColumnWidth={setColumnWidth}
-          onSetRowHeight={setRowHeight}
-          onUpdateConfig={updateConfig}
+          onPlaceModule={placeModule} // Renamed to handlePlaceModule in updates
+          onClearCell={clearCell} // Renamed to handleClearCell in updates
+          onResizeGrid={resizeGrid} // Renamed to handleResizeGrid in updates
+          onSetColumnWidth={setColumnWidth} // Renamed to handleSetColumnWidth in updates
+          onSetRowHeight={setRowHeight} // Renamed to handleSetRowHeight in updates
+          onUpdateConfig={updateConfig} // Renamed to handleUpdateConfig in updates
           shoppingList={bomData.items}
           price={bomData.totalPrice}
           showShoppingList={showShoppingList}
           onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
-          // Pass color applying functions to Panel
-          onApplyColorToRow={applyColorToRow}
-          onApplyColorToColumn={applyColorToColumn}
-          onApplyColorToAll={applyColorToAll}
+          onApplyCellColor={applyCellColor} // Renamed to handleApplyCellColor in updates
+          onApplyColorToRow={applyColorToRow} // Renamed to handleApplyColorToRow in updates
+          onApplyColorToColumn={applyColorToColumn} // Renamed to handleApplyColorToColumn in updates
+          onApplyColorToAll={applyColorToAll} // Renamed to handleApplyColorToAll in updates
+          onClearCellColor={clearCellColor} // Renamed to handleClearCellColor in updates
+          onDeselectCell={() => setSelectedCell(null)}
+          toolMode={toolMode}
+          onSetToolMode={setToolMode}
         />
 
         <MobileConfiguratorNav
