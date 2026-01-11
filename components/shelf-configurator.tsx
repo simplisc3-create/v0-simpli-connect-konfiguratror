@@ -1299,6 +1299,7 @@ export function ShelfConfigurator({
       // Calculate backwall panels - only for modules with backwall
       const modulesWithBackwall = [
         "mit-rueckwand",
+        "ohne-seitenwaende", // Has backwall, no side walls
         "abschliessbare-tueren",
         "abschliessbar-links",
         "abschliessbar-rechts",
@@ -1364,29 +1365,37 @@ export function ShelfConfigurator({
 
       const leftCol = colKeys[i - 1]
       if (leftCol !== undefined && columnData[leftCol]) {
-        const leftRows = columnData[leftCol].rows
-        const thisRows = data.rows
-        const sharedRowsLeft = thisRows.filter((r) => leftRows.includes(r))
-        if (sharedRowsLeft.length > 0) {
-          // Subtract shared walls with left neighbor
-          adjustedSideWalls -= sharedRowsLeft.length
-          console.log(
-            `[v0] Column ${col}: subtracting ${sharedRowsLeft.length} shared walls with LEFT column ${leftCol}`,
-          )
+        const leftData = columnData[leftCol]
+        // Only share walls if left neighbor also has side walls (sideWallPanels > 0)
+        if (leftData.sideWallPanels > 0 && data.sideWallPanels > 0) {
+          const leftRows = leftData.rows
+          const thisRows = data.rows
+          const sharedRowsLeft = thisRows.filter((r) => leftRows.includes(r))
+          if (sharedRowsLeft.length > 0) {
+            // Subtract shared walls with left neighbor
+            adjustedSideWalls -= sharedRowsLeft.length
+            console.log(
+              `[v0] Column ${col}: subtracting ${sharedRowsLeft.length} shared walls with LEFT column ${leftCol}`,
+            )
+          }
         }
       }
 
       const rightCol = colKeys[i + 1]
       if (rightCol !== undefined && columnData[rightCol]) {
-        const rightRows = columnData[rightCol].rows
-        const thisRows = data.rows
-        const sharedRowsRight = thisRows.filter((r) => rightRows.includes(r))
-        if (sharedRowsRight.length > 0) {
-          // Subtract shared walls with right neighbor
-          adjustedSideWalls -= sharedRowsRight.length
-          console.log(
-            `[v0] Column ${col}: subtracting ${sharedRowsRight.length} shared walls with RIGHT column ${rightCol}`,
-          )
+        const rightData = columnData[rightCol]
+        // Only share walls if right neighbor also has side walls (sideWallPanels > 0)
+        if (rightData.sideWallPanels > 0 && data.sideWallPanels > 0) {
+          const rightRows = rightData.rows
+          const thisRows = data.rows
+          const sharedRowsRight = thisRows.filter((r) => rightRows.includes(r))
+          if (sharedRowsRight.length > 0) {
+            // Subtract shared walls with right neighbor
+            adjustedSideWalls -= sharedRowsRight.length
+            console.log(
+              `[v0] Column ${col}: subtracting ${sharedRowsRight.length} shared walls with RIGHT column ${rightCol}`,
+            )
+          }
         }
       }
 
