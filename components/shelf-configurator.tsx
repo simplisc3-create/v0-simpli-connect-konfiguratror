@@ -1171,12 +1171,15 @@ export function ShelfConfigurator({
       // For very tall shelves, we need Leiter 200 at all positions
       const totalLadderPositions = activeColumns.length + 1 // n+1 for n columns
 
+      const extraHeight = totalMaxHeight - 200
+      const aufbaumodulePerLeiter = Math.ceil(extraHeight / 40)
+
       // Add Aufbaumodul for extension parts
       const aufbaumodulKey = "SIM001a"
       if (!leiterCounts[aufbaumodulKey]) {
         leiterCounts[aufbaumodulKey] = { artNr: "SIM001a", name: "Aufbaumodul", price: 15.0, count: 0 }
       }
-      const neededAufbaumodule = activeColumns.length + 1
+      const neededAufbaumodule = aufbaumodulePerLeiter * totalLadderPositions
       leiterCounts[aufbaumodulKey].count = neededAufbaumodule
 
       // Add Leiter 200 for main structure
