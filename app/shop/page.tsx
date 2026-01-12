@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import Image from "next/image"
 import { useState } from "react"
 import { ShoppingCart, Filter, ChevronDown, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -326,7 +327,9 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
 
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition">
-      <div className="aspect-square bg-gray-50 overflow-hidden"></div>
+      <div className="aspect-square overflow-hidden flex items-center justify-center text-black bg-popover opacity-0">
+        
+      </div>
       <div className="p-4">
         <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>
         <h3 className="font-semibold text-gray-900">{product.name}</h3>
