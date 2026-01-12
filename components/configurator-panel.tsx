@@ -400,36 +400,6 @@ export function ConfiguratorPanel({
               ? "Ausgegraute Module sind für die gewählte Breite nicht verfügbar"
               : "Ausgegraute Module sind für die gewählte Breite nicht verfügbar"}
           </p>
-
-          {/* Color picker directly in module section */}
-          <div className="mt-4 pt-4 border-t border-neutral-700">
-            <p className="mb-2 text-xs text-neutral-400">Farbe für neue Module:</p>
-            <div className="flex flex-wrap gap-2">
-              {[...baseColors, ...specialColors].map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => onSelectColor(color.id)}
-                  className={cn(
-                    "relative h-8 w-8 rounded-lg transition-all",
-                    selectedColor === color.id
-                      ? "ring-2 ring-teal-400 ring-offset-2 ring-offset-neutral-800"
-                      : "ring-1 ring-neutral-600 hover:ring-neutral-400",
-                  )}
-                  style={{ backgroundColor: color.color }}
-                  title={color.label}
-                >
-                  {selectedColor === color.id && (
-                    <Check
-                      className={cn(
-                        "absolute inset-0 m-auto h-4 w-4",
-                        color.id === "weiss" || color.id === "gelb" ? "text-neutral-800" : "text-white",
-                      )}
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Visual Grid Editor */}
