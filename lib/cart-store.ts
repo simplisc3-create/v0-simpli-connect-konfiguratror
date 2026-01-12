@@ -15,6 +15,7 @@ export interface CartItem {
 interface CartStore {
   items: CartItem[]
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void
+  setItem: (item: Omit<CartItem, "quantity">, quantity: number) => void
   addItems: (items: Omit<CartItem, "quantity">[]) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
@@ -35,6 +36,19 @@ export const useCartStore = create<CartStore>()(
               items: state.items.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i)),
             }
           }
+          return { items: [...state.items, { ...item, quantity }] }
+        })
+      },
+      setItem: (item, quantity) => {
+        set((state) => {
+          const existing = state.items.find((i) => i.id === item.id)
+          if (existing) {
+            // Replace the quantity instead of adding
+            return {
+              items: state.items.map((i) => (i.id === item.id ? { ...i, quantity } : i)),
+            }
+          }
+          // If item doesn't exist, add it with the specified quantity
           return { items: [...state.items, { ...item, quantity }] }
         })
       },

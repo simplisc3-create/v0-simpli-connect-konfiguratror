@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { ShelfConfig, GridCell, ColorKey } from "./shelf-configurator"
 import { cn } from "@/lib/utils"
-import { ShoppingCart, Palette, Box, List, X, Check } from "lucide-react"
+import { ShoppingCart, ChevronUp, List, Palette, Box, Check, X } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
@@ -65,8 +65,8 @@ export function MobileConfiguratorNav({
   shoppingList,
   price,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<MobileTab>(null)
-  const { addItem } = useCartStore()
+  const [activeTab, setActiveTab] = useState<MobileTab | null>(null)
+  const { setItem } = useCartStore()
   const [addedToCart, setAddedToCart] = useState(false)
 
   const usedWidths = Array.from(new Set(config.columnWidths))
@@ -75,7 +75,7 @@ export function MobileConfiguratorNav({
   const handleAddToCart = () => {
     if (shoppingList.length === 0) return
     for (const item of shoppingList) {
-      addItem(
+      setItem(
         {
           id: item.id,
           name: item.name,
@@ -121,7 +121,7 @@ export function MobileConfiguratorNav({
                       onClick={() => setActiveTab(null)}
                       className="rounded-full p-2 text-neutral-400 hover:bg-neutral-800"
                     >
-                      <X className="h-5 w-5" />
+                      <ChevronUp className="h-5 w-5" />
                     </button>
                   </div>
 
@@ -177,7 +177,7 @@ export function MobileConfiguratorNav({
                       onClick={() => setActiveTab(null)}
                       className="rounded-full p-2 text-neutral-400 hover:bg-neutral-800"
                     >
-                      <X className="h-5 w-5" />
+                      <ChevronUp className="h-5 w-5" />
                     </button>
                   </div>
 
@@ -268,7 +268,7 @@ export function MobileConfiguratorNav({
                       onClick={() => setActiveTab(null)}
                       className="rounded-full p-2 text-neutral-400 hover:bg-neutral-800"
                     >
-                      <X className="h-5 w-5" />
+                      <ChevronUp className="h-5 w-5" />
                     </button>
                   </div>
 

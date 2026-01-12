@@ -121,7 +121,7 @@ export function ConfiguratorPanel({
   onSetToolMode,
 }: Props) {
   const [expandedSection, setExpandedSection] = useState<string | null>("grid")
-  const { addItem } = useCartStore()
+  const { setItem } = useCartStore()
   const [addedToCart, setAddedToCart] = useState(false)
 
   const handleCellClick = (row: number, col: number) => {
@@ -188,8 +188,12 @@ export function ConfiguratorPanel({
   const handleAddToCart = () => {
     if (shoppingList.length === 0) return
 
+    console.log("[v0] handleAddToCart called")
+    console.log("[v0] shoppingList:", JSON.stringify(shoppingList, null, 2))
+
     for (const item of shoppingList) {
-      addItem(
+      console.log("[v0] Adding item:", item.id, "name:", item.name, "quantity:", item.quantity)
+      setItem(
         {
           id: item.id,
           name: item.name,

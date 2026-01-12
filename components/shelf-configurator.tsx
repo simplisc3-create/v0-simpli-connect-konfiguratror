@@ -1130,6 +1130,8 @@ export function ShelfConfigurator({
       }
       columnGroups.push(currentGroup)
 
+      let totalAufbaumodule = 0
+
       // For each group of adjacent columns, add ladders at boundaries
       for (const group of columnGroups) {
         // For a group of n columns, we need n+1 ladder positions
@@ -1154,42 +1156,29 @@ export function ShelfConfigurator({
                 }
                 leiterCounts[key].count++
               }
+            } else {
+              const leiter200Key = "SIM005"
+              if (!leiterCounts[leiter200Key]) {
+                leiterCounts[leiter200Key] = { artNr: "SIM005", name: "Leiter 200", price: 41.0, count: 0 }
+              }
+              leiterCounts[leiter200Key].count++
+
+              // Calculate Aufbaumodule needed for this position
+              const extraHeight = totalHeightCm - 200
+              const aufbaumoduleForPosition = Math.ceil(extraHeight / 40)
+              totalAufbaumodule += aufbaumoduleForPosition
             }
           }
         }
       }
-    }
 
-    // For heights > 200cm (e.g., 7 rows = 280cm), we need:
-    // - Leiter 200 (SIM005) for main structure
-    // - Aufbaumodul (SIM001a) for extension parts
-    const maxRowsInConfig =
-      activeColumns.length > 0 ? Math.max(...activeColumns.map((col) => columnMaxRows.get(col) ?? -1)) + 1 : 0
-    const totalMaxHeight = maxRowsInConfig * 40
-
-    if (totalMaxHeight > 200) {
-      // For very tall shelves, we need Leiter 200 at all positions
-      const totalLadderPositions = activeColumns.length + 1 // n+1 for n columns
-
-      const extraHeight = totalMaxHeight - 200
-      const aufbaumodulePerLeiter = Math.ceil(extraHeight / 40)
-
-      // Add Aufbaumodul for extension parts
-      const aufbaumodulKey = "SIM001a"
-      if (!leiterCounts[aufbaumodulKey]) {
-        leiterCounts[aufbaumodulKey] = { artNr: "SIM001a", name: "Aufbaumodul", price: 15.0, count: 0 }
+      if (totalAufbaumodule > 0) {
+        const aufbaumodulKey = "SIM001a"
+        if (!leiterCounts[aufbaumodulKey]) {
+          leiterCounts[aufbaumodulKey] = { artNr: "SIM001a", name: "Aufbaumodul", price: 15.0, count: 0 }
+        }
+        leiterCounts[aufbaumodulKey].count = totalAufbaumodule
       }
-      const neededAufbaumodule = aufbaumodulePerLeiter * totalLadderPositions
-      leiterCounts[aufbaumodulKey].count = neededAufbaumodule
-
-      // Add Leiter 200 for main structure
-      const leiter200Key = "SIM005"
-      if (!leiterCounts[leiter200Key]) {
-        leiterCounts[leiter200Key] = { artNr: "SIM005", name: "Leiter 200", price: 41.0, count: 0 }
-      }
-      // For 2 columns with 280cm height: 3 x Leiter 200 (one less than Aufbaumodule because outer positions share)
-      const neededLeiter200 = totalLadderPositions
-      leiterCounts[leiter200Key].count = neededLeiter200
     }
 
     // Add all leitern to BOM
@@ -1207,7 +1196,6 @@ export function ShelfConfigurator({
 
     for (const col of activeColumns) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
-
       // Count filled rows in this column
       let filledRowsInColumn = 0
       for (let row = 0; row < config.rows; row++) {
