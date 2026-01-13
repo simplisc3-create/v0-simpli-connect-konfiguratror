@@ -252,8 +252,13 @@ function isFeetPart(
   return false
 }
 
-function getColorName(hex: string): string {
-  return HEX_TO_COLOR_NAME[hex.toLowerCase()] || "white"
+function getColorName(colorInput: string): string {
+  // First check if it's already a German color name
+  if (GERMAN_TO_ENGLISH_COLOR[colorInput]) {
+    return colorInput // Return German name, will be mapped later in LoadedGLBModel
+  }
+  // Then check if it's a hex value
+  return HEX_TO_COLOR_NAME[colorInput.toLowerCase()] || "white"
 }
 
 function getStandardWidth(width: number): 40 | 80 {
