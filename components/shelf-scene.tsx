@@ -207,10 +207,13 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
       rowCells.forEach((cell, gridCol) => {
         const cellWidth = config.columnWidths[gridCol] / 100
         const cellHeight = config.rowHeights[gridRow] / 100
+
+        const zOffset = cell.type === "mit-doppelschublade" || cell.type === "abschliessbar" ? 0.01 : 0
+
         const position: [number, number, number] = [
           columnCenters[gridCol] + offsetX,
           rowCenters[gridRow],
-          -depth / 2, // Front of module at z=0, module extends backwards
+          -depth / 2 + zOffset, // Front of module at z=0, module extends backwards
         ]
 
         if (cell.type === "ghost") {
