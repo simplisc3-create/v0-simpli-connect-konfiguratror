@@ -297,7 +297,13 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
             width={width}
             height={height}
             depth={0.38}
-            color={cell.color ? colorMap[cell.color] || colorMap.weiss : colorMap.weiss}
+            color={(() => {
+              const colorToUse = cell.color || "weiss"
+              console.log(
+                `[v0] Rendering GLB ${cell.type} at ${row}-${col}, cell.color=${cell.color}, using=${colorToUse}`,
+              )
+              return colorToUse
+            })()}
             row={row}
             col={col}
             gridConfig={config}

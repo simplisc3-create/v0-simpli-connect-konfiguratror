@@ -1079,22 +1079,22 @@ export function ShelfConfigurator({
     }
 
     // Collect all non-empty, non-ghost cells
-    const cells: Array<{ row: number; col: number; cell: GridCell }> = []
+    const filledCells: Array<{ row: number; col: number; cell: GridCell }> = []
     for (let row = 0; row < config.rows; row++) {
       for (let col = 0; col < config.columns; col++) {
         const cell = config.grid[row]?.[col]
         if (cell && cell.type !== "empty" && cell.type !== "ghost") {
-          cells.push({ row, col, cell })
+          filledCells.push({ row, col, cell })
         }
       }
     }
 
-    if (cells.length === 0) {
+    if (filledCells.length === 0) {
       return { items: [], totalPrice: 0 }
     }
 
     const columnsWithModules = new Set<number>()
-    for (const { col } of cells) {
+    for (const { col } of filledCells) {
       columnsWithModules.add(col)
     }
     const activeColumns = Array.from(columnsWithModules).sort((a, b) => a - b)
@@ -1236,80 +1236,34 @@ export function ShelfConfigurator({
     //   + Side panels on outer edges for modules that need them
     // SPECIAL: 80cm Klapptür nach oben has 2 additional side panels (40cm) that fold up
 
-    // ==========================================
-    // --- FLÄCHENSETS (Surface sets) ---
-    // ==========================================
+    // This replaces the column-based color assignment with per-cell color tracking
+    const panels40cmByColorPerCell: Record<string, number> = {}
+    const panels80cmByColorPerCell: Record<string, number> = {}
 
-    // Flächenset calculation - grouped by column
-    const columnGroups: Record<number, { cells: typeof cells; rows: number[] }> = {}
-
-    for (const { cell, row, col } of cells) {
-      if (!columnGroups[col]) {
-        columnGroups[col] = { cells: [], rows: [] }
-      }
-      columnGroups[col].cells.push({ cell, row, col })
-      columnGroups[col].rows.push(row)
-    }
-
-    const columnData: Record<
-      number,
-      {
-        widthCm: number
-        modulesCount: number
-        backwallPanels: number
-        sideWallPanels: number
-        horizontalPanels: number
-        moduleColor: string
-        rows: number[]
-        rowsWithSideWalls: number[] // Track which specific rows have sidewalls
-      }
-    > = {}
-
-    for (const [colStr, group] of Object.entries(columnGroups)) {
-      const col = Number.parseInt(colStr)
-      const modulesInCol = group.cells
-      const moduleColor = modulesInCol[0]?.cell.color === "black" ? "schwarz" : modulesInCol[0]?.cell.color || "weiss"
+    // Count horizontal panels (floor/ceiling) per cell
+    for (const { cell, row, col } of filledCells) {
+      const cellColor = cell.color === "black" ? "schwarz" : cell.color || "weiss"
       const widthCm =
         config.columnWidths[col] === 75 ? 80 : config.columnWidths[col] === 38 ? 40 : config.columnWidths[col]
+      // Check if the cell is the bottom-most in its column or if the cell below is empty/ghost
+      const isBottomCell = row === 0 || filledCells.every((c) => c.col !== col || c.row < row)
 
-      // Sort rows to find consecutive modules
-      const sortedRows = [...group.rows].sort((a, b) => a - b)
+      let horizontalPanels = 0
+      if (isBottomCell) {
+        horizontalPanels += 1 // Floor for the bottom-most module
+      }
+      horizontalPanels += 1 // Ceiling for every module
 
-      // Calculate horizontal panels (floor + ceiling + shared floors between stacked modules)
-      let totalHorizontalPanels = 0
-      for (let i = 0; i < sortedRows.length; i++) {
-        if (i === 0) {
-          totalHorizontalPanels += 1 // Floor of first module
-        }
-        totalHorizontalPanels += 1 // Ceiling of each module (or shared floor with module above)
+      if (widthCm === 40) {
+        panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + horizontalPanels
+      } else {
+        panels80cmByColorPerCell[cellColor] = (panels80cmByColorPerCell[cellColor] || 0) + horizontalPanels
       }
 
-      // Calculate backwall panels - only for modules with backwall
+      // Count backwall panels
       const modulesWithBackwall = [
         "mit-rueckwand",
-        "ohne-seitenwaende", // Has backwall, no side walls
-        "abschliessbare-tueren",
-        "abschliessbar-links",
-        "abschliessbar-rechts",
-        "mit-tuere-links",
-        "mit-tuere-rechts",
-        "mit-klapptuer",
-        "mit-doppelschublade", // Corrected from 'mit-schubladen'
-        "mit-klapptuer-oben",
-        "mit-einzelschublade",
-        "mit-tueren", // Added mit-tueren - same logic as doppelschublade
-      ]
-      let backwallPanels = 0
-      for (const { cell } of modulesInCol) {
-        if (modulesWithBackwall.includes(cell.type)) {
-          backwallPanels += 1
-        }
-      }
-
-      // Calculate side wall panels (40cm) - each module has 2 side walls
-      const modulesWithSideWalls = [
-        "mit-rueckwand",
-        "ohne-rueckwand",
+        "ohne-seitenwaende",
         "abschliessbare-tueren",
         "abschliessbar-links",
         "abschliessbar-rechts",
@@ -1319,176 +1273,65 @@ export function ShelfConfigurator({
         "mit-doppelschublade",
         "mit-klapptuer-oben",
         "mit-einzelschublade",
-        "mit-tueren", // Added mit-tueren - same logic as doppelschublade
+        "mit-tueren",
       ]
-
-      let sideWallPanels = 0
-      const rowsWithSideWalls: number[] = []
-      for (const { cell, row } of modulesInCol) {
-        if (modulesWithSideWalls.includes(cell.type)) {
-          sideWallPanels += 2 // 2 sides per module
-          rowsWithSideWalls.push(row)
+      if (modulesWithBackwall.includes(cell.type)) {
+        if (widthCm === 40) {
+          panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + 1
+        } else {
+          panels80cmByColorPerCell[cellColor] = (panels80cmByColorPerCell[cellColor] || 0) + 1
         }
       }
 
-      columnData[col] = {
-        widthCm,
-        modulesCount: modulesInCol.length,
-        backwallPanels,
-        sideWallPanels,
-        horizontalPanels: totalHorizontalPanels,
-        moduleColor,
-        rows: sortedRows,
-        rowsWithSideWalls, // Track which specific rows have sidewalls
+      // Count side wall panels (always 40cm)
+      const modulesWithSideWalls = [
+        "offen", // Added "offen" to include it in side wall calculation if needed
+        "mit-rueckwand",
+        "mit-klapptuer",
+        "mit-klapptuer-oben",
+        "mit-einzelschublade",
+      ]
+      if (modulesWithSideWalls.includes(cell.type)) {
+        // 2 side walls per module, check for shared walls with neighbors
+        let sideWalls = 0
+        const leftNeighbor = filledCells.find((c) => c.col === col - 1 && c.row === row)
+        const rightNeighbor = filledCells.find((c) => c.col === col + 1 && c.row === row)
+
+        // Left side wall
+        if (leftNeighbor && modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
+          // Shared wall, don't count for this cell
+        } else {
+          sideWalls += 1
+        }
+
+        // Right side wall
+        if (rightNeighbor && modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
+          // Shared wall, don't count for this cell
+        } else {
+          sideWalls += 1
+        }
+
+        // Special case for modules like 'offen' which might not need side walls
+        if (cell.type === "offenes-fach") {
+          sideWalls = 0 // Assuming 'offenes-fach' does not require side panels for calculation
+        }
+
+        panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + sideWalls
       }
     }
 
-    const colKeys = Object.keys(columnData)
-      .map(Number)
-      .sort((a, b) => a - b)
+    console.log(`[v0] panels40cmByColorPerCell:`, JSON.stringify(panels40cmByColorPerCell))
+    console.log(`[v0] panels80cmByColorPerCell:`, JSON.stringify(panels80cmByColorPerCell))
 
-    let total40cmPanels = 0
-    const panels40cmByColor: Record<string, number> = {}
-    const panels80cmByColor: Record<string, number> = {} // New map for 80cm panels
+    // --- FLÄCHENSETS (Surface sets) ---
+    // Combine panel counts and calculate sets
     const flaechenset40Counts: Record<string, number> = {}
     const flaechenset80Counts: Record<string, number> = {}
 
-    for (let i = 0; i < colKeys.length; i++) {
-      const col = colKeys[i]
-      const data = columnData[col]
-      let adjustedSideWalls = data.sideWallPanels
-
-      // This ensures shared walls are counted exactly once - by the LEFT column
-      const rightCol = colKeys[i + 1]
-      if (rightCol !== undefined && columnData[rightCol]) {
-        const rightData = columnData[rightCol]
-        // Only share walls if right neighbor also has side walls (sideWallPanels > 0)
-        if (rightData.sideWallPanels > 0 && data.sideWallPanels > 0) {
-          const rightRowsWithSideWalls = rightData.rowsWithSideWalls || []
-          const thisRowsWithSideWalls = data.rowsWithSideWalls || []
-          const sharedRowsRight = thisRowsWithSideWalls.filter((r) => rightRowsWithSideWalls.includes(r))
-          if (sharedRowsRight.length > 0) {
-            // Subtract shared walls with right neighbor (shared wall will be counted by this column)
-            adjustedSideWalls -= sharedRowsRight.length
-          }
-        }
-      }
-
-      // Ensure non-negative
-      adjustedSideWalls = Math.max(0, adjustedSideWalls)
-
-      // Add to totals based on width
-      if (data.widthCm === 40) {
-        // 40cm modules: horizontal + backwall + sidewalls all go to Flächenset 40
-        const totalPanels40 = data.horizontalPanels + data.backwallPanels + adjustedSideWalls
-        panels40cmByColor[data.moduleColor] = (panels40cmByColor[data.moduleColor] || 0) + totalPanels40
-        total40cmPanels += totalPanels40
-      } else {
-        // 80cm modules: horizontal + backwall panels first, convert to sets later
-        const total80cmPanels = data.horizontalPanels + data.backwallPanels
-        panels80cmByColor[data.moduleColor] = (panels80cmByColor[data.moduleColor] || 0) + total80cmPanels
-
-        // Side walls (40cm) go to Flächenset 40
-        panels40cmByColor[data.moduleColor] = (panels40cmByColor[data.moduleColor] || 0) + adjustedSideWalls
-        total40cmPanels += adjustedSideWalls
-      }
-    }
-
-    // When 2 adjacent modules both have Funktionswände, they share a wall panel
-    const modulesWithFunktionswand = [
-      "mit-tueren",
-      "mit-doppelschublade",
-      "abschliessbare-tueren",
-      "mit-klapptuer",
-      "mit-klapptuer-oben",
-      "mit-tuere-links",
-      "mit-tuere-rechts",
-      "abschliessbar-links",
-      "abschliessbar-rechts",
-      "mit-einzelschublade",
-    ]
-
-    const modulesWithLeftFunktionswandOnly = ["mit-tuere-links", "abschliessbar-links"]
-
-    const modulesWithRightFunktionswandOnly = ["mit-tuere-rechts", "abschliessbar-rechts"]
-
-    // Count meeting points where 2 Funktionswände meet
-    let meetingFunktionswaendeCount = 0
-    let singleFunktionswandMeetingCount = 0
-
-    const activeColIndices = Object.keys(columnGroups)
-      .map(Number)
-      .sort((a, b) => a - b)
-
-    // For each row, check adjacent columns
-    for (let rowIdx = 0; rowIdx < config.rows; rowIdx++) {
-      for (let i = 0; i < activeColIndices.length - 1; i++) {
-        const leftCol = activeColIndices[i]
-        const rightCol = activeColIndices[i + 1]
-
-        // Check if these columns are actually adjacent (no gap between them)
-        if (rightCol !== leftCol + 1) continue
-
-        const leftCell = config.grid[rowIdx]?.[leftCol]
-        const rightCell = config.grid[rowIdx]?.[rightCol]
-
-        if (!leftCell || !rightCell) continue
-
-        const leftHasFunktionswand = modulesWithFunktionswand.includes(leftCell.type)
-        const rightHasFunktionswand = modulesWithFunktionswand.includes(rightCell.type)
-
-        const leftHasRightFunktionswand =
-          leftHasFunktionswand && !modulesWithLeftFunktionswandOnly.includes(leftCell.type) // Has right side unless it's left-only
-        const rightHasLeftFunktionswand =
-          rightHasFunktionswand && !modulesWithRightFunktionswandOnly.includes(rightCell.type) // Has left side unless it's right-only
-
-        console.log(`[v0] Row ${rowIdx}, Col ${leftCol}-${rightCol}: left=${leftCell.type}, right=${rightCell.type}`)
-        console.log(
-          `[v0]   leftHasFunktionswand=${leftHasFunktionswand}, rightHasFunktionswand=${rightHasFunktionswand}`,
-        )
-        console.log(
-          `[v0]   leftHasRightFunktionswand=${leftHasRightFunktionswand}, rightHasLeftFunktionswand=${rightHasLeftFunktionswand}`,
-        )
-
-        if (leftHasRightFunktionswand && rightHasLeftFunktionswand) {
-          // Both modules have Funktionswand on meeting side - reduce 1 panel (shared)
-          meetingFunktionswaendeCount++
-          console.log(`[v0]   -> meetingFunktionswaendeCount++ (both have Funktionswand on meeting side)`)
-        } else if (leftHasRightFunktionswand || rightHasLeftFunktionswand) {
-          if (leftHasFunktionswand && rightHasFunktionswand) {
-            // Both are Funktionswand modules, but only one has it on the meeting side
-            singleFunktionswandMeetingCount++
-            console.log(`[v0]   -> singleFunktionswandMeetingCount++ (one-sided meeting)`)
-          }
-        }
-      }
-    }
-
-    console.log(
-      `[v0] Final: meetingFunktionswaendeCount=${meetingFunktionswaendeCount}, singleFunktionswandMeetingCount=${singleFunktionswandMeetingCount}`,
-    )
-
-    // - meetingFunktionswaendeCount: 2 Funktionswände treffen sich → 1 Panel wird geteilt/erspart
-    // - singleFunktionswandMeetingCount: 1 Funktionswand trifft auf Seitenwand → Seitenwand bleibt (KEINE Reduktion)
-    const totalReduction = meetingFunktionswaendeCount // singleFunktionswandMeetingCount has NO effect
-    if (totalReduction > 0) {
-      let remainingReduction = totalReduction
-
-      // </CHANGE>
-      for (const colorKey of Object.keys(panels40cmByColor)) {
-        const reduction = Math.min(panels40cmByColor[colorKey], remainingReduction)
-        panels40cmByColor[colorKey] -= reduction
-        remainingReduction -= reduction
-        if (remainingReduction <= 0) break
-      }
-    }
-
-    console.log(`[v0] panels40cmByColor after reduction:`, JSON.stringify(panels40cmByColor))
-
-    // Now calculate Flächenset 40 from reduced panels
-    for (const [colorKey, panelCount] of Object.entries(panels40cmByColor)) {
+    // Calculate Flächenset 40 from panels40cmByColorPerCell
+    for (const [colorKey, panelCount] of Object.entries(panels40cmByColorPerCell)) {
       if (panelCount > 0) {
-        const setsNeeded = Math.ceil(panelCount / 2)
+        const setsNeeded = Math.ceil(panelCount / 2) // Each set covers 2 panels
         flaechenset40Counts[colorKey] = (flaechenset40Counts[colorKey] || 0) + setsNeeded
       }
     }
@@ -1518,14 +1361,15 @@ export function ShelfConfigurator({
       }
     }
 
-    // Add Flächenset 80 products
-    for (const [colorKey, count] of Object.entries(panels80cmByColor)) {
-      if (count > 0) {
-        const setsNeeded = Math.ceil(count / 2)
+    // Calculate Flächenset 80 from panels80cmByColorPerCell
+    for (const [colorKey, panelCount] of Object.entries(panels80cmByColorPerCell)) {
+      if (panelCount > 0) {
+        const setsNeeded = Math.ceil(panelCount / 2) // Each set covers 2 panels
         flaechenset80Counts[colorKey] = (flaechenset80Counts[colorKey] || 0) + setsNeeded
       }
     }
 
+    // Add Flächenset 80 products
     for (const [colorKey, count] of Object.entries(flaechenset80Counts)) {
       if (count > 0) {
         const colorLabel =
@@ -1553,7 +1397,7 @@ export function ShelfConfigurator({
     // --- SCHUBLADEN (Drawers) ---
     const schubladenCounts: Record<string, { count: number; name: string; price: number }> = {}
 
-    for (const { cell } of cells) {
+    for (const { cell } of filledCells) {
       if (cell.type === "mit-doppelschublade") {
         const color = cell.color || "weiss"
         const artNr = getSchubladeArtNr(color)
@@ -1589,7 +1433,7 @@ export function ShelfConfigurator({
     // --- TÜREN (Doors) ---
     const tuerenCounts: Record<string, { count: number; name: string; price: number }> = {}
 
-    for (const { cell } of cells) {
+    for (const { cell } of filledCells) {
       if (
         cell.type === "mit-tueren" ||
         cell.type === "abschliessbare-tueren" ||
@@ -1641,7 +1485,7 @@ export function ShelfConfigurator({
 
     // --- SCHLÖSSER (Locks) ---
     let lockCount = 0
-    for (const { cell } of cells) {
+    for (const { cell } of filledCells) {
       if (
         cell.type === "abschliessbare-tueren" ||
         cell.type === "abschliessbar-links" ||
@@ -1657,7 +1501,7 @@ export function ShelfConfigurator({
     // --- KLAPPTÜREN (Flap doors - nach unten öffnend) ---
     const klapptuerCounts: Record<string, { count: number; name: string; price: number }> = {}
 
-    for (const { cell } of cells) {
+    for (const { cell } of filledCells) {
       if (cell.type === "mit-klapptuer") {
         const color = cell.color || "weiss"
         const artNr = getKlapptuerArtNr(color)
@@ -1694,7 +1538,7 @@ export function ShelfConfigurator({
     const klapptuerObenCounts: Record<string, { count: number; name: string; price: number }> = {}
     let totalGasdruckdaempfer = 0
 
-    for (const { cell } of cells) {
+    for (const { cell } of filledCells) {
       if (cell.type === "mit-klapptuer-oben") {
         const color = cell.color || "weiss"
         const artNr = getKlapptuerObenArtNr(color)
@@ -1731,7 +1575,7 @@ export function ShelfConfigurator({
 
     const einzelschubladeCounts: Record<string, { count: number; name: string; price: number }> = {}
 
-    for (const { cell } of cells) {
+    for (const { cell } of filledCells) {
       if (cell.type === "mit-einzelschublade") {
         const color = cell.color || "weiss"
         const artNr = `ES-${getEinzelschubladeArtNr(color)}` // Prefix to differentiate from Klapptür oben
@@ -1767,7 +1611,7 @@ export function ShelfConfigurator({
     // --- FUNKTIONSWÄNDE (Back panels) ---
     let funktionswandCount = 0
 
-    for (const { col, cell } of cells) {
+    for (const { col, cell } of filledCells) {
       const widthCm = config.columnWidths[col] === 75 ? 80 : 40
 
       if (

@@ -22,36 +22,29 @@ type GLBModuleProps = {
 
 const urlCache = new Map<string, string>()
 
+const GERMAN_TO_ENGLISH_COLOR: Record<string, string> = {
+  weiss: "white",
+  schwarz: "black",
+  grau: "gray",
+  anthrazit: "anthrazit",
+  blau: "blue",
+  gruen: "green",
+  gelb: "yellow",
+  orange: "orange",
+  rot: "red",
+  beige: "beige",
+}
+
 const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#ffffff": "white",
-  "#f5f5f5": "white",
-  "#fafafa": "white",
-  "#1f2937": "black",
-  "#000000": "black",
-  "#111827": "black",
   "#1a1a1a": "black",
-  "#3b82f6": "blue",
-  "#2563eb": "blue",
-  "#1d4ed8": "blue",
-  "#00b4d8": "blue",
-  "#10b981": "green",
-  "#059669": "green",
-  "#047857": "green",
-  "#228b22": "green",
-  "#eab308": "yellow",
-  "#facc15": "yellow",
-  "#fbbf24": "yellow",
-  "#f59e0b": "orange",
-  "#ea580c": "orange",
-  "#f97316": "orange",
-  "#ef4444": "red",
-  "#dc2626": "red",
-  "#b91c1c": "red",
-  "#9ca3af": "gray",
-  "#6b7280": "gray",
-  "#4b5563": "anthrazit",
-  "#374151": "anthrazit",
-  "#f5f5dc": "beige",
+  "#737373": "gray",
+  "#2e2e33": "anthrazit",
+  "#1a66ff": "blue",
+  "#00b33c": "green",
+  "#ffd900": "yellow",
+  "#ff6600": "orange",
+  "#eb1a1a": "red",
   "#d2b48c": "beige",
 }
 
@@ -440,10 +433,16 @@ const LoadedGLBModel = memo(
 
     const clonedScene = useMemo(() => {
       const clone = scene.clone(true)
-      const targetColorValue = TARGET_COLORS[targetColor] || TARGET_COLORS.white
+      let mappedColor = targetColor
+      if (GERMAN_TO_ENGLISH_COLOR[targetColor]) {
+        mappedColor = GERMAN_TO_ENGLISH_COLOR[targetColor]
+      } else if (HEX_TO_COLOR_NAME[targetColor]) {
+        mappedColor = HEX_TO_COLOR_NAME[targetColor]
+      }
+      const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS.white
 
       console.log(
-        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor}, cellType: ${cellType}, row: ${row} =====`,
+        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor} -> ${mappedColor}, cellType: ${cellType}, row: ${row} =====`,
       )
 
       const parentBoundingBox = new THREE.Box3().setFromObject(clone)
