@@ -1285,11 +1285,19 @@ export function ShelfConfigurator({
 
       // Count side wall panels (always 40cm)
       const modulesWithSideWalls = [
-        "offen", // Added "offen" to include it in side wall calculation if needed
+        "offenes-fach",
         "mit-rueckwand",
+        "ohne-rueckwand", // Added ohne-rueckwand - also has side walls
         "mit-klapptuer",
         "mit-klapptuer-oben",
         "mit-einzelschublade",
+        "mit-tueren",
+        "mit-doppelschublade",
+        "abschliessbare-tueren",
+        "mit-tuere-links",
+        "mit-tuere-rechts",
+        "abschliessbar-links",
+        "abschliessbar-rechts",
       ]
       if (modulesWithSideWalls.includes(cell.type)) {
         // 2 side walls per module, check for shared walls with neighbors
