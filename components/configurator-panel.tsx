@@ -90,7 +90,6 @@ const moduleTypes: Array<{ id: GridCell["type"]; label: string; shortLabel: stri
   { id: "abschliessbare-tueren", label: "Abschließbar", shortLabel: "Abschließbar", icon: "🔒" },
   { id: "mit-tuere-links", label: "Mit Türe Links", shortLabel: "Mit Türe Links", icon: "◧" },
   { id: "mit-tuere-rechts", label: "Mit Türe Rechts", shortLabel: "Mit Türe Rechts", icon: "◨" },
-  { id: "abschliessbar-links", label: "Abschließbar Links", shortLabel: "Abschließbar Links", icon: "🔐" },
   { id: "abschliessbar-rechts", label: "Abschließbar Rechts", shortLabel: "Abschließbar Rechts", icon: "🔐" },
 ]
 
@@ -152,7 +151,6 @@ export function ConfiguratorPanel({
       "abschliessbare-tueren": "Abschließbar",
       "mit-tuere-links": "Mit Türe Links",
       "mit-tuere-rechts": "Mit Türe Rechts",
-      "abschliessbar-links": "Abschließbar Links",
       "abschliessbar-rechts": "Abschließbar Rechts",
     }
     return labels[type] || type
@@ -174,7 +172,6 @@ export function ConfiguratorPanel({
       "abschliessbare-tueren": "Abschl.",
       "mit-tuere-links": "Türe Links",
       "mit-tuere-rechts": "Türe Rechts",
-      "abschliessbar-links": "Abschl. Links",
       "abschliessbar-rechts": "Abschl. Rechts",
     }
     return labels[type] || ""
