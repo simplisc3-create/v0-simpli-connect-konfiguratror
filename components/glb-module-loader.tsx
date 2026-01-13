@@ -62,10 +62,10 @@ const TARGET_COLORS: Record<string, THREE.Color> = {
 }
 
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
-  color: new THREE.Color(0.98, 0.98, 1.0),
-  metalness: 0.98,
-  roughness: 0.08,
-  envMapIntensity: 1.56,
+  color: new THREE.Color(0.95, 0.95, 0.97),
+  metalness: 0.7,
+  roughness: 0.15,
+  envMapIntensity: 2.0,
   side: THREE.DoubleSide,
 })
 
