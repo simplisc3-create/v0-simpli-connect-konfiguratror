@@ -1296,28 +1296,85 @@ export function ShelfConfigurator({
         "mit-tuere-links",
         "mit-tuere-rechts",
         "abschliessbar-rechts",
+        "abschliessbar-links",
       ]
+
+      // These modules have Funktionswand on BOTH sides (can share with each other)
+      const modulesWithFunktionswandBothSides = [
+        "mit-tueren",
+        "mit-klapptuer",
+        "mit-klapptuer-oben",
+        "mit-einzelschublade",
+        "mit-doppelschublade",
+        "abschliessbar",
+      ]
+
+      // These modules have Funktionswand ONLY on the RIGHT side (left side needs normal panel)
+      const modulesWithFunktionswandOnlyRight = ["mit-tuere-rechts", "abschliessbar-rechts"]
+
+      // These modules have Funktionswand ONLY on the LEFT side (right side needs normal panel)
+      const modulesWithFunktionswandOnlyLeft = ["mit-tuere-links", "abschliessbar-links"]
+
+      // Check if a module has a Funktionswand (Edelstahl) on a specific side
+      const hasFunktionswandOnSide = (moduleType: string, side: "left" | "right"): boolean => {
+        if (modulesWithFunktionswandBothSides.includes(moduleType)) return true
+        if (side === "right" && modulesWithFunktionswandOnlyRight.includes(moduleType)) return true
+        if (side === "left" && modulesWithFunktionswandOnlyLeft.includes(moduleType)) return true
+        return false
+      }
+
+      // Walls can only be shared if BOTH modules have Funktionswand on the adjacent sides
+      const canShareWall = (currentType: string, neighborType: string, currentSide: "left" | "right"): boolean => {
+        const neighborSide = currentSide === "left" ? "right" : "left"
+        // Both must have Funktionswand to share
+        return hasFunktionswandOnSide(currentType, currentSide) && hasFunktionswandOnSide(neighborType, neighborSide)
+      }
+      // </CHANGE>
+
       if (modulesWithSideWalls.includes(cell.type)) {
-        // 2 side walls per module, check for shared walls with neighbors
         let sideWalls = 0
         const leftNeighbor = filledCells.find((c) => c.col === col - 1 && c.row === row)
         const rightNeighbor = filledCells.find((c) => c.col === col + 1 && c.row === row)
 
-        // Left side wall - only shared if neighbor also has side walls
-        if (leftNeighbor && modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
-          // Shared wall, don't count for this cell
+        // The difference is whether they can SHARE with neighbors (only if both have Funktionswand)
+
+        console.log(`[v0] Side wall calc for ${cell.type} at col ${col}, row ${row}:`)
+        console.log(
+          `[v0]   hasFunktionswandLeft: ${hasFunktionswandOnSide(cell.type, "left")}, hasFunktionswandRight: ${hasFunktionswandOnSide(cell.type, "right")}`,
+        )
+        console.log(
+          `[v0]   leftNeighbor: ${leftNeighbor?.cell.type || "none"}, rightNeighbor: ${rightNeighbor?.cell.type || "none"}`,
+        )
+
+        // Left side wall - can be shared only if BOTH have Funktionswand
+        if (
+          leftNeighbor &&
+          modulesWithSideWalls.includes(leftNeighbor.cell.type) &&
+          canShareWall(cell.type, leftNeighbor.cell.type, "left")
+        ) {
+          // Shared wall (both have Funktionswand), don't count for this cell
+          console.log(`[v0]   LEFT wall SHARED (both have Funktionswand)`)
         } else {
           sideWalls += 1
+          console.log(`[v0]   LEFT wall COUNTED (not shared - no Funktionswand match)`)
         }
 
-        // Right side wall - only shared if neighbor also has side walls
-        if (rightNeighbor && modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
-          // Shared wall, don't count for this cell
+        // Right side wall - can be shared only if BOTH have Funktionswand
+        if (
+          rightNeighbor &&
+          modulesWithSideWalls.includes(rightNeighbor.cell.type) &&
+          canShareWall(cell.type, rightNeighbor.cell.type, "right")
+        ) {
+          // Shared wall (both have Funktionswand), don't count for this cell
+          console.log(`[v0]   RIGHT wall SHARED (both have Funktionswand)`)
         } else {
           sideWalls += 1
+          console.log(`[v0]   RIGHT wall COUNTED (not shared - no Funktionswand match)`)
         }
 
-        // This means modules next to "offenes-fach" will NOT share walls and need both their side panels
+        console.log(`[v0]   TOTAL sideWalls: ${sideWalls}`)
+        // </CHANGE>
+
         panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + sideWalls
       }
     }
