@@ -201,17 +201,16 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
     }
 
     const offsetX = -totalWidth / 2
-    const offsetZ = depth / 2
+    const offsetZ = 0
 
     config.grid.forEach((rowCells, gridRow) => {
       rowCells.forEach((cell, gridCol) => {
         const cellWidth = config.columnWidths[gridCol] / 100
         const cellHeight = config.rowHeights[gridRow] / 100
-        const zOffset = gridRow === 0 ? -0.002 : -0.002
         const position: [number, number, number] = [
           columnCenters[gridCol] + offsetX,
           rowCenters[gridRow],
-          offsetZ + zOffset,
+          -depth / 2, // Front of module at z=0, module extends backwards
         ]
 
         if (cell.type === "ghost") {
@@ -220,10 +219,9 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
             config.grid[gridRow - 1]?.[gridCol]?.type !== "empty" &&
             config.grid[gridRow - 1]?.[gridCol]?.type !== "ghost"
 
-          // Position snap points at the edge of where the module would be placed
           const snapPosition: [number, number, number] = isAboveModule
-            ? [position[0], position[1] - cellHeight / 2 + 0.05, position[2]] // Bottom edge for vertical
-            : [position[0], position[1], position[2] + depth / 2 + 0.05] // Front center for horizontal
+            ? [position[0], position[1] - cellHeight / 2 + 0.05, position[2] + depth / 2]
+            : [position[0], position[1], 0.05] // Front snap point at z=0.05
 
           snaps.push({
             key: `snap-${gridRow}-${gridCol}`,
