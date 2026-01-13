@@ -1285,7 +1285,6 @@ export function ShelfConfigurator({
 
       // Count side wall panels (always 40cm)
       const modulesWithSideWalls = [
-        "offenes-fach",
         "mit-rueckwand",
         "ohne-rueckwand", // Added ohne-rueckwand - also has side walls
         "mit-klapptuer",
@@ -1293,10 +1292,9 @@ export function ShelfConfigurator({
         "mit-einzelschublade",
         "mit-tueren",
         "mit-doppelschublade",
-        "abschliessbare-tueren",
+        "abschliessbar", // Added general 'abschliessbar' type here
         "mit-tuere-links",
         "mit-tuere-rechts",
-        "abschliessbar-links",
         "abschliessbar-rechts",
       ]
       if (modulesWithSideWalls.includes(cell.type)) {
@@ -1305,25 +1303,21 @@ export function ShelfConfigurator({
         const leftNeighbor = filledCells.find((c) => c.col === col - 1 && c.row === row)
         const rightNeighbor = filledCells.find((c) => c.col === col + 1 && c.row === row)
 
-        // Left side wall
+        // Left side wall - only shared if neighbor also has side walls
         if (leftNeighbor && modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
           // Shared wall, don't count for this cell
         } else {
           sideWalls += 1
         }
 
-        // Right side wall
+        // Right side wall - only shared if neighbor also has side walls
         if (rightNeighbor && modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
           // Shared wall, don't count for this cell
         } else {
           sideWalls += 1
         }
 
-        // Special case for modules like 'offen' which might not need side walls
-        if (cell.type === "offenes-fach") {
-          sideWalls = 0 // Assuming 'offenes-fach' does not require side panels for calculation
-        }
-
+        // This means modules next to "offenes-fach" will NOT share walls and need both their side panels
         panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + sideWalls
       }
     }
