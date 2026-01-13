@@ -17,7 +17,7 @@ type GLBModuleProps = {
   col: number
   gridConfig: ShelfConfig
   modelUrl?: string
-  isBottomModule?: boolean // Added prop to indicate if this module is at the bottom of its column
+  isBottomModule?: boolean
 }
 
 const urlCache = new Map<string, string>()
@@ -134,9 +134,7 @@ const FEET_KEYWORDS = ["feet", "foot", "fuss", "fuß", "fuse", "bein", "leg", "s
 function isHandlePart(meshName: string): boolean {
   const nameLower = meshName.toLowerCase()
   for (const keyword of HANDLE_KEYWORDS) {
-    if (nameLower.includes(keyword)) {
-      return true
-    }
+    if (nameLower.includes(keyword)) return true
   }
   return false
 }
@@ -148,30 +146,18 @@ function isFramePart(
 ): boolean {
   const nameLower = meshName.toLowerCase()
 
-  // Check panel keywords first - panels should NEVER be chrome
   for (const keyword of PANEL_KEYWORDS) {
-    if (nameLower.includes(keyword)) {
-      console.log(`[v0] PANEL by keyword "${keyword}": ${meshName}`)
-      return false
-    }
+    if (nameLower.includes(keyword)) return false
   }
 
-  // Check frame keywords
   for (const keyword of FRAME_KEYWORDS) {
-    if (nameLower.includes(keyword)) {
-      console.log(`[v0] FRAME by keyword "${keyword}": ${meshName}`)
-      return true
-    }
+    if (nameLower.includes(keyword)) return true
   }
 
   if (originalMaterial) {
     const mat = Array.isArray(originalMaterial) ? originalMaterial[0] : originalMaterial
     if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
-      // Only very high metalness = frame part (0.7+ is definitely metal)
-      if (mat.metalness > 0.7) {
-        console.log(`[v0] FRAME by material metalness (${mat.metalness.toFixed(2)}): ${meshName}`)
-        return true
-      }
+      if (mat.metalness > 0.5) return true
     }
   }
 
@@ -181,25 +167,17 @@ function isFramePart(
     if (bbox) {
       const size = new THREE.Vector3()
       bbox.getSize(size)
-
       const dims = [size.x, size.y, size.z].sort((a, b) => b - a)
       const aspectRatio = dims[0] / Math.max(dims[1], 0.001)
       const minDim = Math.min(size.x, size.y, size.z)
+      const volume = size.x * size.y * size.z
 
-      console.log(
-        `[v0] Geometry "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspect=${aspectRatio.toFixed(2)}, minDim=${minDim.toFixed(4)}`,
-      )
-
-      // This prevents flat panels from being detected as frames
-      const isTubeLike = minDim < 0.02 && aspectRatio > 5
-      if (isTubeLike) {
-        console.log(`[v0] FRAME by geometry (tube-like): ${meshName}`)
-        return true
-      }
+      if (volume < 0.0001) return true
+      if (Math.max(size.x, size.y, size.z) < 0.05 && aspectRatio < 3) return true
+      if (minDim < 0.02 && aspectRatio > 5) return true
     }
   }
 
-  console.log(`[v0] PANEL by default: ${meshName}`)
   return false
 }
 
@@ -211,19 +189,14 @@ function isFeetPart(
 ): boolean {
   const nameLower = meshName.toLowerCase()
 
-  // Check by keyword first
   for (const keyword of FEET_KEYWORDS) {
-    if (nameLower.includes(keyword)) {
-      return true
-    }
+    if (nameLower.includes(keyword)) return true
   }
 
-  // The feet are small black plastic caps at the bottom corners
   if (material) {
     const mat = Array.isArray(material) ? material[0] : material
     if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
       const color = mat.color
-      // Black/dark is when all RGB values are low (< 0.15)
       const isBlackMaterial = color.r < 0.15 && color.g < 0.15 && color.b < 0.15
 
       if (isBlackMaterial && geometry && parentBoundingBox) {
@@ -232,18 +205,11 @@ function isFeetPart(
         if (meshBox) {
           const meshSize = new THREE.Vector3()
           meshBox.getSize(meshSize)
-
           const parentSize = new THREE.Vector3()
           parentBoundingBox.getSize(parentSize)
-
-          // Small black parts are likely feet (less than 20% of parent size)
           const isSmall =
             meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
-
-          if (isSmall) {
-            console.log(`[v0] FEET detected by small black material: ${meshName}`)
-            return true
-          }
+          if (isSmall) return true
         }
       }
     }
@@ -253,11 +219,7 @@ function isFeetPart(
 }
 
 function getColorName(colorInput: string): string {
-  // First check if it's already a German color name
-  if (GERMAN_TO_ENGLISH_COLOR[colorInput]) {
-    return colorInput // Return German name, will be mapped later in LoadedGLBModel
-  }
-  // Then check if it's a hex value
+  if (GERMAN_TO_ENGLISH_COLOR[colorInput]) return colorInput
   return HEX_TO_COLOR_NAME[colorInput.toLowerCase()] || "white"
 }
 
@@ -279,9 +241,7 @@ const CLOSED_MODULE_TYPES = [
   "mit-rueckwand",
 ]
 
-const isClosedModule = (cellType: string): boolean => {
-  return CLOSED_MODULE_TYPES.includes(cellType)
-}
+const isClosedModule = (cellType: string): boolean => CLOSED_MODULE_TYPES.includes(cellType)
 
 export const GLBModule = memo(
   function GLBModule({
@@ -295,11 +255,10 @@ export const GLBModule = memo(
     col,
     gridConfig,
     modelUrl: explicitModelUrl,
-    isBottomModule = false, // Default to false
+    isBottomModule = false,
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
-
     const cacheKey = useMemo(() => `${cellType}-${standardWidth}-white`, [cellType, standardWidth])
 
     const [modelUrl, setModelUrl] = useState<string | null>(() => {
@@ -334,8 +293,6 @@ export const GLBModule = memo(
             color: "white",
           })
 
-          console.log(`[v0] Fetching GLB: ${cellType}, ${standardWidth}cm, white (will apply ${colorName})`)
-
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
 
@@ -343,15 +300,9 @@ export const GLBModule = memo(
             throw new Error(data.error || "Failed to resolve model")
           }
 
-          if (!data.url.startsWith("https://") && !data.url.startsWith("/")) {
-            throw new Error(`Invalid URL: ${data.url}`)
-          }
-
-          console.log(`[v0] GLB URL resolved: ${data.url}`)
           urlCache.set(cacheKey, data.url)
           setModelUrl(data.url)
         } catch (err) {
-          console.error(`[v0] GLB fetch error:`, err)
           setError(err instanceof Error ? err.message : "Unknown error")
         }
       }
@@ -397,7 +348,7 @@ export const GLBModule = memo(
     prev.position[2] === next.position[2] &&
     prev.row === next.row &&
     prev.col === next.col &&
-    prev.isBottomModule === next.isBottomModule, // Added to memo comparison
+    prev.isBottomModule === next.isBottomModule,
 )
 
 const LoadedGLBModel = memo(
@@ -408,7 +359,7 @@ const LoadedGLBModel = memo(
     targetColor,
     cellType = "offen",
     row = 0,
-    isBottomModule = false, // Added prop
+    isBottomModule = false,
   }: {
     modelUrl: string
     position: [number, number, number]
@@ -428,8 +379,6 @@ const LoadedGLBModel = memo(
       const boundingBox = new THREE.Box3().setFromObject(scene)
       const center = boundingBox.getCenter(new THREE.Vector3())
 
-      console.log(`[v0] Klapptür offset calculation: center.x=${center.x.toFixed(4)}, center.y=${center.y.toFixed(4)}`)
-
       return {
         xOffset: -center.x,
         yOffset: -center.y,
@@ -446,37 +395,18 @@ const LoadedGLBModel = memo(
       }
       const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS.white
 
-      console.log(
-        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor} -> ${mappedColor}, cellType: ${cellType}, row: ${row} =====`,
-      )
-
       const parentBoundingBox = new THREE.Box3().setFromObject(clone)
-      const size = parentBoundingBox.getSize(new THREE.Vector3())
-      const center = parentBoundingBox.getCenter(new THREE.Vector3())
-      console.log(
-        `[v0] Model bounding box - size: x=${size.x.toFixed(4)}, y=${size.y.toFixed(4)}, z=${size.z.toFixed(4)}`,
-      )
-      console.log(
-        `[v0] Model bounding box - center: x=${center.x.toFixed(4)}, y=${center.y.toFixed(4)}, z=${center.z.toFixed(4)}`,
-      )
-
-      let handleMesh: THREE.Mesh | null = null
 
       clone.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           const meshName = child.name || ""
           const isFrame = isFramePart(meshName, child.geometry, child.material)
           const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
-          const isHandle = isHandlePart(meshName)
           const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material)
 
-          if (isHandle && isKlapptuerOben) {
-            handleMesh = child
-          }
-
+          // Hide feet for non-bottom modules
           if (isFeet && !isBottomModule) {
             child.visible = false
-            console.log(`[v0] Hiding feet mesh: ${meshName} (row ${row}, isBottomModule=${isBottomModule})`)
             return
           }
 
@@ -517,7 +447,7 @@ const LoadedGLBModel = memo(
     }, [scene, targetColor, moduleKey, cellType, row, isBottomModule])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
-      const BAR_THICKNESS = 0.01 // ~1cm bar thickness (50% of original 2cm)
+      const BAR_THICKNESS = 0.01
       const isSchubladen = cellType === "mit-schubladen"
       const zOffset = isClosedModule(cellType) ? (isSchubladen ? BAR_THICKNESS + 0.01 : BAR_THICKNESS) : 0
       return [position[0] + xOffset, position[1] + yOffset, position[2] + zOffset]
