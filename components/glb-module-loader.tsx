@@ -49,16 +49,16 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
 }
 
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(0.95, 0.95, 0.95),
-  black: new THREE.Color(0.05, 0.05, 0.05),
+  white: new THREE.Color(0.8, 0.8, 0.8), // was 1.0, 1.0, 1.0
+  black: new THREE.Color(0.12, 0.12, 0.12), // was 0.15, 0.15, 0.15
   gray: new THREE.Color(0.45, 0.45, 0.45),
-  anthrazit: new THREE.Color(0.18, 0.18, 0.2),
-  blue: new THREE.Color(0.1, 0.4, 0.95),
-  green: new THREE.Color(0.0, 0.7, 0.2),
-  yellow: new THREE.Color(1.0, 0.85, 0.0),
-  orange: new THREE.Color(1.0, 0.4, 0.0),
-  red: new THREE.Color(0.92, 0.1, 0.1),
-  beige: new THREE.Color(0.85, 0.75, 0.58),
+  anthrazit: new THREE.Color(0.144, 0.144, 0.16), // was 0.18, 0.18, 0.2
+  blue: new THREE.Color(0.08, 0.32, 0.76), // was 0.1, 0.4, 0.95
+  green: new THREE.Color(0.0, 0.56, 0.16), // was 0.0, 0.7, 0.2
+  yellow: new THREE.Color(0.8, 0.68, 0.0), // was 1.0, 0.85, 0.0
+  orange: new THREE.Color(0.8, 0.32, 0.0), // was 1.0, 0.4, 0.0
+  red: new THREE.Color(0.736, 0.08, 0.08), // was 0.92, 0.1, 0.1
+  beige: new THREE.Color(0.68, 0.6, 0.464), // was 0.85, 0.75, 0.58
 }
 
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
