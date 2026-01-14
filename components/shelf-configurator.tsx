@@ -1307,26 +1307,30 @@ export function ShelfConfigurator({
         "abschliessbar-links",
       ]
 
-      // </CHANGE> Simplified wall sharing logic - walls are shared if BOTH modules have side walls
-      // The Funktionswand lists are no longer needed for sharing calculation
+      // Modules with Funktionswand on only one side still need both side panels
+      const modulesWithFunktionswandBothSides = [
+        "mit-tueren",
+        "mit-klapptuer",
+        "mit-klapptuer-oben",
+        "abschliessbare-tueren",
+        "abschliessbar",
+      ]
 
+      // </CHANGE> Simplified side wall logic - walls shared when BOTH neighbors have side walls
       if (modulesWithSideWalls.includes(cell.type)) {
-        let sideWalls = 0
+        let sideWalls = 2 // Start with both side walls
+
         const leftNeighbor = filledCells.find((c) => c.col === col - 1 && c.row === row)
         const rightNeighbor = filledCells.find((c) => c.col === col + 1 && c.row === row)
 
-        // Left side wall - shared if neighbor also has side walls
+        // Left wall is shared if left neighbor also has side walls
         if (leftNeighbor && modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
-          // Shared wall - don't count for this cell (counted by left neighbor)
-        } else {
-          sideWalls += 1
+          sideWalls -= 1 // Shared wall
         }
 
-        // Right side wall - shared if neighbor also has side walls
+        // Right wall is shared if right neighbor also has side walls
         if (rightNeighbor && modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
-          // Shared wall - don't count for this cell (will be counted by right neighbor or already shared)
-        } else {
-          sideWalls += 1
+          sideWalls -= 1 // Shared wall
         }
 
         panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + sideWalls
