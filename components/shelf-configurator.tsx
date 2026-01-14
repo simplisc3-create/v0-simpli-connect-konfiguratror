@@ -1300,6 +1300,7 @@ export function ShelfConfigurator({
         "mit-tueren",
         "mit-doppelschublade",
         "abschliessbar", // Added general 'abschliessbar' type here
+        "abschliessbare-tueren", // Added abschliessbare-tueren - has side walls
         "mit-tuere-links",
         "mit-tuere-rechts",
         "abschliessbar-rechts",
