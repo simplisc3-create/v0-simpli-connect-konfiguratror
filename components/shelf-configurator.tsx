@@ -1255,12 +1255,6 @@ export function ShelfConfigurator({
       horizontalPanels += 1 // Ceiling for every module
 
       if (widthCm === 40) {
-        console.log(`[v0] 40cm Panel calc for ${cell.type} at row ${row}, col ${col}:`)
-        console.log(`[v0]   color: ${cellColor}, isBottomCell: ${isBottomCell}`)
-        console.log(`[v0]   horizontalPanels (floor+ceiling): ${horizontalPanels}`)
-      }
-
-      if (widthCm === 40) {
         panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + horizontalPanels
       } else {
         panels80cmByColorPerCell[cellColor] = (panels80cmByColorPerCell[cellColor] || 0) + horizontalPanels
@@ -1284,7 +1278,6 @@ export function ShelfConfigurator({
       if (modulesWithBackwall.includes(cell.type)) {
         if (widthCm === 40) {
           panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + 1
-          console.log(`[v0]   backwall: 1 (total 40cm so far: ${panels40cmByColorPerCell[cellColor]})`)
         } else {
           panels80cmByColorPerCell[cellColor] = (panels80cmByColorPerCell[cellColor] || 0) + 1
         }
@@ -1299,39 +1292,35 @@ export function ShelfConfigurator({
         "mit-einzelschublade",
         "mit-tueren",
         "mit-doppelschublade",
-        "abschliessbar", // Added general 'abschliessbar' type here
-        "abschliessbare-tueren", // Added abschliessbare-tueren - has side walls
+        "abschliessbare-tueren",
         "mit-tuere-links",
         "mit-tuere-rechts",
-        "abschliessbar-rechts",
         "abschliessbar-links",
+        "abschliessbar-rechts",
       ]
-
-      // Modules with Funktionswand on only one side still need both side panels
-      const modulesWithFunktionswandBothSides = [
-        "mit-tueren",
-        "mit-klapptuer",
-        "mit-klapptuer-oben",
-        "abschliessbare-tueren",
-        "abschliessbar",
-      ]
-
-      // </CHANGE> Simplified side wall logic - walls shared when BOTH neighbors have side walls
       if (modulesWithSideWalls.includes(cell.type)) {
-        let sideWalls = 2 // Start with both side walls
-
+        // 2 side walls per module, check for shared walls with neighbors
+        let sideWalls = 0
         const leftNeighbor = filledCells.find((c) => c.col === col - 1 && c.row === row)
         const rightNeighbor = filledCells.find((c) => c.col === col + 1 && c.row === row)
 
-        // Left wall is shared if left neighbor also has side walls
+        // Left side wall
         if (leftNeighbor && modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
-          sideWalls -= 1 // Shared wall
+          // Shared wall, don't count for this cell
+        } else {
+          sideWalls += 1
         }
 
-        // Right wall is shared if right neighbor also has side walls
+        // Right side wall
         if (rightNeighbor && modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
-          sideWalls -= 1 // Shared wall
+          // Shared wall, don't count for this cell
+        } else {
+          sideWalls += 1
         }
+
+        console.log(
+          `[v0] SideWall calc: row=${row}, col=${col}, type=${cell.type}, color=${cellColor}, sideWalls=${sideWalls}, leftNeighbor=${leftNeighbor?.cell.type || "none"}, rightNeighbor=${rightNeighbor?.cell.type || "none"}`,
+        )
 
         panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + sideWalls
       }
