@@ -1293,6 +1293,8 @@ export function ShelfConfigurator({
         "mit-tueren",
         "mit-doppelschublade",
         "abschliessbar", // Added general 'abschliessbar' type here
+        "abschliessbare-tueren", // Added abschliessbare-tueren (80cm) and abschliessbar-links (40cm)
+        "abschliessbar-links",
         "mit-tuere-links",
         "mit-tuere-rechts",
         "abschliessbar-rechts",

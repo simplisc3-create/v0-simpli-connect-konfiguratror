@@ -21,6 +21,8 @@ import {
 import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
+import { ModulePreview3D } from "./module-preview-3d"
+import type { ModuleType } from "@/lib/glb-registry"
 
 export type ToolMode = "select" | "brush" | "eraser"
 
@@ -377,7 +379,7 @@ export function ConfiguratorPanel({
                   }
                   disabled={!isAvailable}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-xl p-2 transition-all",
+                    "flex flex-col items-center gap-1 rounded-xl p-1 transition-all overflow-hidden",
                     !isAvailable && "opacity-30 cursor-not-allowed",
                     selectedTool === moduleType.id
                       ? "bg-teal-600 text-white ring-2 ring-teal-400"
@@ -387,8 +389,14 @@ export function ConfiguratorPanel({
                   )}
                   title={moduleType.label}
                 >
-                  <span className="text-lg">{moduleType.icon}</span>
-                  <span className="text-[9px] font-medium leading-tight text-center line-clamp-2">
+                  <div className="w-12 h-10 pointer-events-none">
+                    <ModulePreview3D
+                      moduleType={moduleType.id as ModuleType}
+                      color={selectedColor}
+                      width={usedWidths.length === 1 && usedWidths[0] === 38 ? 40 : 80}
+                    />
+                  </div>
+                  <span className="text-[8px] font-medium leading-tight text-center line-clamp-1">
                     {moduleType.shortLabel}
                   </span>
                 </button>
