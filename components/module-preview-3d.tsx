@@ -4,6 +4,8 @@ import { useGLTF, Environment, Center } from "@react-three/drei"
 import { Suspense, useMemo, useState, useEffect } from "react"
 import * as THREE from "three"
 import { resolveGlbUrl, type ModuleType, type WidthKey } from "@/lib/glb-registry"
+import { colorHexMap } from "@/lib/simpli-products"
+import type { ColorKey } from "./shelf-configurator"
 
 const FRAME_KEYWORDS = [
   "frame",
@@ -41,12 +43,14 @@ function isFramePart(name: string): boolean {
   return FRAME_KEYWORDS.some((keyword) => lowerName.includes(keyword))
 }
 
-function StaticWhiteModel({ url }: { url: string }) {
+function ColoredModel({ url, color }: { url: string; color?: ColorKey }) {
   const { scene } = useGLTF(url)
 
   const clonedScene = useMemo(() => {
     const clone = scene.clone(true)
-    const whiteColor = new THREE.Color(0.95, 0.95, 0.95)
+    // Get the hex color from colorHexMap, default to white
+    const hexColor = color ? colorHexMap[color] || colorHexMap.weiss : colorHexMap.weiss
+    const panelColor = new THREE.Color(hexColor)
 
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -62,9 +66,9 @@ function StaticWhiteModel({ url }: { url: string }) {
             side: THREE.DoubleSide,
           })
         } else if (child.material) {
-          // White panels
+          // Colored panels based on selected color
           const newMaterial = new THREE.MeshStandardMaterial({
-            color: whiteColor,
+            color: panelColor,
             roughness: 0.3,
             metalness: 0.0,
             side: THREE.DoubleSide,
@@ -75,7 +79,7 @@ function StaticWhiteModel({ url }: { url: string }) {
     })
 
     return clone
-  }, [scene])
+  }, [scene, color])
 
   return (
     <Center>
@@ -88,16 +92,17 @@ type ModulePreview3DProps = {
   moduleType: ModuleType
   width?: WidthKey
   className?: string
+  color?: ColorKey // Added color prop
 }
 
-export function ModulePreview3D({ moduleType, width = 80, className = "" }: ModulePreview3DProps) {
+export function ModulePreview3D({ moduleType, width = 80, className = "", color }: ModulePreview3DProps) {
   const [modelUrl, setModelUrl] = useState<string | null>(null)
   const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     setLoadError(false)
     try {
-      // Always use white color for GLB lookup
+      // Always use white color for GLB lookup (the actual color is applied via material)
       const { url } = resolveGlbUrl({
         width,
         height: 40,
@@ -124,10 +129,11 @@ export function ModulePreview3D({ moduleType, width = 80, className = "" }: Modu
   }, [moduleType, width])
 
   if (loadError || !modelUrl) {
-    // Fallback: simple white box icon
+    // Fallback: simple colored box icon
+    const bgColor = color ? colorHexMap[color] : colorHexMap.weiss
     return (
       <div className={`w-full h-full flex items-center justify-center ${className}`}>
-        <div className="w-8 h-6 rounded-sm border border-gray-400 bg-gray-200" />
+        <div className="w-8 h-6 rounded-sm border border-gray-400" style={{ backgroundColor: bgColor }} />
       </div>
     )
   }
@@ -143,7 +149,7 @@ export function ModulePreview3D({ moduleType, width = 80, className = "" }: Modu
         <ambientLight intensity={0.8} />
         <directionalLight position={[2, 3, 2]} intensity={1} />
         <Suspense fallback={null}>
-          <StaticWhiteModel url={modelUrl} />
+          <ColoredModel url={modelUrl} color={color} />
           <Environment preset="studio" />
         </Suspense>
       </Canvas>

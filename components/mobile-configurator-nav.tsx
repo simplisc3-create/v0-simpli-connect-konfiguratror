@@ -9,6 +9,7 @@ import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
 import { motion, AnimatePresence } from "framer-motion"
 import type { ModuleType } from "@/lib/glb-registry"
+import { ModulePreview3D } from "./module-preview-3d"
 
 type MobileTab = "modules" | "colors" | "cart" | null
 
@@ -29,6 +30,8 @@ type Props = {
     total: number
   }>
   price: number
+  defaultNewColumnWidth?: 75 | 38
+  onSetDefaultColumnWidth?: (width: 75 | 38) => void
 }
 
 const allColors = [
@@ -55,7 +58,6 @@ const moduleTypes: Array<{ id: GridCell["type"]; label: string; icon: string }> 
   { id: "mit-tuere-links", label: "Tür L", icon: "◧" },
   { id: "mit-tuere-rechts", label: "Tür R", icon: "◨" },
   { id: "abschliessbar-links", label: "Abschl. L", icon: "🔐" },
-  { id: "abschliessbar-rechts", label: "Abschl. R", icon: "🔐" },
 ]
 
 export function MobileConfiguratorNav({
@@ -67,6 +69,8 @@ export function MobileConfiguratorNav({
   onUpdateConfig,
   shoppingList,
   price,
+  defaultNewColumnWidth = 75,
+  onSetDefaultColumnWidth,
 }: Props) {
   const [activeTab, setActiveTab] = useState<MobileTab | null>(null)
   const { setItem } = useCartStore()
@@ -143,7 +147,13 @@ export function MobileConfiguratorNav({
                     <p className="mb-2 text-xs text-neutral-400">Modulbreite filtern:</p>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setWidthFilter(widthFilter === 40 ? "all" : 40)}
+                        onClick={() => {
+                          const newFilter = widthFilter === 40 ? "all" : 40
+                          setWidthFilter(newFilter)
+                          if (newFilter === 40) {
+                            onSetDefaultColumnWidth?.(38)
+                          }
+                        }}
                         className={cn(
                           "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
                           widthFilter === 40
@@ -154,7 +164,13 @@ export function MobileConfiguratorNav({
                         40er Module
                       </button>
                       <button
-                        onClick={() => setWidthFilter(widthFilter === 80 ? "all" : 80)}
+                        onClick={() => {
+                          const newFilter = widthFilter === 80 ? "all" : 80
+                          setWidthFilter(newFilter)
+                          if (newFilter === 80) {
+                            onSetDefaultColumnWidth?.(75)
+                          }
+                        }}
                         className={cn(
                           "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
                           widthFilter === 80
@@ -203,7 +219,13 @@ export function MobileConfiguratorNav({
                                 : "bg-neutral-800/50 text-neutral-500",
                           )}
                         >
-                          <span className="text-xl">{moduleType.icon}</span>
+                          <div className="h-12 w-16 flex items-center justify-center">
+                            <ModulePreview3D
+                              moduleType={moduleType.id as ModuleType}
+                              width={widthFilter === "all" ? 80 : widthFilter}
+                              color={selectedColor}
+                            />
+                          </div>
                           <span className="text-[10px] font-medium leading-tight text-center">{moduleType.label}</span>
                         </button>
                       )

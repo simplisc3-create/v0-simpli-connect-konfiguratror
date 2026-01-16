@@ -1980,6 +1980,8 @@ export function ShelfConfigurator({
           onDeselectCell={() => setSelectedCell(null)}
           toolMode={toolMode}
           onSetToolMode={setToolMode}
+          defaultNewColumnWidth={defaultNewColumnWidth}
+          onSetDefaultColumnWidth={setDefaultNewColumnWidth}
         />
 
         <MobileConfiguratorNav
@@ -1994,22 +1996,9 @@ export function ShelfConfigurator({
           onUpdateConfig={updateConfig}
           shoppingList={bomData.items}
           price={bomData.totalPrice}
+          defaultNewColumnWidth={defaultNewColumnWidth}
+          onSetDefaultColumnWidth={setDefaultNewColumnWidth}
         />
-      </div>
-      {/* Sticky toggle button for column width */}
-      <div className="fixed left-4 bottom-20 z-50 flex flex-col gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleDefaultColumnWidth}
-          className={`rounded-full px-4 py-2 text-xs font-medium shadow-lg transition-all ${
-            defaultNewColumnWidth === 75
-              ? "bg-teal-600 text-white border-teal-500 hover:bg-teal-700"
-              : "bg-amber-600 text-white border-amber-500 hover:bg-amber-700"
-          }`}
-        >
-          Neue Spalten: {defaultNewColumnWidth === 75 ? "80cm" : "40cm"}
-        </Button>
       </div>
     </div>
   )

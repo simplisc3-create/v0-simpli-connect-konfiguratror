@@ -61,6 +61,8 @@ type Props = {
   onDeselectCell?: () => void
   toolMode?: ToolMode
   onSetToolMode?: (mode: ToolMode) => void
+  defaultNewColumnWidth?: 75 | 38
+  onSetDefaultColumnWidth?: (width: 75 | 38) => void
 }
 
 const baseColors = [
@@ -95,7 +97,6 @@ const moduleTypes: Array<{ id: GridCell["type"]; label: string; shortLabel: stri
   { id: "mit-tuere-links", label: "Mit Türe Links", shortLabel: "Mit Türe Links", icon: "◧" },
   { id: "mit-tuere-rechts", label: "Mit Türe Rechts", shortLabel: "Mit Türe Rechts", icon: "◨" },
   { id: "abschliessbar-links", label: "Abschließbar Links", shortLabel: "Abschließbar Links", icon: "🔐" },
-  { id: "abschliessbar-rechts", label: "Abschließbar Rechts", shortLabel: "Abschließbar Rechts", icon: "🔐" },
 ]
 
 export function ConfiguratorPanel({
@@ -123,6 +124,8 @@ export function ConfiguratorPanel({
   onDeselectCell,
   toolMode = "select",
   onSetToolMode,
+  defaultNewColumnWidth = 75,
+  onSetDefaultColumnWidth,
 }: Props) {
   const [expandedSection, setExpandedSection] = useState<string | null>("grid")
   const { setItem } = useCartStore()
@@ -158,7 +161,6 @@ export function ConfiguratorPanel({
       "mit-tuere-links": "Mit Türe Links",
       "mit-tuere-rechts": "Mit Türe Rechts",
       "abschliessbar-links": "Abschließbar Links",
-      "abschliessbar-rechts": "Abschließbar Rechts",
     }
     return labels[type] || type
   }
@@ -180,7 +182,6 @@ export function ConfiguratorPanel({
       "mit-tuere-links": "Türe Links",
       "mit-tuere-rechts": "Türe Rechts",
       "abschliessbar-links": "Abschl. Links",
-      "abschliessbar-rechts": "Abschl. Rechts",
     }
     return labels[type] || ""
   }
@@ -375,7 +376,13 @@ export function ConfiguratorPanel({
             <p className="mb-2 text-xs text-neutral-400">Modulbreite filtern:</p>
             <div className="flex gap-2">
               <button
-                onClick={() => setWidthFilter(widthFilter === 40 ? "all" : 40)}
+                onClick={() => {
+                  const newFilter = widthFilter === 40 ? "all" : 40
+                  setWidthFilter(newFilter)
+                  if (newFilter === 40) {
+                    onSetDefaultColumnWidth?.(38)
+                  }
+                }}
                 className={cn(
                   "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
                   widthFilter === 40
@@ -386,7 +393,13 @@ export function ConfiguratorPanel({
                 40er Module
               </button>
               <button
-                onClick={() => setWidthFilter(widthFilter === 80 ? "all" : 80)}
+                onClick={() => {
+                  const newFilter = widthFilter === 80 ? "all" : 80
+                  setWidthFilter(newFilter)
+                  if (newFilter === 80) {
+                    onSetDefaultColumnWidth?.(75)
+                  }
+                }}
                 className={cn(
                   "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
                   widthFilter === 80
@@ -414,37 +427,32 @@ export function ConfiguratorPanel({
           ) : null}
 
           <div className="grid grid-cols-4 gap-2">
-            {moduleTypes.map((moduleType) => {
-              const isAvailable = getModuleAvailability(moduleType.id)
+            {moduleTypes.map((module) => {
+              const isAvailable = getModuleAvailability(module.id)
 
               return (
                 <button
-                  key={moduleType.id}
-                  onClick={() =>
-                    isAvailable ? onSelectTool(selectedTool === moduleType.id ? null : moduleType.id) : null
-                  }
-                  disabled={!isAvailable}
+                  key={module.id}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-xl p-1 transition-all overflow-hidden",
-                    !isAvailable && "opacity-30 cursor-not-allowed",
-                    selectedTool === moduleType.id
-                      ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                    "group relative flex flex-col items-center justify-center rounded-xl p-2 transition-all border-2 cursor-pointer",
+                    selectedTool === module.id
+                      ? "bg-teal-600/30 border-teal-400 text-teal-300"
                       : isAvailable
-                        ? "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
-                        : "bg-neutral-800/50 text-neutral-500",
+                        ? "bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:border-neutral-500"
+                        : "bg-neutral-800/50 border-neutral-700/50 text-neutral-500 opacity-40 cursor-not-allowed",
                   )}
-                  title={moduleType.label}
+                  onClick={() => isAvailable && onSelectTool(module.id)}
+                  title={!isAvailable ? `${module.label} ist für die gewählte Breite nicht verfügbar` : module.label}
                 >
-                  <div className="w-12 h-10 pointer-events-none">
+                  <div className="h-12 w-16 flex items-center justify-center">
                     <ModulePreview3D
-                      moduleType={moduleType.id as ModuleType}
-                      width={
-                        widthFilter !== "all" ? widthFilter : usedWidths.length === 1 && usedWidths[0] === 38 ? 40 : 80
-                      }
+                      moduleType={module.id as ModuleType}
+                      width={widthFilter === "all" ? 80 : widthFilter}
+                      color={selectedColor}
                     />
                   </div>
                   <span className="text-[8px] font-medium leading-tight text-center line-clamp-1">
-                    {moduleType.shortLabel}
+                    {module.shortLabel}
                   </span>
                 </button>
               )
