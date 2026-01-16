@@ -1999,50 +1999,54 @@ export function ShelfConfigurator({
           )}
         </div>
 
-        <ConfiguratorPanel
-          config={config}
-          selectedTool={selectedTool}
-          selectedColor={selectedColor}
-          selectedCell={selectedCell}
-          onSelectTool={setSelectedTool}
-          onSelectColor={setSelectedColor}
-          onPlaceModule={placeModule} // Renamed to handlePlaceModule in updates
-          onClearCell={clearCell} // Renamed to handleClearCell in updates
-          onResizeGrid={resizeGrid} // Renamed to handleResizeGrid in updates
-          onSetColumnWidth={setColumnWidth} // Renamed to handleSetColumnWidth in updates
-          onSetRowHeight={setRowHeight} // Renamed to handleSetRowHeight in updates
-          onUpdateConfig={updateConfig} // Renamed to handleUpdateConfig in updates
-          shoppingList={bomData.items}
-          price={bomData.totalPrice}
-          showShoppingList={showShoppingList}
-          onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
-          onApplyCellColor={applyCellColor} // Renamed to handleApplyCellColor in updates
-          onApplyColorToRow={applyColorToRow} // Renamed to handleApplyColorToRow in updates
-          onApplyColorToColumn={applyColorToColumn} // Renamed to handleApplyColorToColumn in updates
-          onApplyColorToAll={applyColorToAll} // Renamed to handleApplyColorToAll in updates
-          onClearCellColor={clearCellColor} // Renamed to handleClearCellColor in updates
-          onDeselectCell={() => setSelectedCell(null)}
-          toolMode={toolMode}
-          onSetToolMode={setToolMode}
-          defaultNewColumnWidth={defaultNewColumnWidth}
-          onSetDefaultColumnWidth={setDefaultNewColumnWidth}
-        />
+        <div className="hidden lg:block">
+          <ConfiguratorPanel
+            config={config}
+            selectedTool={selectedTool}
+            selectedColor={selectedColor}
+            selectedCell={selectedCell}
+            onSelectTool={setSelectedTool}
+            onSelectColor={setSelectedColor}
+            onPlaceModule={placeModule} // Renamed to handlePlaceModule in updates
+            onClearCell={clearCell} // Renamed to handleClearCell in updates
+            onResizeGrid={resizeGrid} // Renamed to handleResizeGrid in updates
+            onSetColumnWidth={setColumnWidth} // Renamed to handleSetColumnWidth in updates
+            onSetRowHeight={setRowHeight} // Renamed to handleSetRowHeight in updates
+            onUpdateConfig={updateConfig} // Renamed to handleUpdateConfig in updates
+            shoppingList={bomData.items}
+            price={bomData.totalPrice}
+            showShoppingList={showShoppingList}
+            onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
+            onApplyCellColor={applyCellColor} // Renamed to handleApplyCellColor in updates
+            onApplyColorToRow={applyColorToRow} // Renamed to handleApplyColorToRow in updates
+            onApplyColorToColumn={applyColorToColumn} // Renamed to handleApplyColorToColumn in updates
+            onApplyColorToAll={applyColorToAll} // Renamed to handleApplyColorToAll in updates
+            onClearCellColor={clearCellColor} // Renamed to handleClearCellColor in updates
+            onDeselectCell={() => setSelectedCell(null)}
+            toolMode={toolMode}
+            onSetToolMode={setToolMode}
+            defaultNewColumnWidth={defaultNewColumnWidth}
+            onSetDefaultColumnWidth={setDefaultNewColumnWidth}
+          />
+        </div>
 
-        <MobileConfiguratorNav
-          config={config}
-          selectedTool={selectedTool}
-          selectedColor={selectedColor}
-          onSelectTool={(tool) => {
-            setSelectedTool(tool)
-            setSelectedCell(null)
-          }}
-          onSelectColor={setSelectedColor}
-          onUpdateConfig={updateConfig}
-          shoppingList={bomData.items}
-          price={bomData.totalPrice}
-          defaultNewColumnWidth={defaultNewColumnWidth}
-          onSetDefaultColumnWidth={setDefaultNewColumnWidth}
-        />
+        <div className="lg:hidden">
+          <MobileConfiguratorNav
+            config={config}
+            selectedTool={selectedTool}
+            selectedColor={selectedColor}
+            onSelectTool={(tool) => {
+              setSelectedTool(tool)
+              setSelectedCell(null)
+            }}
+            onSelectColor={setSelectedColor}
+            onUpdateConfig={updateConfig}
+            shoppingList={bomData.items}
+            price={bomData.totalPrice}
+            defaultNewColumnWidth={defaultNewColumnWidth}
+            onSetDefaultColumnWidth={setDefaultNewColumnWidth}
+          />
+        </div>
       </div>
     </div>
   )
