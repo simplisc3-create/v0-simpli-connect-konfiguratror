@@ -19,20 +19,31 @@ const presets = {
     youtubeId: "hUbkjGIyy2E",
   },
   starter: {
-    columns: 2,
-    rows: 2,
-    columnWidths: [75, 75] as (75 | 38)[],
-    rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    columns: 4,
+    rows: 3,
+    columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
       // Row 0 = bottom (floor level)
       [
-        { id: "cell-0-0", type: "mit-rueckwand" as const, row: 0, col: 0, color: "gruen" as const },
-        { id: "cell-0-1", type: "mit-rueckwand" as const, row: 0, col: 1, color: "gruen" as const },
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "offenes-fach" as const, row: 0, col: 1, color: "gruen" as const },
+        { id: "cell-0-2", type: "offenes-fach" as const, row: 0, col: 2, color: "gruen" as const },
+        { id: "cell-0-3", type: "ghost" as const, row: 0, col: 3 },
       ],
-      // Row 1 = top
+      // Row 1 = second level
       [
-        { id: "cell-1-0", type: "mit-rueckwand" as const, row: 1, col: 0, color: "gruen" as const },
-        { id: "cell-1-1", type: "mit-rueckwand" as const, row: 1, col: 1, color: "gruen" as const },
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "offenes-fach" as const, row: 1, col: 1, color: "gruen" as const },
+        { id: "cell-1-2", type: "offenes-fach" as const, row: 1, col: 2, color: "gruen" as const },
+        { id: "cell-1-3", type: "ghost" as const, row: 1, col: 3 },
+      ],
+      // Row 2 = top (ghost row for expansion)
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+        { id: "cell-2-3", type: "ghost" as const, row: 2, col: 3 },
       ],
     ],
     youtubeId: "ffjWvF61tJg",
