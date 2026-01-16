@@ -1286,14 +1286,14 @@ export function ShelfConfigurator({
       // Count side wall panels (always 40cm)
       const modulesWithSideWalls = [
         "mit-rueckwand",
-        "ohne-rueckwand", // Added ohne-rueckwand - also has side walls
+        "ohne-rueckwand",
         "mit-klapptuer",
         "mit-klapptuer-oben",
         "mit-einzelschublade",
         "mit-tueren",
         "mit-doppelschublade",
-        "abschliessbar", // Added general 'abschliessbar' type here
-        "abschliessbare-tueren", // Added abschliessbare-tueren (80cm) and abschliessbar-links (40cm)
+        "abschliessbar",
+        "abschliessbare-tueren",
         "abschliessbar-links",
         "mit-tuere-links",
         "mit-tuere-rechts",
@@ -1305,21 +1305,26 @@ export function ShelfConfigurator({
         const leftNeighbor = filledCells.find((c) => c.col === col - 1 && c.row === row)
         const rightNeighbor = filledCells.find((c) => c.col === col + 1 && c.row === row)
 
-        // Left side wall - only shared if neighbor also has side walls
+        // If both have side walls, the LEFT module "owns" the shared wall, so this module doesn't count it
         if (leftNeighbor && modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
-          // Shared wall, don't count for this cell
+          // Shared wall - the left module owns it, don't count for this cell
         } else {
           sideWalls += 1
         }
 
-        // Right side wall - only shared if neighbor also has side walls
+        // OR count if no right neighbor
         if (rightNeighbor && modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
-          // Shared wall, don't count for this cell
-        } else {
+          // Shared wall - THIS module owns it (right-side ownership), so count it
+          sideWalls += 1
+        } else if (!rightNeighbor) {
+          // No neighbor on right, count outer wall
+          sideWalls += 1
+        }
+        // If right neighbor exists but doesn't have side walls, count this wall too
+        else if (rightNeighbor && !modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
           sideWalls += 1
         }
 
-        // This means modules next to "offenes-fach" will NOT share walls and need both their side panels
         panels40cmByColorPerCell[cellColor] = (panels40cmByColorPerCell[cellColor] || 0) + sideWalls
       }
     }
