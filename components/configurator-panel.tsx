@@ -26,6 +26,8 @@ import type { ModuleType } from "@/lib/glb-registry"
 
 export type ToolMode = "select" | "brush" | "eraser"
 
+export type WidthFilter = 40 | 80 | "all"
+
 type Props = {
   config: ShelfConfig
   selectedTool: GridCell["type"] | null
@@ -125,6 +127,7 @@ export function ConfiguratorPanel({
   const [expandedSection, setExpandedSection] = useState<string | null>("grid")
   const { setItem } = useCartStore()
   const [addedToCart, setAddedToCart] = useState(false)
+  const [widthFilter, setWidthFilter] = useState<WidthFilter>("all")
 
   const handleCellClick = (row: number, col: number) => {
     if (toolMode === "eraser") {
@@ -186,6 +189,18 @@ export function ConfiguratorPanel({
 
   const usedWidths = Array.from(new Set(config.columnWidths))
   const allModulesAvailable = usedWidths.length === 0
+
+  const getModuleAvailability = (moduleTypeId: GridCell["type"]) => {
+    // If a specific width filter is selected, use that
+    if (widthFilter !== "all") {
+      return isModuleTypeAvailableForWidth(moduleTypeId as ModuleType, widthFilter)
+    }
+    // Otherwise, use the existing logic based on used column widths
+    return (
+      allModulesAvailable ||
+      usedWidths.some((width) => isModuleTypeAvailableForWidth(moduleTypeId as ModuleType, width === 75 ? 80 : 40))
+    )
+  }
 
   const handleAddToCart = () => {
     if (shoppingList.length === 0) return
@@ -356,7 +371,39 @@ export function ConfiguratorPanel({
         </div>
 
         <div className="border-b border-neutral-700 p-4">
-          {!allModulesAvailable && usedWidths.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-xs text-neutral-400">Modulbreite filtern:</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setWidthFilter(widthFilter === 40 ? "all" : 40)}
+                className={cn(
+                  "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
+                  widthFilter === 40
+                    ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
+                )}
+              >
+                40er Module
+              </button>
+              <button
+                onClick={() => setWidthFilter(widthFilter === 80 ? "all" : 80)}
+                className={cn(
+                  "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
+                  widthFilter === 80
+                    ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
+                )}
+              >
+                80er Module
+              </button>
+            </div>
+          </div>
+
+          {widthFilter !== "all" ? (
+            <p className="mb-3 rounded-xl bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
+              Module für {widthFilter}cm werden angezeigt
+            </p>
+          ) : !allModulesAvailable && usedWidths.length > 0 ? (
             <p className="mb-3 rounded-xl bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
               {usedWidths.length === 1 ? (
                 <>Module für {usedWidths[0] === 75 ? "80" : "40"}cm verfügbar</>
@@ -364,12 +411,11 @@ export function ConfiguratorPanel({
                 <>40cm und 80cm Module verfügbar</>
               )}
             </p>
-          )}
+          ) : null}
+
           <div className="grid grid-cols-4 gap-2">
             {moduleTypes.map((moduleType) => {
-              const isAvailable =
-                allModulesAvailable ||
-                usedWidths.some((width) => isModuleTypeAvailableForWidth(moduleType.id, width === 75 ? 80 : 40))
+              const isAvailable = getModuleAvailability(moduleType.id)
 
               return (
                 <button
@@ -392,7 +438,9 @@ export function ConfiguratorPanel({
                   <div className="w-12 h-10 pointer-events-none">
                     <ModulePreview3D
                       moduleType={moduleType.id as ModuleType}
-                      width={usedWidths.length === 1 && usedWidths[0] === 38 ? 40 : 80}
+                      width={
+                        widthFilter !== "all" ? widthFilter : usedWidths.length === 1 && usedWidths[0] === 38 ? 40 : 80
+                      }
                     />
                   </div>
                   <span className="text-[8px] font-medium leading-tight text-center line-clamp-1">
@@ -403,9 +451,7 @@ export function ConfiguratorPanel({
             })}
           </div>
           <p className="mt-3 text-[10px] text-neutral-500">
-            {allModulesAvailable
-              ? "Ausgegraute Module sind für die gewählte Breite nicht verfügbar"
-              : "Ausgegraute Module sind für die gewählte Breite nicht verfügbar"}
+            Ausgegraute Module sind für die gewählte Breite nicht verfügbar
           </p>
 
           <div className="mt-4 pt-4 border-t border-neutral-700">

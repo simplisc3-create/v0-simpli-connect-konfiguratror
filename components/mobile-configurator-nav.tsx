@@ -8,8 +8,11 @@ import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
 import { motion, AnimatePresence } from "framer-motion"
+import type { ModuleType } from "@/lib/glb-registry"
 
 type MobileTab = "modules" | "colors" | "cart" | null
+
+type WidthFilter = 40 | 80 | "all"
 
 type Props = {
   config: ShelfConfig
@@ -68,9 +71,20 @@ export function MobileConfiguratorNav({
   const [activeTab, setActiveTab] = useState<MobileTab | null>(null)
   const { setItem } = useCartStore()
   const [addedToCart, setAddedToCart] = useState(false)
+  const [widthFilter, setWidthFilter] = useState<WidthFilter>("all")
 
   const usedWidths = Array.from(new Set(config.columnWidths))
   const allModulesAvailable = usedWidths.length === 0
+
+  const getModuleAvailability = (moduleTypeId: GridCell["type"]) => {
+    if (widthFilter !== "all") {
+      return isModuleTypeAvailableForWidth(moduleTypeId as ModuleType, widthFilter)
+    }
+    return (
+      allModulesAvailable ||
+      usedWidths.some((width) => isModuleTypeAvailableForWidth(moduleTypeId as ModuleType, width === 75 ? 80 : 40))
+    )
+  }
 
   const handleAddToCart = () => {
     if (shoppingList.length === 0) return
@@ -125,19 +139,49 @@ export function MobileConfiguratorNav({
                     </button>
                   </div>
 
-                  {!allModulesAvailable && (
+                  <div className="mb-4">
+                    <p className="mb-2 text-xs text-neutral-400">Modulbreite filtern:</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setWidthFilter(widthFilter === 40 ? "all" : 40)}
+                        className={cn(
+                          "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
+                          widthFilter === 40
+                            ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                            : "bg-neutral-800 text-neutral-300 active:bg-neutral-700",
+                        )}
+                      >
+                        40er Module
+                      </button>
+                      <button
+                        onClick={() => setWidthFilter(widthFilter === 80 ? "all" : 80)}
+                        className={cn(
+                          "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
+                          widthFilter === 80
+                            ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                            : "bg-neutral-800 text-neutral-300 active:bg-neutral-700",
+                        )}
+                      >
+                        80er Module
+                      </button>
+                    </div>
+                  </div>
+
+                  {widthFilter !== "all" ? (
+                    <p className="mb-4 rounded-lg bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
+                      Module für {widthFilter}cm werden angezeigt
+                    </p>
+                  ) : !allModulesAvailable ? (
                     <p className="mb-4 rounded-lg bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
                       {usedWidths.length === 1
                         ? `Module für ${usedWidths[0] === 75 ? "80" : "40"}cm verfügbar`
                         : "40cm und 80cm Module verfügbar"}
                     </p>
-                  )}
+                  ) : null}
 
                   <div className="grid grid-cols-3 gap-2">
                     {moduleTypes.map((moduleType) => {
-                      const isAvailable =
-                        allModulesAvailable ||
-                        usedWidths.some((width) => isModuleTypeAvailableForWidth(moduleType.id, width === 75 ? 80 : 40))
+                      const isAvailable = getModuleAvailability(moduleType.id)
 
                       return (
                         <button
