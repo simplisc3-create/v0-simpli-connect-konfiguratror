@@ -127,10 +127,26 @@ export function ConfiguratorPanel({
   defaultNewColumnWidth = 75,
   onSetDefaultColumnWidth,
 }: Props) {
-  const [expandedSection, setExpandedSection] = useState<string | null>("grid")
+  const [expandedSection, setExpandedSection] = useState<string>("modules")
   const { setItem } = useCartStore()
   const [addedToCart, setAddedToCart] = useState(false)
   const [widthFilter, setWidthFilter] = useState<WidthFilter>("all")
+
+  const totalWidthCm = config.columnWidths.reduce((sum, w) => {
+    // Filter out ghost columns (columns that only have ghost cells)
+    const colIndex = config.columnWidths.indexOf(w)
+    const hasRealModule = config.grid.some((row) => {
+      const cell = row[colIndex]
+      return cell && cell.type !== "ghost" && cell.type !== "empty"
+    })
+    return hasRealModule ? sum + (w === 38 ? 40 : 80) : sum
+  }, 0)
+
+  const totalHeightCm = config.rowHeights.reduce((sum, h, rowIndex) => {
+    // Check if this row has any real modules
+    const hasRealModule = config.grid[rowIndex]?.some((cell) => cell && cell.type !== "ghost" && cell.type !== "empty")
+    return hasRealModule ? sum + h : sum
+  }, 0)
 
   const handleCellClick = (row: number, col: number) => {
     if (toolMode === "eraser") {
@@ -229,7 +245,7 @@ export function ConfiguratorPanel({
   const totalPrice = price || 0
 
   return (
-    <div className="hidden md:flex w-96 flex-col border-l border-neutral-700 bg-neutral-900">
+    <div className="flex h-full flex-col bg-neutral-900 text-neutral-100 overflow-hidden">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {selectedCell && selectedCellInfo && selectedCellInfo.type !== "empty" && selectedCellInfo.type !== "ghost" && (

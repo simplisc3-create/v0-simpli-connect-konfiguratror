@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { ShelfConfig, GridCell, ColorKey } from "./shelf-configurator"
 import { cn } from "@/lib/utils"
-import { ShoppingCart, ChevronUp, List, Palette, Box, Check, X } from "lucide-react"
+import { ShoppingCart, ChevronUp, List, Palette, Box, Check, X, Ruler } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
@@ -79,6 +79,21 @@ export function MobileConfiguratorNav({
 
   const usedWidths = Array.from(new Set(config.columnWidths))
   const allModulesAvailable = usedWidths.length === 0
+
+  const totalWidthCm = config.columnWidths.reduce((sum, w, colIndex) => {
+    // Check if this column has any real modules
+    const hasRealModule = config.grid.some((row) => {
+      const cell = row[colIndex]
+      return cell && cell.type !== "ghost" && cell.type !== "empty"
+    })
+    return hasRealModule ? sum + (w === 38 ? 40 : 80) : sum
+  }, 0)
+
+  const totalHeightCm = config.rowHeights.reduce((sum, h, rowIndex) => {
+    // Check if this row has any real modules
+    const hasRealModule = config.grid[rowIndex]?.some((cell) => cell && cell.type !== "ghost" && cell.type !== "empty")
+    return hasRealModule ? sum + h : sum
+  }, 0)
 
   const getModuleAvailability = (moduleTypeId: GridCell["type"]) => {
     if (widthFilter !== "all") {
@@ -368,78 +383,88 @@ export function MobileConfiguratorNav({
         </AnimatePresence>
 
         {/* Bottom Bar */}
-        <div className="flex items-center justify-between border-t border-neutral-800 bg-neutral-900/95 px-2 py-2 backdrop-blur-lg">
-          {/* Tab Buttons */}
-          <div className="flex gap-1">
-            <button
-              onClick={() => toggleTab("modules")}
-              className={cn(
-                "flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 transition-all",
-                activeTab === "modules" ? "bg-teal-600 text-white" : "text-neutral-400 active:bg-neutral-800",
-              )}
-            >
-              <Box className="h-5 w-5" />
-              <span className="text-[10px]">Module</span>
-            </button>
-
-            <button
-              onClick={() => toggleTab("colors")}
-              className={cn(
-                "flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 transition-all",
-                activeTab === "colors" ? "bg-teal-600 text-white" : "text-neutral-400 active:bg-neutral-800",
-              )}
-            >
-              <Palette className="h-5 w-5" />
-              <span className="text-[10px]">Farbe</span>
-            </button>
-
-            <button
-              onClick={() => toggleTab("cart")}
-              className={cn(
-                "relative flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 transition-all",
-                activeTab === "cart" ? "bg-teal-600 text-white" : "text-neutral-400 active:bg-neutral-800",
-              )}
-            >
-              <List className="h-5 w-5" />
-              <span className="text-[10px]">Liste</span>
-              {shoppingList.length > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-[9px] font-bold text-white">
-                  {shoppingList.length}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Price & Cart Button */}
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <p className="text-[10px] text-neutral-400">Gesamt</p>
-              <p className="text-lg font-bold text-white">{price.toFixed(2)} €</p>
+        <div className="bg-neutral-900 border-t border-neutral-800">
+          {(totalWidthCm > 0 || totalHeightCm > 0) && (
+            <div className="flex items-center justify-center gap-2 py-1.5 border-b border-neutral-800 text-xs text-neutral-400">
+              <Ruler className="h-3 w-3" />
+              <span>
+                {totalWidthCm} × {totalHeightCm} cm
+              </span>
             </div>
-            <button
-              onClick={handleAddToCart}
-              disabled={shoppingList.length === 0}
-              className={cn(
-                "flex items-center gap-2 rounded-xl px-4 py-3 font-semibold transition-all",
-                addedToCart
-                  ? "bg-green-600 text-white"
-                  : shoppingList.length === 0
-                    ? "bg-neutral-700 text-neutral-500"
-                    : "bg-teal-600 text-white active:bg-teal-700",
-              )}
-            >
-              {addedToCart ? (
-                <>
-                  <Check className="h-5 w-5" />
-                  <span className="hidden sm:inline">Hinzugefügt</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="h-5 w-5" />
-                  <span className="hidden sm:inline">Warenkorb</span>
-                </>
-              )}
-            </button>
+          )}
+          <div className="flex items-center justify-around px-2 py-2">
+            {/* Tab Buttons */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => toggleTab("modules")}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 transition-all",
+                  activeTab === "modules" ? "bg-teal-600 text-white" : "text-neutral-400 active:bg-neutral-800",
+                )}
+              >
+                <Box className="h-5 w-5" />
+                <span className="text-[10px]">Module</span>
+              </button>
+
+              <button
+                onClick={() => toggleTab("colors")}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 transition-all",
+                  activeTab === "colors" ? "bg-teal-600 text-white" : "text-neutral-400 active:bg-neutral-800",
+                )}
+              >
+                <Palette className="h-5 w-5" />
+                <span className="text-[10px]">Farbe</span>
+              </button>
+
+              <button
+                onClick={() => toggleTab("cart")}
+                className={cn(
+                  "relative flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 transition-all",
+                  activeTab === "cart" ? "bg-teal-600 text-white" : "text-neutral-400 active:bg-neutral-800",
+                )}
+              >
+                <List className="h-5 w-5" />
+                <span className="text-[10px]">Liste</span>
+                {shoppingList.length > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-teal-500 text-[9px] font-bold text-white">
+                    {shoppingList.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Price & Cart Button */}
+            <div className="flex items-center gap-2">
+              <div className="text-right">
+                <p className="text-[10px] text-neutral-400">Gesamt</p>
+                <p className="text-lg font-bold text-white">{price.toFixed(2)} €</p>
+              </div>
+              <button
+                onClick={handleAddToCart}
+                disabled={shoppingList.length === 0}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl px-4 py-3 font-semibold transition-all",
+                  addedToCart
+                    ? "bg-green-600 text-white"
+                    : shoppingList.length === 0
+                      ? "bg-neutral-700 text-neutral-500"
+                      : "bg-teal-600 text-white active:bg-teal-700",
+                )}
+              >
+                {addedToCart ? (
+                  <>
+                    <Check className="h-5 w-5" />
+                    <span className="hidden sm:inline">Hinzugefügt</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-5 w-5" />
+                    <span className="hidden sm:inline">Warenkorb</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

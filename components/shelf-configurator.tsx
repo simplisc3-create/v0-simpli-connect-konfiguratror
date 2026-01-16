@@ -1897,6 +1897,49 @@ export function ShelfConfigurator({
             )}
           </div>
 
+          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/70 px-4 py-2 text-sm text-white">
+            <div className="flex items-center gap-4">
+              <span>
+                Breite:{" "}
+                <span className="font-semibold text-teal-400">
+                  {(() => {
+                    // Calculate total width from columns that have at least one non-ghost module
+                    let totalWidth = 0
+                    for (let col = 0; col < config.columns; col++) {
+                      const hasModule = config.grid.some(
+                        (row, rowIndex) => row[col] && row[col].type !== "ghost" && row[col].type !== "empty",
+                      )
+                      if (hasModule) {
+                        const colWidth = config.columnWidths?.[col] ?? 75
+                        totalWidth += colWidth === 75 ? 80 : 40
+                      }
+                    }
+                    return totalWidth
+                  })()} cm
+                </span>
+              </span>
+              <span className="text-neutral-500">|</span>
+              <span>
+                Höhe:{" "}
+                <span className="font-semibold text-teal-400">
+                  {(() => {
+                    // Calculate total height from rows that have at least one non-ghost module
+                    let totalHeight = 0
+                    for (let row = 0; row < config.rows; row++) {
+                      const hasModule = config.grid[row]?.some(
+                        (cell) => cell && cell.type !== "ghost" && cell.type !== "empty",
+                      )
+                      if (hasModule) {
+                        totalHeight += config.rowHeights?.[row] ?? 40
+                      }
+                    }
+                    return totalHeight
+                  })()} cm
+                </span>
+              </span>
+            </div>
+          </div>
+
           {/* Color selection UI */}
           {selectedCell && (
             <div className="absolute left-4 top-24 rounded-lg bg-black/70 px-3 py-2">
