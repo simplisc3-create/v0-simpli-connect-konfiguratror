@@ -20,9 +20,9 @@ const presets = {
   },
   starter: {
     columns: 4,
-    rows: 3,
+    rows: 4,
     columnWidths: [75, 75, 75, 75] as (75 | 38)[],
-    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
       // Row 0 = bottom (floor level)
       [
@@ -38,12 +38,19 @@ const presets = {
         { id: "cell-1-2", type: "offenes-fach" as const, row: 1, col: 2, color: "gruen" as const },
         { id: "cell-1-3", type: "ghost" as const, row: 1, col: 3 },
       ],
-      // Row 2 = top (ghost row for expansion)
+      // Row 2 = third level
       [
         { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
-        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
-        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+        { id: "cell-2-1", type: "offenes-fach" as const, row: 2, col: 1, color: "gruen" as const },
+        { id: "cell-2-2", type: "offenes-fach" as const, row: 2, col: 2, color: "gruen" as const },
         { id: "cell-2-3", type: "ghost" as const, row: 2, col: 3 },
+      ],
+      // Row 3 = top (ghost row for expansion)
+      [
+        { id: "cell-3-0", type: "ghost" as const, row: 3, col: 0 },
+        { id: "cell-3-1", type: "ghost" as const, row: 3, col: 1 },
+        { id: "cell-3-2", type: "ghost" as const, row: 3, col: 2 },
+        { id: "cell-3-3", type: "ghost" as const, row: 3, col: 3 },
       ],
     ],
     youtubeId: "ffjWvF61tJg",
