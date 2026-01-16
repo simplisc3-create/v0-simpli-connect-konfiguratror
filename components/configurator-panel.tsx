@@ -392,7 +392,6 @@ export function ConfiguratorPanel({
                   <div className="w-12 h-10 pointer-events-none">
                     <ModulePreview3D
                       moduleType={moduleType.id as ModuleType}
-                      color={selectedColor}
                       width={usedWidths.length === 1 && usedWidths[0] === 38 ? 40 : 80}
                     />
                   </div>
