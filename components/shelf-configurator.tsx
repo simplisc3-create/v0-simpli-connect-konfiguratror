@@ -1296,6 +1296,8 @@ export function ShelfConfigurator({
         "mit-tuere-links",
         "mit-tuere-rechts",
         "abschliessbar-rechts",
+        "mit-einzelschublade",
+        "mit-doppelschublade",
       ]
       const modulesWithFunktionswandBothSides = [
         "mit-tueren",
