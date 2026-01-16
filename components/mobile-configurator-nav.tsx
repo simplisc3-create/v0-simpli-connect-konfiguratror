@@ -211,40 +211,41 @@ export function MobileConfiguratorNav({
                   ) : null}
 
                   <div className="grid grid-cols-3 gap-2">
-                    {moduleTypes.map((moduleType) => {
-                      const isAvailable = getModuleAvailability(moduleType.id)
+                    {moduleTypes
+                      .filter((moduleType) => getModuleAvailability(moduleType.id))
+                      .map((moduleType) => {
+                        const isAvailable = getModuleAvailability(moduleType.id)
 
-                      return (
-                        <button
-                          key={moduleType.id}
-                          onClick={() => {
-                            if (isAvailable) {
-                              onSelectTool(selectedTool === moduleType.id ? null : moduleType.id)
-                              setActiveTab(null)
-                            }
-                          }}
-                          disabled={!isAvailable}
-                          className={cn(
-                            "flex flex-col items-center gap-1 rounded-xl p-3 transition-all",
-                            !isAvailable && "opacity-30",
-                            selectedTool === moduleType.id
-                              ? "bg-teal-600 text-white ring-2 ring-teal-400"
-                              : isAvailable
-                                ? "bg-neutral-800 text-neutral-200 active:bg-neutral-700"
-                                : "bg-neutral-800/50 text-neutral-500",
-                          )}
-                        >
-                          <div className="h-12 w-16 flex items-center justify-center">
-                            <ModulePreview3D
-                              moduleType={moduleType.id as ModuleType}
-                              width={widthFilter === "all" ? 80 : widthFilter}
-                              color={selectedColor}
-                            />
-                          </div>
-                          <span className="text-[10px] font-medium leading-tight text-center">{moduleType.label}</span>
-                        </button>
-                      )
-                    })}
+                        return (
+                          <button
+                            key={moduleType.id}
+                            onClick={() => {
+                              if (isAvailable) {
+                                onSelectTool(selectedTool === moduleType.id ? null : moduleType.id)
+                                setActiveTab(null)
+                              }
+                            }}
+                            disabled={!isAvailable}
+                            className={cn(
+                              "flex flex-col items-center gap-1 rounded-xl p-3 transition-all",
+                              selectedTool === moduleType.id
+                                ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                                : "bg-neutral-800 text-neutral-200 active:bg-neutral-700",
+                            )}
+                          >
+                            <div className="h-12 w-16 flex items-center justify-center">
+                              <ModulePreview3D
+                                moduleType={moduleType.id as ModuleType}
+                                width={widthFilter === "all" ? 80 : widthFilter}
+                                color={selectedColor}
+                              />
+                            </div>
+                            <span className="text-[10px] font-medium leading-tight text-center">
+                              {moduleType.label}
+                            </span>
+                          </button>
+                        )
+                      })}
                   </div>
                 </div>
               )}

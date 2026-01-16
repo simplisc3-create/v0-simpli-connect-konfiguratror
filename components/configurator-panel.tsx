@@ -432,50 +432,42 @@ export function ConfiguratorPanel({
             <p className="mb-3 rounded-xl bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
               Module für {widthFilter}cm werden angezeigt
             </p>
-          ) : !allModulesAvailable && usedWidths.length > 0 ? (
-            <p className="mb-3 rounded-xl bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
-              {usedWidths.length === 1 ? (
-                <>Module für {usedWidths[0] === 75 ? "80" : "40"}cm verfügbar</>
-              ) : (
-                <>40cm und 80cm Module verfügbar</>
-              )}
-            </p>
           ) : null}
 
           <div className="grid grid-cols-4 gap-2">
-            {moduleTypes.map((module) => {
-              const isAvailable = getModuleAvailability(module.id)
-
-              return (
-                <button
-                  key={module.id}
-                  className={cn(
-                    "group relative flex flex-col items-center justify-center rounded-xl p-2 transition-all border-2 cursor-pointer",
-                    selectedTool === module.id
-                      ? "bg-teal-600/30 border-teal-400 text-teal-300"
-                      : isAvailable
-                        ? "bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:border-neutral-500"
-                        : "bg-neutral-800/50 border-neutral-700/50 text-neutral-500 opacity-40 cursor-not-allowed",
-                  )}
-                  onClick={() => isAvailable && onSelectTool(module.id)}
-                  title={!isAvailable ? `${module.label} ist für die gewählte Breite nicht verfügbar` : module.label}
-                >
-                  <div className="h-12 w-16 flex items-center justify-center">
-                    <ModulePreview3D
-                      moduleType={module.id as ModuleType}
-                      width={widthFilter === "all" ? 80 : widthFilter}
-                      color={selectedColor}
-                    />
-                  </div>
-                  <span className="text-[8px] font-medium leading-tight text-center line-clamp-1">
-                    {module.shortLabel}
-                  </span>
-                </button>
-              )
-            })}
+            {moduleTypes
+              .filter((module) => getModuleAvailability(module.id))
+              .map((module) => {
+                return (
+                  <button
+                    key={module.id}
+                    className={cn(
+                      "group relative flex flex-col items-center justify-center rounded-xl p-2 transition-all border-2 cursor-pointer",
+                      selectedTool === module.id
+                        ? "bg-teal-600/30 border-teal-400 text-teal-300"
+                        : "bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:border-neutral-500",
+                    )}
+                    onClick={() => onSelectTool(module.id)}
+                    title={module.label}
+                  >
+                    <div className="h-12 w-16 flex items-center justify-center">
+                      <ModulePreview3D
+                        moduleType={module.id as ModuleType}
+                        width={widthFilter === "all" ? 80 : widthFilter}
+                        color={selectedColor}
+                      />
+                    </div>
+                    <span className="text-[8px] font-medium leading-tight text-center line-clamp-1">
+                      {module.shortLabel}
+                    </span>
+                  </button>
+                )
+              })}
           </div>
           <p className="mt-3 text-[10px] text-neutral-500">
-            Ausgegraute Module sind für die gewählte Breite nicht verfügbar
+            {widthFilter !== "all"
+              ? `Nur ${widthFilter}cm Module werden angezeigt`
+              : "Alle verfügbaren Module werden angezeigt"}
           </p>
 
           <div className="mt-4 pt-4 border-t border-neutral-700">
