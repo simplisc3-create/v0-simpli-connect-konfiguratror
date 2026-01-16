@@ -1242,7 +1242,7 @@ export function ShelfConfigurator({
 
     // Count horizontal panels (floor/ceiling) per cell
     for (const { cell, row, col } of filledCells) {
-      const cellColor = cell.color === "black" ? "schwarz" : cell.color || "weiss"
+      const cellColor = cell.color || "weiss"
       const widthCm =
         config.columnWidths[col] === 75 ? 80 : config.columnWidths[col] === 38 ? 40 : config.columnWidths[col]
       // Check if the cell is the bottom-most in its column or if the cell below is empty/ghost
@@ -1285,13 +1285,11 @@ export function ShelfConfigurator({
 
       // Count side wall panels (always 40cm)
       const modulesWithSideWalls = [
-        "mit-rueckwand",
-        "ohne-rueckwand",
+        "mit-tueren",
         "mit-klapptuer",
         "mit-klapptuer-oben",
-        "mit-einzelschublade",
-        "mit-tueren",
-        "mit-doppelschublade",
+        "mit-rueckwand",
+        "ohne-rueckwand",
         "abschliessbar",
         "abschliessbare-tueren",
         "abschliessbar-links",
@@ -1307,6 +1305,24 @@ export function ShelfConfigurator({
         "mit-doppelschublade",
         "mit-einzelschublade",
       ]
+      // Modules with Funktionswand only on LEFT side (hinge/mechanism on left)
+      const modulesWithFunktionswandLeft = [
+        "mit-tuere-links",
+        "abschliessbar-rechts", // Lock is right, so hinge/Funktionswand is LEFT
+      ]
+      // Modules with Funktionswand only on RIGHT side (hinge/mechanism on right)
+      const modulesWithFunktionswandRight = [
+        "mit-tuere-rechts",
+        "abschliessbar-links", // Lock is left, so hinge/Funktionswand is RIGHT
+      ]
+
+      // Helper to check if module has Funktionswand on a specific side
+      const hasFunktionswandOnSide = (moduleType: string, side: "left" | "right"): boolean => {
+        if (modulesWithFunktionswandBothSides.includes(moduleType)) return true
+        if (side === "left") return modulesWithFunktionswandLeft.includes(moduleType)
+        if (side === "right") return modulesWithFunktionswandRight.includes(moduleType)
+        return false
+      }
 
       if (modulesWithSideWalls.includes(cell.type)) {
         // 2 side walls per module, check for shared walls with neighbors
@@ -1314,37 +1330,36 @@ export function ShelfConfigurator({
         const leftNeighbor = filledCells.find((c) => c.col === col - 1 && c.row === row)
         const rightNeighbor = filledCells.find((c) => c.col === col + 1 && c.row === row)
 
-        const thisHasFunktionswand = modulesWithFunktionswandBothSides.includes(cell.type)
-        const leftHasFunktionswand = leftNeighbor && modulesWithFunktionswandBothSides.includes(leftNeighbor.cell.type)
-        const rightHasFunktionswand =
-          rightNeighbor && modulesWithFunktionswandBothSides.includes(rightNeighbor.cell.type)
+        const thisHasFunktionswandLeft = hasFunktionswandOnSide(cell.type, "left")
+        const thisHasFunktionswandRight = hasFunktionswandOnSide(cell.type, "right")
+        const leftNeighborHasFunktionswandRight =
+          leftNeighbor && hasFunktionswandOnSide(leftNeighbor.cell.type, "right")
+        const rightNeighborHasFunktionswandLeft =
+          rightNeighbor && hasFunktionswandOnSide(rightNeighbor.cell.type, "left")
 
         // LEFT side wall logic
         if (!leftNeighbor || !modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
           // No left neighbor with side walls - count this wall
           sideWalls += 1
         } else if (leftNeighbor && modulesWithSideWalls.includes(leftNeighbor.cell.type)) {
-          // Left neighbor has side walls - check if both have Funktionswand
-          if (thisHasFunktionswand && leftHasFunktionswand) {
-            // Both have Funktionswand - no panel needed, Funktionswände share (left module owns it)
+          // Left neighbor has side walls - check if BOTH have Funktionswand on shared side
+          if (thisHasFunktionswandLeft && leftNeighborHasFunktionswandRight) {
+            // Both have Funktionswand on shared side - no panel needed
           } else {
             // At least one doesn't have Funktionswand - left module owns the shared panel
           }
         }
 
-        // RIGHT side wall logic
-        if (!rightNeighbor) {
-          // No right neighbor - count outer wall
+        // RIGHT side wall logic - this module owns the right wall
+        if (!rightNeighbor || !modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
+          // No right neighbor with side walls - count this wall
           sideWalls += 1
-        } else if (!modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
-          // Right neighbor doesn't have side walls - count this wall
-          sideWalls += 1
-        } else {
-          // Right neighbor has side walls - check if both have Funktionswand
-          if (thisHasFunktionswand && rightHasFunktionswand) {
-            // Both have Funktionswand - no panel needed at shared wall, THIS module owns it but Funktionswände share
+        } else if (rightNeighbor && modulesWithSideWalls.includes(rightNeighbor.cell.type)) {
+          // Right neighbor has side walls - check if BOTH have Funktionswand on shared side
+          if (thisHasFunktionswandRight && rightNeighborHasFunktionswandLeft) {
+            // Both have Funktionswand on shared side - no panel needed
           } else {
-            // At least one doesn't have Funktionswand - need a panel, THIS module owns it
+            // At least one doesn't have Funktionswand - this module owns the shared panel
             sideWalls += 1
           }
         }
