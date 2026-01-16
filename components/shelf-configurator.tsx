@@ -1769,12 +1769,12 @@ export function ShelfConfigurator({
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
           {showVideoPreview && presetYoutubeId && (
-            <div className="absolute top-20 left-4 z-50 w-48 h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
+            <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-50 w-32 sm:w-48 h-20 sm:h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
               <button
                 onClick={() => setShowVideoPreview(false)}
-                className="absolute top-1 right-1 z-10 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
+                className="absolute top-1 right-1 z-10 w-5 h-5 sm:w-6 sm:h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <iframe
                 src={`https://www.youtube.com/embed/${presetYoutubeId}?autoplay=1&mute=1&loop=1&playlist=${presetYoutubeId}&controls=0&showinfo=0&rel=0&modestbranding=1`}
@@ -1849,41 +1849,42 @@ export function ShelfConfigurator({
             />
           </Canvas>
 
-          <div className="absolute right-4 top-4 flex gap-2 mx-0 px-0 py-0">
+          <div className="absolute right-2 sm:right-4 top-2 sm:top-4 flex gap-1.5 sm:gap-2">
             <Button
               variant="outline"
               size="icon"
               onClick={undo}
               disabled={!canUndo}
-              className="bg-black/70 border-neutral-700 hover:bg-black/90 disabled:opacity-30"
+              className="h-9 w-9 sm:h-10 sm:w-10 bg-black/70 border-neutral-700 hover:bg-black/90 disabled:opacity-30"
               title="Rückgängig (Undo)"
             >
-              <Undo2 className="h-5 w-5 text-white" />
+              <Undo2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={redo}
               disabled={!canRedo}
-              className="bg-black/70 border-neutral-700 hover:bg-black/90 disabled:opacity-30"
+              className="h-9 w-9 sm:h-10 sm:w-10 bg-black/70 border-neutral-700 hover:bg-black/90 disabled:opacity-30"
               title="Wiederholen (Redo)"
             >
-              <Redo2 className="h-5 w-5 text-white" />
+              <Redo2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={reset}
-              className="bg-black/70 border-neutral-700 hover:bg-black/90 hover:border-red-500"
+              className="h-9 w-9 sm:h-10 sm:w-10 bg-black/70 border-neutral-700 hover:bg-black/90 hover:border-red-500"
               title="Zurücksetzen (Reset)"
             >
-              <RotateCcw className="h-5 w-5 text-white" />
+              <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </Button>
-            {/* Added Help Bot Button */}
-            <ConfiguratorHelpBot />
+            <div className="hidden sm:block">
+              <ConfiguratorHelpBot />
+            </div>
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg bg-black/70 px-4 py-2 text-sm text-neutral-300">
+          <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg bg-black/70 px-3 sm:px-4 py-2 text-xs sm:text-sm text-neutral-300 hidden md:block">
             {selectedTool ? (
               <span>
                 Ausgewählt:{" "}

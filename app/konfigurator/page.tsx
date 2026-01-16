@@ -2,15 +2,18 @@ import { ShelfConfigurator } from "@/components/shelf-configurator"
 
 const presets = {
   wohnzimmer: {
-    // 4 stacked white 80cm modules with back panels (mit-rueckwand) in 1 column
     columns: 1,
     rows: 4,
     columnWidths: [75] as (75 | 38)[],
     rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
+      // Row 0 = bottom (floor level)
       [{ id: "cell-0-0", type: "mit-rueckwand" as const, row: 0, col: 0, color: "weiss" as const }],
+      // Row 1 = second from bottom
       [{ id: "cell-1-0", type: "mit-rueckwand" as const, row: 1, col: 0, color: "weiss" as const }],
+      // Row 2 = third from bottom
       [{ id: "cell-2-0", type: "mit-rueckwand" as const, row: 2, col: 0, color: "weiss" as const }],
+      // Row 3 = top
       [{ id: "cell-3-0", type: "mit-rueckwand" as const, row: 3, col: 0, color: "weiss" as const }],
     ],
     youtubeId: "hUbkjGIyy2E",
@@ -21,10 +24,12 @@ const presets = {
     columnWidths: [75, 75] as (75 | 38)[],
     rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
+      // Row 0 = bottom (floor level)
       [
         { id: "cell-0-0", type: "mit-rueckwand" as const, row: 0, col: 0, color: "gruen" as const },
         { id: "cell-0-1", type: "mit-rueckwand" as const, row: 0, col: 1, color: "gruen" as const },
       ],
+      // Row 1 = top
       [
         { id: "cell-1-0", type: "mit-rueckwand" as const, row: 1, col: 0, color: "gruen" as const },
         { id: "cell-1-1", type: "mit-rueckwand" as const, row: 1, col: 1, color: "gruen" as const },
@@ -33,16 +38,17 @@ const presets = {
     youtubeId: "ffjWvF61tJg",
   },
   homeoffice: {
-    // 4 compartments with blue drawers (2x2 grid)
     columns: 2,
     rows: 2,
     columnWidths: [75, 75] as (75 | 38)[],
     rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
+      // Row 0 = bottom (floor level)
       [
         { id: "cell-0-0", type: "mit-doppelschublade" as const, row: 0, col: 0, color: "blau" as const },
         { id: "cell-0-1", type: "mit-doppelschublade" as const, row: 0, col: 1, color: "blau" as const },
       ],
+      // Row 1 = top
       [
         { id: "cell-1-0", type: "mit-doppelschublade" as const, row: 1, col: 0, color: "blau" as const },
         { id: "cell-1-1", type: "mit-doppelschublade" as const, row: 1, col: 1, color: "blau" as const },

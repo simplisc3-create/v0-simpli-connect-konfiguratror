@@ -40,42 +40,37 @@ export default function Home() {
     <main className="min-h-screen bg-white">
       <SiteHeader transparent />
 
-      <section className="relative h-screen w-full overflow-hidden">
+      <section className="relative h-[100dvh] w-full overflow-hidden">
         <div className="absolute inset-0 z-0">
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
             <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/0108%281%29-pS6CfKhfSUB0VKDFJvOzkgxn7AYWh3.mov" type="video/quicktime" />
             <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/0108%281%29-pS6CfKhfSUB0VKDFJvOzkgxn7AYWh3.mov" type="video/mp4" />
-            {/* Fallback image if video doesn't load */}
             <img
               src="/modern-chrome-modular-shelf-system-white-backgroun.jpg"
               alt="Simpli Connect Regalsystem"
               className="w-full h-full object-cover"
             />
           </video>
-          {/* Dark overlay for text readability */}
           <div className="absolute inset-0 bg-black/30" />
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 h-full flex flex-col justify-between px-6 pt-44 pb-24">
-          {/* Main Content - Top left aligned, above the shelf */}
-          <div className="max-w-7xl mx-auto w-full py-[-0px] py-[-60px] py-[-30px]">
-            <h1 className="text-7xl md:text-8xl font-bold text-white leading-none tracking-tight my-[-70px] mx-20 text-center lg:text-9xl px-3.5 py-[-8px] py-[-px] py-[-3px] py-8">
+        {/* Hero Content - optimized for mobile */}
+        <div className="relative z-10 h-full flex flex-col justify-between px-4 sm:px-6 pt-24 sm:pt-44 pb-20 sm:pb-24">
+          {/* Main Content */}
+          <div className="max-w-7xl mx-auto w-full flex-1 flex items-center justify-center">
+            <h1 className="text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-white leading-none tracking-tight text-center px-2">
               {activeCollection.headline}
             </h1>
           </div>
 
-          {/* Spacer to push selector to bottom */}
-          <div className="flex-1" />
-
-          {/* Collection Selector - Bottom center */}
+          {/* Collection Selector - optimized for mobile */}
           <div className="max-w-7xl mx-auto w-full flex justify-center">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full p-1.5 py-[-6px] py-[-36px] py-[-20px] py-[-36px] py-[-px] py-[-6px] py-[-16px] py-[-8px] py-0">
+            <div className="inline-flex items-center gap-1 sm:gap-2 bg-white/20 backdrop-blur-md rounded-full p-1 sm:p-1.5">
               {collections.map((collection) => (
                 <button
                   key={collection.id}
                   onClick={() => setActiveCollection(collection)}
-                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 ${
+                  className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
                     activeCollection.id === collection.id
                       ? "bg-white text-black shadow-lg"
                       : "text-white hover:bg-white/10"
@@ -88,44 +83,44 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 animate-bounce">
+        {/* Scroll indicator - hidden on very small screens */}
+        <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 animate-bounce hidden sm:block">
           <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center pt-2">
             <div className="w-1.5 h-3 bg-white/70 rounded-full" />
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-6 bg-gray-50">
+      {/* Features Section - optimized grid for mobile */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 py-[-10px]">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Warum Simpli Connect?</h2>
-            <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Warum Simpli Connect?</h2>
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base text-gray-600 max-w-2xl mx-auto px-4">
               Unser modulares System vereint deutsches Qualitätshandwerk mit zeitlosem Design.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-8">
             <FeatureCard
-              icon={<Box className="w-6 h-6" />}
+              icon={<Box className="w-5 h-5 sm:w-6 sm:h-6" />}
               title="Modulares System"
               description="Kombiniere Module nach deinen Wünschen. Erweitere jederzeit."
               bgColor="bg-yellow-400"
             />
             <FeatureCard
-              icon={<Palette className="w-6 h-6" />}
+              icon={<Palette className="w-5 h-5 sm:w-6 sm:h-6" />}
               title="Individuelle Farben"
               description="Wähle aus 6 Sonderfarben oder klassischem Weiß und Schwarz."
               bgColor="bg-red-500"
             />
             <FeatureCard
-              icon={<Truck className="w-6 h-6" />}
+              icon={<Truck className="w-5 h-5 sm:w-6 sm:h-6" />}
               title="Schnelle Lieferung"
               description="Versandfertig in 5-7 Werktagen. Kostenlos ab 500€."
               bgColor="bg-green-500"
             />
             <FeatureCard
-              icon={<Shield className="w-6 h-6" />}
+              icon={<Shield className="w-5 h-5 sm:w-6 sm:h-6" />}
               title="Premium Qualität"
               description="Robuste Chromrahmen und hochwertige Materialien."
               bgColor="bg-orange-500"
@@ -134,106 +129,111 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Product Preview Section */}
-      <section className="py-20 px-6">
+      {/* Product Preview Section - optimized for mobile */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 sm:mb-12 gap-4">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Bestseller</h2>
-              <p className="mt-2 text-gray-600">Lass dich von unseren Bestsellern inspirieren.</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Bestseller</h2>
+              <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
+                Lass dich von unseren Bestsellern inspirieren.
+              </p>
             </div>
-            <Link
-              href="/shop"
-              className="hidden md:flex items-center gap-2 text-sm font-medium hover:gap-3 transition-all"
-            >
+            <Link href="/shop" className="flex items-center gap-2 text-sm font-medium hover:gap-3 transition-all">
               Alle ansehen <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <ProductCard
-              youtubeId="ffjWvF61tJg"
-              videoCrop={true}
-              title="Starter Regal"
-              description="4 Fächer, perfekt für den Einstieg"
-              price="ab 399€"
-              href="/konfigurator?preset=starter"
-              badge="NEU"
-              hoverMessage="selbst konfigurieren"
-              cartItems={[
-                { id: "SIM001", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
-                { id: "SIM001-2", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
-                { id: "SIM001-3", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
-                { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM010", name: "Flächenset 40 weiß grün", artNr: "SIM010-green", price: 15.0 },
-                { id: "SIM010-2", name: "Flächenset 40 weiß grün", artNr: "SIM010-green", price: 15.0 },
-                { id: "SIM011", name: "Flächenset 80 weiß grün", artNr: "SIM011-green", price: 22.0 },
-                { id: "SIM011-2", name: "Flächenset 80 weiß grün", artNr: "SIM011-green", price: 22.0 },
-              ]}
-            />
-            <ProductCard
-              image="/medium-modular-shelf-system-4-compartments-chrome-.jpg"
-              youtubeId="gBCkDel4Jlc"
-              title="Home Office"
-              description="4 Fächer mit Schubladen"
-              price="ab 599€"
-              href="/konfigurator?preset=homeoffice"
-              badge="NEU"
-              hoverMessage="selbst konfigurieren"
-              cartItems={[
-                { id: "SIM002", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
-                { id: "SIM002-2", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
-                { id: "SIM002-3", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
-                { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM018-blau", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
-                { id: "SIM018-blau-2", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
-                { id: "SIM018-blau-3", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
-                { id: "SIM018-blau-4", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
-              ]}
-            />
-            <ProductCard
-              image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
-              youtubeId="hUbkjGIyy2E"
-              videoCrop={false}
-              title="Wohnzimmer Set"
-              description="4 Fächer, individuell gestaltbar"
-              price="ab 899€"
-              href="/konfigurator?preset=wohnzimmer"
-              badge="NEU"
-              hoverMessage="selbst konfigurieren"
-              cartItems={[
-                { id: "SIM001", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
-                { id: "SIM001-2", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
-                { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
-                { id: "SIM010", name: "Flächenset 40 weiß", artNr: "SIM010", price: 15.0 },
-                { id: "SIM011", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
-                { id: "SIM011-2", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
-                { id: "SIM011-3", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
-                { id: "SIM011-4", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
-              ]}
-            />
+          <div className="flex overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:gap-8 snap-x snap-mandatory sm:snap-none scrollbar-hide">
+            <div className="flex-shrink-0 w-[280px] sm:w-auto mr-4 sm:mr-0 snap-start">
+              <ProductCard
+                youtubeId="ffjWvF61tJg"
+                videoCrop={true}
+                title="Starter Regal"
+                description="4 Fächer, perfekt für den Einstieg"
+                price="ab 399€"
+                href="/konfigurator?preset=starter"
+                badge="NEU"
+                hoverMessage="selbst konfigurieren"
+                cartItems={[
+                  { id: "SIM001", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                  { id: "SIM001-2", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                  { id: "SIM001-3", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                  { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM010", name: "Flächenset 40 weiß grün", artNr: "SIM010-green", price: 15.0 },
+                  { id: "SIM010-2", name: "Flächenset 40 weiß grün", artNr: "SIM010-green", price: 15.0 },
+                  { id: "SIM011", name: "Flächenset 80 weiß grün", artNr: "SIM011-green", price: 22.0 },
+                  { id: "SIM011-2", name: "Flächenset 80 weiß grün", artNr: "SIM011-green", price: 22.0 },
+                ]}
+              />
+            </div>
+            <div className="flex-shrink-0 w-[280px] sm:w-auto mr-4 sm:mr-0 snap-start">
+              <ProductCard
+                image="/medium-modular-shelf-system-4-compartments-chrome-.jpg"
+                youtubeId="gBCkDel4Jlc"
+                title="Home Office"
+                description="4 Fächer mit Schubladen"
+                price="ab 599€"
+                href="/konfigurator?preset=homeoffice"
+                badge="NEU"
+                hoverMessage="selbst konfigurieren"
+                cartItems={[
+                  { id: "SIM002", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
+                  { id: "SIM002-2", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
+                  { id: "SIM002-3", name: "Leiter 80", artNr: "SIM002", price: 20.5 },
+                  { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM018-blau", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+                  { id: "SIM018-blau-2", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+                  { id: "SIM018-blau-3", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+                  { id: "SIM018-blau-4", name: "Doppelschublade blau", artNr: "SIM018-blue", price: 85.0 },
+                ]}
+              />
+            </div>
+            <div className="flex-shrink-0 w-[280px] sm:w-auto snap-start">
+              <ProductCard
+                image="/large-modular-wall-shelf-system-chrome-frame-color.jpg"
+                youtubeId="hUbkjGIyy2E"
+                videoCrop={false}
+                title="Wohnzimmer Set"
+                description="4 Fächer, individuell gestaltbar"
+                price="ab 899€"
+                href="/konfigurator?preset=wohnzimmer"
+                badge="NEU"
+                hoverMessage="selbst konfigurieren"
+                cartItems={[
+                  { id: "SIM001", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                  { id: "SIM001-2", name: "Leiter 40", artNr: "SIM001", price: 13.5 },
+                  { id: "SIM007", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-2", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-3", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM007-4", name: "Stangenset 80", artNr: "SIM007", price: 12.0 },
+                  { id: "SIM010", name: "Flächenset 40 weiß", artNr: "SIM010", price: 15.0 },
+                  { id: "SIM011", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+                  { id: "SIM011-2", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+                  { id: "SIM011-3", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+                  { id: "SIM011-4", name: "Flächenset 80 weiß", artNr: "SIM011", price: 22.0 },
+                ]}
+              />
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-black text-white">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 bg-black text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold">Gestalte dein eigenes Regal</h2>
-          <p className="mt-4 text-gray-400 max-w-xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Gestalte dein eigenes Regal</h2>
+          <p className="mt-3 sm:mt-4 text-sm sm:text-base text-gray-400 max-w-xl mx-auto px-4">
             Mit unserem 3D-Konfigurator kannst du dein Traumregal in Echtzeit zusammenstellen. Wähle Größe, Module und
             Farben nach deinen Wünschen.
           </p>
           <Link href="/konfigurator">
-            <Button size="lg" className="mt-8 bg-white text-black hover:bg-gray-100 gap-2">
+            <Button size="lg" className="mt-6 sm:mt-8 bg-white text-black hover:bg-gray-100 gap-2">
               Konfigurator starten
               <ArrowRight className="w-4 h-4" />
             </Button>
@@ -241,19 +241,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-gray-100">
+      {/* Footer - optimized for mobile */}
+      <footer className="py-8 sm:py-12 px-4 sm:px-6 border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="font-bold text-lg tracking-widest uppercase">Simpli Connect</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <span className="font-bold text-base sm:text-lg tracking-widest uppercase">Simpli Connect</span>
               </div>
-              <p className="text-sm text-gray-600">Modulare Regalsysteme aus Deutschland. Qualität seit 2020.</p>
+              <p className="text-xs sm:text-sm text-gray-600">
+                Modulare Regalsysteme aus Deutschland. Qualität seit 2020.
+              </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Produkte</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
+              <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Produkte</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                 <li>
                   <Link href="/shop" className="hover:text-black transition">
                     Shop
@@ -272,8 +274,8 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Unternehmen</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
+              <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Unternehmen</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                 <li>
                   <Link href="/ueber-uns" className="hover:text-black transition">
                     Über uns
@@ -291,9 +293,9 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">Rechtliches</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
+            <div className="col-span-2 md:col-span-1">
+              <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Rechtliches</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
                 <li>
                   <Link href="/impressum" className="hover:text-black transition">
                     Impressum
@@ -312,7 +314,7 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-gray-100 text-center text-sm text-gray-500">
+          <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-100 text-center text-xs sm:text-sm text-gray-500">
             © 2026 Simpli Connect. Alle Rechte vorbehalten.
           </div>
         </div>
@@ -329,11 +331,13 @@ function FeatureCard({
 }: { icon: React.ReactNode; title: string; description: string; bgColor?: string }) {
   return (
     <div
-      className={`${bgColor || "bg-white"} rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition`}
+      className={`${bgColor || "bg-white"} rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition`}
     >
-      <div className="w-12 h-12 bg-white/80 rounded-xl flex items-center justify-center mb-4">{icon}</div>
-      <h3 className={`font-semibold text-lg mb-2 ${bgColor ? "text-white" : ""}`}>{title}</h3>
-      <p className={`text-sm ${bgColor ? "text-white/90" : "text-gray-600"}`}>{description}</p>
+      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/80 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+        {icon}
+      </div>
+      <h3 className={`font-semibold text-sm sm:text-lg mb-1 sm:mb-2 ${bgColor ? "text-white" : ""}`}>{title}</h3>
+      <p className={`text-xs sm:text-sm ${bgColor ? "text-white/90" : "text-gray-600"}`}>{description}</p>
     </div>
   )
 }
@@ -381,28 +385,27 @@ function ProductCard({
 
   const CardContent = () => (
     <>
-      <div className="aspect-square bg-gray-700 rounded-2xl overflow-hidden mb-4 relative group">
+      <div className="aspect-square bg-gray-700 rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 relative group">
         {badge && (
-          <div className="absolute top-4 left-4 z-40 animate-pulse hover:animate-none hover:scale-110 transition-transform cursor-pointer">
-            <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg hover:bg-red-700 transition-colors">
+          <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-40 animate-pulse hover:animate-none hover:scale-110 transition-transform cursor-pointer">
+            <span className="bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg hover:bg-red-700 transition-colors">
               {badge}
             </span>
           </div>
         )}
         {hoverMessage && (
-          <div className="absolute inset-0 z-30 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-4">
-            <span className="text-white text-lg font-semibold px-6 py-3 border-2 border-white rounded-full hover:bg-white hover:text-black transition-colors">
+          <div className="absolute inset-0 z-30 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-2 sm:gap-4">
+            <span className="text-white text-sm sm:text-lg font-semibold px-4 sm:px-6 py-2 sm:py-3 border-2 border-white rounded-full hover:bg-white hover:text-black transition-colors">
               {hoverMessage}
             </span>
-            {/* Warenkorb button */}
             {cartItems && cartItems.length > 0 && (
               <button
                 onClick={handleAddToCart}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all ${
                   addedToCart ? "bg-green-500 text-white" : "bg-white text-black hover:bg-gray-200"
                 }`}
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                 {addedToCart ? "Hinzugefügt!" : "Warenkorb"}
               </button>
             )}
@@ -437,9 +440,9 @@ function ProductCard({
           <ImageUpload onImageUpload={setUploadedImage} fallbackImage={displayImage} alt={title} />
         )}
       </div>
-      <h3 className="font-semibold text-lg">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
-      <p className="mt-2 font-semibold text-black">{price}</p>
+      <h3 className="font-semibold text-base sm:text-lg">{title}</h3>
+      <p className="text-gray-600 text-xs sm:text-sm">{description}</p>
+      <p className="mt-1 sm:mt-2 font-semibold text-black text-sm sm:text-base">{price}</p>
     </>
   )
 
