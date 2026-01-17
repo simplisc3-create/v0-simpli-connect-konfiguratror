@@ -133,7 +133,7 @@ const products = [
     description: "Rückwand Edelstahl",
     price: 35.0,
     category: "zubehoer",
-    image: "/images/product-shot-all-white-20-2814-29.jpeg", // Updated to new blob storage URL with mounting diagram
+    image: "/images/product-shot-all-white-20-2814-29.jpeg",
   },
   {
     id: "schloss-typ-a",
