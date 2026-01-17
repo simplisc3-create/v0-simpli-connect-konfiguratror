@@ -106,7 +106,7 @@ const products = [
     description: "Schubladenmodul mit 2 Schubladen",
     price: 85.0,
     category: "module",
-    image: "/images/schublade.jpg",
+    image: "/images/doppelschublade-weiss.jpg", // updated image to new drawer photo
   },
   {
     id: "tuer-40-weiss",
@@ -133,7 +133,7 @@ const products = [
     description: "Rückwand Edelstahl",
     price: 35.0,
     category: "zubehoer",
-    image: "/images/product-shot-all-white-20-2814-29.jpeg",
+    image: "/stainless-steel-back-panel.jpg",
   },
   {
     id: "schloss-typ-a",
