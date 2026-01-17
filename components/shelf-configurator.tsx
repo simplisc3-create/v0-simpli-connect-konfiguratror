@@ -8,7 +8,7 @@ import type { ToolMode } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
 import { ConfiguratorHelpBot } from "./configurator-help-bot"
-import { Undo2, Redo2, RotateCcw, AlertTriangle, X } from "lucide-react"
+import { Undo2, Redo2, RotateCcw, AlertTriangle, X, Mouse, Move, ZoomIn, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   getSchubladeArtNr,
@@ -1848,6 +1848,42 @@ export function ShelfConfigurator({
               maxDistance={8}
             />
           </Canvas>
+
+          <div className="absolute left-2 sm:left-4 top-2 sm:top-4">
+            {/* Desktop version - always visible */}
+            <div className="hidden sm:block rounded-lg bg-black/70 border border-neutral-700 px-3 py-2 text-xs text-neutral-300">
+              <div className="font-medium text-white mb-1.5">Kamerasteuerung</div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Mouse className="h-3.5 w-3.5 text-teal-400" />
+                  <span>Linke Maustaste: Drehen</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Move className="h-3.5 w-3.5 text-teal-400" />
+                  <span>Rechte Maustaste: Verschieben</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ZoomIn className="h-3.5 w-3.5 text-teal-400" />
+                  <span>Mausrad: Zoomen</span>
+                </div>
+              </div>
+            </div>
+            {/* Mobile version - compact with tooltip */}
+            <div className="sm:hidden">
+              <div className="group relative">
+                <div className="rounded-lg bg-black/70 border border-neutral-700 p-2 cursor-help">
+                  <HelpCircle className="h-5 w-5 text-teal-400" />
+                </div>
+                <div className="absolute left-0 top-full mt-1 hidden group-hover:block group-focus:block z-50 rounded-lg bg-black/90 border border-neutral-700 px-3 py-2 text-xs text-neutral-300 whitespace-nowrap">
+                  <div className="font-medium text-white mb-1.5">Kamerasteuerung</div>
+                  <div className="space-y-1">
+                    <div>1 Finger: Drehen</div>
+                    <div>2 Finger: Verschieben/Zoomen</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="absolute right-2 sm:right-4 top-2 sm:top-4 flex gap-1.5 sm:gap-2">
             <Button
