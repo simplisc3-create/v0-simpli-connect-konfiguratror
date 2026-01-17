@@ -58,8 +58,15 @@ export default function Home() {
         <div className="relative z-10 h-full flex flex-col justify-between px-4 sm:px-6 pt-24 sm:pt-44 pb-20 sm:pb-24">
           {/* Main Content */}
           <div className="max-w-7xl mx-auto w-full flex-1 flex items-start justify-center pt-4 sm:pt-8">
-            <h1 className="text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-white leading-none tracking-tight text-center px-2">
-              {activeCollection.headline}
+            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-white leading-none tracking-tight text-center px-2">
+              {/* Mobile: split into two lines */}
+              <span className="sm:hidden block py-8">
+                Modular
+                <br />
+                Furniture
+              </span>
+              {/* Desktop: keep original dynamic headline */}
+              <span className="hidden sm:inline">{activeCollection.headline}</span>
             </h1>
           </div>
 
