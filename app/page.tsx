@@ -63,15 +63,15 @@ export default function Home() {
               <span className="block sm:hidden text-6xl">
                 {activeCollection.id === "modular" ? (
                   <>
-                    <span className="block py-4">Modular</span>
-                    <span className="block py-3">Furniture</span>
+                    <span className="block py-6">Modular</span>
+                    <span className="block py-0.5">Furniture</span>
                   </>
                 ) : (
                   activeCollection.headline
                 )}
               </span>
               {/* Desktop: Keep original single-line display */}
-              <span className="hidden sm:block text-7xl md:text-8xl lg:text-9xl">{activeCollection.headline}</span>
+              <span className="hidden sm:block text-7xl md:text-8xl lg:text-9xl py-[-60px] py-[-] py-[-80X] py-[-80px] py-[-80px]">{activeCollection.headline}</span>
             </h1>
           </div>
 
