@@ -472,9 +472,9 @@ export function MobileConfiguratorNav({
 
       {/* Selected Tool Indicator (floating) */}
       {selectedTool && (
-        <div className="fixed left-4 top-20 z-40 md:hidden">
-          <div className="flex items-center gap-2 rounded-full bg-teal-600 px-3 py-2 shadow-lg">
-            <div className="h-4 w-4 rounded" style={{ backgroundColor: colorHexMap[selectedColor] }} />
+        <div className="fixed left-14 top-3 z-40 md:hidden">
+          <div className="flex items-center gap-2 rounded-full bg-teal-600 px-3 py-1.5 shadow-lg">
+            <div className="h-3 w-3 rounded" style={{ backgroundColor: colorHexMap[selectedColor] }} />
             <span className="text-xs font-medium text-white">
               {moduleTypes.find((m) => m.id === selectedTool)?.label || selectedTool}
             </span>
