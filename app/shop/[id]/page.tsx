@@ -1,11 +1,12 @@
+import { Button } from "@/components/ui/button"
 import type React from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, ShoppingCart, Package, Ruler, Palette, Hash } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { AddToCartButton } from "./add-to-cart-button"
 
 const products = [
   {
@@ -461,13 +462,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
             {/* Add to Cart */}
             <div className="mt-auto">
-              <Button
-                size="lg"
-                className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-6 text-lg rounded-xl transition-all duration-300 hover:shadow-lg"
-              >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                In den Warenkorb
-              </Button>
+              <AddToCartButton
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  artNr: product.artNr,
+                  price: product.price,
+                  image: product.image || "",
+                }}
+              />
               <p className="text-center text-gray-500 text-sm mt-3">Kostenloser Versand ab 100 €</p>
             </div>
           </div>
