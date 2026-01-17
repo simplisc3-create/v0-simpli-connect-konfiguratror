@@ -20,37 +20,30 @@ const presets = {
   },
   starter: {
     columns: 4,
-    rows: 4,
+    rows: 3,
     columnWidths: [75, 75, 75, 75] as (75 | 38)[],
-    rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
-      // Row 0 = bottom (floor level)
+      // Row 0 = bottom (floor level) - actual modules with ghost cells on sides
       [
         { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
         { id: "cell-0-1", type: "offenes-fach" as const, row: 0, col: 1, color: "gruen" as const },
         { id: "cell-0-2", type: "offenes-fach" as const, row: 0, col: 2, color: "gruen" as const },
         { id: "cell-0-3", type: "ghost" as const, row: 0, col: 3 },
       ],
-      // Row 1 = second level
+      // Row 1 = second level - actual modules with ghost cells on sides
       [
         { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
         { id: "cell-1-1", type: "offenes-fach" as const, row: 1, col: 1, color: "gruen" as const },
         { id: "cell-1-2", type: "offenes-fach" as const, row: 1, col: 2, color: "gruen" as const },
         { id: "cell-1-3", type: "ghost" as const, row: 1, col: 3 },
       ],
-      // Row 2 = third level
+      // Row 2 = top (ghost row for upward expansion)
       [
         { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
-        { id: "cell-2-1", type: "offenes-fach" as const, row: 2, col: 1, color: "gruen" as const },
-        { id: "cell-2-2", type: "offenes-fach" as const, row: 2, col: 2, color: "gruen" as const },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
         { id: "cell-2-3", type: "ghost" as const, row: 2, col: 3 },
-      ],
-      // Row 3 = top (ghost row for expansion)
-      [
-        { id: "cell-3-0", type: "ghost" as const, row: 3, col: 0 },
-        { id: "cell-3-1", type: "ghost" as const, row: 3, col: 1 },
-        { id: "cell-3-2", type: "ghost" as const, row: 3, col: 2 },
-        { id: "cell-3-3", type: "ghost" as const, row: 3, col: 3 },
       ],
     ],
     youtubeId: "ffjWvF61tJg",
