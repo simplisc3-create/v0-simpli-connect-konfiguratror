@@ -1,5 +1,7 @@
 "use client"
 import Link from "next/link"
+import type React from "react"
+
 import Image from "next/image"
 import { useState } from "react"
 import { ShoppingCart, Filter, ChevronDown, Check } from "lucide-react"
@@ -313,7 +315,9 @@ export default function ShopPage() {
 function ProductCard({ product, addItem }: { product: (typeof products)[0]; addItem: any }) {
   const [added, setAdded] = useState(false)
 
-  const handleAdd = () => {
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     addItem({
       id: product.id,
       name: product.name,
@@ -326,36 +330,47 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
   }
 
   return (
-    <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition">
-      <div className="aspect-square overflow-hidden flex items-center justify-center text-black bg-popover opacity-0">
-        
-      </div>
-      <div className="p-4">
-        <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>
-        <h3 className="font-semibold text-gray-900">{product.name}</h3>
-        <p className="text-sm text-gray-600 mt-1">{product.description}</p>
-        <div className="mt-4 flex items-center justify-between">
-          <span className="font-bold text-lg">{product.price.toFixed(2)} €</span>
-          <Button
-            size="sm"
-            variant={added ? "default" : "outline"}
-            className={`gap-1 ${added ? "bg-green-600 hover:bg-green-600" : "bg-transparent"}`}
-            onClick={handleAdd}
-          >
-            {added ? (
-              <>
-                <Check className="w-3 h-3" />
-                Hinzugefügt
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-3 h-3" />
-                Hinzufügen
-              </>
-            )}
-          </Button>
+    <Link href={`/shop/${product.id}`} className="block">
+      <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+        <div className="aspect-square overflow-hidden flex items-center justify-center bg-gray-50 relative">
+          {product.image ? (
+            <Image
+              src={product.image || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-16 h-16 bg-gray-200 rounded-lg" />
+          )}
+        </div>
+        <div className="p-4">
+          <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>
+          <h3 className="font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">{product.name}</h3>
+          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{product.description}</p>
+          <div className="mt-4 flex items-center justify-between">
+            <span className="font-bold text-lg">{product.price.toFixed(2)} €</span>
+            <Button
+              size="sm"
+              variant={added ? "default" : "outline"}
+              className={`gap-1 ${added ? "bg-green-600 hover:bg-green-600" : "bg-transparent hover:bg-gray-100"}`}
+              onClick={handleAdd}
+            >
+              {added ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  Hinzugefügt
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-3 h-3" />
+                  Hinzufügen
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
