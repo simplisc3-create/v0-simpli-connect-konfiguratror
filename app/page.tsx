@@ -58,8 +58,20 @@ export default function Home() {
         <div className="relative z-10 h-full flex flex-col justify-between px-4 sm:px-6 pt-24 sm:pt-44 pb-20 sm:pb-24">
           {/* Main Content */}
           <div className="max-w-7xl mx-auto w-full flex-1 flex items-start justify-center pt-4 sm:pt-8">
-            <h1 className="text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-white leading-none tracking-tight text-center px-2">
-              {activeCollection.headline}
+            <h1 className="font-bold text-white leading-none tracking-tight text-center px-2">
+              {/* Mobile: Show "Modular Furniture" in two lines, bigger */}
+              <span className="block sm:hidden text-6xl">
+                {activeCollection.id === "modular" ? (
+                  <>
+                    <span className="block py-4">Modular</span>
+                    <span className="block py-3">Furniture</span>
+                  </>
+                ) : (
+                  activeCollection.headline
+                )}
+              </span>
+              {/* Desktop: Keep original single-line display */}
+              <span className="hidden sm:block text-7xl md:text-8xl lg:text-9xl">{activeCollection.headline}</span>
             </h1>
           </div>
 
