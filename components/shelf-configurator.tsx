@@ -8,7 +8,7 @@ import type { ToolMode } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
 import { ConfiguratorHelpBot } from "./configurator-help-bot"
-import { Undo2, Redo2, RotateCcw, AlertTriangle, X, Mouse, Move, ZoomIn, HelpCircle } from "lucide-react"
+import { Undo2, Redo2, RotateCcw, AlertTriangle, X, MousePointer2, Move, ZoomIn, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   getSchubladeArtNr,
@@ -1849,37 +1849,37 @@ export function ShelfConfigurator({
             />
           </Canvas>
 
-          <div className="absolute left-2 sm:left-4 top-2 sm:top-4">
-            {/* Desktop version - always visible */}
-            <div className="hidden sm:block rounded-lg bg-black/70 border border-neutral-700 px-3 py-2 text-xs text-neutral-300">
-              <div className="font-medium text-white mb-1.5">Kamerasteuerung</div>
-              <div className="space-y-1">
+          {/* CHANGE: Added camera controls info box in top left corner */}
+          <div className="absolute left-2 sm:left-4 top-2 sm:top-4 z-10">
+            {/* Desktop version - visible info box */}
+            <div className="hidden sm:block bg-black/70 backdrop-blur-sm rounded-lg border border-neutral-700 p-3 text-xs text-white">
+              <div className="font-medium mb-2 text-teal-400">Kamerasteuerung</div>
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Mouse className="h-3.5 w-3.5 text-teal-400" />
-                  <span>Linke Maustaste: Drehen</span>
+                  <MousePointer2 className="h-3.5 w-3.5 text-teal-400" />
+                  <span>Linksklick + Ziehen = Drehen</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Move className="h-3.5 w-3.5 text-teal-400" />
-                  <span>Rechte Maustaste: Verschieben</span>
+                  <span>Rechtsklick + Ziehen = Verschieben</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <ZoomIn className="h-3.5 w-3.5 text-teal-400" />
-                  <span>Mausrad: Zoomen</span>
+                  <span>Mausrad = Zoomen</span>
                 </div>
               </div>
             </div>
-            {/* Mobile version - compact with tooltip */}
-            <div className="sm:hidden">
-              <div className="group relative">
-                <div className="rounded-lg bg-black/70 border border-neutral-700 p-2 cursor-help">
-                  <HelpCircle className="h-5 w-5 text-teal-400" />
-                </div>
-                <div className="absolute left-0 top-full mt-1 hidden group-hover:block group-focus:block z-50 rounded-lg bg-black/90 border border-neutral-700 px-3 py-2 text-xs text-neutral-300 whitespace-nowrap">
-                  <div className="font-medium text-white mb-1.5">Kamerasteuerung</div>
-                  <div className="space-y-1">
-                    <div>1 Finger: Drehen</div>
-                    <div>2 Finger: Verschieben/Zoomen</div>
-                  </div>
+
+            {/* Mobile version - compact help button with tooltip */}
+            <div className="sm:hidden group relative">
+              <div className="bg-black/70 backdrop-blur-sm rounded-lg border border-neutral-700 p-2">
+                <HelpCircle className="h-5 w-5 text-teal-400" />
+              </div>
+              <div className="absolute left-0 top-full mt-1 bg-black/90 backdrop-blur-sm rounded-lg border border-neutral-700 p-3 text-xs text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto min-w-[180px] z-20">
+                <div className="font-medium mb-2 text-teal-400">Kamerasteuerung</div>
+                <div className="space-y-1.5">
+                  <div>1 Finger = Drehen</div>
+                  <div>2 Finger = Verschieben/Zoomen</div>
                 </div>
               </div>
             </div>
