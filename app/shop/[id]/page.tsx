@@ -144,7 +144,7 @@ const products = [
       "Schubladenmodul mit 2 Schubladen - Praktischer Stauraum für Kleinteile. Sanft schließende Vollauszüge.",
     price: 85.0,
     category: "module",
-    image: "/white-double-drawer-module-furniture.jpg",
+    image: "/images/products/doppelschublade-weiss.png",
     width: 40,
     height: 36,
     colors: ["weiss"],
