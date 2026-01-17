@@ -106,7 +106,7 @@ const products = [
     description: "Schubladenmodul mit 2 Schubladen",
     price: 85.0,
     category: "module",
-    image: "/images/doppelschublade-weiss.jpg", // updated image to new drawer photo
+    image: "/images/schublade.jpg",
   },
   {
     id: "tuer-40-weiss",
