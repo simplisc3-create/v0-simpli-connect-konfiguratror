@@ -17,10 +17,19 @@ type GLBModuleProps = {
   col: number
   gridConfig: ShelfConfig
   modelUrl?: string
-  isBottomModule?: boolean // Added prop to indicate if this module is at the bottom of its column
+  isBottomModule?: boolean
 }
 
 const urlCache = new Map<string, string>()
+
+const materialCache = new Map<string, THREE.MeshStandardMaterial>()
+
+function getCachedMaterial(key: string, createMaterial: () => THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+  if (!materialCache.has(key)) {
+    materialCache.set(key, createMaterial())
+  }
+  return materialCache.get(key)!.clone() // Clone to allow per-instance modifications if needed
+}
 
 const GERMAN_TO_ENGLISH_COLOR: Record<string, string> = {
   weiss: "white",
@@ -151,7 +160,6 @@ function isFramePart(
   // Check panel keywords first - panels should NEVER be chrome
   for (const keyword of PANEL_KEYWORDS) {
     if (nameLower.includes(keyword)) {
-      console.log(`[v0] PANEL by keyword "${keyword}": ${meshName}`)
       return false
     }
   }
@@ -159,7 +167,6 @@ function isFramePart(
   // Check frame keywords
   for (const keyword of FRAME_KEYWORDS) {
     if (nameLower.includes(keyword)) {
-      console.log(`[v0] FRAME by keyword "${keyword}": ${meshName}`)
       return true
     }
   }
@@ -169,7 +176,6 @@ function isFramePart(
     if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
       // Only very high metalness = frame part (0.7+ is definitely metal)
       if (mat.metalness > 0.7) {
-        console.log(`[v0] FRAME by material metalness (${mat.metalness.toFixed(2)}): ${meshName}`)
         return true
       }
     }
@@ -186,20 +192,14 @@ function isFramePart(
       const aspectRatio = dims[0] / Math.max(dims[1], 0.001)
       const minDim = Math.min(size.x, size.y, size.z)
 
-      console.log(
-        `[v0] Geometry "${meshName}": dims=[${dims.map((d) => d.toFixed(3)).join(",")}], aspect=${aspectRatio.toFixed(2)}, minDim=${minDim.toFixed(4)}`,
-      )
-
       // This prevents flat panels from being detected as frames
       const isTubeLike = minDim < 0.02 && aspectRatio > 5
       if (isTubeLike) {
-        console.log(`[v0] FRAME by geometry (tube-like): ${meshName}`)
         return true
       }
     }
   }
 
-  console.log(`[v0] PANEL by default: ${meshName}`)
   return false
 }
 
@@ -241,7 +241,6 @@ function isFeetPart(
             meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
 
           if (isSmall) {
-            console.log(`[v0] FEET detected by small black material: ${meshName}`)
             return true
           }
         }
@@ -295,7 +294,7 @@ export const GLBModule = memo(
     col,
     gridConfig,
     modelUrl: explicitModelUrl,
-    isBottomModule = false, // Default to false
+    isBottomModule = false,
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
@@ -334,8 +333,6 @@ export const GLBModule = memo(
             color: "white",
           })
 
-          console.log(`[v0] Fetching GLB: ${cellType}, ${standardWidth}cm, white (will apply ${colorName})`)
-
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
 
@@ -347,11 +344,9 @@ export const GLBModule = memo(
             throw new Error(`Invalid URL: ${data.url}`)
           }
 
-          console.log(`[v0] GLB URL resolved: ${data.url}`)
           urlCache.set(cacheKey, data.url)
           setModelUrl(data.url)
         } catch (err) {
-          console.error(`[v0] GLB fetch error:`, err)
           setError(err instanceof Error ? err.message : "Unknown error")
         }
       }
@@ -397,7 +392,7 @@ export const GLBModule = memo(
     prev.position[2] === next.position[2] &&
     prev.row === next.row &&
     prev.col === next.col &&
-    prev.isBottomModule === next.isBottomModule, // Added to memo comparison
+    prev.isBottomModule === next.isBottomModule,
 )
 
 const LoadedGLBModel = memo(
@@ -408,7 +403,7 @@ const LoadedGLBModel = memo(
     targetColor,
     cellType = "offen",
     row = 0,
-    isBottomModule = false, // Added prop
+    isBottomModule = false,
   }: {
     modelUrl: string
     position: [number, number, number]
@@ -428,8 +423,6 @@ const LoadedGLBModel = memo(
       const boundingBox = new THREE.Box3().setFromObject(scene)
       const center = boundingBox.getCenter(new THREE.Vector3())
 
-      console.log(`[v0] Klapptür offset calculation: center.x=${center.x.toFixed(4)}, center.y=${center.y.toFixed(4)}`)
-
       return {
         xOffset: -center.x,
         yOffset: -center.y,
@@ -446,19 +439,7 @@ const LoadedGLBModel = memo(
       }
       const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS.white
 
-      console.log(
-        `[v0] ===== Processing GLB: ${moduleKey}, color: ${targetColor} -> ${mappedColor}, cellType: ${cellType}, row: ${row} =====`,
-      )
-
       const parentBoundingBox = new THREE.Box3().setFromObject(clone)
-      const size = parentBoundingBox.getSize(new THREE.Vector3())
-      const center = parentBoundingBox.getCenter(new THREE.Vector3())
-      console.log(
-        `[v0] Model bounding box - size: x=${size.x.toFixed(4)}, y=${size.y.toFixed(4)}, z=${size.z.toFixed(4)}`,
-      )
-      console.log(
-        `[v0] Model bounding box - center: x=${center.x.toFixed(4)}, y=${center.y.toFixed(4)}, z=${center.z.toFixed(4)}`,
-      )
 
       let handleMesh: THREE.Mesh | null = null
 
@@ -476,7 +457,6 @@ const LoadedGLBModel = memo(
 
           if (isFeet && !isBottomModule) {
             child.visible = false
-            console.log(`[v0] Hiding feet mesh: ${meshName} (row ${row}, isBottomModule=${isBottomModule})`)
             return
           }
 
@@ -495,21 +475,27 @@ const LoadedGLBModel = memo(
 
           if (child.material) {
             if (isFrame) {
-              child.material = CHROME_MATERIAL.clone()
+              child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL.clone())
             } else {
               const oldMat = child.material as THREE.MeshStandardMaterial
               const texture = oldMat.map || null
               const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
-              child.material = new THREE.MeshStandardMaterial({
-                map: texture,
-                color: finalColor,
-                metalness: 0.08,
-                roughness: 0.5,
-                side: THREE.DoubleSide,
-                shadowSide: THREE.DoubleSide,
-                emissive: new THREE.Color(0, 0, 0),
-                emissiveIntensity: 0,
-              })
+
+              const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
+              child.material = getCachedMaterial(
+                materialKey,
+                () =>
+                  new THREE.MeshStandardMaterial({
+                    map: texture,
+                    color: finalColor,
+                    metalness: 0.08,
+                    roughness: 0.5,
+                    side: THREE.DoubleSide,
+                    shadowSide: THREE.DoubleSide,
+                    emissive: new THREE.Color(0, 0, 0),
+                    emissiveIntensity: 0,
+                  }),
+              )
             }
           }
         }
@@ -519,7 +505,7 @@ const LoadedGLBModel = memo(
     }, [scene, targetColor, moduleKey, cellType, row, isBottomModule])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
-      const BAR_THICKNESS = 0.01 // ~1cm bar thickness (50% of original 2cm)
+      const BAR_THICKNESS = 0.01
       const isSchubladen = cellType === "mit-schubladen"
       const zOffset = isClosedModule(cellType) ? (isSchubladen ? BAR_THICKNESS + 0.01 : BAR_THICKNESS) : 0
       return [position[0] + xOffset, position[1] + yOffset, position[2] + zOffset]

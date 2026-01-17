@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { ArrowRight, Palette, Box, Truck, Shield, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -371,6 +371,32 @@ function ProductCard({
   const addItems = useCartStore((state) => state.addItems)
   const [addedToCart, setAddedToCart] = useState(false)
 
+  const [isVisible, setIsVisible] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!youtubeId) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect() // Only load once
+        }
+      },
+      {
+        rootMargin: "100px", // Start loading 100px before entering viewport
+        threshold: 0.1,
+      },
+    )
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [youtubeId])
+
   const displayImage = uploadedImage || image
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -385,7 +411,10 @@ function ProductCard({
 
   const CardContent = () => (
     <>
-      <div className="aspect-square bg-gray-700 rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 relative group">
+      <div
+        ref={containerRef}
+        className="aspect-square bg-gray-700 rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 relative group"
+      >
         {badge && (
           <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-40 animate-pulse hover:animate-none hover:scale-110 transition-transform cursor-pointer">
             <span className="bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg hover:bg-red-700 transition-colors">
@@ -413,24 +442,34 @@ function ProductCard({
         )}
         {youtubeId ? (
           <div className="absolute inset-0 z-20 overflow-hidden pointer-events-none bg-black">
-            <iframe
-              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              className={`pointer-events-none ${videoCrop ? "absolute top-1/2 left-1/2" : "w-full h-full"}`}
-              style={
-                videoCrop
-                  ? {
-                      border: "none",
-                      width: "300%",
-                      height: "300%",
-                      transform: "translate(-50%, -50%)",
-                    }
-                  : {
-                      border: "none",
-                    }
-              }
-            />
+            {isVisible ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&loop=1&playlist=${youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                loading="lazy"
+                className={`pointer-events-none ${videoCrop ? "absolute top-1/2 left-1/2" : "w-full h-full"}`}
+                style={
+                  videoCrop
+                    ? {
+                        border: "none",
+                        width: "300%",
+                        height: "300%",
+                        transform: "translate(-50%, -50%)",
+                      }
+                    : {
+                        border: "none",
+                      }
+                }
+              />
+            ) : (
+              // Lightweight placeholder while not visible
+              <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                  <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white/50 border-b-8 border-b-transparent ml-1" />
+                </div>
+              </div>
+            )}
           </div>
         ) : video ? (
           <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-20">

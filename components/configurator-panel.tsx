@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import type { ShelfConfig, GridCell, ColorKey } from "./shelf-configurator"
 import { cn } from "@/lib/utils"
 import {
@@ -23,6 +23,7 @@ import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
 import { ModulePreview3D } from "./module-preview-3d"
 import type { ModuleType } from "@/lib/glb-registry"
+import { getModuleLabel, getModuleShortLabel } from "@/lib/module-utils"
 
 export type ToolMode = "select" | "brush" | "eraser"
 
@@ -148,59 +149,20 @@ export function ConfiguratorPanel({
     return hasRealModule ? sum + h : sum
   }, 0)
 
-  const handleCellClick = (row: number, col: number) => {
-    if (toolMode === "eraser") {
-      onClearCell(row, col)
-    } else if (toolMode === "brush" && selectedTool && selectedTool !== "empty") {
-      onPlaceModule(row, col, selectedTool)
-    } else if (selectedTool === "empty") {
-      onClearCell(row, col)
-    } else if (selectedTool) {
-      onPlaceModule(row, col, selectedTool)
-    }
-  }
-
-  const getModuleLabel = (type: GridCell["type"]) => {
-    const labels: Record<GridCell["type"], string> = {
-      empty: "Leer",
-      ghost: "Geisterzelle",
-      "offenes-fach": "Offenes Fach",
-      "ohne-seitenwaende": "Ohne Seitenwände",
-      "ohne-rueckwand": "Ohne Rückwand",
-      "mit-rueckwand": "Mit Rückwand",
-      "mit-tueren": "Mit Türen",
-      "mit-klapptuer": "Mit Klapptür",
-      "mit-klapptuer-oben": "Klapptür (nach oben)",
-      "mit-doppelschublade": "Mit Schubladen",
-      "mit-einzelschublade": "Einzelschublade",
-      "abschliessbare-tueren": "Abschließbar",
-      "mit-tuere-links": "Mit Türe Links",
-      "mit-tuere-rechts": "Mit Türe Rechts",
-      "abschliessbar-links": "Abschließbar Links",
-    }
-    return labels[type] || type
-  }
-
-  const getModuleShortLabel = (type: GridCell["type"]) => {
-    const labels: Record<GridCell["type"], string> = {
-      empty: "",
-      ghost: "",
-      "offenes-fach": "Offen",
-      "ohne-seitenwaende": "o.SW",
-      "ohne-rueckwand": "o.RW",
-      "mit-rueckwand": "m.RW",
-      "mit-tueren": "Türen",
-      "mit-klapptuer": "Klapp",
-      "mit-klapptuer-oben": "Klapp↑",
-      "mit-doppelschublade": "Schubl.",
-      "mit-einzelschublade": "ESchubl.",
-      "abschliessbare-tueren": "Abschl.",
-      "mit-tuere-links": "Türe Links",
-      "mit-tuere-rechts": "Türe Rechts",
-      "abschliessbar-links": "Abschl. Links",
-    }
-    return labels[type] || ""
-  }
+  const handleCellClick = useCallback(
+    (row: number, col: number) => {
+      if (toolMode === "eraser") {
+        onClearCell(row, col)
+      } else if (toolMode === "brush" && selectedTool && selectedTool !== "empty") {
+        onPlaceModule(row, col, selectedTool)
+      } else if (selectedTool === "empty") {
+        onClearCell(row, col)
+      } else if (selectedTool) {
+        onPlaceModule(row, col, selectedTool)
+      }
+    },
+    [toolMode, selectedTool, onClearCell, onPlaceModule],
+  )
 
   const selectedCellInfo = selectedCell ? config.grid[selectedCell.row]?.[selectedCell.col] : null
 
@@ -222,11 +184,7 @@ export function ConfiguratorPanel({
   const handleAddToCart = () => {
     if (shoppingList.length === 0) return
 
-    console.log("[v0] handleAddToCart called")
-    console.log("[v0] shoppingList:", JSON.stringify(shoppingList, null, 2))
-
     for (const item of shoppingList) {
-      console.log("[v0] Adding item:", item.id, "name:", item.name, "quantity:", item.quantity)
       setItem(
         {
           id: item.id,

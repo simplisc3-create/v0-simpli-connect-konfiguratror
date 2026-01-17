@@ -295,6 +295,8 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
         }, -1)
         const isBottomModule = row === maxRowInColumn
 
+        const colorToUse = cell.color || "weiss"
+
         return (
           <GLBModule
             key={key}
@@ -303,13 +305,7 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
             width={width}
             height={height}
             depth={0.38}
-            color={(() => {
-              const colorToUse = cell.color || "weiss"
-              console.log(
-                `[v0] Rendering GLB ${cell.type} at ${row}-${col}, cell.color=${cell.color}, using=${colorToUse}`,
-              )
-              return colorToUse
-            })()}
+            color={colorToUse}
             row={row}
             col={col}
             gridConfig={config}
