@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useRef, Suspense, useEffect } from "react"
+import { useState, useCallback, useMemo, Suspense, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import { ConfiguratorPanel } from "./configurator-panel"
@@ -35,6 +35,9 @@ import {
   hasSupportBelow,
   expandGridAroundPlacement,
 } from "@/lib/grid-utils"
+import { useConfigHistory } from "@/hooks/use-config-history"
+import { useHeightWarning } from "@/hooks/use-height-warning"
+import { useCellColors } from "@/hooks/use-cell-colors"
 
 export type GridCell = {
   id: string
@@ -119,7 +122,6 @@ const initialConfig: ShelfConfig = {
   cellStyles: {}, // Initialize empty cellStyles
 }
 
-// Removed redeclaration of updateGhostCells
 export function ShelfConfigurator({
   initialPreset,
   presetYoutubeId,
@@ -152,32 +154,16 @@ export function ShelfConfigurator({
 
   const [toolMode, setToolMode] = useState<ToolMode>("select")
 
-  const [showHeightWarning, setShowHeightWarning] = useState(false)
-  const [heightWarningShown, setHeightWarningShown] = useState(false)
-  const audioContextRef = useRef<AudioContext | null>(null)
-
-  // State for undo/redo
-  const [history, setHistory] = useState<ShelfConfig[]>([getInitialConfig()])
-  const [historyIndex, setHistoryIndex] = useState(0)
-  const isUndoRedo = useRef(false)
-
-  useEffect(() => {
-    if (initialPreset) {
-      const {
-        grid: updatedGrid,
-        columnWidths: updatedColumnWidths,
-        shifted,
-      } = updateGhostCells(initialPreset.grid, initialPreset.columnWidths, defaultNewColumnWidth)
-
-      setConfig((prev) => ({
-        ...prev,
-        grid: updatedGrid,
-        columns: updatedGrid[0]?.length || prev.columns,
-        rows: updatedGrid.length,
-        columnWidths: updatedColumnWidths, // Use updated columnWidths
-      }))
-    }
-  }, [initialPreset])
+  const {
+    saveToHistory,
+    undo: undoHistory,
+    redo: redoHistory,
+    canUndo,
+    canRedo,
+    resetHistory,
+    setHistory,
+    setHistoryIndex,
+  } = useConfigHistory(config)
 
   const totalHeightCm = useMemo(() => {
     // Find the maximum number of filled rows in any column
@@ -196,34 +182,31 @@ export function ShelfConfigurator({
     return maxFilledRows * 40
   }, [config.grid, config.rows, config.columns])
 
-  const playDingSound = useCallback(() => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      }
-      const ctx = audioContextRef.current
+  const { showHeightWarning, setShowHeightWarning, heightWarningShown, setHeightWarningShown, playDingSound } =
+    useHeightWarning(totalHeightCm)
 
-      // Create oscillator for ding sound
-      const oscillator = ctx.createOscillator()
-      const gainNode = ctx.createGain()
+  const { applyCellColor, applyColorToRow, applyColorToColumn, applyColorToAll, clearCellColor } = useCellColors(
+    setConfig,
+    saveToHistory,
+  )
 
-      oscillator.connect(gainNode)
-      gainNode.connect(ctx.destination)
+  useEffect(() => {
+    if (initialPreset) {
+      const { grid: updatedGrid, columnWidths: updatedColumnWidths } = updateGhostCells(
+        initialPreset.grid,
+        initialPreset.columnWidths,
+        defaultNewColumnWidth,
+      )
 
-      // Bell-like ding sound
-      oscillator.frequency.setValueAtTime(830, ctx.currentTime) // High pitch
-      oscillator.type = "sine"
-
-      // Quick fade out for ding effect
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
-
-      oscillator.start(ctx.currentTime)
-      oscillator.stop(ctx.currentTime + 0.5)
-    } catch (e) {
-      // Audio not supported
+      setConfig((prev) => ({
+        ...prev,
+        grid: updatedGrid,
+        columns: updatedGrid[0]?.length || prev.columns,
+        rows: updatedGrid.length,
+        columnWidths: updatedColumnWidths, // Use updated columnWidths
+      }))
     }
-  }, [])
+  }, [initialPreset])
 
   useEffect(() => {
     if (totalHeightCm > 200 && !heightWarningShown) {
@@ -232,184 +215,37 @@ export function ShelfConfigurator({
 
       playDingSound()
     }
-  }, [totalHeightCm, heightWarningShown, playDingSound])
+  }, [totalHeightCm, heightWarningShown, playDingSound, setShowHeightWarning, setHeightWarningShown])
 
   useEffect(() => {
     if (totalHeightCm <= 200) {
       setHeightWarningShown(false)
     }
-  }, [totalHeightCm])
-
-  const saveToHistory = useCallback(
-    (newConfig: ShelfConfig) => {
-      if (isUndoRedo.current) {
-        isUndoRedo.current = false
-        return
-      }
-      setHistory((prev) => {
-        const newHistory = prev.slice(0, historyIndex + 1)
-        return [...newHistory, newConfig].slice(-50)
-      })
-      setHistoryIndex((prev) => Math.min(prev + 1, 49))
-    },
-    [historyIndex],
-  )
+  }, [totalHeightCm, setHeightWarningShown])
 
   const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      isUndoRedo.current = true
-      const newIndex = historyIndex - 1
-      const historyItem = history[newIndex]
-      if (historyItem && historyItem.grid) {
-        setHistoryIndex(newIndex)
-        setConfig(historyItem)
-      } else {
-        isUndoRedo.current = false
-      }
+    const historyItem = undoHistory()
+    if (historyItem) {
+      setConfig(historyItem)
     }
-  }, [historyIndex, history])
+  }, [undoHistory])
 
   const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      isUndoRedo.current = true
-      const newIndex = historyIndex + 1
-      const historyItem = history[newIndex]
-      if (historyItem && historyItem.grid) {
-        setHistoryIndex(newIndex)
-        setConfig(historyItem)
-      } else {
-        isUndoRedo.current = false
-      }
+    const historyItem = redoHistory()
+    if (historyItem) {
+      setConfig(historyItem)
     }
-  }, [historyIndex, history])
-
-  const canUndo = historyIndex > 0
-  const canRedo = historyIndex < history.length - 1
+  }, [redoHistory])
 
   const pruneCellStylesMemo = useCallback((styles: CellStyles, maxRows: number, maxCols: number): CellStyles => {
     return pruneCellStyles(styles, maxRows, maxCols)
   }, [])
 
-  const applyCellColor = useCallback(
-    (row: number, col: number, color: ColorKey) => {
-      setConfig((prev) => {
-        const cellId = getCellId(row, col)
-        const newCellStyles = { ...(prev.cellStyles || {}), [cellId]: { color } }
+  // --- REMOVED: Inline Cell Color Functions ---
+  // The logic for applyCellColor, applyColorToRow, applyColorToColumn, applyColorToAll, and clearCellColor
+  // has been moved to the useCellColors hook.
 
-        // Also update the grid cell's color for BOM calculation
-        const newGrid = prev.grid.map((r, ri) =>
-          r.map((cell, ci) => {
-            if (ri === row && ci === col) {
-              return { ...cell, color }
-            }
-            return cell
-          }),
-        )
-
-        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const applyColorToRow = useCallback(
-    (row: number, color: ColorKey) => {
-      setConfig((prev) => {
-        const newCellStyles = { ...(prev.cellStyles || {}) }
-        const newGrid = prev.grid.map((r, ri) =>
-          r.map((cell, ci) => {
-            if (ri === row && cell.type !== "empty" && cell.type !== "ghost") {
-              const cellId = getCellId(ri, ci)
-              newCellStyles[cellId] = { color }
-              return { ...cell, color }
-            }
-            return cell
-          }),
-        )
-
-        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const applyColorToColumn = useCallback(
-    (col: number, color: ColorKey) => {
-      setConfig((prev) => {
-        const newCellStyles = { ...(prev.cellStyles || {}) }
-        const newGrid = prev.grid.map((r, ri) =>
-          r.map((cell, ci) => {
-            if (ci === col && cell.type !== "empty" && cell.type !== "ghost") {
-              const cellId = getCellId(ri, ci)
-              newCellStyles[cellId] = { color }
-              return { ...cell, color }
-            }
-            return cell
-          }),
-        )
-
-        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const applyColorToAll = useCallback(
-    (color: ColorKey) => {
-      setConfig((prev) => {
-        const newCellStyles: CellStyles = {}
-        const newGrid = prev.grid.map((r, ri) =>
-          r.map((cell, ci) => {
-            if (cell.type !== "empty" && cell.type !== "ghost") {
-              const cellId = getCellId(ri, ci)
-              newCellStyles[cellId] = { color }
-              return { ...cell, color }
-            }
-            return cell
-          }),
-        )
-
-        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  const clearCellColor = useCallback(
-    (row: number, col: number) => {
-      setConfig((prev) => {
-        const cellId = getCellId(row, col)
-        const newCellStyles = { ...(prev.cellStyles || {}) }
-        delete newCellStyles[cellId]
-
-        // Revert to default color (weiss)
-        const newGrid = prev.grid.map((r, ri) =>
-          r.map((cell, ci) => {
-            if (ri === row && ci === col) {
-              return { ...cell, color: "weiss" as ColorKey }
-            }
-            return cell
-          }),
-        )
-
-        const newConfig = { ...prev, cellStyles: newCellStyles, grid: newGrid }
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  // REMOVED: Wrapper functions for getColumnHeights, isConnectedToExisting, hasSupportBelow, expandGridAroundPlacement
-  // Now using direct imports from "@/lib/grid-utils"
+  // ... existing code continues from placeModule onwards ...
 
   const placeModule = useCallback(
     (row: number, col: number, type: GridCell["type"]) => {
@@ -691,13 +527,13 @@ export function ShelfConfigurator({
       cellStyles: {} as CellStyles,
     }
     setConfig(newConfig)
-    setHistory([newConfig])
-    setHistoryIndex(0)
+    // Use resetHistory hook instead of manual history manipulation
+    resetHistory()
     setSelectedTool("offenes-fach")
     setSelectedColor("weiss")
     setSelectedCell(null)
     setToolMode("select") // Reset tool mode
-  }, [])
+  }, [resetHistory])
 
   type BomItem = {
     id: string
