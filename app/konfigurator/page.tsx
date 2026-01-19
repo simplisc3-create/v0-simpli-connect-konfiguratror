@@ -2,19 +2,41 @@ import { ShelfConfigurator } from "@/components/shelf-configurator"
 
 const presets = {
   wohnzimmer: {
-    columns: 1,
-    rows: 4,
-    columnWidths: [75] as (75 | 38)[],
-    rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    columns: 3,
+    rows: 5,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
       // Row 0 = bottom (floor level)
-      [{ id: "cell-0-0", type: "mit-rueckwand" as const, row: 0, col: 0, color: "weiss" as const }],
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-rueckwand" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
       // Row 1 = second from bottom
-      [{ id: "cell-1-0", type: "mit-rueckwand" as const, row: 1, col: 0, color: "weiss" as const }],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "mit-rueckwand" as const, row: 1, col: 1, color: "weiss" as const },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
       // Row 2 = third from bottom
-      [{ id: "cell-2-0", type: "mit-rueckwand" as const, row: 2, col: 0, color: "weiss" as const }],
-      // Row 3 = top
-      [{ id: "cell-3-0", type: "mit-rueckwand" as const, row: 3, col: 0, color: "weiss" as const }],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "mit-rueckwand" as const, row: 2, col: 1, color: "weiss" as const },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+      // Row 3 = fourth from bottom
+      [
+        { id: "cell-3-0", type: "ghost" as const, row: 3, col: 0 },
+        { id: "cell-3-1", type: "mit-rueckwand" as const, row: 3, col: 1, color: "weiss" as const },
+        { id: "cell-3-2", type: "ghost" as const, row: 3, col: 2 },
+      ],
+      // Row 4 = top (ghost row for upward expansion)
+      [
+        { id: "cell-4-0", type: "ghost" as const, row: 4, col: 0 },
+        { id: "cell-4-1", type: "ghost" as const, row: 4, col: 1 },
+        { id: "cell-4-2", type: "ghost" as const, row: 4, col: 2 },
+      ],
     ],
     youtubeId: "hUbkjGIyy2E",
   },
@@ -49,20 +71,31 @@ const presets = {
     youtubeId: "ffjWvF61tJg",
   },
   homeoffice: {
-    columns: 2,
-    rows: 2,
-    columnWidths: [75, 75] as (75 | 38)[],
-    rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    columns: 4,
+    rows: 3,
+    columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
-      // Row 0 = bottom (floor level)
+      // Row 0 = bottom (floor level) - actual modules with ghost cells on sides
       [
-        { id: "cell-0-0", type: "mit-doppelschublade" as const, row: 0, col: 0, color: "blau" as const },
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
         { id: "cell-0-1", type: "mit-doppelschublade" as const, row: 0, col: 1, color: "blau" as const },
+        { id: "cell-0-2", type: "mit-doppelschublade" as const, row: 0, col: 2, color: "blau" as const },
+        { id: "cell-0-3", type: "ghost" as const, row: 0, col: 3 },
       ],
-      // Row 1 = top
+      // Row 1 = second level - actual modules with ghost cells on sides
       [
-        { id: "cell-1-0", type: "mit-doppelschublade" as const, row: 1, col: 0, color: "blau" as const },
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
         { id: "cell-1-1", type: "mit-doppelschublade" as const, row: 1, col: 1, color: "blau" as const },
+        { id: "cell-1-2", type: "mit-doppelschublade" as const, row: 1, col: 2, color: "blau" as const },
+        { id: "cell-1-3", type: "ghost" as const, row: 1, col: 3 },
+      ],
+      // Row 2 = top (ghost row for upward expansion)
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+        { id: "cell-2-3", type: "ghost" as const, row: 2, col: 3 },
       ],
     ],
     youtubeId: "gBCkDel4Jlc",
