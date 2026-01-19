@@ -1,8 +1,11 @@
 "use client"
 
-import { useState, useCallback, useMemo, Suspense, useEffect } from "react"
-import { Canvas } from "@react-three/fiber"
+import React from "react"
+
+import { useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
+import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 import { ConfiguratorPanel } from "./configurator-panel"
 import type { ToolMode } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
@@ -38,6 +41,46 @@ import {
 import { useConfigHistory } from "@/hooks/use-config-history"
 import { useHeightWarning } from "@/hooks/use-height-warning"
 import { useCellColors } from "@/hooks/use-cell-colors"
+
+// CameraController component for smooth camera animation to new modules
+function CameraController({
+  target,
+  controlsRef,
+}: {
+  target: [number, number, number] | null
+  controlsRef: React.RefObject<OrbitControlsImpl | null>
+}) {
+  const smoothTarget = useRef(new THREE.Vector3(0, 0.3, 0))
+  const isAnimating = useRef(false)
+
+  useFrame(() => {
+    if (!controlsRef.current || !target) return
+
+    const targetVec = new THREE.Vector3(target[0], target[1], target[2])
+
+    // Smoothly interpolate current target toward new target
+    smoothTarget.current.lerp(targetVec, 0.08)
+
+    // Update orbit controls target
+    controlsRef.current.target.copy(smoothTarget.current)
+    controlsRef.current.update()
+
+    // Check if animation is complete (close enough to target)
+    const distance = smoothTarget.current.distanceTo(targetVec)
+    if (distance < 0.01 && isAnimating.current) {
+      isAnimating.current = false
+    }
+  })
+
+  // Trigger animation when target changes
+  useEffect(() => {
+    if (target) {
+      isAnimating.current = true
+    }
+  }, [target])
+
+  return null
+}
 
 export type GridCell = {
   id: string
@@ -154,6 +197,13 @@ export function ShelfConfigurator({
 
   const [toolMode, setToolMode] = useState<ToolMode>("select")
 
+  // Camera focus state for smooth animation to newest module
+  const [cameraTarget, setCameraTarget] = useState<[number, number, number] | null>(null)
+  const orbitControlsRef = useRef<OrbitControlsImpl>(null)
+
+  const smoothTarget = useRef(new THREE.Vector3(0, 0.3, 0))
+  const isAnimating = useRef(false)
+
   const {
     saveToHistory,
     undo: undoHistory,
@@ -245,7 +295,48 @@ export function ShelfConfigurator({
   // The logic for applyCellColor, applyColorToRow, applyColorToColumn, applyColorToAll, and clearCellColor
   // has been moved to the useCellColors hook.
 
-  // ... existing code continues from placeModule onwards ...
+  // Calculate 3D position for a cell (same logic as ShelfScene)
+  const calculateCellPosition = useCallback(
+    (row: number, col: number): [number, number, number] => {
+      const columnTubeOverlap = 0.003
+      const rowTubeOverlap = 0.003
+      const depth = 0.38
+
+      // Calculate column centers
+      const columnCenters: number[] = []
+      let totalWidth = 0
+      for (let c = 0; c < config.columns; c++) {
+        const colWidth = config.columnWidths[c] / 100
+        let xPos = 0
+        for (let cc = 0; cc < c; cc++) {
+          xPos += config.columnWidths[cc] / 100 - columnTubeOverlap
+        }
+        columnCenters.push(xPos + colWidth / 2)
+        totalWidth += colWidth
+        if (c > 0) totalWidth -= columnTubeOverlap
+      }
+
+      // Calculate row centers
+      const rowCenters: number[] = []
+      for (let r = 0; r < config.rows; r++) {
+        const rowHeight = config.rowHeights[r] / 100
+        let yPos = 0
+        for (let rr = 0; rr < r; rr++) {
+          yPos += config.rowHeights[rr] / 100 - rowTubeOverlap
+        }
+        rowCenters.push(yPos + rowHeight / 2)
+      }
+
+      const offsetX = -totalWidth / 2
+
+      return [
+        (columnCenters[col] || 0) + offsetX,
+        rowCenters[row] || 0,
+        -depth / 2,
+      ]
+    },
+    [config.columns, config.rows, config.columnWidths, config.rowHeights],
+  )
 
   const placeModule = useCallback(
     (row: number, col: number, type: GridCell["type"]) => {
@@ -317,10 +408,21 @@ export function ShelfConfigurator({
         }
 
         setTimeout(() => saveToHistory(newConfig), 0)
+
+        // Animate camera to focus on the newly placed module (only for real modules)
+        if (type !== "empty" && type !== "ghost") {
+          // Calculate position after grid expansion - need to account for shifted columns
+          const actualCol = shifted ? col + 1 : col
+          setTimeout(() => {
+            const position = calculateCellPosition(row, actualCol)
+            setCameraTarget(position)
+          }, 50)
+        }
+
         return newConfig
       })
     },
-    [saveToHistory, selectedColor, defaultNewColumnWidth],
+    [saveToHistory, selectedColor, defaultNewColumnWidth, calculateCellPosition],
   )
 
   const handleCellClick3D = useCallback(
@@ -1050,7 +1152,7 @@ export function ShelfConfigurator({
     let funktionswandCount = 0
 
     for (const { col, cell } of filledCells) {
-      const widthCm = config.columnWidths[col] === 75 ? 80 : 40
+      const widthCm = config.columnWidths[col] === 75 ? 80 : config.columnWidths[col] === 38 ? 40 : config.columnWidths[col]
 
       if (
         cell.type === "mit-tueren" ||
@@ -1218,12 +1320,16 @@ export function ShelfConfigurator({
             </Suspense>
 
             <OrbitControls
+              ref={orbitControlsRef}
               makeDefault
               minPolarAngle={0.2}
               maxPolarAngle={Math.PI / 2.2}
               minDistance={1}
               maxDistance={8}
+              enableDamping
+              dampingFactor={0.05}
             />
+            <CameraController target={cameraTarget} controlsRef={orbitControlsRef} />
           </Canvas>
 
           {/* CHANGE: Added camera controls info box in top left corner */}
@@ -1512,4 +1618,37 @@ function getToolLabel(tool: GridCell["type"]): string {
     "mit-einzelschublade": "Mit Einzelschublade",
   }
   return labels[tool] ?? getModuleShortLabel(tool)
+}
+
+// Smooth camera animation hook
+const useSmoothCameraAnimation = (target: [number, number, number] | null, controlsRef: React.RefObject<OrbitControlsImpl | null>) => {
+  const smoothTarget = useRef(new THREE.Vector3(0, 0.3, 0))
+  const isAnimating = useRef(false)
+
+  const animateCamera = () => {
+    if (!controlsRef.current || !target) return
+
+    const targetVec = new THREE.Vector3(target[0], target[1], target[2])
+    
+    // Smoothly interpolate current target toward new target
+    smoothTarget.current.lerp(targetVec, 0.08)
+    
+    // Update orbit controls target
+    controlsRef.current.target.copy(smoothTarget.current)
+    controlsRef.current.update()
+
+    // Check if animation is complete (close enough to target)
+    const distance = smoothTarget.current.distanceTo(targetVec)
+    if (distance < 0.01 && isAnimating.current) {
+      isAnimating.current = false
+    }
+  }
+
+  useFrame(animateCamera)
+
+  useEffect(() => {
+    if (target) {
+      isAnimating.current = true
+    }
+  }, [target])
 }
