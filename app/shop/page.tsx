@@ -338,7 +338,7 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
               src={product.image || "/placeholder.svg"}
               alt={product.name}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-contain group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="w-16 h-16 bg-gray-200 rounded-lg" />

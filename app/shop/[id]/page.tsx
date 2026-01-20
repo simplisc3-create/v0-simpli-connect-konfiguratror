@@ -291,7 +291,7 @@ function RelatedProducts({ currentProductId, category }: { currentProductId: str
                   src={product.image || "/placeholder.svg"}
                   alt={product.name}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-contain group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <Package className="w-12 h-12 text-gray-400 group-hover:text-teal-500 transition-colors" />
@@ -384,7 +384,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   src={product.image || "/placeholder.svg"}
                   alt={product.name}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   priority
                 />
               ) : (
@@ -407,7 +407,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   className={`w-20 h-20 rounded-lg border flex items-center justify-center overflow-hidden relative ${i === 1 ? "border-teal-500 bg-gray-50" : "border-gray-200 bg-gray-50"}`}
                 >
                   {product.image && i === 1 ? (
-                    <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
+                    <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-contain" />
                   ) : (
                     <Package className="w-8 h-8 text-gray-300" />
                   )}
