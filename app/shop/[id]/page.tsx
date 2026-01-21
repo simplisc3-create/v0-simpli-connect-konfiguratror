@@ -7,6 +7,8 @@ import { ArrowLeft, ShoppingCart, Package, Ruler, Palette, Hash } from "lucide-r
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { AddToCartButton } from "./add-to-cart-button"
+import { ProductImageClient } from "./product-image-client"
+import { ProductViewerClient } from "./product-viewer-client"
 
 const products = [
   {
@@ -287,11 +289,10 @@ function RelatedProducts({ currentProductId, category }: { currentProductId: str
           >
             <div className="aspect-square bg-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
               {product.image ? (
-                <Image
-                  src={product.image || "/placeholder.svg"}
-                  alt={product.name}
-                  fill
-                  className="object-contain group-hover:scale-105 transition-transform duration-300"
+                <ProductImageClient
+                  artNr={product.artNr}
+                  defaultImage={product.image}
+                  productName={product.name}
                 />
               ) : (
                 <Package className="w-12 h-12 text-gray-400 group-hover:text-teal-500 transition-colors" />
@@ -376,28 +377,25 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       {/* Product Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Product Image */}
+          {/* Product Image / 3D Viewer */}
           <div className="relative">
-            <div className="aspect-square bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center overflow-hidden relative">
-              {product.image ? (
-                <Image
-                  src={product.image || "/placeholder.svg"}
-                  alt={product.name}
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              ) : (
-                <Package className="w-32 h-32 text-gray-300" />
-              )}
-              {/* Category badge */}
-              <Badge
-                variant="secondary"
-                className="absolute top-4 left-4 bg-teal-500/10 text-teal-600 border-teal-500/20"
-              >
-                {categoryLabels[product.category] || product.category}
-              </Badge>
-            </div>
+            <ProductViewerClient
+              product={{
+                artNr: product.artNr,
+                name: product.name,
+                image: product.image,
+                category: product.category,
+                size: product.width || product.height || 80,
+              }}
+              priority
+            />
+            {/* Category badge */}
+            <Badge
+              variant="secondary"
+              className="absolute top-4 left-4 bg-teal-500/10 text-teal-600 border-teal-500/20 z-20"
+            >
+              {categoryLabels[product.category] || product.category}
+            </Badge>
 
             {/* Thumbnail placeholder for future images */}
             <div className="flex gap-3 mt-4">
@@ -407,7 +405,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   className={`w-20 h-20 rounded-lg border flex items-center justify-center overflow-hidden relative ${i === 1 ? "border-teal-500 bg-gray-50" : "border-gray-200 bg-gray-50"}`}
                 >
                   {product.image && i === 1 ? (
-                    <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-contain" />
+                    <ProductImageClient
+                      artNr={product.artNr}
+                      defaultImage={product.image}
+                      productName={product.name}
+                    />
                   ) : (
                     <Package className="w-8 h-8 text-gray-300" />
                   )}

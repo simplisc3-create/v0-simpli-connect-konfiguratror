@@ -57,24 +57,26 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#d2b48c": "beige",
 }
 
+// Photorealistic target colors matching Simpli Connect product line
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(0.95, 0.95, 0.95),
-  black: new THREE.Color(0.05, 0.05, 0.05),
-  gray: new THREE.Color(0.45, 0.45, 0.45),
-  anthrazit: new THREE.Color(0.18, 0.18, 0.2),
-  blue: new THREE.Color(0.1, 0.4, 0.95),
-  green: new THREE.Color(0.0, 0.7, 0.2),
-  yellow: new THREE.Color(1.0, 0.85, 0.0),
-  orange: new THREE.Color(1.0, 0.4, 0.0),
-  red: new THREE.Color(0.92, 0.1, 0.1),
-  beige: new THREE.Color(0.85, 0.75, 0.58),
+  white: new THREE.Color(0.98, 0.98, 0.98),
+  black: new THREE.Color(0.08, 0.08, 0.08),
+  gray: new THREE.Color(0.55, 0.55, 0.55),
+  anthrazit: new THREE.Color(0.22, 0.22, 0.24),
+  blue: new THREE.Color(0.15, 0.45, 0.9),
+  green: new THREE.Color(0.1, 0.65, 0.25),
+  yellow: new THREE.Color(0.98, 0.85, 0.1),
+  orange: new THREE.Color(0.95, 0.45, 0.1),
+  red: new THREE.Color(0.88, 0.15, 0.15),
+  beige: new THREE.Color(0.88, 0.78, 0.62),
 }
 
+// Photorealistic chrome material with high reflectivity
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
-  color: new THREE.Color(0.85, 0.85, 0.88),
-  metalness: 0.98,
-  roughness: 0.08,
-  envMapIntensity: 1.56,
+  color: new THREE.Color(0.9, 0.9, 0.92),
+  metalness: 1.0,
+  roughness: 0.03,
+  envMapIntensity: 2.0,
   side: THREE.DoubleSide,
 })
 
@@ -481,6 +483,7 @@ const LoadedGLBModel = memo(
               const texture = oldMat.map || null
               const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
 
+              // Photorealistic panel materials with proper finish
               const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
               child.material = getCachedMaterial(
                 materialKey,
@@ -488,12 +491,13 @@ const LoadedGLBModel = memo(
                   new THREE.MeshStandardMaterial({
                     map: texture,
                     color: finalColor,
-                    metalness: 0.08,
-                    roughness: 0.5,
+                    metalness: isBottom ? 0.02 : 0.05,
+                    roughness: isBottom ? 0.6 : 0.35,
                     side: THREE.DoubleSide,
                     shadowSide: THREE.DoubleSide,
                     emissive: new THREE.Color(0, 0, 0),
                     emissiveIntensity: 0,
+                    envMapIntensity: 0.8,
                   }),
               )
             }

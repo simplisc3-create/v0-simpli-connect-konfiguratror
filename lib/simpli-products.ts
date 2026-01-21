@@ -46,6 +46,7 @@ export interface Product {
   description?: string
   packSize?: number // Number of pieces in pack for display
   components?: string[] // Sub-components for composite products
+  image?: string // Product image URL (can be Blob URL or external URL)
 }
 
 export type ShelfColor = "schwarz" | "weiss" | "blau" | "orange" | "rot" | "gruen" | "gelb" | "grau"

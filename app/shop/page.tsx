@@ -1,13 +1,13 @@
 "use client"
 import Link from "next/link"
 import type React from "react"
-
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ShoppingCart, Filter, ChevronDown, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/lib/cart-store"
 import { SiteHeader } from "@/components/site-header"
+import { useProductImages } from "@/hooks/use-product-images"
 
 const products = [
   {
@@ -168,6 +168,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("alle")
   const [sortBy, setSortBy] = useState("name")
   const { getTotalItems, addItem } = useCartStore()
+  const { imageMap, isLoading } = useProductImages()
 
   const filteredProducts =
     selectedCategory === "alle" ? products : products.filter((p) => p.category === selectedCategory)
@@ -228,7 +229,7 @@ export default function ShopPage() {
           {/* Products Grid */}
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {sortedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} addItem={addItem} />
+              <ProductCard key={product.id} product={product} addItem={addItem} imageMap={imageMap} />
             ))}
           </div>
 
@@ -312,7 +313,7 @@ export default function ShopPage() {
   )
 }
 
-function ProductCard({ product, addItem }: { product: (typeof products)[0]; addItem: any }) {
+function ProductCard({ product, addItem, imageMap }: { product: (typeof products)[0]; addItem: any; imageMap: any }) {
   const [added, setAdded] = useState(false)
 
   const handleAdd = (e: React.MouseEvent) => {
@@ -333,12 +334,19 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
     <Link href={`/shop/${product.id}`} className="block">
       <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
         <div className="aspect-square overflow-hidden flex items-center justify-center bg-gray-50 relative">
-          {product.image ? (
+          {imageMap[product.artNr] ? (
+            <Image
+              src={imageMap[product.artNr] || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : product.image ? (
             <Image
               src={product.image || "/placeholder.svg"}
               alt={product.name}
               fill
-              className="object-contain group-hover:scale-105 transition-transform duration-300"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="w-16 h-16 bg-gray-200 rounded-lg" />
