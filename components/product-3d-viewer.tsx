@@ -98,23 +98,23 @@ function Scene({ product }: { product: Product }) {
         target={[0, 0.2, 0]}
       />
 
-      {/* Studio lighting for photorealistic render */}
-      <ambientLight intensity={0.3} />
+      {/* Bright diffused studio lighting - like USM Haller product shots */}
+      <ambientLight intensity={0.8} />
       <directionalLight 
-        position={[5, 8, 5]} 
-        intensity={1.2} 
+        position={[3, 10, 5]} 
+        intensity={0.8} 
         castShadow 
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
       />
-      <directionalLight position={[-5, 5, -5]} intensity={0.6} />
-      <directionalLight position={[0, 10, 0]} intensity={0.4} />
-      {/* Rim light for chrome highlights */}
-      <spotLight position={[-3, 3, 3]} intensity={0.8} angle={0.5} penumbra={1} />
-      <spotLight position={[3, 3, -3]} intensity={0.6} angle={0.5} penumbra={1} />
+      <directionalLight position={[-3, 8, -3]} intensity={0.5} />
+      <directionalLight position={[0, 15, 0]} intensity={0.6} />
+      {/* Fill lights for even illumination */}
+      <pointLight position={[-4, 2, 4]} intensity={0.3} />
+      <pointLight position={[4, 2, -4]} intensity={0.3} />
 
-      {/* High quality environment for realistic chrome reflections */}
-      <Environment preset="studio" background={false} />
+      {/* Neutral environment for clean chrome look */}
+      <Environment preset="apartment" background={false} />
 
       <Suspense fallback={null}>
         <GLBModule
@@ -163,8 +163,8 @@ export function Product3DViewer({ product, className }: Product3DViewerProps) {
           toneMappingExposure: 1.0,
         }}
       >
-        <color attach="background" args={["#f8f8f8"]} />
-        <fog attach="fog" args={["#f8f8f8", 3, 8]} />
+        <color attach="background" args={["#f5f5f5"]} />
+        <fog attach="fog" args={["#f5f5f5", 4, 12]} />
         <Scene product={product} />
       </Canvas>
     </div>

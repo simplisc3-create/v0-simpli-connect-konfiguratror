@@ -71,12 +71,12 @@ const TARGET_COLORS: Record<string, THREE.Color> = {
   beige: new THREE.Color(0.88, 0.78, 0.62),
 }
 
-// Photorealistic chrome material with high reflectivity
+// Bright chrome material - almost white with subtle reflections like USM Haller
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
-  color: new THREE.Color(0.9, 0.9, 0.92),
-  metalness: 1.0,
-  roughness: 0.03,
-  envMapIntensity: 2.0,
+  color: new THREE.Color(0.97, 0.97, 0.98),
+  metalness: 0.95,
+  roughness: 0.15,
+  envMapIntensity: 1.2,
   side: THREE.DoubleSide,
 })
 
