@@ -86,35 +86,42 @@ function Scene({ product }: { product: Product }) {
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0.6, 0.4, 0.8]} fov={45} />
+      <PerspectiveCamera makeDefault position={[0.8, 0.35, 0.9]} fov={40} />
       <OrbitControls
         enablePan={true}
         enableZoom={true}
-        enableRotate={true}
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 2}
-        minDistance={0.5}
-        maxDistance={2.5}
-        target={[0, 0.2, 0]}
+        enableRotate={false}
+        screenSpacePanning={true}
+        panSpeed={0.8}
+        minDistance={0.4}
+        maxDistance={3}
+        target={[0, 0.18, 0]}
+        mouseButtons={{
+          LEFT: 2,
+          MIDDLE: 1,
+          RIGHT: 0,
+        }}
       />
 
-      {/* Bright diffused studio lighting - like USM Haller product shots */}
-      <ambientLight intensity={0.8} />
+      {/* High-key studio lighting for bright chrome - like professional product photography */}
+      <ambientLight intensity={1.2} />
       <directionalLight 
-        position={[3, 10, 5]} 
-        intensity={0.8} 
+        position={[2, 12, 4]} 
+        intensity={1.0} 
         castShadow 
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
       />
-      <directionalLight position={[-3, 8, -3]} intensity={0.5} />
-      <directionalLight position={[0, 15, 0]} intensity={0.6} />
-      {/* Fill lights for even illumination */}
-      <pointLight position={[-4, 2, 4]} intensity={0.3} />
-      <pointLight position={[4, 2, -4]} intensity={0.3} />
+      <directionalLight position={[-4, 10, -2]} intensity={0.7} />
+      <directionalLight position={[0, 20, 0]} intensity={0.8} />
+      <directionalLight position={[0, 5, 8]} intensity={0.5} />
+      {/* Soft fill lights for even illumination */}
+      <pointLight position={[-3, 1, 3]} intensity={0.4} color="#ffffff" />
+      <pointLight position={[3, 1, -3]} intensity={0.4} color="#ffffff" />
+      <pointLight position={[0, 0.5, 2]} intensity={0.3} color="#ffffff" />
 
-      {/* Neutral environment for clean chrome look */}
-      <Environment preset="apartment" background={false} />
+      {/* Very bright neutral environment for clean chrome reflections */}
+      <Environment preset="city" background={false} />
 
       <Suspense fallback={null}>
         <GLBModule
@@ -160,11 +167,11 @@ export function Product3DViewer({ product, className }: Product3DViewerProps) {
         gl={{ 
           antialias: true, 
           toneMapping: 3, // ACESFilmicToneMapping
-          toneMappingExposure: 1.0,
+          toneMappingExposure: 1.4,
         }}
       >
-        <color attach="background" args={["#f5f5f5"]} />
-        <fog attach="fog" args={["#f5f5f5", 4, 12]} />
+        <color attach="background" args={["#f7f7f7"]} />
+        <fog attach="fog" args={["#f7f7f7", 5, 15]} />
         <Scene product={product} />
       </Canvas>
     </div>
