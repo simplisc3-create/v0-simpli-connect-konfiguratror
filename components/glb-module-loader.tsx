@@ -57,17 +57,17 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#d2b48c": "beige",
 }
 
-// Photorealistic target colors matching Simpli Connect product line
+// Original Simpli Connect panel colors - vibrant and saturated
 const TARGET_COLORS: Record<string, THREE.Color> = {
   white: new THREE.Color(0.98, 0.98, 0.98),
-  black: new THREE.Color(0.08, 0.08, 0.08),
-  gray: new THREE.Color(0.55, 0.55, 0.55),
-  anthrazit: new THREE.Color(0.22, 0.22, 0.24),
-  blue: new THREE.Color(0.15, 0.45, 0.9),
-  green: new THREE.Color(0.1, 0.65, 0.25),
-  yellow: new THREE.Color(0.98, 0.85, 0.1),
-  orange: new THREE.Color(0.95, 0.45, 0.1),
-  red: new THREE.Color(0.88, 0.15, 0.15),
+  black: new THREE.Color(0.05, 0.05, 0.05),
+  gray: new THREE.Color(0.45, 0.45, 0.45),
+  anthrazit: new THREE.Color(0.25, 0.25, 0.27),
+  blue: new THREE.Color(0.0, 0.45, 0.75),
+  green: new THREE.Color(0.0, 0.5, 0.25),
+  yellow: new THREE.Color(0.85, 0.7, 0.0),
+  orange: new THREE.Color(0.95, 0.45, 0.0),
+  red: new THREE.Color(0.85, 0.1, 0.1),
   beige: new THREE.Color(0.88, 0.78, 0.62),
 }
 

@@ -99,23 +99,22 @@ function Scene({ product }: { product: Product }) {
         target={[0, 0.18, 0]}
       />
 
-      {/* High-key studio lighting - bright and even for production consistency */}
-      <ambientLight intensity={1.0} />
+      {/* Authentic studio lighting - balanced, not overexposed */}
+      <ambientLight intensity={0.35} />
       
-      {/* Key light - bright from top-front */}
+      {/* Key light - softer */}
       <directionalLight 
-        position={[3, 8, 5]} 
-        intensity={1.8} 
+        position={[3, 6, 4]} 
+        intensity={0.55} 
         castShadow 
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
       />
       
-      {/* Fill lights - multiple for even illumination */}
-      <directionalLight position={[-4, 6, 3]} intensity={1.2} />
-      <directionalLight position={[4, 5, -3]} intensity={1.0} />
-      <directionalLight position={[0, 10, 0]} intensity={0.8} />
-      <directionalLight position={[0, 3, 6]} intensity={0.6} />
+      {/* Fill lights - subtle */}
+      <directionalLight position={[-3, 4, 2]} intensity={0.35} />
+      <directionalLight position={[2, 4, -2]} intensity={0.25} />
+      <directionalLight position={[0, 6, 0]} intensity={0.2} />
 
       {/* Use built-in studio preset - more reliable in production */}
       <Environment preset="studio" background={false} />
@@ -164,7 +163,7 @@ export function Product3DViewer({ product, className }: Product3DViewerProps) {
         gl={{ 
           antialias: true, 
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.5,
+          toneMappingExposure: 1.1,
           outputColorSpace: THREE.SRGBColorSpace,
         }}
       >
