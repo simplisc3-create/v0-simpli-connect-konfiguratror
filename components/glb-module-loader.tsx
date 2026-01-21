@@ -71,9 +71,9 @@ const TARGET_COLORS: Record<string, THREE.Color> = {
   beige: new THREE.Color(0.85, 0.75, 0.6),
 }
 
-// Bright chrome material - optimized for production builds
+// Chrome material - slightly toned down
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
-  color: new THREE.Color(1.0, 1.0, 1.0),
+  color: new THREE.Color(0.92, 0.92, 0.94),
   metalness: 0.9,
   roughness: 0.12,
   envMapIntensity: 1.5,
