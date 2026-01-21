@@ -1282,11 +1282,11 @@ export function ShelfConfigurator({
             <color attach="background" args={["#ffffff"]} />
             <fog attach="fog" args={["#ffffff", 5, 15]} />
 
-            {/* Studio lighting - balanced */}
-            <ambientLight intensity={0.4} />
+            {/* Balanced lighting - authentic colors */}
+            <ambientLight intensity={0.35} />
             <directionalLight
-              position={[3, 8, 5]}
-              intensity={0.75}
+              position={[3, 6, 4]}
+              intensity={0.5}
               castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
@@ -1297,11 +1297,10 @@ export function ShelfConfigurator({
               shadow-camera-bottom={-10}
               shadow-bias={-0.0001}
             />
-            <directionalLight position={[-4, 6, 3]} intensity={0.5} />
-            <directionalLight position={[4, 5, -3]} intensity={0.4} />
-            <directionalLight position={[0, 10, 0]} intensity={0.3} />
+            <directionalLight position={[-3, 4, 2]} intensity={0.3} />
+            <directionalLight position={[2, 4, -2]} intensity={0.2} />
             
-            {/* Use built-in studio preset for consistent production rendering */}
+            {/* Studio preset for chrome reflections only */}
             <Environment preset="studio" background={false} />
 
             <Suspense
