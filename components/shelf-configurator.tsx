@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
-import { OrbitControls } from "@react-three/drei"
+import { OrbitControls, Environment, Lightformer } from "@react-three/drei"
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 import { ConfiguratorPanel } from "./configurator-panel"
 import type { ToolMode } from "./configurator-panel"
@@ -1282,10 +1282,11 @@ export function ShelfConfigurator({
             <color attach="background" args={["#ffffff"]} />
             <fog attach="fog" args={["#ffffff", 5, 15]} />
 
-            <ambientLight intensity={0.42} />
+            {/* Bright studio lighting - optimized for production */}
+            <ambientLight intensity={0.8} />
             <directionalLight
-              position={[5, 5, 5]}
-              intensity={0.58}
+              position={[3, 8, 5]}
+              intensity={1.5}
               castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
@@ -1296,7 +1297,12 @@ export function ShelfConfigurator({
               shadow-camera-bottom={-10}
               shadow-bias={-0.0001}
             />
-            <directionalLight position={[-5, 3, -5]} intensity={0.23} />
+            <directionalLight position={[-4, 6, 3]} intensity={1.0} />
+            <directionalLight position={[4, 5, -3]} intensity={0.8} />
+            <directionalLight position={[0, 10, 0]} intensity={0.6} />
+            
+            {/* Use built-in studio preset for consistent production rendering */}
+            <Environment preset="studio" background={false} />
 
             <Suspense
               fallback={

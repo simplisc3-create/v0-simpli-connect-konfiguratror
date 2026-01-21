@@ -99,81 +99,26 @@ function Scene({ product }: { product: Product }) {
         target={[0, 0.18, 0]}
       />
 
-      {/* High-key studio lighting - very bright and even like professional product photography */}
-      <ambientLight intensity={0.6} />
+      {/* High-key studio lighting - bright and even for production consistency */}
+      <ambientLight intensity={1.0} />
       
-      {/* Main key light - soft and diffuse from top-front */}
+      {/* Key light - bright from top-front */}
       <directionalLight 
-        position={[2, 10, 5]} 
-        intensity={1.2} 
+        position={[3, 8, 5]} 
+        intensity={1.8} 
         castShadow 
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
-        color="#ffffff"
       />
       
-      {/* Fill lights for even illumination */}
-      <directionalLight position={[-4, 6, 3]} intensity={0.8} color="#ffffff" />
-      <directionalLight position={[4, 6, -2]} intensity={0.6} color="#ffffff" />
-      <directionalLight position={[0, 8, 0]} intensity={0.7} color="#ffffff" />
+      {/* Fill lights - multiple for even illumination */}
+      <directionalLight position={[-4, 6, 3]} intensity={1.2} />
+      <directionalLight position={[4, 5, -3]} intensity={1.0} />
+      <directionalLight position={[0, 10, 0]} intensity={0.8} />
+      <directionalLight position={[0, 3, 6]} intensity={0.6} />
 
-      {/* Professional HDRI Studio Environment - optimized for bright chrome */}
-      <Environment resolution={256} background={false}>
-        {/* Very large overhead softbox - creates bright, even illumination */}
-        <Lightformer
-          form="rect"
-          intensity={4}
-          position={[0, 6, 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-          scale={[15, 15, 1]}
-          color="#ffffff"
-        />
-        {/* Front fill - large and soft */}
-        <Lightformer
-          form="rect"
-          intensity={2.5}
-          position={[0, 3, 6]}
-          rotation={[0, Math.PI, 0]}
-          scale={[12, 6, 1]}
-          color="#ffffff"
-        />
-        {/* Left strip light - defines chrome edges */}
-        <Lightformer
-          form="rect"
-          intensity={1.5}
-          position={[-6, 3, 0]}
-          rotation={[0, Math.PI / 2, 0]}
-          scale={[10, 4, 1]}
-          color="#ffffff"
-        />
-        {/* Right strip light */}
-        <Lightformer
-          form="rect"
-          intensity={1.5}
-          position={[6, 3, 0]}
-          rotation={[0, -Math.PI / 2, 0]}
-          scale={[10, 4, 1]}
-          color="#ffffff"
-        />
-        {/* Back light for rim highlights */}
-        <Lightformer
-          form="rect"
-          intensity={1.2}
-          position={[0, 2, -6]}
-          rotation={[0, 0, 0]}
-          scale={[12, 4, 1]}
-          color="#f8f8f8"
-        />
-        {/* Floor bounce - brightens shadows */}
-        <Lightformer
-          form="rect"
-          intensity={0.8}
-          position={[0, -0.5, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          scale={[15, 15, 1]}
-          color="#fafafa"
-        />
-      </Environment>
+      {/* Use built-in studio preset - more reliable in production */}
+      <Environment preset="studio" background={false} />
 
       <Suspense fallback={null}>
         <GLBModule
@@ -218,12 +163,13 @@ export function Product3DViewer({ product, className }: Product3DViewerProps) {
         dpr={[1, 2]} 
         gl={{ 
           antialias: true, 
-          toneMapping: 3, // ACESFilmicToneMapping
-          toneMappingExposure: 1.3,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.5,
+          outputColorSpace: THREE.SRGBColorSpace,
         }}
       >
-        <color attach="background" args={["#f8f8f8"]} />
-        <fog attach="fog" args={["#f8f8f8", 5, 15]} />
+        <color attach="background" args={["#fafafa"]} />
+        <fog attach="fog" args={["#fafafa", 6, 20]} />
         <Scene product={product} />
       </Canvas>
     </div>

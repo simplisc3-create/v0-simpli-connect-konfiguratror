@@ -71,12 +71,12 @@ const TARGET_COLORS: Record<string, THREE.Color> = {
   beige: new THREE.Color(0.88, 0.78, 0.62),
 }
 
-// Professional studio chrome - bright and clean like USM Haller product shots
+// Bright chrome material - optimized for production builds
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
   color: new THREE.Color(1.0, 1.0, 1.0),
-  metalness: 0.92,
-  roughness: 0.08,
-  envMapIntensity: 1.8,
+  metalness: 0.9,
+  roughness: 0.12,
+  envMapIntensity: 1.5,
   side: THREE.DoubleSide,
 })
 
