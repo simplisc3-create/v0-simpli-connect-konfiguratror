@@ -1,11 +1,12 @@
 "use client"
 
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, ContactShadows, Environment, PerspectiveCamera } from "@react-three/drei"
+import { OrbitControls, ContactShadows, Environment, PerspectiveCamera, Lightformer } from "@react-three/drei"
 import { Suspense } from "react"
 import { GLBModule } from "./glb-module-loader"
 import type { Product } from "@/lib/simpli-products"
 import type { GridCell } from "./shelf-configurator"
+import * as THREE from "three"
 
 interface Product3DViewerProps {
   product: Product
@@ -86,42 +87,93 @@ function Scene({ product }: { product: Product }) {
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0.8, 0.35, 0.9]} fov={40} />
+      <PerspectiveCamera makeDefault position={[0.7, 0.35, 0.9]} fov={40} />
       <OrbitControls
         enablePan={true}
         enableZoom={true}
-        enableRotate={false}
-        screenSpacePanning={true}
-        panSpeed={0.8}
+        enableRotate={true}
+        minPolarAngle={Math.PI / 6}
+        maxPolarAngle={Math.PI / 2.2}
         minDistance={0.4}
-        maxDistance={3}
+        maxDistance={2.5}
         target={[0, 0.18, 0]}
-        mouseButtons={{
-          LEFT: 2,
-          MIDDLE: 1,
-          RIGHT: 0,
-        }}
       />
 
-      {/* High-key studio lighting for bright chrome - like professional product photography */}
-      <ambientLight intensity={1.2} />
+      {/* High-key studio lighting - very bright and even like professional product photography */}
+      <ambientLight intensity={0.6} />
+      
+      {/* Main key light - soft and diffuse from top-front */}
       <directionalLight 
-        position={[2, 12, 4]} 
-        intensity={1.0} 
+        position={[2, 10, 5]} 
+        intensity={1.2} 
         castShadow 
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
+        color="#ffffff"
       />
-      <directionalLight position={[-4, 10, -2]} intensity={0.7} />
-      <directionalLight position={[0, 20, 0]} intensity={0.8} />
-      <directionalLight position={[0, 5, 8]} intensity={0.5} />
-      {/* Soft fill lights for even illumination */}
-      <pointLight position={[-3, 1, 3]} intensity={0.4} color="#ffffff" />
-      <pointLight position={[3, 1, -3]} intensity={0.4} color="#ffffff" />
-      <pointLight position={[0, 0.5, 2]} intensity={0.3} color="#ffffff" />
+      
+      {/* Fill lights for even illumination */}
+      <directionalLight position={[-4, 6, 3]} intensity={0.8} color="#ffffff" />
+      <directionalLight position={[4, 6, -2]} intensity={0.6} color="#ffffff" />
+      <directionalLight position={[0, 8, 0]} intensity={0.7} color="#ffffff" />
 
-      {/* Very bright neutral environment for clean chrome reflections */}
-      <Environment preset="city" background={false} />
+      {/* Professional HDRI Studio Environment - optimized for bright chrome */}
+      <Environment resolution={256} background={false}>
+        {/* Very large overhead softbox - creates bright, even illumination */}
+        <Lightformer
+          form="rect"
+          intensity={4}
+          position={[0, 6, 0]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[15, 15, 1]}
+          color="#ffffff"
+        />
+        {/* Front fill - large and soft */}
+        <Lightformer
+          form="rect"
+          intensity={2.5}
+          position={[0, 3, 6]}
+          rotation={[0, Math.PI, 0]}
+          scale={[12, 6, 1]}
+          color="#ffffff"
+        />
+        {/* Left strip light - defines chrome edges */}
+        <Lightformer
+          form="rect"
+          intensity={1.5}
+          position={[-6, 3, 0]}
+          rotation={[0, Math.PI / 2, 0]}
+          scale={[10, 4, 1]}
+          color="#ffffff"
+        />
+        {/* Right strip light */}
+        <Lightformer
+          form="rect"
+          intensity={1.5}
+          position={[6, 3, 0]}
+          rotation={[0, -Math.PI / 2, 0]}
+          scale={[10, 4, 1]}
+          color="#ffffff"
+        />
+        {/* Back light for rim highlights */}
+        <Lightformer
+          form="rect"
+          intensity={1.2}
+          position={[0, 2, -6]}
+          rotation={[0, 0, 0]}
+          scale={[12, 4, 1]}
+          color="#f8f8f8"
+        />
+        {/* Floor bounce - brightens shadows */}
+        <Lightformer
+          form="rect"
+          intensity={0.8}
+          position={[0, -0.5, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          scale={[15, 15, 1]}
+          color="#fafafa"
+        />
+      </Environment>
 
       <Suspense fallback={null}>
         <GLBModule
@@ -167,11 +219,11 @@ export function Product3DViewer({ product, className }: Product3DViewerProps) {
         gl={{ 
           antialias: true, 
           toneMapping: 3, // ACESFilmicToneMapping
-          toneMappingExposure: 1.4,
+          toneMappingExposure: 1.3,
         }}
       >
-        <color attach="background" args={["#f7f7f7"]} />
-        <fog attach="fog" args={["#f7f7f7", 5, 15]} />
+        <color attach="background" args={["#f8f8f8"]} />
+        <fog attach="fog" args={["#f8f8f8", 5, 15]} />
         <Scene product={product} />
       </Canvas>
     </div>
