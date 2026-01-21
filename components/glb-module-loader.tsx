@@ -57,18 +57,18 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#d2b48c": "beige",
 }
 
-// Exact Simpli Connect panel colors matching the color picker UI
+// Exact Simpli Connect panel colors - SATURATED to match navigator UI
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(0.95, 0.95, 0.95),
-  black: new THREE.Color(0.1, 0.1, 0.1),
-  gray: new THREE.Color(0.4, 0.4, 0.4),
-  anthrazit: new THREE.Color(0.2, 0.2, 0.22),
-  blue: new THREE.Color(0.0, 0.7, 0.9),
-  green: new THREE.Color(0.1, 0.55, 0.2),
-  yellow: new THREE.Color(0.9, 0.7, 0.0),
-  orange: new THREE.Color(0.95, 0.4, 0.05),
-  red: new THREE.Color(0.85, 0.15, 0.15),
-  beige: new THREE.Color(0.85, 0.75, 0.6),
+  white: new THREE.Color(1.0, 1.0, 1.0),
+  black: new THREE.Color(0.08, 0.08, 0.08),
+  gray: new THREE.Color(0.35, 0.35, 0.35),
+  anthrazit: new THREE.Color(0.15, 0.15, 0.17),
+  blue: new THREE.Color(0.0, 0.75, 0.95),
+  green: new THREE.Color(0.0, 0.6, 0.25),
+  yellow: new THREE.Color(0.95, 0.75, 0.0),
+  orange: new THREE.Color(1.0, 0.45, 0.0),
+  red: new THREE.Color(0.9, 0.1, 0.1),
+  beige: new THREE.Color(0.9, 0.8, 0.65),
 }
 
 // Chrome material - slightly toned down
@@ -483,21 +483,17 @@ const LoadedGLBModel = memo(
               const texture = oldMat.map || null
               const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
 
-              // Panel materials - true colors without environment tinting
+              // Panel materials - MeshLambertMaterial for true flat colors without environment influence
               const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
               child.material = getCachedMaterial(
                 materialKey,
                 () =>
-                  new THREE.MeshStandardMaterial({
+                  new THREE.MeshLambertMaterial({
                     map: texture,
                     color: finalColor,
-                    metalness: 0.0,
-                    roughness: isBottom ? 0.7 : 0.4,
                     side: THREE.DoubleSide,
-                    shadowSide: THREE.DoubleSide,
                     emissive: new THREE.Color(0, 0, 0),
                     emissiveIntensity: 0,
-                    envMapIntensity: 0.1,
                   }),
               )
             }

@@ -1273,7 +1273,7 @@ export function ShelfConfigurator({
               alpha: true,
               preserveDrawingBuffer: true,
               toneMapping: THREE.ACESFilmicToneMapping,
-              toneMappingExposure: 0.9,
+              toneMappingExposure: 1.0,
             }}
             dpr={[1, 2]}
             frameloop="demand"
@@ -1282,11 +1282,11 @@ export function ShelfConfigurator({
             <color attach="background" args={["#f5f5f5"]} />
             <fog attach="fog" args={["#f5f5f5", 6, 20]} />
 
-            {/* Neutral lighting - true colors without wash-out */}
-            <ambientLight intensity={0.5} />
+            {/* Flat lighting for true panel colors */}
+            <ambientLight intensity={0.7} />
             <directionalLight
               position={[2, 5, 3]}
-              intensity={0.4}
+              intensity={0.35}
               castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
@@ -1297,10 +1297,10 @@ export function ShelfConfigurator({
               shadow-camera-bottom={-10}
               shadow-bias={-0.0001}
             />
-            <directionalLight position={[-2, 3, 1]} intensity={0.2} />
+            <directionalLight position={[-2, 3, 1]} intensity={0.15} />
             
-            {/* Minimal environment for chrome only */}
-            <Environment preset="apartment" background={false} />
+            {/* Environment only for chrome reflections */}
+            <Environment preset="studio" background={false} />
 
             <Suspense
               fallback={
