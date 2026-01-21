@@ -59,7 +59,7 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
 
 // Exact Simpli Connect panel colors - matching navigator UI exactly
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(0.95, 0.95, 0.95),
+  white: new THREE.Color(1.0, 1.0, 1.0),
   black: new THREE.Color(0.12, 0.12, 0.12),
   gray: new THREE.Color(0.35, 0.35, 0.35),
   anthrazit: new THREE.Color(0.15, 0.15, 0.17),
