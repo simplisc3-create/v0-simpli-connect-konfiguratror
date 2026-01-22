@@ -240,7 +240,14 @@ export function Product3DPreview({
   const [isHovered, setIsHovered] = useState(false)
   const [hasBeenHovered, setHasBeenHovered] = useState(false)
   const [selectedColorIndex, setSelectedColorIndex] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null)
+  
+  // Callback ref to capture the container element
+  const containerRef = (node: HTMLDivElement | null) => {
+    if (node !== null) {
+      setContainerElement(node)
+    }
+  }
   
   // First effect: mark as mounted after initial render
   useEffect(() => {
@@ -249,15 +256,18 @@ export function Product3DPreview({
 
   // Second effect: delay canvas creation to ensure DOM is ready
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || !containerElement) return
     
-    const timer = setTimeout(() => {
-      if (containerRef.current) {
+    // Use requestAnimationFrame to ensure the DOM has fully painted
+    const rafId = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
         setCanvasReady(true)
-      }
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [mounted])
+      }, 150)
+      return () => clearTimeout(timer)
+    })
+    
+    return () => cancelAnimationFrame(rafId)
+  }, [mounted, containerElement])
 
   // Auto cycle colors when not hovered and has been hovered before
   useEffect(() => {
@@ -329,14 +339,14 @@ export function Product3DPreview({
   )
 
   // Always render container first, then Canvas inside after mount and canvas is ready
-  if (!mounted || !canvasReady || !glbUrl) {
+  if (!mounted || !canvasReady || !containerElement || !glbUrl) {
     return (
       <div 
         ref={containerRef} 
         className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}
       >
         <div className="text-gray-400 text-sm">
-          {!glbUrl && mounted && canvasReady ? "3D nicht verfuegbar" : "Laden..."}
+          {!glbUrl && mounted && canvasReady && containerElement ? "3D nicht verfuegbar" : "Laden..."}
         </div>
       </div>
     )
