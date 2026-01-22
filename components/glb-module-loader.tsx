@@ -499,7 +499,7 @@ const LoadedGLBModel = memo(
                     roughness: 0.4,
                     metalness: 0.0,
                     emissive: finalColor,
-                    emissiveIntensity: 0.15,
+                    emissiveIntensity: 0.075,
                   }),
               )
             }
