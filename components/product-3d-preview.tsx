@@ -14,7 +14,7 @@ interface Product3DPreviewProps {
   autoRotate?: boolean
 }
 
-// Target colors matching navigator UI
+// Target colors matching navigator UI exactly
 const TARGET_COLORS: Record<string, THREE.Color> = {
   white: new THREE.Color(1.0, 1.0, 1.0),
   black: new THREE.Color(0.12, 0.12, 0.12),
@@ -33,11 +33,65 @@ const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
 })
 
-const FRAME_KEYWORDS = ["frame", "tube", "pipe", "chrome", "metal", "stahl", "rohr", "gestell", "rahmen"]
+// Keywords for frame detection (same as glb-module-loader)
+const FRAME_KEYWORDS = ["frame", "tube", "pipe", "chrome", "metal", "stahl", "rohr", "gestell", "rahmen", "strebe", "stange", "bar"]
+const PANEL_KEYWORDS = ["panel", "board", "platte", "shelf", "regal", "seite", "side", "back", "rear", "rueck", "door", "tuer", "drawer", "schublade", "front", "deckel", "cover", "floor", "ceiling", "bodenplatte", "deckenplatte", "top", "bottom"]
 
-function isFramePart(name: string): boolean {
-  const lowerName = name.toLowerCase()
-  return FRAME_KEYWORDS.some(keyword => lowerName.includes(keyword))
+function isFramePart(
+  meshName: string,
+  geometry: THREE.BufferGeometry,
+  originalMaterial?: THREE.Material | THREE.Material[],
+): boolean {
+  const nameLower = meshName.toLowerCase()
+  
+  // Check panel keywords first - panels should NEVER be chrome
+  for (const keyword of PANEL_KEYWORDS) {
+    if (nameLower.includes(keyword)) {
+      return false
+    }
+  }
+  
+  // Check frame keywords - must match explicitly
+  for (const keyword of FRAME_KEYWORDS) {
+    if (nameLower.includes(keyword)) {
+      return true
+    }
+  }
+  
+  // Check material - only high metalness with specific color indicates chrome
+  if (originalMaterial) {
+    const mat = Array.isArray(originalMaterial) ? originalMaterial[0] : originalMaterial
+    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
+      // Only treat as frame if metalness is very high AND color is grayish (chrome-like)
+      if (mat.metalness > 0.85) {
+        const color = mat.color
+        const isGrayish = Math.abs(color.r - color.g) < 0.1 && Math.abs(color.g - color.b) < 0.1
+        if (isGrayish && color.r > 0.5) {
+          return true
+        }
+      }
+    }
+  }
+  
+  // Check geometry shape - only very thin tubes are frame parts
+  if (geometry && geometry.attributes.position) {
+    geometry.computeBoundingBox()
+    const bbox = geometry.boundingBox
+    if (bbox) {
+      const size = new THREE.Vector3()
+      bbox.getSize(size)
+      const dims = [size.x, size.y, size.z].sort((a, b) => b - a)
+      const aspectRatio = dims[0] / Math.max(dims[1], 0.001)
+      const minDim = Math.min(size.x, size.y, size.z)
+      // Much stricter: only very thin long tubes
+      const isTubeLike = minDim < 0.015 && aspectRatio > 8
+      if (isTubeLike) {
+        return true
+      }
+    }
+  }
+  
+  return false
 }
 
 function RotatingModel({ url, color }: { url: string; color: string }) {
@@ -50,13 +104,26 @@ function RotatingModel({ url, color }: { url: string; color: string }) {
     
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        const name = child.name || ""
+        const meshName = child.name || ""
+        const isFrame = isFramePart(meshName, child.geometry, child.material)
+        const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
         
-        if (isFramePart(name)) {
+        child.frustumCulled = false
+        child.castShadow = true
+        child.receiveShadow = true
+        
+        if (child.geometry) {
+          if (!child.geometry.attributes.normal) {
+            child.geometry.computeVertexNormals()
+          }
+        }
+        
+        if (isFrame) {
           child.material = CHROME_MATERIAL.clone()
         } else {
+          const finalColor = isBottom ? TARGET_COLORS.black : targetColor
           child.material = new THREE.MeshLambertMaterial({
-            color: targetColor,
+            color: finalColor,
             side: THREE.DoubleSide,
           })
         }

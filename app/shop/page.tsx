@@ -43,7 +43,7 @@ const products = [
     artNr: "MOD-004",
     description: "Für einen aufgeräumten, geschlossenen Look",
     price: 42.0,
-    category: "geschlossen",
+    category: "offen",
     glbModule: { moduleType: "mit-rueckwand", color: "white", width: 80 as const },
   },
   {
