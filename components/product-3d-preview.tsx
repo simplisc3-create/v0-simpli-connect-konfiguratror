@@ -236,20 +236,28 @@ export function Product3DPreview({
   className = "",
 }: Product3DPreviewProps) {
   const [mounted, setMounted] = useState(false)
+  const [canvasReady, setCanvasReady] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [hasBeenHovered, setHasBeenHovered] = useState(false)
   const [selectedColorIndex, setSelectedColorIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   
+  // First effect: mark as mounted after initial render
   useEffect(() => {
-    // Small delay to ensure DOM is fully ready
+    setMounted(true)
+  }, [])
+
+  // Second effect: delay canvas creation to ensure DOM is ready
+  useEffect(() => {
+    if (!mounted) return
+    
     const timer = setTimeout(() => {
       if (containerRef.current) {
-        setMounted(true)
+        setCanvasReady(true)
       }
-    }, 50)
+    }, 100)
     return () => clearTimeout(timer)
-  }, [])
+  }, [mounted])
 
   // Auto cycle colors when not hovered and has been hovered before
   useEffect(() => {
@@ -320,15 +328,15 @@ export function Product3DPreview({
     </div>
   )
 
-  // Always render container first, then Canvas inside after mount
-  if (!mounted || !glbUrl) {
+  // Always render container first, then Canvas inside after mount and canvas is ready
+  if (!mounted || !canvasReady || !glbUrl) {
     return (
       <div 
         ref={containerRef} 
         className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}
       >
         <div className="text-gray-400 text-sm">
-          {!glbUrl && mounted ? "3D nicht verfuegbar" : "3D Vorschau"}
+          {!glbUrl && mounted && canvasReady ? "3D nicht verfuegbar" : "Laden..."}
         </div>
       </div>
     )

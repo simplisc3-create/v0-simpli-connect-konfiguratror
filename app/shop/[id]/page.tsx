@@ -285,7 +285,7 @@ export default function ProductDetailPage() {
             <Separator className="my-8 bg-gray-200" />
 
             {/* Add to Cart */}
-            <div className="mt-auto">
+            <div className="mt-auto space-y-3">
               <Button
                 size="lg"
                 className={`w-full gap-2 text-lg py-6 ${
@@ -307,6 +307,16 @@ export default function ProductDetailPage() {
                   </>
                 )}
               </Button>
+              <Link href={`/konfigurator?preset=${product.moduleType}`} className="block">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full gap-2 py-6 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent"
+                >
+                  <Package className="w-5 h-5" />
+                  Weiter konfigurieren
+                </Button>
+              </Link>
               <p className="text-center text-gray-500 text-sm mt-3">Kostenloser Versand ab 100 €</p>
             </div>
           </div>

@@ -106,19 +106,294 @@ const presets = {
     columnWidths: [75, 75, 75] as (75 | 38)[],
     rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
     grid: [
-      // Row 0 = bottom (floor level) - lockable module in center
       [
         { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
         { id: "cell-0-1", type: "abschliessbare-tueren" as const, row: 0, col: 1, color: "weiss" as const },
         { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
       ],
-      // Row 1 = ghost row for upward expansion
       [
         { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
         { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
         { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
       ],
-      // Row 2 = top (ghost row for upward expansion)
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  // 80cm Module presets
+  "offenes-fach": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "offenes-fach" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "ohne-seitenwaende": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "ohne-seitenwaende" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "ohne-rueckwand": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "ohne-rueckwand" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "mit-rueckwand": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-rueckwand" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "mit-tueren": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-tueren" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "mit-klapptuer": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-klapptuer" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "mit-klapptuer-oben": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-klapptuer-oben" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "mit-doppelschublade": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-doppelschublade" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "mit-einzelschublade": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [75, 75, 75] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-einzelschublade" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  // 40cm Module presets
+  "mit-tuere-rechts": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [38, 38, 38] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-tuere-rechts" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "mit-tuere-links": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [38, 38, 38] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "mit-tuere-links" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
+      [
+        { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
+        { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
+        { id: "cell-2-2", type: "ghost" as const, row: 2, col: 2 },
+      ],
+    ],
+  },
+  "abschliessbar-links": {
+    columns: 3,
+    rows: 3,
+    columnWidths: [38, 38, 38] as (75 | 38)[],
+    rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+    grid: [
+      [
+        { id: "cell-0-0", type: "ghost" as const, row: 0, col: 0 },
+        { id: "cell-0-1", type: "abschliessbar-links" as const, row: 0, col: 1, color: "weiss" as const },
+        { id: "cell-0-2", type: "ghost" as const, row: 0, col: 2 },
+      ],
+      [
+        { id: "cell-1-0", type: "ghost" as const, row: 1, col: 0 },
+        { id: "cell-1-1", type: "ghost" as const, row: 1, col: 1 },
+        { id: "cell-1-2", type: "ghost" as const, row: 1, col: 2 },
+      ],
       [
         { id: "cell-2-0", type: "ghost" as const, row: 2, col: 0 },
         { id: "cell-2-1", type: "ghost" as const, row: 2, col: 1 },
