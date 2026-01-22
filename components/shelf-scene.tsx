@@ -271,9 +271,10 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
 
   return (
     <group>
+      {/* Dark floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color="#c0c0c0" roughness={0.9} metalness={0.05} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.85} metalness={0.1} />
       </mesh>
 
       <ContactShadows
