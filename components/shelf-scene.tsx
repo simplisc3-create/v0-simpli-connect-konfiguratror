@@ -7,11 +7,12 @@ import type { ShelfConfig, GridCell } from "./shelf-configurator"
 import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
 import { ContactShadows, Html } from "@react-three/drei"
-import type * as THREE from "three"
+import * as THREE from "three"
 
 type Props = {
   config: ShelfConfig
   selectedTool?: GridCell["type"] | null
+  selectedColor?: GridCell["color"]
   hoveredCell?: { row: number; col: number } | null
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (cell: { row: number; col: number } | null) => void
@@ -27,6 +28,72 @@ const colorMap: Record<string, string> = {
   gelb: colorHexMap.gelb,
 }
 
+// Ghost Module Preview - shows a transparent 3D preview of the selected module
+const GhostModulePreview = memo(function GhostModulePreview({
+  position,
+  moduleType,
+  color,
+  width,
+  height,
+  config,
+  isHovered,
+}: {
+  position: [number, number, number]
+  moduleType: GridCell["type"]
+  color: GridCell["color"]
+  width: number
+  height: number
+  config: ShelfConfig
+  isHovered: boolean
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  
+  // Animate opacity pulsing
+  useFrame((state) => {
+    if (groupRef.current) {
+      const pulse = 0.4 + Math.sin(state.clock.elapsedTime * 3) * 0.15
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const mat = child.material as THREE.MeshStandardMaterial
+          if (mat.transparent !== undefined) {
+            mat.opacity = isHovered ? 0.85 : pulse
+          }
+        }
+      })
+    }
+  })
+
+  if (!moduleType || moduleType === "empty" || moduleType === "ghost") {
+    return null
+  }
+
+  return (
+    <group ref={groupRef} position={position}>
+      <GLBModule
+        position={[0, 0, 0]}
+        cellType={moduleType}
+        width={width}
+        height={height}
+        depth={0.38}
+        color={color || "weiss"}
+        row={0}
+        col={0}
+        gridConfig={config}
+        isBottomModule={false}
+      />
+      {/* Glow effect underneath */}
+      <mesh position={[0, -height / 2 + 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[width * 1.1, 0.4]} />
+        <meshBasicMaterial 
+          color="#10b981" 
+          transparent 
+          opacity={isHovered ? 0.4 : 0.2} 
+        />
+      </mesh>
+    </group>
+  )
+})
+
 const SnapPoint = memo(function SnapPoint({
   position,
   row,
@@ -35,6 +102,11 @@ const SnapPoint = memo(function SnapPoint({
   onClick,
   onHover,
   isVertical = false,
+  selectedTool,
+  selectedColor,
+  cellWidth,
+  cellHeight,
+  config,
 }: {
   position: [number, number, number]
   row: number
@@ -43,11 +115,19 @@ const SnapPoint = memo(function SnapPoint({
   onClick: (row: number, col: number) => void
   onHover: (cell: { row: number; col: number } | null) => void
   isVertical?: boolean
+  selectedTool?: GridCell["type"] | null
+  selectedColor?: GridCell["color"]
+  cellWidth: number
+  cellHeight: number
+  config: ShelfConfig
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
   const [localHover, setLocalHover] = useState(false)
   const showHover = isHovered || localHover
+  
+  // Check if we have a valid tool selected to show preview
+  const hasValidTool = selectedTool && selectedTool !== "empty" && selectedTool !== "ghost"
 
   // Animate the glow effect
   useFrame((state) => {
@@ -90,11 +170,29 @@ const SnapPoint = memo(function SnapPoint({
   const hoverColor = "#22c55e" // lighter green
   const glowColor = showHover ? "#4ade80" : "#34d399"
 
+  // Calculate the center position for the ghost module preview
+  const modulePreviewPosition: [number, number, number] = isVertical
+    ? [0, cellHeight / 2, -0.19] // Center of the cell above
+    : [0, 0, -0.24] // Center of the cell
+
   return (
     <group position={position}>
-      {/* Outer glow ring */}
+      {/* Show 3D module preview when tool is selected */}
+      {hasValidTool && (
+        <GhostModulePreview
+          position={modulePreviewPosition}
+          moduleType={selectedTool}
+          color={selectedColor}
+          width={cellWidth}
+          height={cellHeight}
+          config={config}
+          isHovered={showHover}
+        />
+      )}
+      
+      {/* Outer glow ring - always visible as snap indicator */}
       <mesh ref={glowRef} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.06, 0.008, 8, 32]} />
+        <torusGeometry args={[hasValidTool ? 0.08 : 0.06, 0.008, 8, 32]} />
         <meshStandardMaterial
           color={glowColor}
           transparent
@@ -104,20 +202,22 @@ const SnapPoint = memo(function SnapPoint({
         />
       </mesh>
 
-      {/* Central dot */}
+      {/* Central dot - clickable area */}
       <mesh ref={meshRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
-        <sphereGeometry args={[0.04, 16, 16]} />
+        <sphereGeometry args={[hasValidTool ? 0.06 : 0.04, 16, 16]} />
         <meshStandardMaterial
           color={showHover ? hoverColor : baseColor}
           emissive={showHover ? hoverColor : baseColor}
           emissiveIntensity={showHover ? 2 : 1}
           metalness={0.3}
           roughness={0.2}
+          transparent={hasValidTool}
+          opacity={hasValidTool ? 0.6 : 1}
         />
       </mesh>
 
-      {/* Plus icon on hover */}
-      {showHover && (
+      {/* Plus icon on hover - only when no tool selected */}
+      {showHover && !hasValidTool && (
         <Html center distanceFactor={3} style={{ pointerEvents: "none" }}>
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/90 text-white font-bold text-lg shadow-lg shadow-emerald-500/50 animate-pulse">
             +
@@ -126,7 +226,7 @@ const SnapPoint = memo(function SnapPoint({
       )}
 
       {/* Direction indicator for vertical stacking */}
-      {isVertical && (
+      {isVertical && !hasValidTool && (
         <mesh position={[0, 0.08, 0]}>
           <coneGeometry args={[0.02, 0.04, 8]} />
           <meshStandardMaterial
@@ -142,7 +242,7 @@ const SnapPoint = memo(function SnapPoint({
   )
 })
 
-export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCellClick, onCellHover }: Props) {
+export const ShelfScene = memo(function ShelfScene({ config, selectedTool, selectedColor, hoveredCell, onCellClick, onCellHover }: Props) {
   const gridHash = useMemo(() => {
     return JSON.stringify({
       grid: config.grid.map((row) => row.map((cell) => ({ type: cell.type, color: cell.color }))),
@@ -169,6 +269,8 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
       row: number
       col: number
       isVertical: boolean
+      cellWidth: number
+      cellHeight: number
     }[] = []
 
     const depth = 0.38
@@ -237,6 +339,8 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
             row: gridRow,
             col: gridCol,
             isVertical: isAboveModule,
+            cellWidth,
+            cellHeight,
           })
         } else if (cell.type !== "empty") {
           glbs.push({
@@ -314,7 +418,7 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
         )
       })}
 
-      {snapPoints.map(({ key, position, row, col, isVertical }) => (
+      {snapPoints.map(({ key, position, row, col, isVertical, cellWidth, cellHeight }) => (
         <SnapPoint
           key={key}
           position={position}
@@ -324,6 +428,11 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
           onClick={handleClick}
           onHover={handleHover}
           isVertical={isVertical}
+          selectedTool={selectedTool}
+          selectedColor={selectedColor}
+          cellWidth={cellWidth}
+          cellHeight={cellHeight}
+          config={config}
         />
       ))}
     </group>

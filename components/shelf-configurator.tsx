@@ -28,6 +28,7 @@ import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import * as THREE from "three"
 import { LoadingAnimation } from "./loading-animation"
 import { MobileConfiguratorNav } from "./mobile-configurator-nav"
+import { CursorGhostModule } from "./cursor-ghost-module"
 import { getModuleLabel, getModuleShortLabel, getColorHex, getColorLabel } from "@/lib/module-utils"
 import {
   getCellId,
@@ -1590,6 +1591,14 @@ export function ShelfConfigurator({
           />
         </div>
       </div>
+
+      {/* Cursor Ghost Module - follows mouse when a tool is selected */}
+      <CursorGhostModule
+        selectedTool={selectedTool}
+        selectedColor={selectedColor}
+        columnWidth={defaultNewColumnWidth}
+        isVisible={!!selectedTool && selectedTool !== "empty" && selectedTool !== "ghost"}
+      />
     </div>
   )
 }

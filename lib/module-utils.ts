@@ -50,13 +50,14 @@ export const getModuleShortLabel = (type: GridCell["type"]): string => {
 export type ColorKey = GridCell["color"]
 
 export const COLOR_HEX_MAP: Record<NonNullable<ColorKey>, string> = {
-  weiss: "#ffffff",
-  schwarz: "#1a1a1a",
-  blau: "#3b82f6",
-  gruen: "#22c55e",
-  gelb: "#facc15",
-  orange: "#f97316",
-  red: "#ef4444",
+  weiss: "#FFFFFF",
+  grau: "#9E9E9E",
+  schwarz: "#111111",
+  blau: "#1E5EFF",
+  gruen: "#2FAE5D",
+  gelb: "#FFD400",
+  orange: "#FF8A00",
+  red: "#E53935",
 }
 
 export const COLOR_LABEL_MAP: Record<NonNullable<ColorKey>, string> = {

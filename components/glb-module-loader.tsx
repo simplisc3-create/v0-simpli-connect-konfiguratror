@@ -46,29 +46,33 @@ const GERMAN_TO_ENGLISH_COLOR: Record<string, string> = {
 
 const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#ffffff": "white",
-  "#1a1a1a": "black",
-  "#737373": "gray",
-  "#2e2e33": "anthrazit",
-  "#1a66ff": "blue",
-  "#00b33c": "green",
-  "#ffd900": "yellow",
-  "#ff6600": "orange",
-  "#eb1a1a": "red",
-  "#d2b48c": "beige",
+  "#FFFFFF": "white",
+  "#9e9e9e": "grey",
+  "#9E9E9E": "grey",
+  "#111111": "black",
+  "#1e5eff": "blue",
+  "#1E5EFF": "blue",
+  "#2fae5d": "green",
+  "#2FAE5D": "green",
+  "#ffd400": "yellow",
+  "#FFD400": "yellow",
+  "#ff8a00": "orange",
+  "#FF8A00": "orange",
+  "#e53935": "red",
+  "#E53935": "red",
 }
 
 // Exact Simpli Connect panel colors - matching navigator UI exactly
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(1.0, 1.0, 1.0),
-  black: new THREE.Color(0.12, 0.12, 0.12),
-  gray: new THREE.Color(0.35, 0.35, 0.35),
-  anthrazit: new THREE.Color(0.15, 0.15, 0.17),
-  blue: new THREE.Color(0.0, 0.75, 0.95),
-  green: new THREE.Color(0.0, 0.6, 0.25),
-  yellow: new THREE.Color(0.95, 0.75, 0.0),
-  orange: new THREE.Color(1.0, 0.45, 0.0),
-  red: new THREE.Color(0.9, 0.1, 0.1),
-  beige: new THREE.Color(0.9, 0.8, 0.65),
+  white: new THREE.Color("#FFFFFF"),
+  grey: new THREE.Color("#9E9E9E"),
+  gray: new THREE.Color("#9E9E9E"),
+  black: new THREE.Color("#111111"),
+  blue: new THREE.Color("#1E5EFF"),
+  green: new THREE.Color("#2FAE5D"),
+  yellow: new THREE.Color("#FFD400"),
+  orange: new THREE.Color("#FF8A00"),
+  red: new THREE.Color("#E53935"),
 }
 
 // Chrome material - slightly toned down

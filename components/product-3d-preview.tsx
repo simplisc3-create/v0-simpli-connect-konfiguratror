@@ -41,13 +41,14 @@ interface Product3DPreviewProps {
 
 // Target colors matching navigator UI exactly
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color(1.0, 1.0, 1.0),
-  black: new THREE.Color(0.12, 0.12, 0.12),
-  blue: new THREE.Color(0.0, 0.75, 0.95),
-  green: new THREE.Color(0.0, 0.6, 0.25),
-  yellow: new THREE.Color(0.95, 0.75, 0.0),
-  orange: new THREE.Color(1.0, 0.45, 0.0),
-  red: new THREE.Color(0.9, 0.1, 0.1),
+  white: new THREE.Color("#FFFFFF"),
+  grey: new THREE.Color("#9E9E9E"),
+  black: new THREE.Color("#111111"),
+  blue: new THREE.Color("#1E5EFF"),
+  green: new THREE.Color("#2FAE5D"),
+  yellow: new THREE.Color("#FFD400"),
+  orange: new THREE.Color("#FF8A00"),
+  red: new THREE.Color("#E53935"),
 }
 
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
@@ -354,8 +355,8 @@ export function Product3DPreview({
 
   // Camera position based on module width - 40cm modules need more zoom out
   const cameraPosition: [number, number, number] = width === 40 
-    ? [0.55, 0.34, 0.55]  // 40cm modules - 20% further total
-    : [0.45, 0.28, 0.45]  // 80cm modules
+    ? [0.64, 0.40, 0.64]  // 40cm modules - 10% further zoom out
+    : [0.50, 0.31, 0.50]  // 80cm modules - 10% further zoom out
 
   return (
     <div 
@@ -400,12 +401,15 @@ export function Product3DPreview({
                   : "opacity-50"
               }`}
               style={{
-                backgroundColor: c === "white" ? "#e5e5e5" 
-                  : c === "green" ? "#00994D" 
-                  : c === "yellow" ? "#F2BF00" 
-                  : c === "red" ? "#E61919" 
-                  : c === "blue" ? "#00BFF2" 
-                  : "#ffffff"
+                backgroundColor: c === "white" ? "#FFFFFF" 
+                  : c === "grey" ? "#9E9E9E"
+                  : c === "black" ? "#111111"
+                  : c === "green" ? "#2FAE5D" 
+                  : c === "yellow" ? "#FFD400" 
+                  : c === "red" ? "#E53935" 
+                  : c === "blue" ? "#1E5EFF"
+                  : c === "orange" ? "#FF8A00"
+                  : "#FFFFFF"
               }}
             />
           ))}
