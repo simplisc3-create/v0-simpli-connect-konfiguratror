@@ -9,6 +9,15 @@ import { GLBModule } from "./glb-module-loader"
 import { ContactShadows, Html } from "@react-three/drei"
 import * as THREE from "three"
 
+type PlacementGhost = {
+  id: string
+  row: number
+  col: number
+  type: GridCell["type"]
+  color: GridCell["color"]
+  createdAt: number
+}
+
 type Props = {
   config: ShelfConfig
   selectedTool?: GridCell["type"] | null
@@ -16,6 +25,10 @@ type Props = {
   hoveredCell?: { row: number; col: number } | null
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (cell: { row: number; col: number } | null) => void
+  placementGhosts?: PlacementGhost[]
+  selectedCell?: { row: number; col: number } | null
+  onApplyCellColor?: (row: number, col: number, color: GridCell["color"]) => void
+  onClearCellColor?: (row: number, col: number) => void
 }
 
 const colorMap: Record<string, string> = {
@@ -88,6 +101,90 @@ const GhostModulePreview = memo(function GhostModulePreview({
           color="#10b981" 
           transparent 
           opacity={isHovered ? 0.4 : 0.2} 
+        />
+      </mesh>
+    </group>
+  )
+})
+
+// Placement Ghost Effect - fading confirmation when module is placed
+const PlacementGhostEffect = memo(function PlacementGhostEffect({
+  position,
+  moduleType,
+  color,
+  width,
+  height,
+  config,
+  createdAt,
+}: {
+  position: [number, number, number]
+  moduleType: GridCell["type"]
+  color: GridCell["color"]
+  width: number
+  height: number
+  config: ShelfConfig
+  createdAt: number
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  const [opacity, setOpacity] = useState(1)
+  
+  // Fade out animation
+  useFrame(() => {
+    const elapsed = Date.now() - createdAt
+    const duration = 800 // ms
+    const progress = Math.min(elapsed / duration, 1)
+    
+    // Ease out animation
+    const newOpacity = 1 - progress * progress
+    setOpacity(newOpacity)
+    
+    if (groupRef.current) {
+      // Scale up slightly as it fades
+      const scale = 1 + progress * 0.15
+      groupRef.current.scale.setScalar(scale)
+      
+      // Move up slightly
+      groupRef.current.position.y = position[1] + progress * 0.05
+      
+      // Apply opacity to all meshes
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const mat = child.material as THREE.MeshStandardMaterial
+          if (mat.opacity !== undefined) {
+            mat.transparent = true
+            mat.opacity = newOpacity * 0.7
+          }
+        }
+      })
+    }
+  })
+
+  if (!moduleType || moduleType === "empty" || moduleType === "ghost") {
+    return null
+  }
+
+  return (
+    <group ref={groupRef} position={position}>
+      <GLBModule
+        position={[0, 0, 0]}
+        cellType={moduleType}
+        width={width}
+        height={height}
+        depth={0.38}
+        color={color || "weiss"}
+        row={0}
+        col={0}
+        gridConfig={config}
+        isBottomModule={false}
+      />
+      {/* Expanding ring effect */}
+      <mesh position={[0, -height / 2 + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[width * 0.4 * (1 + (1 - opacity) * 2), width * 0.5 * (1 + (1 - opacity) * 2), 32]} />
+        <meshBasicMaterial 
+          color="#10b981" 
+          transparent 
+          opacity={opacity * 0.5}
+          side={THREE.DoubleSide}
         />
       </mesh>
     </group>
@@ -242,7 +339,7 @@ const SnapPoint = memo(function SnapPoint({
   )
 })
 
-export const ShelfScene = memo(function ShelfScene({ config, selectedTool, selectedColor, hoveredCell, onCellClick, onCellHover }: Props) {
+export const ShelfScene = memo(function ShelfScene({ config, selectedTool, selectedColor, hoveredCell, onCellClick, onCellHover, placementGhosts = [] }: Props) {
   const gridHash = useMemo(() => {
     return JSON.stringify({
       grid: config.grid.map((row) => row.map((cell) => ({ type: cell.type, color: cell.color }))),
@@ -435,6 +532,49 @@ export const ShelfScene = memo(function ShelfScene({ config, selectedTool, selec
           config={config}
         />
       ))}
+
+      {/* Placement Ghost Effects - fading confirmation animation */}
+      {placementGhosts.map((ghost) => {
+        // Calculate position for the ghost
+        const columnTubeOverlap = 0.003
+        const rowTubeOverlap = 0.003
+        
+        let xPos = 0
+        for (let c = 0; c < ghost.col; c++) {
+          xPos += (config.columnWidths[c] || 75) / 100 - columnTubeOverlap
+        }
+        const cellWidth = (config.columnWidths[ghost.col] || 75) / 100
+        xPos += cellWidth / 2
+        
+        let totalWidth = 0
+        for (let c = 0; c < config.columns; c++) {
+          totalWidth += (config.columnWidths[c] || 75) / 100
+          if (c > 0) totalWidth -= columnTubeOverlap
+        }
+        const offsetX = -totalWidth / 2
+        
+        let yPos = 0
+        for (let r = 0; r < ghost.row; r++) {
+          yPos += (config.rowHeights[r] || 40) / 100 - rowTubeOverlap
+        }
+        const cellHeight = (config.rowHeights[ghost.row] || 40) / 100
+        yPos += cellHeight / 2
+
+        const position: [number, number, number] = [xPos + offsetX, yPos, -0.38 / 2]
+
+        return (
+          <PlacementGhostEffect
+            key={ghost.id}
+            position={position}
+            moduleType={ghost.type}
+            color={ghost.color}
+            width={cellWidth}
+            height={cellHeight}
+            config={config}
+            createdAt={ghost.createdAt}
+          />
+        )
+      })}
     </group>
   )
 })

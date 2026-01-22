@@ -125,28 +125,24 @@ export function CursorGhostModule({
 
   return (
     <div
-      className="pointer-events-none fixed z-50 transition-opacity duration-200"
+      className="pointer-events-none fixed z-50"
       style={{
-        left: smoothPosition.x + 24,
-        top: smoothPosition.y - 50,
-        width: "100px",
-        height: "80px",
-        opacity: isVisible ? 1 : 0,
+        left: smoothPosition.x + 20,
+        top: smoothPosition.y - 40,
+        width: "90px",
+        height: "70px",
+        opacity: 0.3,
       }}
     >
-      {/* Glow effect */}
-      <div className="absolute inset-0 rounded-xl bg-emerald-500/20 blur-xl animate-pulse" />
-      
-      {/* Main container */}
-      <div className="relative w-full h-full rounded-xl overflow-hidden bg-neutral-900/90 backdrop-blur-md border border-emerald-500/40 shadow-2xl shadow-emerald-500/30">
+      {/* Main container - minimal, ghost-like */}
+      <div className="relative w-full h-full rounded-lg overflow-hidden border border-white/20">
         <Canvas
           camera={{ position: [0.6, 0.35, 0.6], fov: 38 }}
           gl={{ antialias: true, alpha: true }}
           style={{ background: "transparent" }}
         >
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[3, 4, 3]} intensity={1} />
-          <pointLight position={[-2, 2, 2]} intensity={0.3} color="#10b981" />
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[3, 4, 3]} intensity={0.6} />
           <Environment preset="studio" />
           
           <RotatingModule
@@ -156,21 +152,6 @@ export function CursorGhostModule({
             minimalConfig={minimalConfig}
           />
         </Canvas>
-        
-        {/* Label badge */}
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-emerald-500/90 text-white text-[9px] font-semibold rounded-full shadow-lg whitespace-nowrap">
-          {label}
-        </div>
-      </div>
-      
-      {/* Connection line to cursor */}
-      <div 
-        className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center"
-        style={{ width: "24px" }}
-      >
-        <div className="w-full h-0.5 bg-gradient-to-r from-emerald-500/0 via-emerald-500/60 to-emerald-500" />
-        <div className="absolute right-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping" style={{ animationDuration: "1.5s" }} />
-        <div className="absolute right-0 w-2 h-2 rounded-full bg-emerald-400" />
       </div>
     </div>
   )

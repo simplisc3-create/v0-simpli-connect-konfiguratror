@@ -214,6 +214,29 @@ export function ShelfConfigurator({
   const [cameraTarget, setCameraTarget] = useState<[number, number, number] | null>(null)
   const orbitControlsRef = useRef<OrbitControlsImpl>(null)
 
+  // Placement ghost animation state - shows a fading ghost when module is placed
+  type PlacementGhost = {
+    id: string
+    row: number
+    col: number
+    type: GridCell["type"]
+    color: GridCell["color"]
+    createdAt: number
+  }
+  const [placementGhosts, setPlacementGhosts] = useState<PlacementGhost[]>([])
+  
+  // Auto-remove placement ghosts after animation
+  useEffect(() => {
+    if (placementGhosts.length === 0) return
+    
+    const timer = setInterval(() => {
+      const now = Date.now()
+      setPlacementGhosts(prev => prev.filter(ghost => now - ghost.createdAt < 800))
+    }, 100)
+    
+    return () => clearInterval(timer)
+  }, [placementGhosts.length])
+
   // Calculate initial camera target based on shelf dimensions (center of shelf)
   const initialCameraTarget = useMemo<[number, number, number]>(() => {
     const totalHeight = config.rowHeights.reduce((sum, h) => sum + h, 0) / 100
@@ -436,6 +459,17 @@ export function ShelfConfigurator({
             const position = calculateCellPosition(row, actualCol)
             setCameraTarget(position)
           }, 50)
+          
+          // Add placement ghost animation
+          const ghostId = `ghost-${Date.now()}-${row}-${col}`
+          setPlacementGhosts(prev => [...prev, {
+            id: ghostId,
+            row: shifted ? row : row,
+            col: actualCol,
+            type,
+            color: selectedColor,
+            createdAt: Date.now(),
+          }])
         }
 
         return newConfig
@@ -1336,9 +1370,10 @@ export function ShelfConfigurator({
                 hoveredCell={hoveredCell}
                 onCellClick={handleCellClick3D}
                 onCellHover={setHoveredCell}
-                selectedCell={selectedCell} // Pass selectedCell to ShelfScene
-                onApplyCellColor={applyCellColor} // Pass applyCellColor handler
-                onClearCellColor={clearCellColor} // Pass clearCellColor handler
+                selectedCell={selectedCell}
+                onApplyCellColor={applyCellColor}
+                onClearCellColor={clearCellColor}
+                placementGhosts={placementGhosts}
               />
             </Suspense>
 
