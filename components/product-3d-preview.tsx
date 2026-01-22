@@ -1,10 +1,35 @@
 "use client"
 
+import React from "react"
+
 import { Canvas, useFrame } from "@react-three/fiber"
 import { Environment, useGLTF } from "@react-three/drei"
-import { Suspense, useRef, useMemo, useEffect } from "react"
+import { Suspense, useRef, useMemo, useEffect, useState, Component, type ReactNode } from "react"
 import * as THREE from "three"
 import { resolveGlbUrl, type ColorKey, type ModuleType } from "@/lib/glb-registry"
+
+// Error Boundary for Canvas crashes
+class CanvasErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("[v0] Canvas error:", error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback
+    }
+    return this.props.children
+  }
+}
 
 interface Product3DPreviewProps {
   moduleType: string
@@ -96,9 +121,14 @@ function isFramePart(
 
 function RotatingModel({ url, color }: { url: string; color: string }) {
   const groupRef = useRef<THREE.Group>(null)
+  
+  // Preload the model
   const { scene } = useGLTF(url)
   
   const clonedScene = useMemo(() => {
+    if (!scene) {
+      return null
+    }
     const clone = scene.clone(true)
     const targetColor = TARGET_COLORS[color] || TARGET_COLORS.white
     
@@ -155,7 +185,7 @@ function RotatingModel({ url, color }: { url: string; color: string }) {
 
   return (
     <group ref={groupRef}>
-      <primitive object={clonedScene} />
+      {clonedScene && <primitive object={clonedScene} />}
     </group>
   )
 }
@@ -183,6 +213,12 @@ export function Product3DPreview({
   width, 
   className = "",
 }: Product3DPreviewProps) {
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Map color names
   const mappedColor = useMemo(() => {
     const colorMap: Record<string, ColorKey> = {
@@ -233,29 +269,37 @@ export function Product3DPreview({
     )
   }
 
+  const fallbackUI = (
+    <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}>
+      <div className="text-gray-400 text-sm">3D Vorschau</div>
+    </div>
+  )
+
   return (
     <div className={`w-full h-full ${className}`}>
-      <Canvas
-        dpr={[1, 2]}
-        gl={{
-          antialias: true,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0,
-        }}
-        camera={{ position: [0.4, 0.25, 0.4], fov: 35 }}
-      >
-        <color attach="background" args={["#f9fafb"]} />
-        
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[2, 4, 3]} intensity={0.35} />
-        <directionalLight position={[-2, 3, 1]} intensity={0.15} />
-        
-        <Environment preset="studio" background={false} />
+      <CanvasErrorBoundary fallback={fallbackUI}>
+        <Canvas
+          dpr={[1, 2]}
+          gl={{
+            antialias: true,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.0,
+          }}
+          camera={{ position: [0.4, 0.25, 0.4], fov: 35 }}
+        >
+          <color attach="background" args={["#f9fafb"]} />
+          
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[2, 4, 3]} intensity={0.35} />
+          <directionalLight position={[-2, 3, 1]} intensity={0.15} />
+          
+          <Environment preset="studio" background={false} />
 
-        <Suspense fallback={<FallbackBox />}>
-          <RotatingModel url={glbUrl} color={displayColor} />
-        </Suspense>
-      </Canvas>
+          <Suspense fallback={<FallbackBox />}>
+            {mounted && <RotatingModel url={glbUrl} color={displayColor} />}
+          </Suspense>
+        </Canvas>
+      </CanvasErrorBoundary>
     </div>
   )
 }

@@ -131,7 +131,7 @@ export function ConfiguratorPanel({
   const [expandedSection, setExpandedSection] = useState<string>("modules")
   const { setItem } = useCartStore()
   const [addedToCart, setAddedToCart] = useState(false)
-  const [widthFilter, setWidthFilter] = useState<WidthFilter>("all")
+  const [widthFilter, setWidthFilter] = useState<WidthFilter>(80)
 
   const totalWidthCm = config.columnWidths.reduce((sum, w) => {
     // Filter out ghost columns (columns that only have ghost cells)
@@ -346,55 +346,44 @@ export function ConfiguratorPanel({
         </div>
 
         <div className="border-b border-neutral-700 p-4">
+          {/* Tab Navigation */}
           <div className="mb-4">
-            <p className="mb-2 text-xs text-neutral-400">Modulbreite filtern:</p>
-            <div className="flex gap-2">
+            <div className="flex rounded-xl bg-neutral-800 p-1">
               <button
                 onClick={() => {
-                  const newFilter = widthFilter === 40 ? "all" : 40
-                  setWidthFilter(newFilter)
-                  if (newFilter === 40) {
-                    onSetDefaultColumnWidth?.(38)
-                  }
+                  setWidthFilter(80)
+                  onSetDefaultColumnWidth?.(75)
                 }}
                 className={cn(
-                  "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
-                  widthFilter === 40
-                    ? "bg-teal-600 text-white ring-2 ring-teal-400"
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
-                )}
-              >
-                40er Module
-              </button>
-              <button
-                onClick={() => {
-                  const newFilter = widthFilter === 80 ? "all" : 80
-                  setWidthFilter(newFilter)
-                  if (newFilter === 80) {
-                    onSetDefaultColumnWidth?.(75)
-                  }
-                }}
-                className={cn(
-                  "flex-1 rounded-xl py-2.5 text-sm font-medium transition-all",
+                  "flex-1 rounded-lg py-2.5 text-sm font-medium transition-all",
                   widthFilter === 80
-                    ? "bg-teal-600 text-white ring-2 ring-teal-400"
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
+                    ? "bg-teal-600 text-white shadow-lg"
+                    : "text-neutral-400 hover:text-neutral-200",
                 )}
               >
                 80er Module
               </button>
+              <button
+                onClick={() => {
+                  setWidthFilter(40)
+                  onSetDefaultColumnWidth?.(38)
+                }}
+                className={cn(
+                  "flex-1 rounded-lg py-2.5 text-sm font-medium transition-all",
+                  widthFilter === 40
+                    ? "bg-teal-600 text-white shadow-lg"
+                    : "text-neutral-400 hover:text-neutral-200",
+                )}
+              >
+                40er Module
+              </button>
             </div>
           </div>
 
-          {widthFilter !== "all" ? (
-            <p className="mb-3 rounded-xl bg-teal-900/30 px-3 py-2 text-xs text-teal-300">
-              Module für {widthFilter}cm werden angezeigt
-            </p>
-          ) : null}
-
+          {/* Module Grid */}
           <div className="grid grid-cols-4 gap-2">
             {moduleTypes
-              .filter((module) => getModuleAvailability(module.id))
+              .filter((module) => isModuleTypeAvailableForWidth(module.id as ModuleType, widthFilter === "all" ? 80 : widthFilter))
               .map((module) => {
                 return (
                   <button
@@ -423,9 +412,7 @@ export function ConfiguratorPanel({
               })}
           </div>
           <p className="mt-3 text-[10px] text-neutral-500">
-            {widthFilter !== "all"
-              ? `Nur ${widthFilter}cm Module werden angezeigt`
-              : "Alle verfügbaren Module werden angezeigt"}
+            {widthFilter === 80 ? "80cm breite Module" : widthFilter === 40 ? "40cm breite Module" : "Alle Module"}
           </p>
 
           <div className="mt-4 pt-4 border-t border-neutral-700">

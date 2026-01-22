@@ -8,99 +8,186 @@ import { useCartStore } from "@/lib/cart-store"
 import { SiteHeader } from "@/components/site-header"
 import { Product3DPreview } from "@/components/product-3d-preview"
 
-// Module products with 3D previews - matching configurator panel
-const products = [
+// 80cm Module products with 3D previews
+const products80 = [
   {
-    id: "offenes-fach",
+    id: "offenes-fach-80",
     name: "Offenes Fach",
-    artNr: "MOD-001",
+    artNr: "MOD-80-001",
     description: "Perfekt für schnellen Zugriff und Dekoration",
     price: 29.0,
     category: "offen",
+    width: 80,
     glbModule: { moduleType: "offenes-fach", color: "white", width: 80 as const },
   },
   {
-    id: "ohne-seitenwaende",
+    id: "ohne-seitenwaende-80",
     name: "Ohne Seitenwände",
-    artNr: "MOD-002",
+    artNr: "MOD-80-002",
     description: "Für durchgehende Regale und offene Raumgestaltung",
     price: 32.0,
     category: "offen",
+    width: 80,
     glbModule: { moduleType: "ohne-seitenwaende", color: "white", width: 80 as const },
   },
   {
-    id: "ohne-rueckwand",
+    id: "ohne-rueckwand-80",
     name: "Ohne Rückwand",
-    artNr: "MOD-003",
+    artNr: "MOD-80-003",
     description: "Ideal als Raumteiler mit beidseitigem Zugang",
     price: 35.0,
     category: "offen",
+    width: 80,
     glbModule: { moduleType: "ohne-rueckwand", color: "white", width: 80 as const },
   },
   {
-    id: "mit-rueckwand",
+    id: "mit-rueckwand-80",
     name: "Mit Rückwand",
-    artNr: "MOD-004",
+    artNr: "MOD-80-004",
     description: "Für einen aufgeräumten, geschlossenen Look",
     price: 42.0,
     category: "offen",
+    width: 80,
     glbModule: { moduleType: "mit-rueckwand", color: "white", width: 80 as const },
   },
   {
-    id: "mit-tueren",
+    id: "mit-tueren-80",
     name: "Mit Türen",
-    artNr: "MOD-005",
+    artNr: "MOD-80-005",
     description: "Stauraum mit elegantem Verschluss",
     price: 65.0,
     category: "geschlossen",
+    width: 80,
     glbModule: { moduleType: "mit-tueren", color: "white", width: 80 as const },
   },
   {
-    id: "mit-klapptuer",
+    id: "mit-klapptuer-80",
     name: "Mit Klapptür",
-    artNr: "MOD-006",
+    artNr: "MOD-80-006",
     description: "Platzsparend mit Soft-Close-Scharnieren",
     price: 55.0,
     category: "geschlossen",
+    width: 80,
     glbModule: { moduleType: "mit-klapptuer", color: "white", width: 80 as const },
   },
   {
-    id: "mit-klapptuer-oben",
+    id: "mit-klapptuer-oben-80",
     name: "Klapptür (oben)",
-    artNr: "MOD-007",
+    artNr: "MOD-80-007",
     description: "Nach oben öffnend mit Gasfeder-Unterstützung",
     price: 58.0,
     category: "geschlossen",
+    width: 80,
     glbModule: { moduleType: "mit-klapptuer-oben", color: "white", width: 80 as const },
   },
   {
-    id: "mit-doppelschublade",
+    id: "mit-doppelschublade-80",
     name: "Mit Schubladen",
-    artNr: "MOD-008",
+    artNr: "MOD-80-008",
     description: "Optimaler Stauraum mit Vollauszug",
     price: 85.0,
     category: "schubladen",
+    width: 80,
     glbModule: { moduleType: "mit-doppelschublade", color: "white", width: 80 as const },
   },
   {
-    id: "mit-einzelschublade",
+    id: "mit-einzelschublade-80",
     name: "Einzelschublade",
-    artNr: "MOD-009",
+    artNr: "MOD-80-009",
     description: "Kompakter Stauraum für einzelne Fächer",
     price: 48.0,
     category: "schubladen",
+    width: 80,
     glbModule: { moduleType: "mit-einzelschublade", color: "white", width: 80 as const },
   },
   {
-    id: "abschliessbare-tueren",
+    id: "abschliessbare-tueren-80",
     name: "Abschließbar",
-    artNr: "MOD-010",
+    artNr: "MOD-80-010",
     description: "Sicherer Stauraum mit Schloss",
     price: 95.0,
     category: "geschlossen",
+    width: 80,
     glbModule: { moduleType: "abschliessbare-tueren", color: "white", width: 80 as const },
   },
 ]
+
+// 40cm Module products with 3D previews
+const products40 = [
+  {
+    id: "offenes-fach-40",
+    name: "Offenes Fach",
+    artNr: "MOD-40-001",
+    description: "Kompaktes offenes Fach für kleine Räume",
+    price: 22.0,
+    category: "offen",
+    width: 40,
+    glbModule: { moduleType: "offenes-fach", color: "white", width: 40 as const },
+  },
+  {
+    id: "ohne-seitenwaende-40",
+    name: "Ohne Seitenwände",
+    artNr: "MOD-40-002",
+    description: "Schlankes Design ohne seitliche Begrenzung",
+    price: 25.0,
+    category: "offen",
+    width: 40,
+    glbModule: { moduleType: "ohne-seitenwaende", color: "white", width: 40 as const },
+  },
+  {
+    id: "mit-rueckwand-40",
+    name: "Mit Rückwand",
+    artNr: "MOD-40-003",
+    description: "Geschlossene Rückseite für sauberen Look",
+    price: 32.0,
+    category: "offen",
+    width: 40,
+    glbModule: { moduleType: "mit-rueckwand", color: "white", width: 40 as const },
+  },
+  {
+    id: "mit-tuere-rechts-40",
+    name: "Mit Tür rechts",
+    artNr: "MOD-40-004",
+    description: "Einzeltür mit Anschlag rechts",
+    price: 45.0,
+    category: "geschlossen",
+    width: 40,
+    glbModule: { moduleType: "mit-tuere-rechts", color: "white", width: 40 as const },
+  },
+  {
+    id: "mit-tuere-links-40",
+    name: "Mit Tür links",
+    artNr: "MOD-40-005",
+    description: "Einzeltür mit Anschlag links",
+    price: 45.0,
+    category: "geschlossen",
+    width: 40,
+    glbModule: { moduleType: "mit-tuere-links", color: "white", width: 40 as const },
+  },
+  {
+    id: "abschliessbar-links-40",
+    name: "Abschließbar links",
+    artNr: "MOD-40-006",
+    description: "Sicherer Stauraum mit Schloss, Anschlag links",
+    price: 65.0,
+    category: "geschlossen",
+    width: 40,
+    glbModule: { moduleType: "abschliessbar-links", color: "white", width: 40 as const },
+  },
+  {
+    id: "abschliessbar-rechts-40",
+    name: "Abschließbar rechts",
+    artNr: "MOD-40-007",
+    description: "Sicherer Stauraum mit Schloss, Anschlag rechts",
+    price: 65.0,
+    category: "geschlossen",
+    width: 40,
+    glbModule: { moduleType: "abschliessbar-rechts", color: "white", width: 40 as const },
+  },
+]
+
+// Combined for backwards compatibility - use products80 as default
+const products = products80
 
 const categories = [
   { id: "alle", name: "Alle" },
@@ -110,12 +197,24 @@ const categories = [
 ]
 
 export default function ShopPage() {
+  const [selectedWidth, setSelectedWidth] = useState<80 | 40>(80)
   const [selectedCategory, setSelectedCategory] = useState("alle")
   const [sortBy, setSortBy] = useState("name")
   const { addItem } = useCartStore()
 
+  // Get products based on selected width
+  const currentProducts = selectedWidth === 80 ? products80 : products40
+
+  // Filter by category (only show "schubladen" category for 80cm modules)
+  const availableCategories = selectedWidth === 80 
+    ? categories 
+    : categories.filter(c => c.id !== "schubladen")
+
+  // Reset category if switching to 40cm and "schubladen" was selected
+  const effectiveCategory = selectedWidth === 40 && selectedCategory === "schubladen" ? "alle" : selectedCategory
+
   const filteredProducts =
-    selectedCategory === "alle" ? products : products.filter((p) => p.category === selectedCategory)
+    effectiveCategory === "alle" ? currentProducts : currentProducts.filter((p) => p.category === effectiveCategory)
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (sortBy === "price-asc") return a.price - b.price
@@ -139,15 +238,46 @@ export default function ShopPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Filters */}
+          {/* Width Tabs */}
+          <div className="mb-6">
+            <div className="inline-flex rounded-xl bg-gray-200 p-1">
+              <button
+                onClick={() => setSelectedWidth(80)}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  selectedWidth === 80
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                80er Module
+              </button>
+              <button
+                onClick={() => setSelectedWidth(40)}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  selectedWidth === 40
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                40er Module
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              {selectedWidth === 80 
+                ? "Breite Module (80cm) - ideal für große Regale" 
+                : "Schmale Module (40cm) - perfekt für kompakte Lösungen"}
+            </p>
+          </div>
+
+          {/* Category Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <div className="flex items-center gap-2 flex-wrap">
-              {categories.map((cat) => (
+              {availableCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                    selectedCategory === cat.id 
+                    effectiveCategory === cat.id 
                       ? "bg-teal-600 text-white shadow-md" 
                       : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
                   }`}
