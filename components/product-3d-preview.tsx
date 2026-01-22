@@ -163,10 +163,28 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
     return clone
   }, [scene, color])
 
-  // Only rotate when hovered
+  // Only rotate when hovered, reset to front view when not
   useFrame((_, delta) => {
-    if (groupRef.current && isHovered) {
-      groupRef.current.rotation.y += delta * 0.8
+    if (groupRef.current) {
+      if (isHovered) {
+        groupRef.current.rotation.y += delta * 0.8
+      } else {
+        // Normalize rotation to -PI to PI range first
+        let currentY = groupRef.current.rotation.y % (Math.PI * 2)
+        if (currentY > Math.PI) currentY -= Math.PI * 2
+        if (currentY < -Math.PI) currentY += Math.PI * 2
+        
+        // Smoothly lerp back to front view (0)
+        const targetY = 0
+        const diff = targetY - currentY
+        const speed = 8 // Higher = faster return
+        
+        if (Math.abs(diff) > 0.01) {
+          groupRef.current.rotation.y = currentY + diff * Math.min(delta * speed, 1)
+        } else {
+          groupRef.current.rotation.y = 0
+        }
+      }
     }
   })
 
@@ -208,6 +226,9 @@ function FallbackBox() {
   )
 }
 
+// Available colors for cycling
+const AVAILABLE_COLORS = ["white", "green", "yellow", "red", "blue"] as const
+
 export function Product3DPreview({ 
   moduleType, 
   color, 
@@ -216,6 +237,8 @@ export function Product3DPreview({
 }: Product3DPreviewProps) {
   const [mounted, setMounted] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [hasBeenHovered, setHasBeenHovered] = useState(false)
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   
   useEffect(() => {
@@ -228,19 +251,40 @@ export function Product3DPreview({
     return () => clearTimeout(timer)
   }, [])
 
-  // Map color names
-  const mappedColor = useMemo(() => {
-    const colorMap: Record<string, ColorKey> = {
-      white: "white", weiss: "white",
-      black: "white", schwarz: "white", // Use white GLB, recolor
-      blue: "blue", blau: "blue",
-      green: "green", gruen: "green",
-      yellow: "yellow", gelb: "yellow",
-      orange: "red", // Use red GLB, recolor
-      red: "red", rot: "red",
+  // Auto cycle colors when not hovered and has been hovered before
+  useEffect(() => {
+    if (hasBeenHovered && !isHovered) {
+      const interval = setInterval(() => {
+        setSelectedColorIndex((prev) => (prev + 1) % AVAILABLE_COLORS.length)
+      }, 1500) // Change color every 1.5 seconds
+      return () => clearInterval(interval)
     }
-    return colorMap[color] || "white"
-  }, [color])
+  }, [hasBeenHovered, isHovered])
+
+  // Track first hover
+  const handleMouseEnter = () => {
+    setIsHovered(true)
+    if (!hasBeenHovered) {
+      setHasBeenHovered(true)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    setIsHovered(false)
+  }
+
+  // Determine the active color - use selected color if has been hovered, otherwise use prop
+  const activeColor = hasBeenHovered && !isHovered 
+    ? AVAILABLE_COLORS[selectedColorIndex] 
+    : color
+
+  // Map color names - ALWAYS use "white" for the GLB file to avoid 404 errors
+  // The actual color is applied via material recoloring, not different GLB files
+  const mappedColor = useMemo(() => {
+    // Always use white GLB and recolor - this ensures we never hit a 404
+    // because white GLBs are available for all module types
+    return "white" as ColorKey
+  }, [])
 
   const displayColor = useMemo(() => {
     const map: Record<string, string> = {
@@ -252,8 +296,8 @@ export function Product3DPreview({
       orange: "orange",
       red: "red", rot: "red",
     }
-    return map[color] || "white"
-  }, [color])
+    return map[activeColor] || "white"
+  }, [activeColor])
 
   const glbUrl = useMemo(() => {
     try {
@@ -298,9 +342,9 @@ export function Product3DPreview({
   return (
     <div 
       ref={containerRef} 
-      className={`w-full h-full ${className}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className={`w-full h-full relative ${className}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <CanvasErrorBoundary fallback={fallbackUI}>
         <Canvas
@@ -325,6 +369,30 @@ export function Product3DPreview({
           </Suspense>
         </Canvas>
       </CanvasErrorBoundary>
+      
+      {/* Color indicator - show current color when cycling */}
+      {hasBeenHovered && !isHovered && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
+          {AVAILABLE_COLORS.map((c, index) => (
+            <div
+              key={c}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                selectedColorIndex === index 
+                  ? "scale-125 ring-1 ring-gray-400" 
+                  : "opacity-50"
+              }`}
+              style={{
+                backgroundColor: c === "white" ? "#e5e5e5" 
+                  : c === "green" ? "#00994D" 
+                  : c === "yellow" ? "#F2BF00" 
+                  : c === "red" ? "#E61919" 
+                  : c === "blue" ? "#00BFF2" 
+                  : "#ffffff"
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
