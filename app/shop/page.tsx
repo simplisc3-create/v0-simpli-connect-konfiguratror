@@ -1,174 +1,118 @@
 "use client"
 import Link from "next/link"
 import type React from "react"
-import Image from "next/image"
-import { useState, useEffect } from "react"
-import { ShoppingCart, Filter, ChevronDown, Check } from "lucide-react"
+import { useState } from "react"
+import { ShoppingCart, ChevronDown, Check, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/lib/cart-store"
 import { SiteHeader } from "@/components/site-header"
-import { useProductImages } from "@/hooks/use-product-images"
+import { Product3DPreview } from "@/components/product-3d-preview"
 
+// Module products with 3D previews - matching configurator panel
 const products = [
   {
-    id: "leiter-40",
-    name: "Leiter 40",
-    artNr: "SIM001",
-    description: "Vertikaler Rahmen 40cm",
-    price: 13.5,
-    category: "rahmen",
-    image: "/chrome-metal-ladder-frame-40cm.jpg",
+    id: "offenes-fach",
+    name: "Offenes Fach",
+    artNr: "MOD-001",
+    description: "Perfekt für schnellen Zugriff und Dekoration",
+    price: 29.0,
+    category: "offen",
+    glbModule: { moduleType: "offenes-fach", color: "white", width: 80 as const },
   },
   {
-    id: "leiter-80",
-    name: "Leiter 80",
-    artNr: "SIM002",
-    description: "Vertikaler Rahmen 80cm",
-    price: 20.5,
-    category: "rahmen",
-    image: "/chrome-metal-ladder-frame-80cm.jpg",
+    id: "ohne-seitenwaende",
+    name: "Ohne Seitenwände",
+    artNr: "MOD-002",
+    description: "Für durchgehende Regale und offene Raumgestaltung",
+    price: 32.0,
+    category: "offen",
+    glbModule: { moduleType: "ohne-seitenwaende", color: "white", width: 80 as const },
   },
   {
-    id: "leiter-120",
-    name: "Leiter 120",
-    artNr: "SIM003",
-    description: "Vertikaler Rahmen 120cm",
-    price: 27.5,
-    category: "rahmen",
-    image: "/chrome-metal-ladder-frame-120cm.jpg",
-  },
-  {
-    id: "leiter-160",
-    name: "Leiter 160",
-    artNr: "SIM004",
-    description: "Vertikaler Rahmen 160cm",
-    price: 33.5,
-    category: "rahmen",
-    image: "/chrome-metal-ladder-frame-160cm.jpg",
-  },
-  {
-    id: "leiter-200",
-    name: "Leiter 200",
-    artNr: "SIM005",
-    description: "Vertikaler Rahmen 200cm",
-    price: 41.0,
-    category: "rahmen",
-    image: "/chrome-metal-ladder-frame-200cm.jpg",
-  },
-  {
-    id: "stangenset-40",
-    name: "Stangenset 40",
-    artNr: "SIM006",
-    description: "Horizontale Stangen 40cm (2er Set)",
-    price: 8.0,
-    category: "rahmen",
-    image: "/chrome-horizontal-bar-set-40cm.jpg",
-  },
-  {
-    id: "stangenset-80",
-    name: "Stangenset 80",
-    artNr: "SIM007",
-    description: "Horizontale Stangen 80cm (2er Set)",
-    price: 12.0,
-    category: "rahmen",
-    image: "/chrome-horizontal-bar-set-80cm.jpg",
-  },
-  {
-    id: "flaechenset-40-weiss",
-    name: "Flächenset 40 Weiß",
-    artNr: "SIM010",
-    description: "Regalböden 40cm weiß (9 Stück)",
-    price: 15.0,
-    category: "flaechen",
-    image: "/white-shelf-panels-40cm-pack.jpg",
-  },
-  {
-    id: "flaechenset-80-weiss",
-    name: "Flächenset 80 Weiß",
-    artNr: "SIM011",
-    description: "Regalböden 80cm weiß (11 Stück)",
-    price: 22.0,
-    category: "flaechen",
-    image: "/white-shelf-panels-80cm-pack.jpg",
-  },
-  {
-    id: "flaechenset-40-schwarz",
-    name: "Flächenset 40 Schwarz",
-    artNr: "SIM009",
-    description: "Regalböden 40cm schwarz (9 Stück)",
-    price: 15.0,
-    category: "flaechen",
-    image: "/black-shelf-panels-40cm-pack.jpg",
-  },
-  {
-    id: "flaechenset-80-schwarz",
-    name: "Flächenset 80 Schwarz",
-    artNr: "SIM012",
-    description: "Regalböden 80cm schwarz (11 Stück)",
-    price: 22.0,
-    category: "flaechen",
-    image: "/black-shelf-panels-80cm-pack.jpg",
-  },
-  {
-    id: "doppelschublade-weiss",
-    name: "Doppelschublade Weiß",
-    artNr: "SIM018",
-    description: "Schubladenmodul mit 2 Schubladen",
-    price: 85.0,
-    category: "module",
-    image: "/images/products/doppelschublade-weiss.png",
-  },
-  {
-    id: "tuer-40-weiss",
-    name: "Tür 40cm Weiß",
-    artNr: "SIM019-white",
-    description: "Türmodul 40cm weiß",
-    price: 45.0,
-    category: "module",
-    image: "/white-door-panel-40cm-furniture.jpg",
-  },
-  {
-    id: "klapptuer-weiss",
-    name: "Klapptür Weiß",
-    artNr: "SIM032-white",
-    description: "Klapptürmodul weiß",
-    price: 55.0,
-    category: "module",
-    image: "/white-flip-door-panel-furniture.jpg",
-  },
-  {
-    id: "funktionswand-edelstahl",
-    name: "Funktionswand Edelstahl",
-    artNr: "SIM023",
-    description: "Rückwand Edelstahl",
+    id: "ohne-rueckwand",
+    name: "Ohne Rückwand",
+    artNr: "MOD-003",
+    description: "Ideal als Raumteiler mit beidseitigem Zugang",
     price: 35.0,
-    category: "zubehoer",
-    image: "/stainless-steel-back-panel.jpg",
+    category: "offen",
+    glbModule: { moduleType: "ohne-rueckwand", color: "white", width: 80 as const },
   },
   {
-    id: "schloss-typ-a",
-    name: "Schloss Typ A",
-    artNr: "SIM1000a",
-    description: "Abschließbares Schloss",
-    price: 25.0,
-    category: "zubehoer",
-    image: "/schloss-typ-a.jpg",
+    id: "mit-rueckwand",
+    name: "Mit Rückwand",
+    artNr: "MOD-004",
+    description: "Für einen aufgeräumten, geschlossenen Look",
+    price: 42.0,
+    category: "geschlossen",
+    glbModule: { moduleType: "mit-rueckwand", color: "white", width: 80 as const },
+  },
+  {
+    id: "mit-tueren",
+    name: "Mit Türen",
+    artNr: "MOD-005",
+    description: "Stauraum mit elegantem Verschluss",
+    price: 65.0,
+    category: "geschlossen",
+    glbModule: { moduleType: "mit-tueren", color: "white", width: 80 as const },
+  },
+  {
+    id: "mit-klapptuer",
+    name: "Mit Klapptür",
+    artNr: "MOD-006",
+    description: "Platzsparend mit Soft-Close-Scharnieren",
+    price: 55.0,
+    category: "geschlossen",
+    glbModule: { moduleType: "mit-klapptuer", color: "white", width: 80 as const },
+  },
+  {
+    id: "mit-klapptuer-oben",
+    name: "Klapptür (oben)",
+    artNr: "MOD-007",
+    description: "Nach oben öffnend mit Gasfeder-Unterstützung",
+    price: 58.0,
+    category: "geschlossen",
+    glbModule: { moduleType: "mit-klapptuer-oben", color: "white", width: 80 as const },
+  },
+  {
+    id: "mit-doppelschublade",
+    name: "Mit Schubladen",
+    artNr: "MOD-008",
+    description: "Optimaler Stauraum mit Vollauszug",
+    price: 85.0,
+    category: "schubladen",
+    glbModule: { moduleType: "mit-doppelschublade", color: "white", width: 80 as const },
+  },
+  {
+    id: "mit-einzelschublade",
+    name: "Einzelschublade",
+    artNr: "MOD-009",
+    description: "Kompakter Stauraum für einzelne Fächer",
+    price: 48.0,
+    category: "schubladen",
+    glbModule: { moduleType: "mit-einzelschublade", color: "white", width: 80 as const },
+  },
+  {
+    id: "abschliessbare-tueren",
+    name: "Abschließbar",
+    artNr: "MOD-010",
+    description: "Sicherer Stauraum mit Schloss",
+    price: 95.0,
+    category: "geschlossen",
+    glbModule: { moduleType: "abschliessbare-tueren", color: "white", width: 80 as const },
   },
 ]
 
 const categories = [
-  { id: "alle", name: "Alle Produkte" },
-  { id: "rahmen", name: "Rahmen & Stangen" },
-  { id: "flaechen", name: "Flächensets" },
-  { id: "module", name: "Module" },
-  { id: "zubehoer", name: "Zubehör" },
+  { id: "alle", name: "Alle" },
+  { id: "offen", name: "Offene Module" },
+  { id: "geschlossen", name: "Mit Türen" },
+  { id: "schubladen", name: "Schubladen" },
 ]
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("alle")
   const [sortBy, setSortBy] = useState("name")
-  const { getTotalItems, addItem } = useCartStore()
-  const { imageMap, isLoading } = useProductImages()
+  const { addItem } = useCartStore()
 
   const filteredProducts =
     selectedCategory === "alle" ? products : products.filter((p) => p.category === selectedCategory)
@@ -180,70 +124,77 @@ export default function ShopPage() {
   })
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* Navigation */}
+    <main className="min-h-screen bg-gray-50">
       <SiteHeader />
 
-      {/* Page Content */}
-      <div className="pt-24 pb-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold text-gray-900">Shop</h1>
-            <p className="mt-2 text-gray-600">Alle Komponenten für dein individuelles Regalsystem.</p>
+      <div className="pt-20 pb-16">
+        {/* Hero Section */}
+        <div className="bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight">Module Shop</h1>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl">
+              Alle Module für dein individuelles Regalsystem. Wähle aus verschiedenen Varianten und Farben.
+            </p>
           </div>
+        </div>
 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <div className="flex items-center gap-2 flex-wrap">
-              <Filter className="w-4 h-4 text-gray-500" />
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                    selectedCategory === cat.id ? "bg-black text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                    selectedCategory === cat.id 
+                      ? "bg-teal-600 text-white shadow-md" 
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
                   }`}
                 >
                   {cat.name}
                 </button>
               ))}
             </div>
-            <div className="md:ml-auto flex items-center gap-2">
+            <div className="sm:ml-auto flex items-center gap-2">
               <span className="text-sm text-gray-500">Sortieren:</span>
               <div className="relative">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-gray-100 rounded-lg px-4 py-2 pr-8 text-sm font-medium cursor-pointer hover:bg-gray-200 transition"
+                  className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2.5 pr-8 text-sm font-medium cursor-pointer hover:border-gray-300 transition"
                 >
                   <option value="name">Name</option>
                   <option value="price-asc">Preis aufsteigend</option>
                   <option value="price-desc">Preis absteigend</option>
                 </select>
-                <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
               </div>
             </div>
           </div>
 
           {/* Products Grid */}
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {sortedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} addItem={addItem} imageMap={imageMap} />
+              <ProductCard key={product.id} product={product} addItem={addItem} />
             ))}
           </div>
 
+
+
           {/* CTA Banner */}
-          <div className="mt-16 bg-gray-50 rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="mt-16 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Lieber selbst konfigurieren?</h2>
-              <p className="mt-2 text-gray-600">
-                Mit unserem 3D-Konfigurator stellst du dein Traumregal in Minuten zusammen.
+              <h2 className="text-2xl md:text-3xl font-bold text-white">Lieber selbst konfigurieren?</h2>
+              <p className="mt-3 text-gray-300 max-w-lg">
+                Mit unserem 3D-Konfigurator stellst du dein Traumregal in Minuten zusammen. 
+                Kombiniere Module, Farben und Größen nach deinen Wünschen.
               </p>
             </div>
             <Link href="/konfigurator">
-              <Button size="lg" className="bg-black hover:bg-gray-800 whitespace-nowrap">
+              <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white whitespace-nowrap gap-2">
                 Zum Konfigurator
+                <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
           </div>
@@ -313,7 +264,7 @@ export default function ShopPage() {
   )
 }
 
-function ProductCard({ product, addItem, imageMap }: { product: (typeof products)[0]; addItem: any; imageMap: any }) {
+function ProductCard({ product, addItem }: { product: (typeof products)[0]; addItem: any }) {
   const [added, setAdded] = useState(false)
 
   const handleAdd = (e: React.MouseEvent) => {
@@ -324,7 +275,6 @@ function ProductCard({ product, addItem, imageMap }: { product: (typeof products
       name: product.name,
       artNr: product.artNr,
       price: product.price,
-      image: product.image,
     })
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
@@ -334,30 +284,19 @@ function ProductCard({ product, addItem, imageMap }: { product: (typeof products
     <Link href={`/shop/${product.id}`} className="block">
       <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
         <div className="aspect-square overflow-hidden flex items-center justify-center bg-gray-50 relative">
-          {imageMap[product.artNr] ? (
-            <Image
-              src={imageMap[product.artNr] || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : product.image ? (
-            <Image
-              src={product.image || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-16 h-16 bg-gray-200 rounded-lg" />
-          )}
+          <Product3DPreview
+            moduleType={product.glbModule.moduleType}
+            color={product.glbModule.color}
+            width={product.glbModule.width}
+            autoRotate={true}
+          />
         </div>
         <div className="p-4">
           <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>
           <h3 className="font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">{product.name}</h3>
           <p className="text-sm text-gray-600 mt-1 line-clamp-2">{product.description}</p>
           <div className="mt-4 flex items-center justify-between">
-            <span className="font-bold text-lg">{product.price.toFixed(2)} €</span>
+            <span className="font-bold text-lg">ab {product.price.toFixed(2)} €</span>
             <Button
               size="sm"
               variant={added ? "default" : "outline"}

@@ -46,15 +46,27 @@ import { useCellColors } from "@/hooks/use-cell-colors"
 function CameraController({
   target,
   controlsRef,
+  initialTarget,
 }: {
   target: [number, number, number] | null
   controlsRef: React.RefObject<OrbitControlsImpl | null>
+  initialTarget: [number, number, number]
 }) {
-  const smoothTarget = useRef(new THREE.Vector3(0, 0.3, 0))
+  const smoothTarget = useRef(new THREE.Vector3(initialTarget[0], initialTarget[1], initialTarget[2]))
   const isAnimating = useRef(false)
+  const hasInitialized = useRef(false)
 
   useFrame(() => {
-    if (!controlsRef.current || !target) return
+    if (!controlsRef.current) return
+    
+    // On first frame, set target to center of shelf
+    if (!hasInitialized.current) {
+      controlsRef.current.target.set(initialTarget[0], initialTarget[1], initialTarget[2])
+      controlsRef.current.update()
+      hasInitialized.current = true
+    }
+    
+    if (!target) return
 
     const targetVec = new THREE.Vector3(target[0], target[1], target[2])
 
@@ -200,6 +212,12 @@ export function ShelfConfigurator({
   // Camera focus state for smooth animation to newest module
   const [cameraTarget, setCameraTarget] = useState<[number, number, number] | null>(null)
   const orbitControlsRef = useRef<OrbitControlsImpl>(null)
+
+  // Calculate initial camera target based on shelf dimensions (center of shelf)
+  const initialCameraTarget = useMemo<[number, number, number]>(() => {
+    const totalHeight = config.rowHeights.reduce((sum, h) => sum + h, 0) / 100
+    return [0, totalHeight / 2, 0]
+  }, [config.rowHeights])
 
   const smoothTarget = useRef(new THREE.Vector3(0, 0.3, 0))
   const isAnimating = useRef(false)
@@ -1333,7 +1351,7 @@ export function ShelfConfigurator({
               enableDamping
               dampingFactor={0.05}
             />
-            <CameraController target={cameraTarget} controlsRef={orbitControlsRef} />
+            <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
           </Canvas>
 
           {/* CHANGE: Added camera controls info box in top left corner */}
