@@ -119,7 +119,7 @@ function isFramePart(
   return false
 }
 
-function RotatingModel({ url, color }: { url: string; color: string }) {
+function RotatingModel({ url, color, isHovered }: { url: string; color: string; isHovered: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
   
   // Preload the model
@@ -163,9 +163,10 @@ function RotatingModel({ url, color }: { url: string; color: string }) {
     return clone
   }, [scene, color])
 
+  // Only rotate when hovered
   useFrame((_, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.4
+    if (groupRef.current && isHovered) {
+      groupRef.current.rotation.y += delta * 0.8
     }
   })
 
@@ -214,9 +215,17 @@ export function Product3DPreview({
   className = "",
 }: Product3DPreviewProps) {
   const [mounted, setMounted] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
   
   useEffect(() => {
-    setMounted(true)
+    // Small delay to ensure DOM is fully ready
+    const timer = setTimeout(() => {
+      if (containerRef.current) {
+        setMounted(true)
+      }
+    }, 50)
+    return () => clearTimeout(timer)
   }, [])
 
   // Map color names
@@ -267,21 +276,32 @@ export function Product3DPreview({
     </div>
   )
 
-  // Don't render Canvas until mounted on client
-  if (!mounted) {
-    return fallbackUI
-  }
-
-  if (!glbUrl) {
+  // Always render container first, then Canvas inside after mount
+  if (!mounted || !glbUrl) {
     return (
-      <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}>
-        <div className="text-gray-400 text-sm">3D nicht verfuegbar</div>
+      <div 
+        ref={containerRef} 
+        className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}
+      >
+        <div className="text-gray-400 text-sm">
+          {!glbUrl && mounted ? "3D nicht verfuegbar" : "3D Vorschau"}
+        </div>
       </div>
     )
   }
 
+  // Camera position based on module width - 40cm modules need more zoom out
+  const cameraPosition: [number, number, number] = width === 40 
+    ? [0.55, 0.34, 0.55]  // 40cm modules - 20% further total
+    : [0.45, 0.28, 0.45]  // 80cm modules
+
   return (
-    <div className={`w-full h-full ${className}`}>
+    <div 
+      ref={containerRef} 
+      className={`w-full h-full ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <CanvasErrorBoundary fallback={fallbackUI}>
         <Canvas
           dpr={[1, 2]}
@@ -290,7 +310,7 @@ export function Product3DPreview({
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 1.0,
           }}
-          camera={{ position: [0.44, 0.27, 0.44], fov: 35 }}
+          camera={{ position: cameraPosition, fov: 35 }}
         >
           <color attach="background" args={["#f9fafb"]} />
           
@@ -301,7 +321,7 @@ export function Product3DPreview({
           <Environment preset="studio" background={false} />
 
           <Suspense fallback={<FallbackBox />}>
-            <RotatingModel url={glbUrl} color={displayColor} />
+            <RotatingModel url={glbUrl} color={displayColor} isHovered={isHovered} />
           </Suspense>
         </Canvas>
       </CanvasErrorBoundary>
