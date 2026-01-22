@@ -1,7 +1,6 @@
 "use client"
 
 import React from "react"
-
 import { Canvas, useFrame } from "@react-three/fiber"
 import { Environment, useGLTF } from "@react-three/drei"
 import { Suspense, useRef, useMemo, useEffect, useState, Component, type ReactNode } from "react"
@@ -236,39 +235,19 @@ export function Product3DPreview({
   width, 
   className = "",
 }: Product3DPreviewProps) {
-  const [mounted, setMounted] = useState(false)
   const [canvasReady, setCanvasReady] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [hasBeenHovered, setHasBeenHovered] = useState(false)
   const [selectedColorIndex, setSelectedColorIndex] = useState(0)
-  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null)
-  
-  // Callback ref to capture the container element
-  const containerRef = (node: HTMLDivElement | null) => {
-    if (node !== null) {
-      setContainerElement(node)
-    }
-  }
-  
-  // First effect: mark as mounted after initial render
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
-  // Second effect: delay canvas creation to ensure DOM is ready
+  // Single effect: delay canvas creation to ensure DOM is ready
   useEffect(() => {
-    if (!mounted || !containerElement) return
+    const timer = setTimeout(() => {
+      setCanvasReady(true)
+    }, 200)
     
-    // Use requestAnimationFrame to ensure the DOM has fully painted
-    const rafId = requestAnimationFrame(() => {
-      const timer = setTimeout(() => {
-        setCanvasReady(true)
-      }, 150)
-      return () => clearTimeout(timer)
-    })
-    
-    return () => cancelAnimationFrame(rafId)
-  }, [mounted, containerElement])
+    return () => clearTimeout(timer)
+  }, [])
 
   // Auto cycle colors when not hovered and has been hovered before
   useEffect(() => {
@@ -339,15 +318,12 @@ export function Product3DPreview({
     </div>
   )
 
-  // Always render container first, then Canvas inside after mount and canvas is ready
-  if (!mounted || !canvasReady || !containerElement || !glbUrl) {
+  // Show loading state until canvas is ready
+  if (!canvasReady || !glbUrl) {
     return (
-      <div 
-        ref={containerRef} 
-        className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}
-      >
+      <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}>
         <div className="text-gray-400 text-sm">
-          {!glbUrl && mounted && canvasReady && containerElement ? "3D nicht verfuegbar" : "Laden..."}
+          {!glbUrl && canvasReady ? "3D nicht verfuegbar" : "Laden..."}
         </div>
       </div>
     )
@@ -360,7 +336,6 @@ export function Product3DPreview({
 
   return (
     <div 
-      ref={containerRef} 
       className={`w-full h-full relative ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

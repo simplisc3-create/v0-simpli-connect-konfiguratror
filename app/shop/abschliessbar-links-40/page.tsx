@@ -57,18 +57,17 @@ const relatedProducts = [
 ]
 
 const availableColors = [
-  { id: "white", label: "Weiß", hex: "#FFFFFF" },
-  { id: "grey", label: "Grau", hex: "#9E9E9E" },
-  { id: "black", label: "Schwarz", hex: "#111111" },
-  { id: "blue", label: "Blau", hex: "#1E5EFF" },
-  { id: "green", label: "Grün", hex: "#2FAE5D" },
-  { id: "yellow", label: "Gelb", hex: "#FFD400" },
-  { id: "orange", label: "Orange", hex: "#FF8A00" },
-  { id: "red", label: "Rot", hex: "#E53935" },
+  { id: "white", label: "Weiß", hex: "#f5f5f5" },
+  { id: "black", label: "Schwarz", hex: "#1a1a1a" },
+  { id: "blue", label: "Blau", hex: "#00bfff" },
+  { id: "green", label: "Grün", hex: "#00994d" },
+  { id: "yellow", label: "Gelb", hex: "#f0c000" },
+  { id: "orange", label: "Orange", hex: "#ff7300" },
+  { id: "red", label: "Rot", hex: "#e61919" },
 ]
 
 const colorPrices: Record<string, number> = {
-  white: 0, grey: 0, black: 0, blue: 15, green: 15, yellow: 15, orange: 15, red: 15,
+  white: 0, black: 0, blue: 15, green: 15, yellow: 15, orange: 15, red: 15,
 }
 
 export default function AbschliessbarLinks40ProductPage() {
