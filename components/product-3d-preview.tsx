@@ -261,6 +261,17 @@ export function Product3DPreview({
     }
   }, [moduleType, mappedColor, width])
 
+  const fallbackUI = (
+    <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}>
+      <div className="text-gray-400 text-sm">3D Vorschau</div>
+    </div>
+  )
+
+  // Don't render Canvas until mounted on client
+  if (!mounted) {
+    return fallbackUI
+  }
+
   if (!glbUrl) {
     return (
       <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}>
@@ -268,12 +279,6 @@ export function Product3DPreview({
       </div>
     )
   }
-
-  const fallbackUI = (
-    <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}>
-      <div className="text-gray-400 text-sm">3D Vorschau</div>
-    </div>
-  )
 
   return (
     <div className={`w-full h-full ${className}`}>
@@ -285,7 +290,7 @@ export function Product3DPreview({
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 1.0,
           }}
-          camera={{ position: [0.4, 0.25, 0.4], fov: 35 }}
+          camera={{ position: [0.44, 0.27, 0.44], fov: 35 }}
         >
           <color attach="background" args={["#f9fafb"]} />
           
@@ -296,7 +301,7 @@ export function Product3DPreview({
           <Environment preset="studio" background={false} />
 
           <Suspense fallback={<FallbackBox />}>
-            {mounted && <RotatingModel url={glbUrl} color={displayColor} />}
+            <RotatingModel url={glbUrl} color={displayColor} />
           </Suspense>
         </Canvas>
       </CanvasErrorBoundary>
