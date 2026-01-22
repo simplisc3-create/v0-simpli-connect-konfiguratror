@@ -487,17 +487,19 @@ const LoadedGLBModel = memo(
               const texture = oldMat.map || null
               const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
 
-              // Panel materials - MeshLambertMaterial for true flat colors without environment influence
-              const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
+              // Panel materials - MeshStandardMaterial with higher brightness
+              const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}-v2`
               child.material = getCachedMaterial(
                 materialKey,
                 () =>
-                  new THREE.MeshLambertMaterial({
+                  new THREE.MeshStandardMaterial({
                     map: texture,
                     color: finalColor,
                     side: THREE.DoubleSide,
-                    emissive: new THREE.Color(0, 0, 0),
-                    emissiveIntensity: 0,
+                    roughness: 0.4,
+                    metalness: 0.0,
+                    emissive: finalColor,
+                    emissiveIntensity: 0.15,
                   }),
               )
             }
