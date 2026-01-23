@@ -1,5 +1,8 @@
 import type { GridCell, CellStyles, CellId } from "@/components/shelf-configurator"
 
+// Maximum shelf height: 4 meters = 400cm, with 40cm per row = 10 rows max
+export const MAX_ROWS = 10
+
 export const getCellId = (row: number, col: number): CellId => `c-${row}-${col}`
 
 export const createInitialGrid = (): GridCell[][] => {
@@ -70,7 +73,8 @@ export const updateGhostCells = (
   }
 
   // Add a new row at the top if needed (highest row index has filled modules)
-  if (topmostFilledRow === rows - 1) {
+  // But only if we haven't reached MAX_ROWS yet
+  if (topmostFilledRow === rows - 1 && rows < MAX_ROWS) {
     const newTopRow: GridCell[] = new Array(cols)
     for (let c = 0; c < cols; c++) {
       newTopRow[c] = { id: `cell-${rows}-${c}`, type: "empty", row: rows, col: c }
@@ -93,8 +97,8 @@ export const updateGhostCells = (
       }
     }
 
-    // Add ghost above the topmost filled cell
-    if (topmostInCol !== -1 && topmostInCol + 1 < updatedRows) {
+    // Add ghost above the topmost filled cell (but not if we're at max height)
+    if (topmostInCol !== -1 && topmostInCol + 1 < updatedRows && topmostInCol + 1 < MAX_ROWS) {
       if (newGrid[topmostInCol + 1][c].type === "empty") {
         newGrid[topmostInCol + 1][c].type = "ghost"
       }
@@ -334,7 +338,8 @@ export const expandGridAroundPlacement = (
     workingColumnWidths.push(defaultNewColumnWidth)
   }
 
-  if (expandUp) {
+  // Only expand upward if we haven't reached MAX_ROWS yet
+  if (expandUp && newGrid.length < MAX_ROWS) {
     const currentRows = newGrid.length
     const currentCols = newGrid[0]?.length || 0
     const newRow: GridCell[] = new Array(currentCols)
@@ -363,7 +368,8 @@ export const expandGridAroundPlacement = (
         break
       }
     }
-    if (topmostFilled !== -1 && topmostFilled + 1 < updatedRows) {
+    // Add ghost above topmost filled (but not beyond MAX_ROWS)
+    if (topmostFilled !== -1 && topmostFilled + 1 < updatedRows && topmostFilled + 1 < MAX_ROWS) {
       if (newGrid[topmostFilled + 1][c].type === "empty") {
         newGrid[topmostFilled + 1][c].type = "ghost"
       }

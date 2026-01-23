@@ -80,6 +80,14 @@ export function SiteHeader({ transparent = false }: SiteHeaderProps) {
               Konfigurator
             </Link>
             <Link
+              href="/simpli-connected"
+              className={`font-medium transition-colors duration-300 ${
+                isTransparent ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Simpli Connected
+            </Link>
+            <Link
               href="/kontakt"
               className={`font-medium transition-colors duration-300 ${
                 isTransparent ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
@@ -142,6 +150,13 @@ export function SiteHeader({ transparent = false }: SiteHeaderProps) {
                 className="px-6 py-3 text-lg font-medium text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 Konfigurator
+              </Link>
+              <Link
+                href="/simpli-connected"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-6 py-3 text-lg font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+              >
+                Simpli Connected
               </Link>
               <Link
                 href="/kontakt"

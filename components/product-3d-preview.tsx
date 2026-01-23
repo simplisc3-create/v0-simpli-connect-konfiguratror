@@ -239,25 +239,35 @@ export function Product3DPreview({
   const [isHovered, setIsHovered] = useState(false)
   const [hasBeenHovered, setHasBeenHovered] = useState(false)
   const [selectedColorIndex, setSelectedColorIndex] = useState(0)
+  const [isMounted, setIsMounted] = useState(false)
 
-  // Single effect: delay canvas creation to ensure DOM is ready
+  // Mount check - ensure component is fully mounted
   useEffect(() => {
+    setIsMounted(true)
+    return () => setIsMounted(false)
+  }, [])
+
+  // Delayed canvas creation to ensure DOM is ready
+  useEffect(() => {
+    if (!isMounted) return
+    
     const timer = setTimeout(() => {
       setCanvasReady(true)
-    }, 200)
+    }, 300)
     
     return () => clearTimeout(timer)
-  }, [])
+  }, [isMounted])
 
   // Auto cycle colors when not hovered and has been hovered before
   useEffect(() => {
-    if (hasBeenHovered && !isHovered) {
-      const interval = setInterval(() => {
-        setSelectedColorIndex((prev) => (prev + 1) % AVAILABLE_COLORS.length)
-      }, 1500) // Change color every 1.5 seconds
-      return () => clearInterval(interval)
-    }
-  }, [hasBeenHovered, isHovered])
+    if (!isMounted || !hasBeenHovered || isHovered) return
+    
+    const interval = setInterval(() => {
+      setSelectedColorIndex((prev) => (prev + 1) % AVAILABLE_COLORS.length)
+    }, 1500) // Change color every 1.5 seconds
+    
+    return () => clearInterval(interval)
+  }, [isMounted, hasBeenHovered, isHovered])
 
   // Track first hover
   const handleMouseEnter = () => {
@@ -319,7 +329,7 @@ export function Product3DPreview({
   )
 
   // Show loading state until canvas is ready
-  if (!canvasReady || !glbUrl) {
+  if (!isMounted || !canvasReady || !glbUrl) {
     return (
       <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${className}`}>
         <div className="text-gray-400 text-sm">
