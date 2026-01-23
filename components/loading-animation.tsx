@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
-const COLORS = [
-  "#FFFFFF", // weiss
-  "#22C55E", // gruen
-  "#3B82F6", // blau
-  "#EAB308", // gelb
-  "#F97316", // orange
-  "#EF4444", // rot
+// Using CSS custom property colors that match the design system
+const CELL_COLOR_CLASSES = [
+  "bg-primary-foreground", // white
+  "bg-secondary", // green
+  "bg-accent", // blue
+  "bg-destructive", // yellow/orange
+  "bg-chart-4", // orange
+  "bg-primary", // red/primary
 ]
 
 const GRID_COLS = 4
@@ -43,12 +44,12 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
     }
   }, [onComplete])
 
-  const getColorForCell = (index: number) => {
-    return COLORS[index % COLORS.length]
+  const getColorClassForCell = (index: number) => {
+    return CELL_COLOR_CLASSES[index % CELL_COLOR_CLASSES.length]
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* Logo */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -57,17 +58,17 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
         className="mb-8"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white text-zinc-950 font-bold text-xl">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-foreground text-background font-bold text-xl">
             S
           </div>
-          <span className="text-2xl font-semibold text-white">Simpli Connect</span>
+          <span className="text-2xl font-semibold text-foreground">Simpli Connect</span>
         </div>
       </motion.div>
 
       {/* Animated Shelf Grid */}
       <div className="relative mb-8">
         {/* Frame outline */}
-        <div className="absolute inset-0 border-2 border-zinc-600 rounded-sm" />
+        <div className="absolute inset-0 border-2 border-border rounded-sm" />
 
         {/* Grid */}
         <div
@@ -80,12 +81,12 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
         >
           {Array.from({ length: TOTAL_CELLS }).map((_, index) => {
             const isFilled = filledCells.includes(index)
-            const cellColor = getColorForCell(index)
+            const cellColorClass = getColorClassForCell(index)
 
             return (
               <motion.div key={index} className="relative rounded-sm overflow-hidden" style={{ aspectRatio: "1" }}>
                 {/* Empty cell background */}
-                <div className="absolute inset-0 bg-zinc-800 border border-zinc-700" />
+                <div className="absolute inset-0 bg-muted border border-border" />
 
                 {/* Filled cell animation */}
                 <AnimatePresence>
@@ -98,22 +99,12 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
                         stiffness: 300,
                         damping: 20,
                       }}
-                      className="absolute inset-0 rounded-sm border-2"
-                      style={{
-                        backgroundColor: cellColor,
-                        borderColor: "rgba(0,0,0,0.2)",
-                      }}
+                      className={`absolute inset-0 rounded-sm border-2 border-foreground/20 ${cellColorClass}`}
                     >
                       {/* Inner shelf detail */}
-                      <div
-                        className="absolute inset-1 rounded-sm opacity-30"
-                        style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
-                      />
+                      <div className="absolute inset-1 rounded-sm bg-foreground/10" />
                       {/* Shelf bottom line */}
-                      <div
-                        className="absolute bottom-1 left-1 right-1 h-0.5 rounded-full"
-                        style={{ backgroundColor: "rgba(0,0,0,0.2)" }}
-                      />
+                      <div className="absolute bottom-1 left-1 right-1 h-0.5 rounded-full bg-foreground/20" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -123,14 +114,14 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
         </div>
 
         {/* Frame legs */}
-        <div className="absolute -bottom-4 left-2 w-1.5 h-4 bg-zinc-600 rounded-b" />
-        <div className="absolute -bottom-4 right-2 w-1.5 h-4 bg-zinc-600 rounded-b" />
+        <div className="absolute -bottom-4 left-2 w-1.5 h-4 bg-border rounded-b" />
+        <div className="absolute -bottom-4 right-2 w-1.5 h-4 bg-border rounded-b" />
       </div>
 
       {/* Progress bar */}
-      <div className="w-64 h-1 bg-zinc-800 rounded-full overflow-hidden mb-4">
+      <div className="w-64 h-1 bg-muted rounded-full overflow-hidden mb-4">
         <motion.div
-          className="h-full bg-gradient-to-r from-blue-500 via-green-500 to-yellow-500"
+          className="h-full bg-gradient-to-r from-accent via-secondary to-destructive"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.1 }}
@@ -138,7 +129,7 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
       </div>
 
       {/* Loading text */}
-      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-zinc-400 text-sm">
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-muted-foreground text-sm">
         Konfigurierung wird geladen...
       </motion.p>
     </div>

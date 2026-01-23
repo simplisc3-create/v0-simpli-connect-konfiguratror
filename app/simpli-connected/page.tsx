@@ -2,12 +2,14 @@
 
 import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
+import { useState } from "react"
 
 const categories = [
   {
     id: "buero",
     title: "Büro",
     description: "Professionelle Regallösungen für moderne Arbeitsumgebungen",
+    coverVideo: "/videos/simpli-connected/buero-arcade.mp4",
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -18,6 +20,7 @@ const categories = [
     id: "wohnzimmer",
     title: "Wohnzimmer",
     description: "Stilvolle Aufbewahrung für Ihr Zuhause",
+    coverVideo: "/videos/simpli-connected/wohnzimmer-magazine.mp4",
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -28,7 +31,7 @@ const categories = [
     id: "kinderzimmer",
     title: "Kinderzimmer",
     description: "Sichere und bunte Lösungen für die Kleinen",
-    coverVideo: "/videos/simpli-connected/kinderzimmer-cover.mp4",
+    coverVideo: "/videos/simpli-connected/kinderzimmer-arcade.mp4",
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -68,17 +71,84 @@ const categories = [
   },
 ]
 
+function CategoryCard({ category }: { category: typeof categories[0] }) {
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
+  return (
+    <Link
+      href={`/simpli-connected/${category.id}`}
+      className="group relative bg-card rounded-2xl p-8 hover:bg-muted transition-all duration-300 hover:shadow-lg"
+    >
+      <div className="flex flex-col h-full">
+        {/* Video/Image/Icon Preview */}
+        <div className="relative aspect-video bg-foreground rounded-xl overflow-hidden mb-4 group-hover:scale-[1.02] transition-transform duration-300">
+          {/* Icon Fallback - always shown initially or if video fails */}
+          {(!category.coverVideo || !videoLoaded || videoError) && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 text-primary-foreground">
+                {category.icon}
+              </div>
+            </div>
+          )}
+          
+          {/* Video */}
+          {category.coverVideo && !videoError && (
+            <video
+              src={category.coverVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoadedData={() => {
+                console.log("[v0] Video loaded successfully for", category.id);
+                setVideoLoaded(true);
+              }}
+              onError={() => {
+                console.log("[v0] Video load error for", category.id, category.coverVideo);
+                setVideoError(true);
+              }}
+            />
+          )}
+          
+          {/* Image */}
+          {category.coverImage && !category.coverVideo && (
+            <img
+              src={category.coverImage || "/placeholder.svg"}
+              alt={category.title}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+        </div>
+        
+        {/* Content */}
+        <div className="flex flex-col flex-1 text-center">
+          <h3 className="text-xl font-semibold text-foreground mb-2">{category.title}</h3>
+          <p className="text-muted-foreground text-sm mb-4 flex-1">{category.description}</p>
+          <div className="flex items-center justify-center gap-1 text-muted-foreground group-hover:text-foreground transition-colors">
+            <span className="text-sm font-medium">Galerie ansehen</span>
+            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function SimpliConnectedPage() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-background">
       <SiteHeader />
 
       <div className="pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Hero Section */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Simpli Connected</h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Simpli Connected</h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Entdecken Sie inspirierende Einrichtungsideen für jeden Raum mit unseren modularen Regalsystemen
             </p>
           </div>
@@ -86,45 +156,7 @@ export default function SimpliConnectedPage() {
           {/* Categories Grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/simpli-connected/${category.id}`}
-                className="group relative bg-gray-50 rounded-2xl p-8 hover:bg-gray-100 transition-all duration-300 hover:shadow-lg"
-              >
-                <div className="flex flex-col h-full">
-                  {/* Video/Icon Preview */}
-                  <div className="relative aspect-video bg-gray-900 rounded-xl overflow-hidden mb-4 group-hover:scale-[1.02] transition-transform duration-300">
-                    {category.coverVideo ? (
-                      <video
-                        src={category.coverVideo}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 text-white">
-                          {category.icon}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex flex-col flex-1 text-center">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{category.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 flex-1">{category.description}</p>
-                    <div className="flex items-center justify-center gap-1 text-gray-400 group-hover:text-gray-900 transition-colors">
-                      <span className="text-sm font-medium">Galerie ansehen</span>
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+              <CategoryCard key={category.id} category={category} />
             ))}
           </div>
         </div>

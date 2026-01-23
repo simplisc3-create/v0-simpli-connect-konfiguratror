@@ -1,5 +1,7 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect, useCallback, useRef, Suspense } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, Environment, Stars } from "@react-three/drei"
@@ -473,6 +475,10 @@ export function ClassicTetris() {
   const [isPaused, setIsPaused] = useState(false)
   const [isStarted, setIsStarted] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showScoreForm, setShowScoreForm] = useState(false)
+  const [playerName, setPlayerName] = useState("")
+  const [playerEmail, setPlayerEmail] = useState("")
+  const [scoreSubmitted, setScoreSubmitted] = useState(false)
 
   const gameLoopRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const dropTimeRef = useRef(INITIAL_DROP_TIME)
@@ -523,8 +529,22 @@ export function ClassicTetris() {
     setGameOver(false)
     setIsPaused(false)
     setIsStarted(true)
+    setShowScoreForm(false)
+    setScoreSubmitted(false)
+    setPlayerName("")
+    setPlayerEmail("")
     dropTimeRef.current = INITIAL_DROP_TIME
   }, [])
+
+  // Handle score submission
+  const handleScoreSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    if (playerName && playerEmail) {
+      // Here you could send the score to a backend
+      console.log("[v0] Score submitted:", { name: playerName, email: playerEmail, score, level, lines })
+      setScoreSubmitted(true)
+    }
+  }, [playerName, playerEmail, score, level, lines])
 
   // Move piece
   const movePiece = useCallback(
@@ -690,7 +710,7 @@ export function ClassicTetris() {
   return (
     <div
       ref={containerRef}
-      className={`${isFullscreen ? "fixed inset-0 z-50 bg-[#0a0a0a]" : "w-full bg-[#fafafa]"}`}
+      className={`${isFullscreen ? "fixed inset-0 z-50 bg-foreground" : "w-full bg-background"}`}
     >
       <div className="w-full h-full">
         {/* 3D Game Board */}
@@ -756,114 +776,308 @@ export function ClassicTetris() {
 
           {/* Overlays */}
           {(!isStarted || gameOver || isPaused) && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-10">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-primary-foreground z-10 overflow-hidden">
+              {/* Video Background for Start Menu */}
               {!isStarted && !gameOver && (
-                <>
-                  <h2 className="text-3xl font-bold mb-4">SIMPLI TETRIS</h2>
-                  <p className="text-gray-400 mb-2">3D Module Edition</p>
-                  <p className="text-sm text-gray-500 mb-6">Echte Simpli Connect Module!</p>
-                  <button
-                    onClick={startGame}
-                    className="px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    START
-                  </button>
-                  <div className="mt-8 text-xs text-gray-500 text-center">
-                    <p>Pfeiltasten / WASD - Bewegen & Drehen</p>
-                    <p>Leertaste - Hard Drop</p>
-                    <p>P / ESC - Pause | F - Fullscreen</p>
+                <video
+                  src="/images/tetriscover.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+              {/* Dark overlay for readability */}
+              <div className="absolute inset-0 bg-foreground/60" />
+              
+              {/* Content */}
+              <div className="relative z-10 flex flex-col items-center justify-center">
+                {!isStarted && !gameOver && (
+                  <>
+                    <h2 className="text-5xl font-bold mb-4 drop-shadow-lg">SIMPLI TETRIS</h2>
+                    <p className="text-muted-foreground mb-2 text-lg">3D Module Edition</p>
+                    <p className="text-sm text-muted-foreground/70 mb-8">Echte Simpli Connect Module!</p>
+                    <button
+                      onClick={startGame}
+                      className="px-8 py-4 bg-primary text-primary-foreground font-bold text-lg rounded-xl hover:bg-primary/90 transition-all hover:scale-105 shadow-2xl"
+                    >
+                      START
+                    </button>
+                    <div className="mt-10 text-sm text-muted-foreground text-center space-y-1">
+                      <p>Pfeiltasten / WASD - Bewegen & Drehen</p>
+                      <p>Leertaste - Hard Drop</p>
+                      <p>P / ESC - Pause | F - Fullscreen</p>
+                    </div>
+                  </>
+                )}
+
+                {isPaused && !gameOver && (
+                  <>
+                    <h2 className="text-3xl font-bold mb-4">PAUSE</h2>
+                    <button
+                      onClick={() => setIsPaused(false)}
+                      className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      WEITER
+                    </button>
+                  </>
+                )}
+
+                {gameOver && (
+                  <div className="max-w-md w-full px-6">
+                    <h2 className="text-4xl font-bold mb-2 text-center">GAME OVER</h2>
+                    <p className="text-3xl mb-6 text-center">{score} Punkte</p>
+                    
+                    {!showScoreForm && !scoreSubmitted && (
+                      <div className="space-y-4">
+                        <div className="bg-primary/20 backdrop-blur-sm rounded-xl p-4 text-center border border-primary/30">
+                          <p className="text-lg font-semibold mb-1">Beat the Highscore!</p>
+                          <p className="text-sm text-muted-foreground">Trage dich ein und gewinne einen Gutschein fuer den Shop!</p>
+                        </div>
+                        <div className="flex gap-3 justify-center">
+                          <button
+                            onClick={() => setShowScoreForm(true)}
+                            className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all hover:scale-105"
+                          >
+                            Score eintragen
+                          </button>
+                          <button
+                            onClick={startGame}
+                            className="px-6 py-3 bg-muted text-muted-foreground font-medium rounded-lg hover:bg-muted/80 transition-colors"
+                          >
+                            Nochmal spielen
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {showScoreForm && !scoreSubmitted && (
+                      <form onSubmit={handleScoreSubmit} className="space-y-4">
+                        <div className="bg-card/80 backdrop-blur-sm rounded-xl p-6 border border-border">
+                          <h3 className="text-lg font-semibold mb-4 text-center">Score speichern</h3>
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              placeholder="Dein Name"
+                              value={playerName}
+                              onChange={(e) => setPlayerName(e.target.value)}
+                              className="w-full px-4 py-3 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                              required
+                            />
+                            <input
+                              type="email"
+                              placeholder="Deine E-Mail"
+                              value={playerEmail}
+                              onChange={(e) => setPlayerEmail(e.target.value)}
+                              className="w-full px-4 py-3 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                              required
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-3 text-center">
+                            Mit dem Absenden stimmst du zu, dass wir dich per E-Mail kontaktieren duerfen.
+                          </p>
+                        </div>
+                        <div className="flex gap-3 justify-center">
+                          <button
+                            type="submit"
+                            className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all hover:scale-105"
+                          >
+                            Absenden
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowScoreForm(false)}
+                            className="px-6 py-3 bg-muted text-muted-foreground font-medium rounded-lg hover:bg-muted/80 transition-colors"
+                          >
+                            Zurueck
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    {scoreSubmitted && (
+                      <div className="space-y-4">
+                        <div className="bg-secondary/20 backdrop-blur-sm rounded-xl p-6 text-center border border-secondary/30">
+                          <p className="text-xl font-bold mb-2">Vielen Dank!</p>
+                          <p className="text-sm text-muted-foreground">Dein Score wurde gespeichert. Wir melden uns bei dir!</p>
+                        </div>
+                        <button
+                          onClick={startGame}
+                          className="w-full px-6 py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all hover:scale-105"
+                        >
+                          Nochmal spielen
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </>
-              )}
-
-              {isPaused && !gameOver && (
-                <>
-                  <h2 className="text-3xl font-bold mb-4">PAUSE</h2>
-                  <button
-                    onClick={() => setIsPaused(false)}
-                    className="px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    WEITER
-                  </button>
-                </>
-              )}
-
-              {gameOver && (
-                <>
-                  <h2 className="text-3xl font-bold mb-2">GAME OVER</h2>
-                  <p className="text-2xl mb-4">{score} Punkte</p>
-                  <button
-                    onClick={startGame}
-                    className="px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    NOCHMAL
-                  </button>
-                </>
-              )}
+                )}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Fullscreen Button - Always visible */}
-        <button
-          onClick={toggleFullscreen}
-          className={`absolute top-4 right-4 z-20 p-3 rounded-lg transition-all ${
-            isFullscreen 
-              ? "bg-white/10 hover:bg-white/20 text-white" 
-              : "bg-gray-900/80 hover:bg-gray-900 text-white"
-          }`}
-          title={isFullscreen ? "Fullscreen beenden (F)" : "Fullscreen (F)"}
-        >
-          {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-        </button>
+          {/* Left Upper Corner - Game HUD Stats - INSIDE GAME BOARD */}
+          {isStarted && !gameOver && (
+            <div className="absolute top-6 left-6 z-20 flex flex-col gap-4">
+              {/* Game Title - Neon Style */}
+              <div className="relative">
+                <h2 
+                  className="text-2xl font-mono font-black tracking-widest"
+                  style={{
+                    color: '#00ffff',
+                    textShadow: '0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 80px #0088ff',
+                    letterSpacing: '0.15em'
+                  }}
+                >
+                  SIMPLI
+                </h2>
+                <h2 
+                  className="text-3xl font-mono font-black tracking-widest -mt-1"
+                  style={{
+                    color: '#ff00ff',
+                    textShadow: '0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #ff0088',
+                    letterSpacing: '0.2em'
+                  }}
+                >
+                  TETRIS
+                </h2>
+              </div>
 
-        {/* Side Panel */}
-        <div className={`flex flex-col gap-4 ${isFullscreen ? "absolute top-4 left-4 z-20 text-white" : "mt-4 text-gray-900"}`}>
-          {/* Score Display */}
-          <div
-            className={`p-4 rounded-lg ${isFullscreen ? "bg-white/10 backdrop-blur-sm" : "bg-gray-100"}`}
-          >
-            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-          </div>
+              {/* Score Display - Arcade Style */}
+              <div className="mt-4">
+                <div 
+                  className="text-xs font-mono uppercase tracking-[0.3em] mb-1"
+                  style={{ color: '#888', textShadow: '0 0 5px #444' }}
+                >
+                  SCORE
+                </div>
+                <div 
+                  className="text-4xl font-mono font-black tabular-nums"
+                  style={{
+                    color: '#ffff00',
+                    textShadow: '0 0 10px #ffff00, 0 0 20px #ffaa00, 0 0 40px #ff8800',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  {score.toString().padStart(8, '0')}
+                </div>
+              </div>
 
-          {/* Score */}
-          <div className={`p-4 rounded-lg ${isFullscreen ? "bg-white/10" : "bg-gray-100"}`}>
-            <div className="text-xs uppercase tracking-wider opacity-60 mb-1">Score</div>
-            <div className="text-2xl font-bold tabular-nums">{score}</div>
-          </div>
+              {/* Level Display */}
+              <div>
+                <div 
+                  className="text-xs font-mono uppercase tracking-[0.3em] mb-1"
+                  style={{ color: '#888', textShadow: '0 0 5px #444' }}
+                >
+                  LEVEL
+                </div>
+                <div 
+                  className="text-3xl font-mono font-black"
+                  style={{
+                    color: '#00ff00',
+                    textShadow: '0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 40px #00aa00',
+                  }}
+                >
+                  {level.toString().padStart(2, '0')}
+                </div>
+              </div>
 
-          {/* Level */}
-          <div className={`p-4 rounded-lg ${isFullscreen ? "bg-white/10" : "bg-gray-100"}`}>
-            <div className="text-xs uppercase tracking-wider opacity-60 mb-1">Level</div>
-            <div className="text-2xl font-bold">{level}</div>
-          </div>
-
-          {/* Lines */}
-          <div className={`p-4 rounded-lg ${isFullscreen ? "bg-white/10" : "bg-gray-100"}`}>
-            <div className="text-xs uppercase tracking-wider opacity-60 mb-1">Lines</div>
-            <div className="text-2xl font-bold">{lines}</div>
-          </div>
-
-          {/* Next Piece */}
-          <div className={`p-4 rounded-lg ${isFullscreen ? "bg-white/10" : "bg-gray-100"}`}>
-            <div className="text-xs uppercase tracking-wider opacity-60 mb-2">Next</div>
-            <div className="w-24 h-24 rounded-lg overflow-hidden bg-black/20">
-              <Canvas camera={{ position: [0, 0, 4], fov: 50 }}>
-                <ambientLight intensity={0.6} />
-                <directionalLight position={[5, 5, 5]} intensity={0.8} />
-                <Suspense fallback={null}>
-                  <NextPiecePreview3D piece={nextPiece} />
-                </Suspense>
-              </Canvas>
+              {/* Lines Display */}
+              <div>
+                <div 
+                  className="text-xs font-mono uppercase tracking-[0.3em] mb-1"
+                  style={{ color: '#888', textShadow: '0 0 5px #444' }}
+                >
+                  LINES
+                </div>
+                <div 
+                  className="text-3xl font-mono font-black"
+                  style={{
+                    color: '#ff6600',
+                    textShadow: '0 0 10px #ff6600, 0 0 20px #ff4400, 0 0 40px #ff2200',
+                  }}
+                >
+                  {lines.toString().padStart(4, '0')}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Current Module Type */}
-          {currentPiece && (
-            <div className={`p-4 rounded-lg ${isFullscreen ? "bg-white/10" : "bg-gray-100"}`}>
-              <div className="text-xs uppercase tracking-wider opacity-60 mb-1">Modul</div>
-              <div className="text-sm font-medium capitalize">{currentPiece.moduleType.replace(/-/g, " ")}</div>
+          {/* Right Upper Corner - Next Piece & Controls - INSIDE GAME BOARD */}
+          {isStarted && !gameOver && (
+            <div className="absolute top-6 right-6 z-20 flex flex-col gap-4 items-end">
+              {/* Fullscreen Button - Neon Style */}
+              <button
+                onClick={toggleFullscreen}
+                className="p-3 rounded-lg transition-all hover:scale-110 bg-transparent"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.6)',
+                  border: '2px solid #00ffff',
+                  boxShadow: '0 0 10px #00ffff, inset 0 0 10px rgba(0, 255, 255, 0.2)',
+                }}
+                title={isFullscreen ? "Fullscreen beenden (F)" : "Fullscreen (F)"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-5 h-5" style={{ color: '#00ffff', filter: 'drop-shadow(0 0 5px #00ffff)' }} />
+                ) : (
+                  <Maximize2 className="w-5 h-5" style={{ color: '#00ffff', filter: 'drop-shadow(0 0 5px #00ffff)' }} />
+                )}
+              </button>
+
+              {/* Next Piece - Arcade Cabinet Style */}
+              <div 
+                className="rounded-lg p-4"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  border: '2px solid #ff00ff',
+                  boxShadow: '0 0 15px #ff00ff, inset 0 0 20px rgba(255, 0, 255, 0.1)',
+                }}
+              >
+                <div 
+                  className="text-xs font-mono uppercase tracking-[0.3em] mb-3 text-center"
+                  style={{ color: '#ff00ff', textShadow: '0 0 10px #ff00ff' }}
+                >
+                  NEXT
+                </div>
+                <div 
+                  className="w-24 h-24 rounded-lg overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%)',
+                    border: '1px solid #333',
+                  }}
+                >
+                  <Canvas camera={{ position: [0, 0, 4], fov: 50 }}>
+                    <ambientLight intensity={0.6} />
+                    <directionalLight position={[5, 5, 5]} intensity={0.8} />
+                    <Suspense fallback={null}>
+                      <NextPiecePreview3D piece={nextPiece} />
+                    </Suspense>
+                  </Canvas>
+                </div>
+              </div>
+
+              {/* Controls Hint */}
+              <div 
+                className="text-right"
+                style={{ color: '#666', fontSize: '10px', fontFamily: 'monospace' }}
+              >
+                <div style={{ color: '#00ffff', textShadow: '0 0 5px #00ffff' }}>ARROWS</div>
+                <div>MOVE / ROTATE</div>
+                <div className="mt-1" style={{ color: '#ffff00', textShadow: '0 0 5px #ffff00' }}>SPACE</div>
+                <div>HARD DROP</div>
+              </div>
             </div>
+          )}
+
+          {/* Fullscreen Button for overlay states */}
+          {(!isStarted || gameOver || isPaused) && (
+            <button
+              onClick={toggleFullscreen}
+              className="absolute top-4 right-4 z-20 bg-foreground/80 backdrop-blur-sm hover:bg-foreground text-primary-foreground p-3 rounded-lg transition-all"
+              title={isFullscreen ? "Fullscreen beenden (F)" : "Fullscreen (F)"}
+            >
+              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
           )}
         </div>
       </div>

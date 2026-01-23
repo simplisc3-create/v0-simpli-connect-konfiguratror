@@ -8,8 +8,8 @@ import { useState } from "react"
 const ClassicTetris = dynamic(() => import("@/components/tetris/ClassicTetris").then((m) => m.ClassicTetris), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-[600px] bg-gray-100 rounded-2xl">
-      <div className="text-gray-500">Spiel wird geladen...</div>
+    <div className="flex items-center justify-center h-[600px] bg-muted rounded-2xl">
+      <div className="text-muted-foreground">Spiel wird geladen...</div>
     </div>
   ),
 })
@@ -26,15 +26,15 @@ const placeholderMedia = [
 
 function VideoPlaceholder({ index }: { index: number }) {
   return (
-    <div className="relative aspect-video bg-gray-900 rounded-xl overflow-hidden group cursor-pointer">
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-        <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-3 group-hover:bg-white/30 transition-colors">
+    <div className="relative aspect-video bg-foreground rounded-xl overflow-hidden group cursor-pointer">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-primary-foreground">
+        <div className="w-16 h-16 rounded-full bg-primary-foreground/20 flex items-center justify-center mb-3 group-hover:bg-primary-foreground/30 transition-colors">
           <Play className="w-8 h-8 ml-1" />
         </div>
-        <span className="text-sm text-white/60">Video {index}</span>
+        <span className="text-sm text-primary-foreground/60">Video {index}</span>
       </div>
       <div className="absolute bottom-4 left-4 flex items-center gap-2">
-        <div className="px-2 py-1 bg-white/10 rounded text-xs text-white/80">Video-Platzhalter</div>
+        <div className="px-2 py-1 bg-primary-foreground/10 rounded text-xs text-primary-foreground/80">Video-Platzhalter</div>
       </div>
     </div>
   )
@@ -42,12 +42,12 @@ function VideoPlaceholder({ index }: { index: number }) {
 
 function ImagePlaceholder({ index }: { index: number }) {
   return (
-    <div className="relative aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden group cursor-pointer">
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+    <div className="relative aspect-[4/3] bg-muted rounded-xl overflow-hidden group cursor-pointer">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
         <ImageIcon className="w-12 h-12 mb-3" />
         <span className="text-sm">Bild {index}</span>
       </div>
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors" />
     </div>
   )
 }
