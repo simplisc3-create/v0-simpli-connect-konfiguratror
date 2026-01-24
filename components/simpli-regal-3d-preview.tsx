@@ -218,6 +218,55 @@ const RegalScene = memo(function RegalScene({
   )
 })
 
+// Calculate camera settings based on shelf dimensions
+function calculateCameraSettings(preset: SimpliRegalProduct["preset"]) {
+  if (!preset) {
+    return { position: [0, 0.4, 1.8] as [number, number, number], target: [0, 0.35, 0] as [number, number, number], fov: 35 }
+  }
+
+  const { columns, rows, columnWidths, rowHeights } = preset
+  const columnTubeOverlap = 0.003
+  const rowTubeOverlap = 0.003
+
+  // Calculate total width
+  let totalWidth = 0
+  for (let col = 0; col < columns; col++) {
+    totalWidth += columnWidths[col] / 100
+    if (col > 0) totalWidth -= columnTubeOverlap
+  }
+
+  // Calculate total height
+  let totalHeight = 0
+  for (let row = 0; row < rows; row++) {
+    totalHeight += rowHeights[row] / 100
+    if (row > 0) totalHeight -= rowTubeOverlap
+  }
+
+  // Calculate camera distance based on dimensions
+  // Use the larger of width or height to determine distance
+  const maxDimension = Math.max(totalWidth, totalHeight)
+  
+  // Base distance for a 2x2 shelf (approx 0.76m x 0.76m)
+  const baseDistance = 1.8
+  const baseDimension = 0.76
+  
+  // Scale distance proportionally, with some padding
+  const scaleFactor = maxDimension / baseDimension
+  const distance = baseDistance * Math.max(1, scaleFactor * 0.85)
+  
+  // Camera Y position - center vertically on the shelf
+  const cameraY = totalHeight / 2 + 0.05
+  
+  // Target Y - center of the shelf
+  const targetY = totalHeight / 2
+
+  return {
+    position: [0, cameraY, distance] as [number, number, number],
+    target: [0, targetY, 0] as [number, number, number],
+    fov: 35
+  }
+}
+
 interface SimpliRegal3DPreviewProps {
   regal: SimpliRegalProduct
   className?: string
@@ -230,6 +279,9 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
   const [isMounted, setIsMounted] = useState(false)
   const [canvasReady, setCanvasReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Calculate camera settings based on shelf dimensions
+  const cameraSettings = calculateCameraSettings(regal.preset)
 
   useEffect(() => {
     // Only mount on client side and after DOM is ready
@@ -328,7 +380,7 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
             alpha: true,
             powerPreference: "high-performance",
           }}
-          camera={{ position: [0, 0.4, 1.8], fov: 35 }}
+          camera={{ position: cameraSettings.position, fov: cameraSettings.fov }}
           onCreated={(state) => {
             try {
               if (state && state.gl && state.gl.domElement && typeof state.gl.domElement.style !== "undefined") {
@@ -357,7 +409,7 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
             enablePan={false}
             minPolarAngle={Math.PI / 3}
             maxPolarAngle={Math.PI / 2}
-            target={[0, 0.35, 0]}
+            target={cameraSettings.target}
           />
         </Canvas>
       </CanvasErrorBoundary>
