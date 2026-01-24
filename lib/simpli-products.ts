@@ -1230,9 +1230,9 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     rows: 1,
     cols: 3,
     configuration: [
-      ["ohne-rueckwand-40", "mit-doppelschublade-80", "ohne-rueckwand-40"],
+      ["offenes-fach-40", "mit-doppelschublade-80", "offenes-fach-40"],
     ],
-    // Preis: ohne-rueckwand-40: 45.00€ x2 + mit-doppelschublade-80: 125.00€
+    // Preis: offenes-fach-40: 45.00€ x2 + mit-doppelschublade-80: 125.00€
     price: 2 * 45.0 + 125.0, // = 215.00€
     features: [
       "1 Ebene × 3 Spalten (40-80-40)",
@@ -1248,9 +1248,9 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
       grid: [
         [
-          { id: "cell-0-0", type: "ohne-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-0", type: "offenes-fach", row: 0, col: 0, color: "weiss" },
           { id: "cell-0-1", type: "mit-doppelschublade", row: 0, col: 1, color: "weiss" },
-          { id: "cell-0-2", type: "ohne-rueckwand", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-2", type: "offenes-fach", row: 0, col: 2, color: "weiss" },
         ],
       ],
     },
