@@ -1718,4 +1718,74 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "die-komposition",
+    name: "Die Komposition",
+    description: "Design trifft Funktion in perfekter Harmonie. Die Komposition vereint verschiedene Modultypen zu einem durchdachten Gesamtkunstwerk. Die zentrale Klapptür in der Mitte setzt einen funktionalen Akzent, während Türen, Rückwände und offene Fächer ein ausgewogenes Spiel aus Zeigen und Verbergen schaffen.",
+    subtitle: "Design + Funktion",
+    artNr: "SR-KOMPOSITION-80-5x3",
+    width: 80,
+    rows: 5,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (5. Ebene)
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 4. Ebene
+      ["offenes-fach-80", "mit-klapptuer-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-rueckwand-80", "offenes-fach-80", "mit-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 3x mit-tueren @ 65.00 = 195.00
+    // 2x mit-rueckwand @ 42.00 + 1x offenes-fach @ 29.00 = 113.00
+    // 2x offenes-fach @ 29.00 + 1x mit-klapptuer @ 55.00 = 113.00
+    // 6x offenes-fach @ 29.00 = 174.00
+    // Total: 595.00
+    price: 595.0,
+    features: [
+      "5 Ebenen x 3 Spalten (80er)",
+      "Einzigartige Modulkombination",
+      "Klapptür als zentrales Element",
+      "Perfekte Balance aus Design + Funktion",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 5,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-rueckwand | offenes-fach | mit-rueckwand)
+        [
+          { id: "cell-1-0", type: "mit-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-rueckwand", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach | mit-klapptuer | offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "mit-klapptuer", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = 4. Ebene (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+        ],
+        // Row 4 = oben (offenes-fach)
+        [
+          { id: "cell-4-0", type: "offenes-fach", row: 4, col: 0, color: "weiss" },
+          { id: "cell-4-1", type: "offenes-fach", row: 4, col: 1, color: "weiss" },
+          { id: "cell-4-2", type: "offenes-fach", row: 4, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
