@@ -2,7 +2,7 @@
 
 import React, { Suspense, useState, useEffect, memo, useCallback, useRef, Component, type ReactNode } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
-import { OrbitControls, Environment, ContactShadows } from "@react-three/drei"
+import { OrbitControls, Environment } from "@react-three/drei"
 import type { SimpliRegalProduct } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
 import * as THREE from "three"
@@ -198,23 +198,6 @@ const RegalScene = memo(function RegalScene({
 
   return (
     <group ref={groupRef}>
-      {/* Dark floor like ShelfScene */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[10, 10]} />
-        <meshStandardMaterial color="#1a1a1a" roughness={0.85} metalness={0.1} />
-      </mesh>
-
-      {/* Contact shadows like ShelfScene */}
-      <ContactShadows
-        position={[0, 0, 0]}
-        opacity={0.4}
-        scale={6}
-        blur={2.5}
-        far={2}
-        resolution={512}
-        color="#000000"
-      />
-
       {/* Modules */}
       {modules.map(({ key, position, cellType, width, height, color, row, col, isBottomModule }) => (
         <GLBModule
@@ -345,7 +328,7 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
             alpha: true,
             powerPreference: "high-performance",
           }}
-          camera={{ position: [2.5, 1.5, 2.5], fov: 35 }}
+          camera={{ position: [0, 0.4, 1.8], fov: 35 }}
           onCreated={(state) => {
             try {
               if (state && state.gl && state.gl.domElement && typeof state.gl.domElement.style !== "undefined") {
@@ -372,9 +355,9 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
           <OrbitControls
             enableZoom={false}
             enablePan={false}
-            minPolarAngle={Math.PI / 4}
-            maxPolarAngle={Math.PI / 2.2}
-            target={[0, 0.4, 0]}
+            minPolarAngle={Math.PI / 3}
+            maxPolarAngle={Math.PI / 2}
+            target={[0, 0.35, 0]}
           />
         </Canvas>
       </CanvasErrorBoundary>
