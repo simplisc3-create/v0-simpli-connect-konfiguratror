@@ -1,7 +1,8 @@
 "use client"
 
 import { useGLTF } from "@react-three/drei"
-import { useEffect, useState, memo, useMemo, useRef } from "react"
+import { useFrame } from "@react-three/fiber"
+import { useEffect, useState, memo, useMemo, useRef, useCallback } from "react"
 import * as THREE from "three"
 import type { GridCell } from "./shelf-configurator"
 import type { ShelfConfig } from "./shelf-configurator"
@@ -18,6 +19,9 @@ type GLBModuleProps = {
   gridConfig: ShelfConfig
   modelUrl?: string
   isBottomModule?: boolean
+  isSelected?: boolean
+  isSwapMode?: boolean
+  onClick?: (row: number, col: number) => void
 }
 
 const urlCache = new Map<string, string>()
@@ -301,6 +305,9 @@ export const GLBModule = memo(
     gridConfig,
     modelUrl: explicitModelUrl,
     isBottomModule = false,
+    isSelected = false,
+    isSwapMode = false,
+    onClick,
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
@@ -385,7 +392,11 @@ export const GLBModule = memo(
         targetColor={colorName}
         cellType={cellType}
         row={row}
+        col={col}
         isBottomModule={isBottomModule}
+        isSelected={isSelected}
+        isSwapMode={isSwapMode}
+        onClick={onClick}
       />
     )
   },
@@ -398,7 +409,9 @@ export const GLBModule = memo(
     prev.position[2] === next.position[2] &&
     prev.row === next.row &&
     prev.col === next.col &&
-    prev.isBottomModule === next.isBottomModule,
+    prev.isBottomModule === next.isBottomModule &&
+    prev.isSelected === next.isSelected &&
+    prev.isSwapMode === next.isSwapMode,
 )
 
 const LoadedGLBModel = memo(
@@ -409,7 +422,11 @@ const LoadedGLBModel = memo(
     targetColor,
     cellType = "offen",
     row = 0,
+    col = 0,
     isBottomModule = false,
+    isSelected = false,
+    isSwapMode = false,
+    onClick,
   }: {
     modelUrl: string
     position: [number, number, number]
@@ -417,9 +434,46 @@ const LoadedGLBModel = memo(
     targetColor: string
     cellType?: string
     row?: number
+    col?: number
     isBottomModule?: boolean
+    isSelected?: boolean
+    isSwapMode?: boolean
+    onClick?: (row: number, col: number) => void
   }) {
     const { scene } = useGLTF(modelUrl)
+    const groupRef = useRef<THREE.Group>(null)
+    const [hovered, setHovered] = useState(false)
+
+    // Blinking animation for selected modules in swap mode
+    useFrame((state) => {
+      if (groupRef.current && isSelected && isSwapMode) {
+        // Create a pulsing scale effect
+        const pulse = 1 + Math.sin(state.clock.elapsedTime * 6) * 0.02
+        groupRef.current.scale.setScalar(pulse)
+      } else if (groupRef.current) {
+        groupRef.current.scale.setScalar(1)
+      }
+    })
+
+    const handleClick = useCallback((e: THREE.Event) => {
+      e.stopPropagation()
+      if (onClick) {
+        onClick(row, col)
+      }
+    }, [onClick, row, col])
+
+    const handlePointerOver = useCallback((e: THREE.Event) => {
+      e.stopPropagation()
+      if (isSwapMode) {
+        setHovered(true)
+        document.body.style.cursor = "pointer"
+      }
+    }, [isSwapMode])
+
+    const handlePointerOut = useCallback(() => {
+      setHovered(false)
+      document.body.style.cursor = "auto"
+    }, [])
 
     const isKlapptuerOben = cellType === "mit-klapptuer-oben"
 
@@ -513,7 +567,30 @@ const LoadedGLBModel = memo(
       return [position[0] + xOffset, position[1] + yOffset, position[2] + zOffset]
     }, [position, xOffset, yOffset, cellType])
 
-    return <primitive object={clonedScene} position={adjustedPosition} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
+    return (
+      <group 
+        ref={groupRef}
+        onClick={handleClick}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+      >
+        <primitive object={clonedScene} position={adjustedPosition} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
+        {/* Selection highlight ring for swap mode */}
+        {isSelected && isSwapMode && (
+          <mesh position={[adjustedPosition[0], adjustedPosition[1], adjustedPosition[2] + 0.2]} rotation={[0, 0, 0]}>
+            <ringGeometry args={[0.25, 0.28, 32]} />
+            <meshBasicMaterial color="#f59e0b" transparent opacity={0.8 + Math.sin(Date.now() * 0.01) * 0.2} side={THREE.DoubleSide} />
+          </mesh>
+        )}
+        {/* Hover highlight for swap mode */}
+        {hovered && isSwapMode && !isSelected && (
+          <mesh position={[adjustedPosition[0], adjustedPosition[1], adjustedPosition[2] + 0.2]} rotation={[0, 0, 0]}>
+            <ringGeometry args={[0.22, 0.25, 32]} />
+            <meshBasicMaterial color="#fbbf24" transparent opacity={0.5} side={THREE.DoubleSide} />
+          </mesh>
+        )}
+      </group>
+    )
   },
   (prev, next) =>
     prev.modelUrl === next.modelUrl &&
@@ -521,7 +598,10 @@ const LoadedGLBModel = memo(
     prev.targetColor === next.targetColor &&
     prev.cellType === next.cellType &&
     prev.row === next.row &&
+    prev.col === next.col &&
     prev.isBottomModule === next.isBottomModule &&
+    prev.isSelected === next.isSelected &&
+    prev.isSwapMode === next.isSwapMode &&
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],

@@ -1380,9 +1380,8 @@ export function ShelfConfigurator({
                 hoveredCell={hoveredCell}
                 onCellClick={handleCellClick3D}
                 onCellHover={setHoveredCell}
-                selectedCell={selectedCell} // Pass selectedCell to ShelfScene
-                onApplyCellColor={applyCellColor} // Pass applyCellColor handler
-                onClearCellColor={clearCellColor} // Pass clearCellColor handler
+                selectedCell={selectedCell}
+                toolMode={toolMode}
               />
             </Suspense>
 

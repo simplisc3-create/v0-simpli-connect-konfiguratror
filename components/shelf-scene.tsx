@@ -13,8 +13,12 @@ type Props = {
   config: ShelfConfig
   selectedTool?: GridCell["type"] | null
   hoveredCell?: { row: number; col: number } | null
+  selectedCell?: { row: number; col: number } | null
+  toolMode?: "select" | "swap"
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (cell: { row: number; col: number } | null) => void
+  onApplyCellColor?: (row: number, col: number, color: string) => void
+  onClearCellColor?: (row: number, col: number) => void
 }
 
 const colorMap: Record<string, string> = {
@@ -142,7 +146,14 @@ const SnapPoint = memo(function SnapPoint({
   )
 })
 
-export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCellClick, onCellHover }: Props) {
+export const ShelfScene = memo(function ShelfScene({ 
+  config, 
+  hoveredCell, 
+  selectedCell, 
+  toolMode = "select",
+  onCellClick, 
+  onCellHover 
+}: Props) {
   const gridHash = useMemo(() => {
     return JSON.stringify({
       grid: config.grid.map((row) => row.map((cell) => ({ type: cell.type, color: cell.color }))),
@@ -295,6 +306,7 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
           return max
         }, -1)
         const isBottomModule = row === maxRowInColumn
+        const isSelected = selectedCell?.row === row && selectedCell?.col === col
 
         const colorToUse = cell.color || "weiss"
 
@@ -311,6 +323,9 @@ export const ShelfScene = memo(function ShelfScene({ config, hoveredCell, onCell
             col={col}
             gridConfig={config}
             isBottomModule={isBottomModule}
+            isSelected={isSelected}
+            isSwapMode={toolMode === "swap"}
+            onClick={handleClick}
           />
         )
       })}
