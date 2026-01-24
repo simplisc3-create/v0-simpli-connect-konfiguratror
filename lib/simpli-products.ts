@@ -1588,4 +1588,73 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "der-showtower",
+    name: "Der Showtower",
+    description: "Das ultimative Präsentationsregal für Showrooms, Galerien und stilbewusste Räume. Eine sichere Basis aus Türen unten, gerahmt von Rückwänden auf der zweiten Ebene mit offenem Highlight in der Mitte, und darüber drei Ebenen offener Präsentationsfläche für Ihre besten Stücke.",
+    subtitle: "Präsentation mit sicherer Basis",
+    artNr: "SR-SHOWTOWER-80-5x3",
+    width: 80,
+    rows: 5,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (5. Ebene)
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 4. Ebene
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-rueckwand-80", "offenes-fach-80", "mit-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 3x mit-tueren @ 65.00 = 195.00
+    // 2x mit-rueckwand @ 42.00 + 1x offenes-fach @ 29.00 = 113.00
+    // 9x offenes-fach @ 29.00 = 261.00
+    // Total: 569.00
+    price: 569.0,
+    features: [
+      "5 Ebenen x 3 Spalten (80er)",
+      "Sichere Basis mit Türen",
+      "Gerahmtes Highlight in der Mitte",
+      "Maximale Präsentationsfläche oben",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 5,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-rueckwand | offenes-fach | mit-rueckwand)
+        [
+          { id: "cell-1-0", type: "mit-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-rueckwand", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = 4. Ebene (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+        ],
+        // Row 4 = oben (offenes-fach)
+        [
+          { id: "cell-4-0", type: "offenes-fach", row: 4, col: 0, color: "weiss" },
+          { id: "cell-4-1", type: "offenes-fach", row: 4, col: 1, color: "weiss" },
+          { id: "cell-4-2", type: "offenes-fach", row: 4, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
