@@ -1524,4 +1524,68 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "die-vertikale-klarheit",
+    name: "Die Vertikale Klarheit",
+    description: "Architektonische Ruhe in vertikaler Form. Dieses schlanke, hohe Regal schafft klare Linien und einen ruhigen Rhythmus im Raum. Unten geschlossen für Ordnung, oben offen für Ihre schönsten Stücke – ein Statement für minimalistische Ästhetik.",
+    subtitle: "Hoch, ruhig, architektonisch",
+    artNr: "SR-VERTIKALE-KLARHEIT-80-5x2",
+    width: 80,
+    rows: 5,
+    cols: 2,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80"], // Oben (5. Ebene)
+      ["offenes-fach-80", "offenes-fach-80"], // 4. Ebene
+      ["offenes-fach-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-rueckwand-80", "mit-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 2x mit-tueren @ 65.00 = 130.00
+    // 2x mit-rueckwand @ 42.00 = 84.00
+    // 6x offenes-fach @ 29.00 = 174.00
+    // Total: 388.00
+    price: 388.0,
+    features: [
+      "5 Ebenen x 2 Spalten (80er)",
+      "Schlanke, hohe Silhouette",
+      "Türen unten, offen oben",
+      "Architektonisches Design",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 2,
+      rows: 5,
+      columnWidths: [75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-rueckwand)
+        [
+          { id: "cell-1-0", type: "mit-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-rueckwand", row: 1, col: 1, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+        ],
+        // Row 3 = 4. Ebene (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+        ],
+        // Row 4 = oben (offenes-fach)
+        [
+          { id: "cell-4-0", type: "offenes-fach", row: 4, col: 0, color: "weiss" },
+          { id: "cell-4-1", type: "offenes-fach", row: 4, col: 1, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
