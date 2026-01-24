@@ -2,11 +2,13 @@
 import Link from "next/link"
 import type React from "react"
 import { useState } from "react"
-import { ShoppingCart, ChevronDown, Check, ArrowRight } from "lucide-react"
+import { ShoppingCart, ChevronDown, Check, ArrowRight, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/lib/cart-store"
 import { SiteHeader } from "@/components/site-header"
 import { Product3DPreview } from "@/components/product-3d-preview"
+import { productsSimpliRegale } from "@/lib/simpli-products"
+import { SimpliRegalCard } from "@/components/simpli-regal-card" // Declare SimpliRegalCard import
 
 // 80cm Module products with 3D previews
 const products80 = [
@@ -176,6 +178,76 @@ const products40 = [
   },
 ]
 
+// Recommended products - curated selection
+const productsRecommended = [
+  {
+    id: "offenes-fach-80",
+    name: "Offenes Fach 80",
+    artNr: "MOD-80-001",
+    description: "Perfekt für schnellen Zugriff und Dekoration",
+    price: 29.0,
+    category: "offen",
+    width: 80,
+    glbModule: { moduleType: "offenes-fach", color: "white", width: 80 as const },
+    badge: "Bestseller",
+  },
+  {
+    id: "mit-doppelschublade-80",
+    name: "Mit Schubladen",
+    artNr: "MOD-80-008",
+    description: "Optimaler Stauraum mit Vollauszug",
+    price: 85.0,
+    category: "schubladen",
+    width: 80,
+    glbModule: { moduleType: "mit-doppelschublade", color: "white", width: 80 as const },
+    badge: "Beliebt",
+  },
+  {
+    id: "mit-tueren-80",
+    name: "Mit Türen",
+    artNr: "MOD-80-005",
+    description: "Stauraum mit elegantem Verschluss",
+    price: 65.0,
+    category: "geschlossen",
+    width: 80,
+    glbModule: { moduleType: "mit-tueren", color: "white", width: 80 as const },
+    badge: "Top Bewertung",
+  },
+  {
+    id: "offenes-fach-40",
+    name: "Offenes Fach 40",
+    artNr: "MOD-40-001",
+    description: "Kompaktes offenes Fach für kleine Räume",
+    price: 22.0,
+    category: "offen",
+    width: 40,
+    glbModule: { moduleType: "offenes-fach", color: "white", width: 40 as const },
+    badge: "Preis-Tipp",
+  },
+  {
+    id: "mit-rueckwand-80",
+    name: "Mit Rückwand",
+    artNr: "MOD-80-004",
+    description: "Für einen aufgeräumten, geschlossenen Look",
+    price: 42.0,
+    category: "offen",
+    width: 80,
+    glbModule: { moduleType: "mit-rueckwand", color: "white", width: 80 as const },
+    badge: "Neu",
+  },
+  {
+    id: "abschliessbare-tueren-80",
+    name: "Abschließbar",
+    artNr: "MOD-80-010",
+    description: "Sicherer Stauraum mit Schloss",
+    price: 95.0,
+    category: "geschlossen",
+    width: 80,
+    glbModule: { moduleType: "abschliessbare-tueren", color: "white", width: 80 as const },
+    badge: "Premium",
+  },
+]
+
 // Combined for backwards compatibility - use products80 as default
 const products = products80
 
@@ -187,21 +259,30 @@ const categories = [
 ]
 
 export default function ShopPage() {
-  const [selectedWidth, setSelectedWidth] = useState<80 | 40>(80)
+  const [selectedTab, setSelectedTab] = useState<"simpli-regale" | "empfehlungen" | 80 | 40>("simpli-regale")
   const [selectedCategory, setSelectedCategory] = useState("alle")
   const [sortBy, setSortBy] = useState("name")
+  const [selectedWidth, setSelectedWidth] = useState(80) // Declare selectedWidth
   const { addItem } = useCartStore()
 
-  // Get products based on selected width
-  const currentProducts = selectedWidth === 80 ? products80 : products40
+  // Get products based on selected tab
+  const currentProducts = selectedTab === "empfehlungen" 
+    ? productsRecommended 
+    : selectedTab === 80 
+      ? products80 
+      : selectedTab === 40
+        ? products40
+        : [] // For simpli-regale we'll use a different display
 
-  // Filter by category (only show "schubladen" category for 80cm modules)
-  const availableCategories = selectedWidth === 80 
-    ? categories 
-    : categories.filter(c => c.id !== "schubladen")
+  // Filter by category (only show "schubladen" category for 80cm modules and simpli-regale, not for recommendations or 40cm)
+  const availableCategories = selectedTab === "empfehlungen"
+    ? categories
+    : selectedTab === 80 || selectedTab === "simpli-regale"
+      ? categories 
+      : categories.filter(c => c.id !== "schubladen")
 
   // Reset category if switching to 40cm and "schubladen" was selected
-  const effectiveCategory = selectedWidth === 40 && selectedCategory === "schubladen" ? "alle" : selectedCategory
+  const effectiveCategory = selectedTab === 40 && selectedCategory === "schubladen" ? "alle" : selectedCategory
 
   const filteredProducts =
     effectiveCategory === "alle" ? currentProducts : currentProducts.filter((p) => p.category === effectiveCategory)
@@ -232,9 +313,29 @@ export default function ShopPage() {
           <div className="mb-6">
             <div className="inline-flex rounded-xl bg-gray-200 p-1">
               <button
-                onClick={() => setSelectedWidth(80)}
+                onClick={() => setSelectedTab("simpli-regale")}
                 className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  selectedWidth === 80
+                  selectedTab === "simpli-regale"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Simpli Regale
+              </button>
+              <button
+                onClick={() => setSelectedTab("empfehlungen")}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  selectedTab === "empfehlungen"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Unsere Empfehlungen
+              </button>
+              <button
+                onClick={() => setSelectedTab(80)}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  selectedTab === 80
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
@@ -242,9 +343,9 @@ export default function ShopPage() {
                 80er Module
               </button>
               <button
-                onClick={() => setSelectedWidth(40)}
+                onClick={() => setSelectedTab(40)}
                 className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  selectedWidth === 40
+                  selectedTab === 40
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
@@ -253,9 +354,13 @@ export default function ShopPage() {
               </button>
             </div>
             <p className="mt-2 text-sm text-gray-500">
-              {selectedWidth === 80 
-                ? "Breite Module (80cm) - ideal für große Regale" 
-                : "Schmale Module (40cm) - perfekt für kompakte Lösungen"}
+              {selectedTab === "simpli-regale"
+                ? "Alle verfügbaren Module - komplettes Sortiment in einer Übersicht"
+                : selectedTab === "empfehlungen"
+                  ? "Unsere beliebtesten Module - kuratiert von unserem Team"
+                  : selectedTab === 80 
+                    ? "Breite Module (80cm) - ideal für große Regale" 
+                    : "Schmale Module (40cm) - perfekt für kompakte Lösungen"}
             </p>
           </div>
 
@@ -293,12 +398,22 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {/* Products Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} addItem={addItem} />
-            ))}
-          </div>
+          {/* Content based on tab */}
+          {selectedTab === "simpli-regale" ? (
+            /* Simpli Regale - Komplett-Sets */
+            <div className="space-y-8">
+              {productsSimpliRegale.map((regal) => (
+                <SimpliRegalCard key={regal.id} regal={regal} />
+              ))}
+            </div>
+          ) : (
+            /* Regular Products Grid */
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {sortedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} addItem={addItem} />
+              ))}
+            </div>
+          )}
 
 
 

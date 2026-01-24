@@ -121,8 +121,6 @@ function isFramePart(
 
 function RotatingModel({ url, color, isHovered }: { url: string; color: string; isHovered: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
-  
-  // Preload the model
   const { scene } = useGLTF(url)
   
   const clonedScene = useMemo(() => {
@@ -190,21 +188,21 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
 
   // Center and scale the model
   useEffect(() => {
-    if (clonedScene) {
-      const box = new THREE.Box3().setFromObject(clonedScene)
+    if (scene) {
+      const box = new THREE.Box3().setFromObject(scene)
       const center = box.getCenter(new THREE.Vector3())
       const size = box.getSize(new THREE.Vector3())
       const maxDim = Math.max(size.x, size.y, size.z)
       const scale = 0.35 / maxDim
       
-      clonedScene.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
-      clonedScene.scale.setScalar(scale)
+      scene.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+      scene.scale.setScalar(scale)
     }
-  }, [clonedScene])
+  }, [scene])
 
   return (
     <group ref={groupRef}>
-      {clonedScene && <primitive object={clonedScene} />}
+      {scene && <primitive object={scene} />}
     </group>
   )
 }
@@ -243,17 +241,20 @@ export function Product3DPreview({
 
   // Mount check - ensure component is fully mounted
   useEffect(() => {
-    setIsMounted(true)
+    // Only set mounted on client-side
+    if (typeof window !== 'undefined') {
+      setIsMounted(true)
+    }
     return () => setIsMounted(false)
   }, [])
 
   // Delayed canvas creation to ensure DOM is ready
   useEffect(() => {
-    if (!isMounted) return
+    if (!isMounted || typeof window === 'undefined') return
     
     const timer = setTimeout(() => {
       setCanvasReady(true)
-    }, 300)
+    }, 500)
     
     return () => clearTimeout(timer)
   }, [isMounted])
@@ -357,8 +358,21 @@ export function Product3DPreview({
             antialias: true,
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 1.0,
+            alpha: true,
           }}
           camera={{ position: cameraPosition, fov: 35 }}
+          onCreated={(state) => {
+            try {
+              // Safely access DOM element with multiple checks
+              if (state && state.gl && state.gl.domElement && typeof state.gl.domElement.addEventListener === 'function') {
+                state.gl.domElement.style.touchAction = 'none'
+              }
+            } catch (error) {
+              // Silently handle - this is expected during SSR or rapid mounting/unmounting
+              console.log("[v0] Canvas init skipped (expected during mount)")
+            }
+          }}
+          frameloop="demand"
         >
           <color attach="background" args={["#f9fafb"]} />
           
