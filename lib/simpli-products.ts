@@ -1299,4 +1299,48 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "das-schaufenster",
+    name: "Das Schaufenster",
+    description: "Präsentieren Sie Ihre Lieblingsstücke im oberen Bereich und verstauen Sie alles andere diskret hinter Türen unten. Das Schaufenster vereint offene Ausstellungsfläche mit praktischem, verschlossenem Stauraum – ideal für Wohnzimmer, Büros oder Geschäftsräume.",
+    subtitle: "Präsentation oben, Ordnung unten",
+    artNr: "SR-SCHAUFENSTER-80-2x3",
+    width: 80,
+    rows: 2,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten
+    ],
+    // Preis berechnen: 3x offenes-fach-80 + 3x mit-tueren-80
+    // offenes-fach-80: 29.00€, mit-tueren-80: 65.00€
+    price: 3 * 29.0 + 3 * 65.0, // = 282.00€
+    features: [
+      "2 Ebenen × 3 Spalten (80er)",
+      "Offene Fächer oben für Präsentation",
+      "Türen unten für Stauraum",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 2,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = oben (offenes-fach)
+        [
+          { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
