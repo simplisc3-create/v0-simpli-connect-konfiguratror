@@ -1963,4 +1963,45 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "das-medienboard",
+    name: "Das Medienboard",
+    description: "Das perfekte Board für TV und Technik. Die Rückwände links und rechts schaffen einen stabilen Rahmen und verbergen Kabel elegant, während die offenen Fächer in der Mitte Platz für Receiver, Konsolen und Streaming-Boxen bieten - mit optimaler Belüftung und einfachem Zugang.",
+    subtitle: "TV, Technik, Kabel sauber geführt",
+    artNr: "SR-MEDIENBOARD-80-1x4",
+    width: 80,
+    rows: 1,
+    cols: 4,
+    configuration: [
+      ["mit-rueckwand-80", "offenes-fach-80", "offenes-fach-80", "mit-rueckwand-80"], // Einzige Ebene
+    ],
+    // Preis berechnen:
+    // 2x mit-rueckwand @ 42.00 = 84.00
+    // 2x offenes-fach @ 29.00 = 58.00
+    // Total: 142.00
+    price: 142.0,
+    features: [
+      "1 Ebene x 4 Spalten (80er)",
+      "Rückwände aussen für Kabelführung",
+      "Offene Mitte für Technik",
+      "Optimale Belüftung",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 1,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = einzige Ebene
+        [
+          { id: "cell-0-0", type: "mit-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "offenes-fach", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "offenes-fach", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-rueckwand", row: 0, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
