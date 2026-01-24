@@ -52,7 +52,7 @@ function FallbackBox() {
   )
 }
 
-// The actual 3D shelf scene
+// The actual 3D shelf scene - uses same grid rules as ShelfScene configurator
 const RegalScene = memo(function RegalScene({ 
   preset,
   isHovered,
@@ -92,12 +92,12 @@ const RegalScene = memo(function RegalScene({
 
   const { columns, rows, columnWidths, rowHeights, grid } = preset
   
-  // Calculate dimensions
+  // Same grid calculation as ShelfScene configurator
   const depth = 0.38
   const columnTubeOverlap = 0.003
   const rowTubeOverlap = 0.003
 
-  // Calculate column centers
+  // Calculate column centers (identical to ShelfScene)
   const columnCenters: number[] = []
   let totalWidth = 0
   for (let col = 0; col < columns; col++) {
@@ -111,7 +111,7 @@ const RegalScene = memo(function RegalScene({
     if (col > 0) totalWidth -= columnTubeOverlap
   }
 
-  // Calculate row centers
+  // Calculate row centers (identical to ShelfScene)
   const rowCenters: number[] = []
   for (let row = 0; row < rows; row++) {
     const rowHeight = rowHeights[row] / 100
@@ -124,7 +124,7 @@ const RegalScene = memo(function RegalScene({
 
   const offsetX = -totalWidth / 2
 
-  // Build module list
+  // Build module list with same z-offset logic as ShelfScene
   const modules: Array<{
     key: string
     position: [number, number, number]
@@ -144,14 +144,28 @@ const RegalScene = memo(function RegalScene({
       const cellWidth = columnWidths[gridCol] / 100
       const cellHeight = rowHeights[gridRow] / 100
 
+      // Same z-offset logic as ShelfScene for front alignment
+      let zOffset = 0
+      if (cell.type === "mit-doppelschublade" || cell.type === "abschliessbare-tueren") {
+        zOffset = 0.01 // 1cm closer to viewer
+      } else if (cell.type === "mit-rueckwand") {
+        zOffset = -0.01 // 1cm away from viewer
+      }
+
       const position: [number, number, number] = [
         columnCenters[gridCol] + offsetX,
         rowCenters[gridRow],
-        0, // All modules at z=0, depth alignment handled in GLBModule
+        -depth / 2 + zOffset, // Front of module at z=0, module extends backwards
       ]
 
-      // Check if this is the bottom module in its column
-      const isBottomModule = gridRow === 0
+      // Check if this is the bottom module in its column (same logic as ShelfScene)
+      const maxRowInColumn = grid.reduce((max, gridRowCells, rowIndex) => {
+        if (gridRowCells[gridCol] && gridRowCells[gridCol].type !== "empty" && gridRowCells[gridCol].type !== "ghost") {
+          return Math.max(max, rowIndex)
+        }
+        return max
+      }, -1)
+      const isBottomModule = gridRow === maxRowInColumn
 
       modules.push({
         key: `module-${gridRow}-${gridCol}`,
@@ -167,7 +181,7 @@ const RegalScene = memo(function RegalScene({
     })
   })
 
-  // Create a mock grid config for GLBModule
+  // Create grid config for GLBModule (same structure as ShelfScene)
   const mockGridConfig = {
     width: 75 as const,
     height: 40 as const,
@@ -184,14 +198,20 @@ const RegalScene = memo(function RegalScene({
 
   return (
     <group ref={groupRef}>
-      {/* Floor shadow */}
+      {/* Dark floor like ShelfScene */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+        <planeGeometry args={[10, 10]} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.85} metalness={0.1} />
+      </mesh>
+
+      {/* Contact shadows like ShelfScene */}
       <ContactShadows
         position={[0, 0, 0]}
-        opacity={0.3}
-        scale={4}
-        blur={2}
+        opacity={0.4}
+        scale={6}
+        blur={2.5}
         far={2}
-        resolution={256}
+        resolution={512}
         color="#000000"
       />
 
