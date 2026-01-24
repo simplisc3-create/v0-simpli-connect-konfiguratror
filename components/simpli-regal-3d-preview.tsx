@@ -145,10 +145,9 @@ const RegalScene = memo(function RegalScene({
       const cellHeight = rowHeights[gridRow] / 100
 
       // Calculate z-offset to align all module fronts at the same plane
-      // 80cm modules (0.75) are deeper, so they need to be pushed back slightly
-      // 40cm modules (0.38) are shallower, keeping them at the front reference
+      // 80cm modules (0.75) need to be pushed forward to align with 40cm modules
       const is80cmModule = columnWidths[gridCol] === 75
-      const zOffset = is80cmModule ? -0.01 : 0 // Push 80cm modules back 1cm to align fronts
+      const zOffset = is80cmModule ? 0.01 : 0 // Push 80cm modules forward 1cm to align fronts
 
       const position: [number, number, number] = [
         columnCenters[gridCol] + offsetX,
