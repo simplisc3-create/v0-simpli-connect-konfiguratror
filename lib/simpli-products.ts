@@ -1343,4 +1343,55 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "die-buecherwand",
+    name: "Die Bücherwand",
+    description: "Der zeitlose Klassiker für Bibliophile und Dekoliebhaber. Die Bücherwand bietet großzügige offene Flächen in den oberen zwei Ebenen für Bücher, Pflanzen und Lieblingsstücke. Die Rückwand unten sorgt für einen aufgeräumten Abschluss und zusätzliche Stabilität.",
+    subtitle: "Klassiker für Bücher & Deko",
+    artNr: "SR-BUECHERWAND-80-3x3",
+    width: 80,
+    rows: 3,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Mitte
+      ["mit-rueckwand-80", "mit-rueckwand-80", "mit-rueckwand-80"], // Unten
+    ],
+    // Preis berechnen: 3x mit-rueckwand-80 + 6x offenes-fach-80
+    // mit-rueckwand-80: 42.00€, offenes-fach-80: 29.00€
+    price: 3 * 42.0 + 6 * 29.0, // = 300.00€
+    features: [
+      "3 Ebenen × 3 Spalten (80er)",
+      "Offene Fächer für Bücher & Deko",
+      "Rückwand unten für Stabilität",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 3,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-rueckwand)
+        [
+          { id: "cell-0-0", type: "mit-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-rueckwand", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-rueckwand", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = mitte (offenes-fach)
+        [
+          { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = oben (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
