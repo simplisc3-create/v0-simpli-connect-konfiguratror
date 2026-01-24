@@ -855,6 +855,39 @@ export const schubladenTueren: Product[] = [
 ]
 
 // =============================================================================
+// SIMPLI REGALE - Vorkonfigurierte Komplett-Sets
+// =============================================================================
+
+export interface SimpliRegalProduct {
+  id: string
+  name: string
+  description: string
+  subtitle: string
+  artNr: string
+  width: 80 | 40
+  rows: number
+  cols: number
+  configuration: string[][] // Grid of module types [row][col]
+  price: number
+  image?: string
+  features?: string[]
+  // Konfigurator Preset - für 3D Preview und Link zum Konfigurator
+  preset?: {
+    columns: number
+    rows: number
+    columnWidths: (75 | 38)[]
+    rowHeights: (40 | 80 | 120 | 160 | 200)[]
+    grid: {
+      id: string
+      type: string
+      row: number
+      col: number
+      color?: string
+    }[][]
+  }
+}
+
+// =============================================================================
 // ALL PRODUCTS COMBINED
 // =============================================================================
 export const allProducts: Product[] = [
@@ -1137,3 +1170,89 @@ export const colorDisplayNames: Record<ShelfColor, string> = {
   gruen: "grün",
   gelb: "gelb",
 }
+
+// =============================================================================
+// SIMPLI REGALE - Vorkonfigurierte Komplett-Sets
+// =============================================================================
+
+export const productsSimpliRegale: SimpliRegalProduct[] = [
+  {
+    id: "die-klarlinie",
+    name: "Die Klarlinie",
+    description: "Reduktion auf das Wesentliche. Die Klarlinie kombiniert offene Fächer mit stabilen Rückwänden und schafft eine ruhige, architektonische Ordnung. Perfekt für Wohnräume, in denen Struktur sichtbar sein darf, ohne dominant zu wirken.",
+    subtitle: "Minimalistisch im Look – maximal flexibel im Einsatz",
+    artNr: "SR-KLARLINIE-80-2x3",
+    width: 80,
+    rows: 2,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben
+      ["mit-rueckwand-80", "mit-rueckwand-80", "mit-rueckwand-80"], // Unten
+    ],
+    // Preis berechnen: 3x offenes-fach-80 + 3x mit-rueckwand-80
+    // offenes-fach-80: 52.50€, mit-rueckwand-80: 65.00€
+    price: 3 * 52.5 + 3 * 65.0, // = 352.50€
+    features: [
+      "2 Ebenen × 3 Spalten",
+      "Stabile Rückwände unten",
+      "Offene Fächer oben",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 2,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-rueckwand)
+        [
+          { id: "cell-0-0", type: "mit-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-rueckwand", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-rueckwand", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = oben (offenes-fach)
+        [
+          { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "das-sideboard",
+    name: "Das Sideboard",
+    description: "Kompakt und funktional. Das Sideboard vereint schlanke 40er-Fächer mit einem zentralen Doppelschubladen-Element. Ideal als TV-Lowboard, Flurkommode oder stilvolle Ablage im Wohnbereich.",
+    subtitle: "Die perfekte Balance aus Stauraum und Design",
+    artNr: "SR-SIDEBOARD-MIX-1x3",
+    width: 80, // Gesamtbreite gemischt: 40 + 80 + 40 = 160cm
+    rows: 1,
+    cols: 3,
+    configuration: [
+      ["ohne-rueckwand-40", "mit-doppelschublade-80", "ohne-rueckwand-40"],
+    ],
+    // Preis: ohne-rueckwand-40: 45.00€ x2 + mit-doppelschublade-80: 125.00€
+    price: 2 * 45.0 + 125.0, // = 215.00€
+    features: [
+      "1 Ebene × 3 Spalten (40-80-40)",
+      "Zentrale Doppelschublade",
+      "Offene Seitenfächer",
+      "Komplett-Set inkl. Rahmen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 1,
+      columnWidths: [38, 75, 38] as (75 | 38)[], // 40er, 80er, 40er
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        [
+          { id: "cell-0-0", type: "ohne-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-doppelschublade", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "ohne-rueckwand", row: 0, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+]
