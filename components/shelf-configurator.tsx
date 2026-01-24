@@ -1285,7 +1285,7 @@ export function ShelfConfigurator({
 
           <Canvas
             shadows={true}
-            camera={{ position: [0, 1.2, 2.5], fov: 50 }}
+            camera={{ position: [0, 0.4, 2.5], fov: 50 }}
             gl={{
               antialias: true,
               alpha: true,
