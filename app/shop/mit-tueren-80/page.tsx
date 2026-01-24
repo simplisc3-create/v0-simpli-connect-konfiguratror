@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowLeft, ShoppingCart, Package, Check, Truck, RotateCcw, Award, ChevronRight, DoorOpen, Sparkles, ShieldCheck, Layers } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -55,6 +55,10 @@ export default function MitTuerenProductPage() {
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"features" | "specs">("features")
   const { addItem } = useCartStore()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
   const currentPrice = product.price + (colorPrices[selectedColor] || 0)
   const selectedColorData = availableColors.find((c) => c.id === selectedColor)
