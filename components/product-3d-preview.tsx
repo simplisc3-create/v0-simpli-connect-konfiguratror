@@ -158,6 +158,16 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
       }
     })
     
+    // Center and scale the cloned model consistently
+    const box = new THREE.Box3().setFromObject(clone)
+    const center = box.getCenter(new THREE.Vector3())
+    const size = box.getSize(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const scale = 0.35 / maxDim
+    
+    clone.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+    clone.scale.setScalar(scale)
+    
     return clone
   }, [scene, color])
 
@@ -186,23 +196,9 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
     }
   })
 
-  // Center and scale the model
-  useEffect(() => {
-    if (scene) {
-      const box = new THREE.Box3().setFromObject(scene)
-      const center = box.getCenter(new THREE.Vector3())
-      const size = box.getSize(new THREE.Vector3())
-      const maxDim = Math.max(size.x, size.y, size.z)
-      const scale = 0.35 / maxDim
-      
-      scene.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
-      scene.scale.setScalar(scale)
-    }
-  }, [scene])
-
   return (
     <group ref={groupRef}>
-      {scene && <primitive object={scene} />}
+      {clonedScene && <primitive object={clonedScene} />}
     </group>
   )
 }
