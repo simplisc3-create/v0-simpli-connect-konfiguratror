@@ -1180,6 +1180,42 @@ export const colorDisplayNames: Record<ShelfColor, string> = {
 
 export const productsSimpliRegale: SimpliRegalProduct[] = [
   {
+    id: "das-sideboard",
+    name: "Das Sideboard",
+    description: "Kompakt und funktional. Das Sideboard vereint schlanke 40er-Fächer mit einem zentralen Doppelschubladen-Element. Ideal als TV-Lowboard, Flurkommode oder stilvolle Ablage im Wohnbereich.",
+    subtitle: "Die perfekte Balance aus Stauraum und Design",
+    artNr: "SR-SIDEBOARD-MIX-1x3",
+    width: 80, // Gesamtbreite gemischt: 40 + 80 + 40 = 160cm
+    rows: 1,
+    cols: 3,
+    configuration: [
+      ["mit-rueckwand-40", "mit-doppelschublade-80", "mit-rueckwand-40"],
+    ],
+    // Preis: mit-rueckwand-40: 45.00€ x2 + mit-doppelschublade-80: 125.00€
+    price: 2 * 45.0 + 125.0, // = 215.00€
+    features: [
+      "1 Ebene × 3 Spalten (40-80-40)",
+      "Zentrale Doppelschublade",
+      "Seitenfächer mit Rückwand",
+      "Komplett-Set inkl. Rahmen",
+    ],
+    category: "schubladen",
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 1,
+      columnWidths: [38, 75, 38] as (75 | 38)[], // 40er, 80er, 40er
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        [
+          { id: "cell-0-0", type: "mit-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-doppelschublade", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-rueckwand", row: 0, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
     id: "die-klarlinie",
     name: "Die Klarlinie",
     description: "Reduktion auf das Wesentliche. Die Klarlinie kombiniert offene Fächer mit stabilen Rückwänden und schafft eine ruhige, architektonische Ordnung. Perfekt für Wohnräume, in denen Struktur sichtbar sein darf, ohne dominant zu wirken.",
@@ -1220,42 +1256,6 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
           { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
           { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
           { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
-        ],
-      ],
-    },
-  },
-  {
-    id: "das-sideboard",
-    name: "Das Sideboard",
-    description: "Kompakt und funktional. Das Sideboard vereint schlanke 40er-Fächer mit einem zentralen Doppelschubladen-Element. Ideal als TV-Lowboard, Flurkommode oder stilvolle Ablage im Wohnbereich.",
-    subtitle: "Die perfekte Balance aus Stauraum und Design",
-    artNr: "SR-SIDEBOARD-MIX-1x3",
-    width: 80, // Gesamtbreite gemischt: 40 + 80 + 40 = 160cm
-    rows: 1,
-    cols: 3,
-    configuration: [
-      ["mit-rueckwand-40", "mit-doppelschublade-80", "mit-rueckwand-40"],
-    ],
-    // Preis: mit-rueckwand-40: 45.00€ x2 + mit-doppelschublade-80: 125.00€
-    price: 2 * 45.0 + 125.0, // = 215.00€
-    features: [
-      "1 Ebene × 3 Spalten (40-80-40)",
-      "Zentrale Doppelschublade",
-      "Seitenfächer mit Rückwand",
-      "Komplett-Set inkl. Rahmen",
-    ],
-    category: "schubladen",
-    // Konfigurator Preset für 3D Preview
-    preset: {
-      columns: 3,
-      rows: 1,
-      columnWidths: [38, 75, 38] as (75 | 38)[], // 40er, 80er, 40er
-      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
-      grid: [
-        [
-          { id: "cell-0-0", type: "mit-rueckwand", row: 0, col: 0, color: "weiss" },
-          { id: "cell-0-1", type: "mit-doppelschublade", row: 0, col: 1, color: "weiss" },
-          { id: "cell-0-2", type: "mit-rueckwand", row: 0, col: 2, color: "weiss" },
         ],
       ],
     },
