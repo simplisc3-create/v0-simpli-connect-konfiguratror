@@ -1255,4 +1255,802 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "der-ordnungshueter",
+    name: "Der Ordnungshüter",
+    description: "Maximaler Stauraum trifft auf maximale Sicherheit. Der Ordnungshüter kombiniert abschließbare Fächer im unteren Bereich mit klassischen Türelementen oben. Perfekt für Büros, Archive oder überall dort, wo Ordnung und Schutz Hand in Hand gehen sollen.",
+    subtitle: "Maximaler Stauraum & Sicherheit",
+    artNr: "SR-ORDNUNGSHUETER-80-2x3",
+    width: 80,
+    rows: 2,
+    cols: 3,
+    configuration: [
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Oben
+      ["abschliessbare-tueren-80", "abschliessbare-tueren-80", "abschliessbare-tueren-80"], // Unten
+    ],
+    // Preis berechnen: 3x abschliessbare-tueren-80 + 3x mit-tueren-80
+    // abschliessbare-tueren-80: 95.00€, mit-tueren-80: 65.00€
+    price: 3 * 95.0 + 3 * 65.0, // = 480.00€
+    features: [
+      "2 Ebenen × 3 Spalten (80er)",
+      "Abschließbare Türen unten",
+      "Klassische Türen oben",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 2,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (abschliessbare-tueren)
+        [
+          { id: "cell-0-0", type: "abschliessbare-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "abschliessbare-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "abschliessbare-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = oben (mit-tueren)
+        [
+          { id: "cell-1-0", type: "mit-tueren", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-tueren", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-tueren", row: 1, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "das-schaufenster",
+    name: "Das Schaufenster",
+    description: "Präsentieren Sie Ihre Lieblingsstücke im oberen Bereich und verstauen Sie alles andere diskret hinter Türen unten. Das Schaufenster vereint offene Ausstellungsfläche mit praktischem, verschlossenem Stauraum – ideal für Wohnzimmer, Büros oder Geschäftsräume.",
+    subtitle: "Präsentation oben, Ordnung unten",
+    artNr: "SR-SCHAUFENSTER-80-2x3",
+    width: 80,
+    rows: 2,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten
+    ],
+    // Preis berechnen: 3x offenes-fach-80 + 3x mit-tueren-80
+    // offenes-fach-80: 29.00€, mit-tueren-80: 65.00€
+    price: 3 * 29.0 + 3 * 65.0, // = 282.00€
+    features: [
+      "2 Ebenen × 3 Spalten (80er)",
+      "Offene Fächer oben für Präsentation",
+      "Türen unten für Stauraum",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 2,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = oben (offenes-fach)
+        [
+          { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "die-buecherwand",
+    name: "Die Bücherwand",
+    description: "Der zeitlose Klassiker für Bibliophile und Dekoliebhaber. Die Bücherwand bietet großzügige offene Flächen in den oberen zwei Ebenen für Bücher, Pflanzen und Lieblingsstücke. Die Rückwand unten sorgt für einen aufgeräumten Abschluss und zusätzliche Stabilität.",
+    subtitle: "Klassiker für Bücher & Deko",
+    artNr: "SR-BUECHERWAND-80-3x3",
+    width: 80,
+    rows: 3,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Mitte
+      ["mit-rueckwand-80", "mit-rueckwand-80", "mit-rueckwand-80"], // Unten
+    ],
+    // Preis berechnen: 3x mit-rueckwand-80 + 6x offenes-fach-80
+    // mit-rueckwand-80: 42.00€, offenes-fach-80: 29.00€
+    price: 3 * 42.0 + 6 * 29.0, // = 300.00€
+    features: [
+      "3 Ebenen × 3 Spalten (80er)",
+      "Offene Fächer für Bücher & Deko",
+      "Rückwand unten für Stabilität",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 3,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-rueckwand)
+        [
+          { id: "cell-0-0", type: "mit-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-rueckwand", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-rueckwand", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = mitte (offenes-fach)
+        [
+          { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = oben (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "die-treppe",
+    name: "Die Treppe",
+    description: "Ein architektonisches Statement für Showrooms und moderne Wohnräume. Die gestaffelte Treppenform steigt von einer Ebene bis auf vier Ebenen an und kombiniert offene Präsentationsflächen mit verschlossenen Stauräumen. Unten rechts sicher abschließbar, oben offen für Ihre schönsten Stücke.",
+    subtitle: "Sehr stark für Showrooms",
+    artNr: "SR-TREPPE-80-GESTAFFELT",
+    width: 80,
+    rows: 4,
+    cols: 4,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Ebene 4 (oben)
+      ["", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Ebene 3
+      ["", "", "offenes-fach-80", "offenes-fach-80"], // Ebene 2
+      ["offenes-fach-80", "mit-rueckwand-80", "mit-tueren-80", "abschliessbare-tueren-80"], // Ebene 1 (unten)
+    ],
+    // Preis berechnen: 
+    // Spalte 1: 1x offenes-fach = 29.00
+    // Spalte 2: 1x mit-rueckwand + 1x offenes-fach = 42 + 29 = 71.00
+    // Spalte 3: 1x mit-tueren + 2x offenes-fach = 65 + 58 = 123.00
+    // Spalte 4: 1x abschliessbar + 3x offenes-fach = 95 + 87 = 182.00
+    // Total: 29 + 71 + 123 + 182 = 405.00
+    price: 405.0,
+    features: [
+      "Gestaffelt: 1 bis 4 Ebenen",
+      "4 Spalten (80er)",
+      "Abschließbar unten rechts",
+      "Perfekt für Showrooms",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview (gestaffelt)
+    preset: {
+      columns: 4,
+      rows: 4,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (Basis)
+        [
+          { id: "cell-0-0", type: "offenes-fach", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-rueckwand", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "abschliessbare-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+        // Row 1 = Ebene 2
+        [
+          { id: "cell-1-0", type: "empty", row: 1, col: 0 },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+          { id: "cell-1-3", type: "offenes-fach", row: 1, col: 3, color: "weiss" },
+        ],
+        // Row 2 = Ebene 3
+        [
+          { id: "cell-2-0", type: "empty", row: 2, col: 0 },
+          { id: "cell-2-1", type: "empty", row: 2, col: 1 },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+          { id: "cell-2-3", type: "offenes-fach", row: 2, col: 3, color: "weiss" },
+        ],
+        // Row 3 = Ebene 4 (oben)
+        [
+          { id: "cell-3-0", type: "empty", row: 3, col: 0 },
+          { id: "cell-3-1", type: "empty", row: 3, col: 1 },
+          { id: "cell-3-2", type: "empty", row: 3, col: 2 },
+          { id: "cell-3-3", type: "offenes-fach", row: 3, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "der-hocharchivator",
+    name: "Der Hocharchivator",
+    description: "Das ultimative Ordnungssystem für Archivräume, Büros und Lager. Vier Ebenen bieten maximale Staufläche: unten abschließbar für Wertvolles, darüber Türen für den täglichen Zugriff, Rückwände für stabile Ablage und oben offene Fächer für schnellen Zugriff auf häufig benötigte Dinge.",
+    subtitle: "Maximale Ordnung + Zugriff oben",
+    artNr: "SR-HOCHARCHIVATOR-80-4x3",
+    width: 80,
+    rows: 4,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (4. Ebene)
+      ["mit-rueckwand-80", "mit-rueckwand-80", "mit-rueckwand-80"], // 3. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // 2. Ebene
+      ["abschliessbare-tueren-80", "abschliessbare-tueren-80", "abschliessbare-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 3x abschliessbare-tueren @ 95.00 = 285.00
+    // 3x mit-tueren @ 65.00 = 195.00
+    // 3x mit-rueckwand @ 42.00 = 126.00
+    // 3x offenes-fach @ 29.00 = 87.00
+    // Total: 693.00
+    price: 693.0,
+    features: [
+      "4 Ebenen x 3 Spalten (80er)",
+      "Abschließbar unten",
+      "Türen + Rückwand in der Mitte",
+      "Offene Fächer oben",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 4,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (abschliessbare-tueren)
+        [
+          { id: "cell-0-0", type: "abschliessbare-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "abschliessbare-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "abschliessbare-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-tueren)
+        [
+          { id: "cell-1-0", type: "mit-tueren", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-tueren", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-tueren", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (mit-rueckwand)
+        [
+          { id: "cell-2-0", type: "mit-rueckwand", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "mit-rueckwand", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "mit-rueckwand", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = oben (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "die-vertikale-klarheit",
+    name: "Die Vertikale Klarheit",
+    description: "Architektonische Ruhe in vertikaler Form. Dieses schlanke, hohe Regal schafft klare Linien und einen ruhigen Rhythmus im Raum. Unten geschlossen für Ordnung, oben offen für Ihre schönsten Stücke – ein Statement für minimalistische Ästhetik.",
+    subtitle: "Hoch, ruhig, architektonisch",
+    artNr: "SR-VERTIKALE-KLARHEIT-80-5x2",
+    width: 80,
+    rows: 5,
+    cols: 2,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80"], // Oben (5. Ebene)
+      ["offenes-fach-80", "offenes-fach-80"], // 4. Ebene
+      ["offenes-fach-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-rueckwand-80", "mit-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 2x mit-tueren @ 65.00 = 130.00
+    // 2x mit-rueckwand @ 42.00 = 84.00
+    // 6x offenes-fach @ 29.00 = 174.00
+    // Total: 388.00
+    price: 388.0,
+    features: [
+      "5 Ebenen x 2 Spalten (80er)",
+      "Schlanke, hohe Silhouette",
+      "Türen unten, offen oben",
+      "Architektonisches Design",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 2,
+      rows: 5,
+      columnWidths: [75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-rueckwand)
+        [
+          { id: "cell-1-0", type: "mit-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-rueckwand", row: 1, col: 1, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+        ],
+        // Row 3 = 4. Ebene (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+        ],
+        // Row 4 = oben (offenes-fach)
+        [
+          { id: "cell-4-0", type: "offenes-fach", row: 4, col: 0, color: "weiss" },
+          { id: "cell-4-1", type: "offenes-fach", row: 4, col: 1, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "der-showtower",
+    name: "Der Showtower",
+    description: "Das ultimative Präsentationsregal für Showrooms, Galerien und stilbewusste Räume. Eine sichere Basis aus Türen unten, gerahmt von Rückwänden auf der zweiten Ebene mit offenem Highlight in der Mitte, und darüber drei Ebenen offener Präsentationsfläche für Ihre besten Stücke.",
+    subtitle: "Präsentation mit sicherer Basis",
+    artNr: "SR-SHOWTOWER-80-5x3",
+    width: 80,
+    rows: 5,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (5. Ebene)
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 4. Ebene
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-rueckwand-80", "offenes-fach-80", "mit-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 3x mit-tueren @ 65.00 = 195.00
+    // 2x mit-rueckwand @ 42.00 + 1x offenes-fach @ 29.00 = 113.00
+    // 9x offenes-fach @ 29.00 = 261.00
+    // Total: 569.00
+    price: 569.0,
+    features: [
+      "5 Ebenen x 3 Spalten (80er)",
+      "Sichere Basis mit Türen",
+      "Gerahmtes Highlight in der Mitte",
+      "Maximale Präsentationsfläche oben",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 5,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-rueckwand | offenes-fach | mit-rueckwand)
+        [
+          { id: "cell-1-0", type: "mit-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-rueckwand", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = 4. Ebene (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+        ],
+        // Row 4 = oben (offenes-fach)
+        [
+          { id: "cell-4-0", type: "offenes-fach", row: 4, col: 0, color: "weiss" },
+          { id: "cell-4-1", type: "offenes-fach", row: 4, col: 1, color: "weiss" },
+          { id: "cell-4-2", type: "offenes-fach", row: 4, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "der-loft-riese",
+    name: "Der Loft-Riese",
+    description: "Urban, offen, brutal ehrlich. Der Loft-Riese verkörpert den industriellen Charme moderner Loftwohnungen. Offene Module ohne Rückwand lassen Licht durch und schaffen Durchsicht, während die zentrale Achse mit offenen Fächern Akzente setzt. Unten praktisch mit Türen und Schubladen.",
+    subtitle: "Urban, offen, brutal ehrlich",
+    artNr: "SR-LOFT-RIESE-80-4x3",
+    width: 80,
+    rows: 4,
+    cols: 3,
+    configuration: [
+      ["ohne-rueckwand-80", "offenes-fach-80", "ohne-rueckwand-80"], // Oben (4. Ebene)
+      ["ohne-rueckwand-80", "offenes-fach-80", "ohne-rueckwand-80"], // 3. Ebene
+      ["ohne-rueckwand-80", "offenes-fach-80", "ohne-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-doppelschublade-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 2x mit-tueren @ 65.00 + 1x mit-doppelschublade @ 85.00 = 215.00
+    // 6x ohne-rueckwand @ 35.00 + 3x offenes-fach @ 29.00 = 297.00
+    // Total: 512.00
+    price: 512.0,
+    features: [
+      "4 Ebenen x 3 Spalten (80er)",
+      "Industrieller Loft-Style",
+      "Ohne Rückwand als Raumteiler",
+      "Schubladen + Türen unten",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 4,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren | mit-doppelschublade | mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-doppelschublade", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (ohne-rueckwand | offenes-fach | ohne-rueckwand)
+        [
+          { id: "cell-1-0", type: "ohne-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "ohne-rueckwand", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (ohne-rueckwand | offenes-fach | ohne-rueckwand)
+        [
+          { id: "cell-2-0", type: "ohne-rueckwand", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "ohne-rueckwand", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = oben (ohne-rueckwand | offenes-fach | ohne-rueckwand)
+        [
+          { id: "cell-3-0", type: "ohne-rueckwand", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "ohne-rueckwand", row: 3, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "die-komposition",
+    name: "Die Komposition",
+    description: "Design trifft Funktion in perfekter Harmonie. Die Komposition vereint verschiedene Modultypen zu einem durchdachten Gesamtkunstwerk. Die zentrale Klapptür in der Mitte setzt einen funktionalen Akzent, während Türen, Rückwände und offene Fächer ein ausgewogenes Spiel aus Zeigen und Verbergen schaffen.",
+    subtitle: "Design + Funktion",
+    artNr: "SR-KOMPOSITION-80-5x3",
+    width: 80,
+    rows: 5,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (5. Ebene)
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 4. Ebene
+      ["offenes-fach-80", "mit-klapptuer-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-rueckwand-80", "offenes-fach-80", "mit-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 3x mit-tueren @ 65.00 = 195.00
+    // 2x mit-rueckwand @ 42.00 + 1x offenes-fach @ 29.00 = 113.00
+    // 2x offenes-fach @ 29.00 + 1x mit-klapptuer @ 55.00 = 113.00
+    // 6x offenes-fach @ 29.00 = 174.00
+    // Total: 595.00
+    price: 595.0,
+    features: [
+      "5 Ebenen x 3 Spalten (80er)",
+      "Einzigartige Modulkombination",
+      "Klapptür als zentrales Element",
+      "Perfekte Balance aus Design + Funktion",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 5,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-rueckwand | offenes-fach | mit-rueckwand)
+        [
+          { id: "cell-1-0", type: "mit-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-rueckwand", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach | mit-klapptuer | offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "mit-klapptuer", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = 4. Ebene (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+        ],
+        // Row 4 = oben (offenes-fach)
+        [
+          { id: "cell-4-0", type: "offenes-fach", row: 4, col: 0, color: "weiss" },
+          { id: "cell-4-1", type: "offenes-fach", row: 4, col: 1, color: "weiss" },
+          { id: "cell-4-2", type: "offenes-fach", row: 4, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "der-familien-tower",
+    name: "Der Familien-Tower",
+    description: "Das ideale Regal für Familien mit Kindern. Die abschließbaren Fächer links unten schützen Wertvolles und Gefährliches vor neugierigen Kinderhänden, während der Rest des Regals flexibel für alle zugänglich bleibt. Oben offen für Spielzeug und Bücher, unten sicher verschlossen.",
+    subtitle: "Kindersicher + flexibel",
+    artNr: "SR-FAMILIEN-TOWER-80-4x4",
+    width: 80,
+    rows: 4,
+    cols: 4,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (4. Ebene)
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // 2. Ebene
+      ["abschliessbare-tueren-80", "abschliessbare-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 2x abschliessbare-tueren @ 95.00 + 2x mit-tueren @ 65.00 = 320.00
+    // 4x mit-tueren @ 65.00 = 260.00
+    // 8x offenes-fach @ 29.00 = 232.00
+    // Total: 812.00
+    price: 812.0,
+    features: [
+      "4 Ebenen x 4 Spalten (80er)",
+      "Abschließbar links unten",
+      "Kindersicher + familienfreundlich",
+      "Flexibel für alle Generationen",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 4,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (abschliessbar | abschliessbar | mit-tueren | mit-tueren)
+        [
+          { id: "cell-0-0", type: "abschliessbare-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "abschliessbare-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-tueren)
+        [
+          { id: "cell-1-0", type: "mit-tueren", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-tueren", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-tueren", row: 1, col: 2, color: "weiss" },
+          { id: "cell-1-3", type: "mit-tueren", row: 1, col: 3, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+          { id: "cell-2-3", type: "offenes-fach", row: 2, col: 3, color: "weiss" },
+        ],
+        // Row 3 = oben (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+          { id: "cell-3-3", type: "offenes-fach", row: 3, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "der-system-monolith",
+    name: "Der System-Monolith",
+    description: "Maximaler Stauraum mit klarer Logik. Der System-Monolith folgt einem durchdachten Aufbau: Schubladen unten für schnellen Zugriff, Türen darüber für geschlossenen Stauraum, Rückwände für stabile Ablage und offene Fächer oben für Präsentation. Ein Monument der Ordnung.",
+    subtitle: "Maximaler Stauraum, klare Logik",
+    artNr: "SR-SYSTEM-MONOLITH-80-5x3",
+    width: 80,
+    rows: 5,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (5. Ebene)
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 4. Ebene
+      ["mit-rueckwand-80", "mit-rueckwand-80", "mit-rueckwand-80"], // 3. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // 2. Ebene
+      ["mit-doppelschublade-80", "mit-doppelschublade-80", "mit-doppelschublade-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 3x mit-doppelschublade @ 85.00 = 255.00
+    // 3x mit-tueren @ 65.00 = 195.00
+    // 3x mit-rueckwand @ 42.00 = 126.00
+    // 6x offenes-fach @ 29.00 = 174.00
+    // Total: 750.00
+    price: 750.0,
+    features: [
+      "5 Ebenen x 3 Spalten (80er)",
+      "Doppelschubladen unten",
+      "Logischer Aufbau von unten nach oben",
+      "Maximaler Stauraum",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 5,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-doppelschublade)
+        [
+          { id: "cell-0-0", type: "mit-doppelschublade", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-doppelschublade", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-doppelschublade", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-tueren)
+        [
+          { id: "cell-1-0", type: "mit-tueren", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-tueren", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-tueren", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (mit-rueckwand)
+        [
+          { id: "cell-2-0", type: "mit-rueckwand", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "mit-rueckwand", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "mit-rueckwand", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = 4. Ebene (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+        ],
+        // Row 4 = oben (offenes-fach)
+        [
+          { id: "cell-4-0", type: "offenes-fach", row: 4, col: 0, color: "weiss" },
+          { id: "cell-4-1", type: "offenes-fach", row: 4, col: 1, color: "weiss" },
+          { id: "cell-4-2", type: "offenes-fach", row: 4, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "das-lowboard-klassik",
+    name: "Das Lowboard Klassik",
+    description: "Zeitlose Eleganz in ihrer pursten Form. Das Lowboard Klassik bietet eine durchgehend geschlossene Front mit vier Türelementen - ruhig, aufgeräumt und perfekt als TV-Unterschrank, Sideboard oder Flurgarderobe. Ein Klassiker, der nie aus der Mode kommt.",
+    subtitle: "Ruhig, geschlossen, zeitlos",
+    artNr: "SR-LOWBOARD-KLASSIK-80-1x4",
+    width: 80,
+    rows: 1,
+    cols: 4,
+    configuration: [
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Einzige Ebene
+    ],
+    // Preis berechnen:
+    // 4x mit-tueren @ 65.00 = 260.00
+    price: 260.0,
+    features: [
+      "1 Ebene x 4 Spalten (80er)",
+      "Komplett geschlossene Front",
+      "Zeitloses Design",
+      "Ideal als TV-Lowboard oder Sideboard",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 1,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = einzige Ebene (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "das-medienboard",
+    name: "Das Medienboard",
+    description: "Das perfekte Board für TV und Technik. Die Rückwände links und rechts schaffen einen stabilen Rahmen und verbergen Kabel elegant, während die offenen Fächer in der Mitte Platz für Receiver, Konsolen und Streaming-Boxen bieten - mit optimaler Belüftung und einfachem Zugang.",
+    subtitle: "TV, Technik, Kabel sauber geführt",
+    artNr: "SR-MEDIENBOARD-80-1x4",
+    width: 80,
+    rows: 1,
+    cols: 4,
+    configuration: [
+      ["mit-rueckwand-80", "offenes-fach-80", "offenes-fach-80", "mit-rueckwand-80"], // Einzige Ebene
+    ],
+    // Preis berechnen:
+    // 2x mit-rueckwand @ 42.00 = 84.00
+    // 2x offenes-fach @ 29.00 = 58.00
+    // Total: 142.00
+    price: 142.0,
+    features: [
+      "1 Ebene x 4 Spalten (80er)",
+      "Rückwände aussen für Kabelführung",
+      "Offene Mitte für Technik",
+      "Optimale Belüftung",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 1,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = einzige Ebene
+        [
+          { id: "cell-0-0", type: "mit-rueckwand", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "offenes-fach", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "offenes-fach", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-rueckwand", row: 0, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
+  {
+    id: "das-wohnsideboard",
+    name: "Das Wohnsideboard",
+    description: "Die perfekte Symbiose aus Wohnen und Dekorieren. Das Wohnsideboard bietet unten geschlossenen Stauraum hinter eleganten Türen, während die offene obere Ebene Platz für Pflanzen, Vasen, Bilderrahmen und Lieblingsstücke schafft. Ein vielseitiger Begleiter für jeden Wohnraum.",
+    subtitle: "Wohnen + Deko perfekt kombiniert",
+    artNr: "SR-WOHNSIDEBOARD-80-2x4",
+    width: 80,
+    rows: 2,
+    cols: 4,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten
+    ],
+    // Preis berechnen:
+    // 4x mit-tueren @ 65.00 = 260.00
+    // 4x offenes-fach @ 29.00 = 116.00
+    // Total: 376.00
+    price: 376.0,
+    features: [
+      "2 Ebenen x 4 Spalten (80er)",
+      "Türen unten für Stauraum",
+      "Offene Fächer oben für Deko",
+      "Vielseitig einsetzbar",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 2,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+        // Row 1 = oben (offenes-fach)
+        [
+          { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+          { id: "cell-1-3", type: "offenes-fach", row: 1, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
