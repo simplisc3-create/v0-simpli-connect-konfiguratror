@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useState } from "react"
-import { ArrowLeft, ShoppingCart, Package, Check, Truck, RotateCcw, Award, ChevronRight, Grid3X3, Layers, Sparkles, Box } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { ArrowLeft, ShoppingCart, Package, Check, Truck, RotateCcw, Award, ChevronRight, Grid3X3, Layers, Sparkles, Box, ChevronLeft, ChevronRight as ChevronRightIcon, Pause, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SimpliRegal3DPreview } from "@/components/simpli-regal-3d-preview"
@@ -12,10 +12,37 @@ import { productsSimpliRegale } from "@/lib/simpli-products"
 
 const regal = productsSimpliRegale.find(r => r.id === "das-sideboard")!
 
+const heroImages = [
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%284%29-Me9cx2P5rE22sOvuoCqvVpVwQHIvqi.png",
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%285%29-TpQSqMBf0PMa88iHMoaAZkXmZzr41G.png",
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%283%29.png-upBTO4NnRQoziixay0lwvOSSJFELAT.jpeg",
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%288%29.png-TJhdJSXmg1tDXXWPDZApCIn0NBBI2F.jpeg",
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%287%29.png-l37tCz6FDN0KbJdCyUxyU3YmW0184T.jpeg",
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%282%29-zFoEKOc2OAbD2sblvnRPTEmJYdLt5h.png",
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%286%29.png-lVhdB7APm9NFQQUoleKgMso0OxyCQH.jpeg",
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgsideboard%20%281%29.png-f7VH7uebjjFlYwqU2fWWHH2T87uzsc.jpeg",
+]
+
 export default function DasSideboardProductPage() {
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"features" | "specs">("features")
   const { addItem } = useCartStore()
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(true)
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % heroImages.length)
+  }, [])
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length)
+  }, [])
+
+  useEffect(() => {
+    if (!isPlaying) return
+    const interval = setInterval(nextSlide, 5000)
+    return () => clearInterval(interval)
+  }, [isPlaying, nextSlide])
 
   const handleAddToCart = () => {
     addItem({ id: regal.id, name: regal.name, artNr: regal.artNr, price: regal.price })
@@ -54,6 +81,101 @@ export default function DasSideboardProductPage() {
           </div>
         </div>
       </header>
+
+      {/* Fullscreen Hero Slideshow */}
+      <section className="relative w-full h-[70vh] md:h-[85vh] overflow-hidden">
+        {/* Background Images */}
+        {heroImages.map((image, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              index === currentSlide ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <img
+              src={image}
+              alt={`Das Sideboard - Ansicht ${index + 1}`}
+              className="w-full h-full object-cover"
+            />
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          </div>
+        ))}
+
+        {/* Content Overlay */}
+        <div className="absolute inset-0 flex flex-col justify-end">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-16 md:pb-24">
+            <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 px-4 py-1.5 text-sm font-medium mb-4">
+              SIMPLI REGAL KOLLEKTION
+            </Badge>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
+              {regal.name}
+            </h1>
+            <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-8 drop-shadow-md">
+              {regal.subtitle} - Modulares Design trifft zeitlose Eleganz.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Button 
+                size="lg" 
+                className="bg-white text-gray-900 hover:bg-gray-100 gap-2 text-base px-8 py-6 font-semibold"
+                onClick={handleAddToCart}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {regal.price.toFixed(2)} EUR - Kaufen
+              </Button>
+              <Link href="/konfigurator">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-2 border-white text-white hover:bg-white/10 bg-transparent gap-2 text-base px-8 py-6 font-semibold"
+                >
+                  <Package className="w-5 h-5" />
+                  Anpassen
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Controls */}
+        <div className="absolute bottom-8 right-4 sm:right-8 flex items-center gap-3">
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors"
+            aria-label={isPlaying ? "Pause slideshow" : "Play slideshow"}
+          >
+            {isPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white" />}
+          </button>
+          <button
+            onClick={prevSlide}
+            className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-5 h-5 text-white" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors"
+            aria-label="Next slide"
+          >
+            <ChevronRightIcon className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* Slide Indicators */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+          {heroImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                index === currentSlide ? "bg-white w-8" : "bg-white/50 hover:bg-white/70"
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      </section>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <ol className="flex items-center gap-2 text-sm text-gray-500">
