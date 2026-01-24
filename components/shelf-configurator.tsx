@@ -447,6 +447,15 @@ export function ShelfConfigurator({
     (row: number, col: number) => {
       const cell = config.grid[row]?.[col]
 
+      // In swap mode, always select the cell if it has a module
+      if (toolMode === "swap") {
+        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+          setSelectedCell({ row, col })
+        }
+        return
+      }
+
+      // In select mode, select existing modules or place new ones
       if (cell && cell.type !== "empty" && cell.type !== "ghost") {
         setSelectedCell({ row, col })
         return
@@ -458,7 +467,7 @@ export function ShelfConfigurator({
         placeModule(row, col, selectedTool)
       }
     },
-    [selectedTool, placeModule, config.grid],
+    [selectedTool, placeModule, config.grid, toolMode],
   )
 
   const clearCell = useCallback(
@@ -509,6 +518,42 @@ export function ShelfConfigurator({
           grid: newGrid,
           columnWidths: newColumnWidths,
           cellStyles: newCellStyles,
+        }
+
+        setTimeout(() => saveToHistory(newConfig), 0)
+        return newConfig
+      })
+    },
+    [saveToHistory],
+  )
+
+  // Swap the module type of a cell to a new type (keeping color)
+  const swapModuleType = useCallback(
+    (row: number, col: number, newType: GridCell["type"]) => {
+      setConfig((prev) => {
+        const cell = prev.grid[row]?.[col]
+        if (!cell) return prev
+        if (cell.type === "empty" || cell.type === "ghost") return prev
+
+        // Check if new module type is compatible with column width
+        const columnWidth = prev.columnWidths[col]
+        const widthInCm = columnWidth === 75 ? 80 : 40
+        if (!isModuleTypeAvailableForWidth(newType, widthInCm)) {
+          return prev
+        }
+
+        const newGrid = prev.grid.map((r, ri) =>
+          r.map((c, ci) => {
+            if (ri === row && ci === col) {
+              return { ...c, type: newType }
+            }
+            return c
+          }),
+        )
+
+        const newConfig = {
+          ...prev,
+          grid: newGrid,
         }
 
         setTimeout(() => saveToHistory(newConfig), 0)
@@ -1335,22 +1380,32 @@ export function ShelfConfigurator({
                 hoveredCell={hoveredCell}
                 onCellClick={handleCellClick3D}
                 onCellHover={setHoveredCell}
-                selectedCell={selectedCell} // Pass selectedCell to ShelfScene
-                onApplyCellColor={applyCellColor} // Pass applyCellColor handler
-                onClearCellColor={clearCellColor} // Pass clearCellColor handler
+                selectedCell={selectedCell}
+                toolMode={toolMode}
               />
             </Suspense>
 
-            <OrbitControls
-              ref={orbitControlsRef}
-              makeDefault
-              minPolarAngle={0.2}
-              maxPolarAngle={Math.PI / 2.2}
-              minDistance={1}
-              maxDistance={8}
-              enableDamping
-              dampingFactor={0.05}
-            />
+<OrbitControls
+                ref={orbitControlsRef}
+                makeDefault
+                minPolarAngle={0.3}
+                maxPolarAngle={Math.PI / 2.1}
+                minDistance={1}
+                maxDistance={8}
+                enableDamping
+                dampingFactor={0.05}
+                maxAzimuthAngle={Infinity}
+                minAzimuthAngle={-Infinity}
+                onChange={(e) => {
+                  // Prevent camera target from going below floor (y < 0)
+                  if (e && e.target) {
+                    const controls = e.target as OrbitControlsImpl
+                    if (controls.target.y < 0) {
+                      controls.target.y = 0
+                    }
+                  }
+                }}
+              />
             <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
           </Canvas>
 
@@ -1567,6 +1622,7 @@ export function ShelfConfigurator({
             onDeselectCell={() => setSelectedCell(null)}
             toolMode={toolMode}
             onSetToolMode={setToolMode}
+            onSwapModule={swapModuleType}
             defaultNewColumnWidth={defaultNewColumnWidth}
             onSetDefaultColumnWidth={setDefaultNewColumnWidth}
           />
