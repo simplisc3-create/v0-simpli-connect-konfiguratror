@@ -780,7 +780,7 @@ export function ClassicTetris() {
               {/* Video Background for Start Menu */}
               {!isStarted && !gameOver && (
                 <video
-                  src="/images/tetriscover.mp4"
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/git-blob/prj_jPgPXJu8nxWmhgKnwE2QVhxPEWmq/q60fBMEs4qPhoicaJoyI8z/public/images/tetriscover.mp4"
                   autoPlay
                   loop
                   muted
