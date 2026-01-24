@@ -340,10 +340,9 @@ export function Product3DPreview({
     )
   }
 
-  // Camera position based on module width - 40cm modules need more zoom out
-  const cameraPosition: [number, number, number] = width === 40 
-    ? [0.64, 0.40, 0.64]  // 40cm modules - 10% further zoom out
-    : [0.50, 0.31, 0.50]  // 80cm modules - 10% further zoom out
+  // Camera position - same for both module widths to ensure equal visual scale
+  // Models are already normalized to same size in RotatingModel, so camera stays consistent
+  const cameraPosition: [number, number, number] = [0.50, 0.31, 0.50]
 
   return (
     <div 
