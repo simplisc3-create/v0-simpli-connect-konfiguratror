@@ -1255,4 +1255,48 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "der-ordnungshueter",
+    name: "Der Ordnungshüter",
+    description: "Maximaler Stauraum trifft auf maximale Sicherheit. Der Ordnungshüter kombiniert abschließbare Fächer im unteren Bereich mit klassischen Türelementen oben. Perfekt für Büros, Archive oder überall dort, wo Ordnung und Schutz Hand in Hand gehen sollen.",
+    subtitle: "Maximaler Stauraum & Sicherheit",
+    artNr: "SR-ORDNUNGSHUETER-80-2x3",
+    width: 80,
+    rows: 2,
+    cols: 3,
+    configuration: [
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Oben
+      ["abschliessbare-tueren-80", "abschliessbare-tueren-80", "abschliessbare-tueren-80"], // Unten
+    ],
+    // Preis berechnen: 3x abschliessbare-tueren-80 + 3x mit-tueren-80
+    // abschliessbare-tueren-80: 95.00€, mit-tueren-80: 65.00€
+    price: 3 * 95.0 + 3 * 65.0, // = 480.00€
+    features: [
+      "2 Ebenen × 3 Spalten (80er)",
+      "Abschließbare Türen unten",
+      "Klassische Türen oben",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 2,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (abschliessbare-tueren)
+        [
+          { id: "cell-0-0", type: "abschliessbare-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "abschliessbare-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "abschliessbare-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = oben (mit-tueren)
+        [
+          { id: "cell-1-0", type: "mit-tueren", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-tueren", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-tueren", row: 1, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
