@@ -394,9 +394,16 @@ export default function ShopPage() {
           {selectedTab === "simpli-regale" ? (
             /* Simpli Regale - Komplett-Sets */
             <div className="space-y-8">
-              {productsSimpliRegale.map((regal) => (
-                <SimpliRegalCard key={regal.id} regal={regal} />
-              ))}
+              {productsSimpliRegale
+                .filter((regal) => effectiveCategory === "alle" || regal.category === effectiveCategory)
+                .sort((a, b) => {
+                  if (sortBy === "price-asc") return a.price - b.price
+                  if (sortBy === "price-desc") return b.price - a.price
+                  return a.name.localeCompare(b.name)
+                })
+                .map((regal) => (
+                  <SimpliRegalCard key={regal.id} regal={regal} />
+                ))}
             </div>
           ) : (
             /* Regular Products Grid */
