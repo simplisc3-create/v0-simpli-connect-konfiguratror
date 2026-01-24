@@ -1461,4 +1461,67 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "der-hocharchivator",
+    name: "Der Hocharchivator",
+    description: "Das ultimative Ordnungssystem für Archivräume, Büros und Lager. Vier Ebenen bieten maximale Staufläche: unten abschließbar für Wertvolles, darüber Türen für den täglichen Zugriff, Rückwände für stabile Ablage und oben offene Fächer für schnellen Zugriff auf häufig benötigte Dinge.",
+    subtitle: "Maximale Ordnung + Zugriff oben",
+    artNr: "SR-HOCHARCHIVATOR-80-4x3",
+    width: 80,
+    rows: 4,
+    cols: 3,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (4. Ebene)
+      ["mit-rueckwand-80", "mit-rueckwand-80", "mit-rueckwand-80"], // 3. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // 2. Ebene
+      ["abschliessbare-tueren-80", "abschliessbare-tueren-80", "abschliessbare-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 3x abschliessbare-tueren @ 95.00 = 285.00
+    // 3x mit-tueren @ 65.00 = 195.00
+    // 3x mit-rueckwand @ 42.00 = 126.00
+    // 3x offenes-fach @ 29.00 = 87.00
+    // Total: 693.00
+    price: 693.0,
+    features: [
+      "4 Ebenen x 3 Spalten (80er)",
+      "Abschließbar unten",
+      "Türen + Rückwand in der Mitte",
+      "Offene Fächer oben",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 4,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (abschliessbare-tueren)
+        [
+          { id: "cell-0-0", type: "abschliessbare-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "abschliessbare-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "abschliessbare-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-tueren)
+        [
+          { id: "cell-1-0", type: "mit-tueren", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-tueren", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-tueren", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (mit-rueckwand)
+        [
+          { id: "cell-2-0", type: "mit-rueckwand", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "mit-rueckwand", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "mit-rueckwand", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = oben (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
