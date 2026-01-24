@@ -1386,16 +1386,27 @@ export function ShelfConfigurator({
               />
             </Suspense>
 
-            <OrbitControls
-              ref={orbitControlsRef}
-              makeDefault
-              minPolarAngle={0.2}
-              maxPolarAngle={Math.PI / 2.2}
-              minDistance={1}
-              maxDistance={8}
-              enableDamping
-              dampingFactor={0.05}
-            />
+<OrbitControls
+                ref={orbitControlsRef}
+                makeDefault
+                minPolarAngle={0.3}
+                maxPolarAngle={Math.PI / 2.1}
+                minDistance={1}
+                maxDistance={8}
+                enableDamping
+                dampingFactor={0.05}
+                maxAzimuthAngle={Infinity}
+                minAzimuthAngle={-Infinity}
+                onChange={(e) => {
+                  // Prevent camera target from going below floor (y < 0)
+                  if (e && e.target) {
+                    const controls = e.target as OrbitControlsImpl
+                    if (controls.target.y < 0) {
+                      controls.target.y = 0
+                    }
+                  }
+                }}
+              />
             <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
           </Canvas>
 
