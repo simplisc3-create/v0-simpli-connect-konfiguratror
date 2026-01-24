@@ -1924,4 +1924,43 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "das-lowboard-klassik",
+    name: "Das Lowboard Klassik",
+    description: "Zeitlose Eleganz in ihrer pursten Form. Das Lowboard Klassik bietet eine durchgehend geschlossene Front mit vier Türelementen - ruhig, aufgeräumt und perfekt als TV-Unterschrank, Sideboard oder Flurgarderobe. Ein Klassiker, der nie aus der Mode kommt.",
+    subtitle: "Ruhig, geschlossen, zeitlos",
+    artNr: "SR-LOWBOARD-KLASSIK-80-1x4",
+    width: 80,
+    rows: 1,
+    cols: 4,
+    configuration: [
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Einzige Ebene
+    ],
+    // Preis berechnen:
+    // 4x mit-tueren @ 65.00 = 260.00
+    price: 260.0,
+    features: [
+      "1 Ebene x 4 Spalten (80er)",
+      "Komplett geschlossene Front",
+      "Zeitloses Design",
+      "Ideal als TV-Lowboard oder Sideboard",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 1,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = einzige Ebene (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
