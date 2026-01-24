@@ -2004,4 +2004,53 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "das-wohnsideboard",
+    name: "Das Wohnsideboard",
+    description: "Die perfekte Symbiose aus Wohnen und Dekorieren. Das Wohnsideboard bietet unten geschlossenen Stauraum hinter eleganten Türen, während die offene obere Ebene Platz für Pflanzen, Vasen, Bilderrahmen und Lieblingsstücke schafft. Ein vielseitiger Begleiter für jeden Wohnraum.",
+    subtitle: "Wohnen + Deko perfekt kombiniert",
+    artNr: "SR-WOHNSIDEBOARD-80-2x4",
+    width: 80,
+    rows: 2,
+    cols: 4,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten
+    ],
+    // Preis berechnen:
+    // 4x mit-tueren @ 65.00 = 260.00
+    // 4x offenes-fach @ 29.00 = 116.00
+    // Total: 376.00
+    price: 376.0,
+    features: [
+      "2 Ebenen x 4 Spalten (80er)",
+      "Türen unten für Stauraum",
+      "Offene Fächer oben für Deko",
+      "Vielseitig einsetzbar",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 2,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+        // Row 1 = oben (offenes-fach)
+        [
+          { id: "cell-1-0", type: "offenes-fach", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+          { id: "cell-1-3", type: "offenes-fach", row: 1, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
