@@ -295,16 +295,20 @@ export default function ShopPage() {
 
       <div className="pt-20 pb-16">
         {/* Hero Section */}
-        <div 
-          className="relative bg-cover bg-center bg-no-repeat border-b border-gray-100"
-          style={{ backgroundImage: "url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgmoduleshop.png-eClL7CKco4EzhVgNEKgd6hFe11YohJ.jpeg')" }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight drop-shadow-lg">Module Shop</h1>
-            <p className="mt-4 text-lg text-white/90 max-w-2xl drop-shadow-md">
-              Alle Module für dein individuelles Regalsystem. Wähle aus verschiedenen Varianten und Farben.
-            </p>
+        <div className="relative border-b border-gray-100 overflow-hidden">
+          <img 
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgmoduleshop.png-eClL7CKco4EzhVgNEKgd6hFe11YohJ.jpeg"
+            alt="Modular shelf on beach"
+            className="w-full h-auto object-contain"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+          <div className="absolute inset-0 flex items-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+              <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight drop-shadow-lg">Module Shop</h1>
+              <p className="mt-4 text-lg text-white/90 max-w-xl drop-shadow-md">
+                Alle Module für dein individuelles Regalsystem. Wähle aus verschiedenen Varianten und Farben.
+              </p>
+            </div>
           </div>
         </div>
 
