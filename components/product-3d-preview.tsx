@@ -367,7 +367,7 @@ export function Product3DPreview({
               console.log("[v0] Canvas init skipped (expected during mount)")
             }
           }}
-          frameloop="demand"
+          frameloop="always"
         >
           <color attach="background" args={["#f9fafb"]} />
           

@@ -1,11 +1,34 @@
 "use client"
 
-import { Suspense, useState, useEffect, memo, useCallback, useRef } from "react"
+import React, { Suspense, useState, useEffect, memo, useCallback, useRef, Component, type ReactNode } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, Environment, ContactShadows } from "@react-three/drei"
 import type { SimpliRegalProduct } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
 import * as THREE from "three"
+
+// Error Boundary for Canvas crashes
+class CanvasErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("[SimpliRegal3D] Canvas error:", error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback
+    }
+    return this.props.children
+  }
+}
 
 // Available colors for cycling
 const AVAILABLE_COLORS = ["weiss", "gruen", "gelb", "rot", "blau"] as const
@@ -279,58 +302,66 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
     )
   }
 
+  const fallbackUI = (
+    <div className={`w-full h-full flex items-center justify-center bg-gray-50 rounded-xl ${className}`}>
+      <div className="text-gray-400 text-sm">3D Vorschau</div>
+    </div>
+  )
+
   return (
     <div 
       ref={containerRef}
-      className={`bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden ${className}`}
+      className={`relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden group ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <Canvas
-        dpr={[1, 2]}
-        gl={{
-          antialias: true,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0,
-          alpha: true,
-          powerPreference: "high-performance",
-        }}
-        camera={{ position: [2.5, 1.5, 2.5], fov: 35 }}
-        onCreated={(state) => {
-          try {
-            if (state && state.gl && state.gl.domElement && typeof state.gl.domElement.style !== "undefined") {
-              state.gl.domElement.style.touchAction = "none"
+      <CanvasErrorBoundary fallback={fallbackUI}>
+        <Canvas
+          dpr={[1, 2]}
+          gl={{
+            antialias: true,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.0,
+            alpha: true,
+            powerPreference: "high-performance",
+          }}
+          camera={{ position: [2.5, 1.5, 2.5], fov: 35 }}
+          onCreated={(state) => {
+            try {
+              if (state && state.gl && state.gl.domElement && typeof state.gl.domElement.style !== "undefined") {
+                state.gl.domElement.style.touchAction = "none"
+              }
+            } catch (e) {
+              // Silently ignore canvas initialization errors
             }
-          } catch (e) {
-            // Silently ignore canvas initialization errors
-          }
-        }}
-        frameloop="demand"
-      >
-        <color attach="background" args={["#f9fafb"]} />
-        
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[3, 5, 4]} intensity={0.4} castShadow />
-        <directionalLight position={[-2, 3, 1]} intensity={0.2} />
-        
-        <Environment preset="studio" background={false} />
+          }}
+          frameloop="always"
+        >
+          <color attach="background" args={["#f9fafb"]} />
+          
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[3, 5, 4]} intensity={0.4} castShadow />
+          <directionalLight position={[-2, 3, 1]} intensity={0.2} />
+          
+          <Environment preset="studio" background={false} />
 
-        <Suspense fallback={<FallbackBox />}>
-          <RegalScene preset={regal.preset} isHovered={isHovered} activeColor={activeColor} />
-        </Suspense>
+          <Suspense fallback={<FallbackBox />}>
+            <RegalScene preset={regal.preset} isHovered={isHovered} activeColor={activeColor} />
+          </Suspense>
 
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          minPolarAngle={Math.PI / 4}
-          maxPolarAngle={Math.PI / 2.2}
-          target={[0, 0.4, 0]}
-        />
-      </Canvas>
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            minPolarAngle={Math.PI / 4}
+            maxPolarAngle={Math.PI / 2.2}
+            target={[0, 0.4, 0]}
+          />
+        </Canvas>
+      </CanvasErrorBoundary>
 
       {/* Color indicator - show current color when cycling */}
       {hasBeenHovered && !isHovered && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm z-10">
           {AVAILABLE_COLORS.map((c, index) => (
             <div
               key={c}
@@ -348,7 +379,7 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
       )}
       
       {/* Interaction hint */}
-      <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10">
         Ziehen zum Drehen
       </div>
     </div>
