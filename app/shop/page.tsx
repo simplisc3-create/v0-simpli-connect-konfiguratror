@@ -259,27 +259,23 @@ const categories = [
 ]
 
 export default function ShopPage() {
-  const [selectedTab, setSelectedTab] = useState<"simpli-regale" | "empfehlungen" | 80 | 40>("simpli-regale")
+  const [selectedTab, setSelectedTab] = useState<"simpli-regale" | 80 | 40>("simpli-regale")
   const [selectedCategory, setSelectedCategory] = useState("alle")
   const [sortBy, setSortBy] = useState("name")
   const [selectedWidth, setSelectedWidth] = useState(80) // Declare selectedWidth
   const { addItem } = useCartStore()
 
   // Get products based on selected tab
-  const currentProducts = selectedTab === "empfehlungen" 
-    ? productsRecommended 
-    : selectedTab === 80 
-      ? products80 
-      : selectedTab === 40
-        ? products40
-        : [] // For simpli-regale we'll use a different display
+  const currentProducts = selectedTab === 80 
+    ? products80 
+    : selectedTab === 40
+      ? products40
+      : [] // For simpli-regale we'll use a different display
 
-  // Filter by category (only show "schubladen" category for 80cm modules and simpli-regale, not for recommendations or 40cm)
-  const availableCategories = selectedTab === "empfehlungen"
-    ? categories
-    : selectedTab === 80 || selectedTab === "simpli-regale"
-      ? categories 
-      : categories.filter(c => c.id !== "schubladen")
+  // Filter by category (only show "schubladen" category for 80cm modules and simpli-regale, not for 40cm)
+  const availableCategories = selectedTab === 80 || selectedTab === "simpli-regale"
+    ? categories 
+    : categories.filter(c => c.id !== "schubladen")
 
   // Reset category if switching to 40cm and "schubladen" was selected
   const effectiveCategory = selectedTab === 40 && selectedCategory === "schubladen" ? "alle" : selectedCategory
@@ -323,16 +319,6 @@ export default function ShopPage() {
                 Simpli Regale
               </button>
               <button
-                onClick={() => setSelectedTab("empfehlungen")}
-                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  selectedTab === "empfehlungen"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                Unsere Empfehlungen
-              </button>
-              <button
                 onClick={() => setSelectedTab(80)}
                 className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   selectedTab === 80
@@ -356,11 +342,9 @@ export default function ShopPage() {
             <p className="mt-2 text-sm text-gray-500">
               {selectedTab === "simpli-regale"
                 ? "Alle verfügbaren Module - komplettes Sortiment in einer Übersicht"
-                : selectedTab === "empfehlungen"
-                  ? "Unsere beliebtesten Module - kuratiert von unserem Team"
-                  : selectedTab === 80 
-                    ? "Breite Module (80cm) - ideal für große Regale" 
-                    : "Schmale Module (40cm) - perfekt für kompakte Lösungen"}
+                : selectedTab === 80 
+                  ? "Breite Module (80cm) - ideal für große Regale" 
+                  : "Schmale Module (40cm) - perfekt für kompakte Lösungen"}
             </p>
           </div>
 

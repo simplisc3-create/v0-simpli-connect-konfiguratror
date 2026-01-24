@@ -158,6 +158,16 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
       }
     })
     
+    // Center and scale the cloned model consistently
+    const box = new THREE.Box3().setFromObject(clone)
+    const center = box.getCenter(new THREE.Vector3())
+    const size = box.getSize(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const scale = 0.35 / maxDim
+    
+    clone.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+    clone.scale.setScalar(scale)
+    
     return clone
   }, [scene, color])
 
@@ -186,23 +196,9 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
     }
   })
 
-  // Center and scale the model
-  useEffect(() => {
-    if (scene) {
-      const box = new THREE.Box3().setFromObject(scene)
-      const center = box.getCenter(new THREE.Vector3())
-      const size = box.getSize(new THREE.Vector3())
-      const maxDim = Math.max(size.x, size.y, size.z)
-      const scale = 0.35 / maxDim
-      
-      scene.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
-      scene.scale.setScalar(scale)
-    }
-  }, [scene])
-
   return (
     <group ref={groupRef}>
-      {scene && <primitive object={scene} />}
+      {clonedScene && <primitive object={clonedScene} />}
     </group>
   )
 }
@@ -340,10 +336,9 @@ export function Product3DPreview({
     )
   }
 
-  // Camera position based on module width - 40cm modules need more zoom out
-  const cameraPosition: [number, number, number] = width === 40 
-    ? [0.64, 0.40, 0.64]  // 40cm modules - 10% further zoom out
-    : [0.50, 0.31, 0.50]  // 80cm modules - 10% further zoom out
+  // Camera position - same for both module widths to ensure equal visual scale
+  // Models are already normalized to same size in RotatingModel, so camera stays consistent
+  const cameraPosition: [number, number, number] = [0.50, 0.31, 0.50]
 
   return (
     <div 
@@ -372,7 +367,7 @@ export function Product3DPreview({
               console.log("[v0] Canvas init skipped (expected during mount)")
             }
           }}
-          frameloop="demand"
+          frameloop="always"
         >
           <color attach="background" args={["#f9fafb"]} />
           

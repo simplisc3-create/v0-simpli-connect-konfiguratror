@@ -13,7 +13,12 @@ interface SiteHeaderProps {
 export function SiteHeader({ transparent = false }: SiteHeaderProps) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { getTotalItems } = useCartStore()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -125,7 +130,7 @@ export function SiteHeader({ transparent = false }: SiteHeaderProps) {
                 }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span className="text-sm">({getTotalItems()})</span>
+                <span className="text-sm">({mounted ? getTotalItems() : 0})</span>
               </Button>
             </Link>
           </div>

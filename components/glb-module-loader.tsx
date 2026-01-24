@@ -508,7 +508,7 @@ const LoadedGLBModel = memo(
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
       const BAR_THICKNESS = 0.01
-      const isSchubladen = cellType === "mit-schubladen"
+      const isSchubladen = cellType === "mit-schubladen" || cellType === "mit-doppelschublade" || cellType === "mit-einzelschublade"
       const zOffset = isClosedModule(cellType) ? (isSchubladen ? BAR_THICKNESS + 0.01 : BAR_THICKNESS) : 0
       return [position[0] + xOffset, position[1] + yOffset, position[2] + zOffset]
     }, [position, xOffset, yOffset, cellType])

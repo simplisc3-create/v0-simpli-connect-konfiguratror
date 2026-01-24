@@ -9,7 +9,7 @@ const categories = [
     id: "buero",
     title: "Büro",
     description: "Professionelle Regallösungen für moderne Arbeitsumgebungen",
-    coverVideo: "/videos/simpli-connected/buero-arcade.mp4",
+    coverVideo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/git-blob/prj_jPgPXJu8nxWmhgKnwE2QVhxPEWmq/z1hqguAbaz_fkxXMchmJQr/public/videos/simpli-connected/buero-arcade.mp4",
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -20,7 +20,7 @@ const categories = [
     id: "wohnzimmer",
     title: "Wohnzimmer",
     description: "Stilvolle Aufbewahrung für Ihr Zuhause",
-    coverVideo: "/videos/simpli-connected/wohnzimmer-magazine.mp4",
+    coverVideo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/git-blob/prj_jPgPXJu8nxWmhgKnwE2QVhxPEWmq/sFdcxilpQWfkWoioS_lXws/public/videos/simpli-connected/wohnzimmer-magazine.mp4",
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -31,7 +31,7 @@ const categories = [
     id: "kinderzimmer",
     title: "Kinderzimmer",
     description: "Sichere und bunte Lösungen für die Kleinen",
-    coverVideo: "/videos/simpli-connected/kinderzimmer-arcade.mp4",
+    coverVideo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/git-blob/prj_jPgPXJu8nxWmhgKnwE2QVhxPEWmq/z1hqguAbaz_fkxXMchmJQr/public/videos/simpli-connected/kinderzimmer-arcade.mp4",
     icon: (
       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
