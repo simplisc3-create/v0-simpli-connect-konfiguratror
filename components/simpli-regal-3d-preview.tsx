@@ -124,7 +124,7 @@ const RegalScene = memo(function RegalScene({
       const position: [number, number, number] = [
         columnCenters[gridCol] + offsetX,
         rowCenters[gridRow],
-        -depth / 2,
+        0, // Front-aligned for clean front view
       ]
 
       // Check if this is the bottom module in its column
