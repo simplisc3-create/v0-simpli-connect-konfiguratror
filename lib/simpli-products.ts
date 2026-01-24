@@ -1394,4 +1394,71 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "die-treppe",
+    name: "Die Treppe",
+    description: "Ein architektonisches Statement für Showrooms und moderne Wohnräume. Die gestaffelte Treppenform steigt von einer Ebene bis auf vier Ebenen an und kombiniert offene Präsentationsflächen mit verschlossenen Stauräumen. Unten rechts sicher abschließbar, oben offen für Ihre schönsten Stücke.",
+    subtitle: "Sehr stark für Showrooms",
+    artNr: "SR-TREPPE-80-GESTAFFELT",
+    width: 80,
+    rows: 4,
+    cols: 4,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Ebene 4 (oben)
+      ["", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Ebene 3
+      ["", "", "offenes-fach-80", "offenes-fach-80"], // Ebene 2
+      ["offenes-fach-80", "mit-rueckwand-80", "mit-tueren-80", "abschliessbare-tueren-80"], // Ebene 1 (unten)
+    ],
+    // Preis berechnen: 
+    // Spalte 1: 1x offenes-fach = 29.00
+    // Spalte 2: 1x mit-rueckwand + 1x offenes-fach = 42 + 29 = 71.00
+    // Spalte 3: 1x mit-tueren + 2x offenes-fach = 65 + 58 = 123.00
+    // Spalte 4: 1x abschliessbar + 3x offenes-fach = 95 + 87 = 182.00
+    // Total: 29 + 71 + 123 + 182 = 405.00
+    price: 405.0,
+    features: [
+      "Gestaffelt: 1 bis 4 Ebenen",
+      "4 Spalten (80er)",
+      "Abschließbar unten rechts",
+      "Perfekt für Showrooms",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview (gestaffelt)
+    preset: {
+      columns: 4,
+      rows: 4,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (Basis)
+        [
+          { id: "cell-0-0", type: "offenes-fach", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-rueckwand", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "abschliessbare-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+        // Row 1 = Ebene 2
+        [
+          { id: "cell-1-0", type: "empty", row: 1, col: 0 },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "offenes-fach", row: 1, col: 2, color: "weiss" },
+          { id: "cell-1-3", type: "offenes-fach", row: 1, col: 3, color: "weiss" },
+        ],
+        // Row 2 = Ebene 3
+        [
+          { id: "cell-2-0", type: "empty", row: 2, col: 0 },
+          { id: "cell-2-1", type: "empty", row: 2, col: 1 },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+          { id: "cell-2-3", type: "offenes-fach", row: 2, col: 3, color: "weiss" },
+        ],
+        // Row 3 = Ebene 4 (oben)
+        [
+          { id: "cell-3-0", type: "empty", row: 3, col: 0 },
+          { id: "cell-3-1", type: "empty", row: 3, col: 1 },
+          { id: "cell-3-2", type: "empty", row: 3, col: 2 },
+          { id: "cell-3-3", type: "offenes-fach", row: 3, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
