@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/lib/cart-store"
 import { SiteHeader } from "@/components/site-header"
 import { Product3DPreview } from "@/components/product-3d-preview"
-import { productsSimpliRegale } from "@/lib/simpli-products"
-import { SimpliRegalCard } from "@/components/simpli-regal-card" // Declare SimpliRegalCard import
+import { productsSimpliRegale, type SimpliRegalProduct } from "@/lib/simpli-products"
+import { SimpliRegal3DPreview } from "@/components/simpli-regal-3d-preview"
+import { Badge } from "@/components/ui/badge"
 
 // 80cm Module products with 3D previews
 const products80 = [
@@ -392,10 +393,10 @@ export default function ShopPage() {
 
           {/* Content based on tab */}
           {selectedTab === "simpli-regale" ? (
-            /* Simpli Regale - Komplett-Sets */
-            <div className="space-y-8">
+            /* Simpli Regale - Komplett-Sets - Same grid as Module */
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {productsSimpliRegale.map((regal) => (
-                <SimpliRegalCard key={regal.id} regal={regal} />
+                <SimpliRegalGridCard key={regal.id} regal={regal} />
               ))}
             </div>
           ) : (
@@ -488,6 +489,37 @@ export default function ShopPage() {
         </div>
       </footer>
     </main>
+  )
+}
+
+function SimpliRegalGridCard({ regal }: { regal: SimpliRegalProduct }) {
+  return (
+    <Link href={`/shop/${regal.id}`} className="block">
+      <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+        <div className="aspect-square overflow-hidden flex items-center justify-center bg-gray-50 relative">
+          <SimpliRegal3DPreview regal={regal} className="w-full h-full" />
+          <Badge className="absolute top-3 left-3 bg-teal-600 text-white hover:bg-teal-600">
+            <Package className="w-3 h-3 mr-1" />
+            Komplett-Set
+          </Badge>
+        </div>
+        <div className="p-4">
+          <p className="text-xs text-gray-400 mb-1">{regal.artNr}</p>
+          <h3 className="font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">{regal.name}</h3>
+          <p className="text-sm text-teal-600 mt-0.5">{regal.subtitle}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {regal.rows} Ebenen x {regal.cols} Spalten
+          </p>
+          <div className="mt-4 flex items-center justify-between">
+            <span className="font-bold text-lg">{regal.price.toFixed(2)} €</span>
+            <Button size="sm" variant="outline" className="gap-1 bg-transparent hover:bg-gray-100">
+              <ArrowRight className="w-3 h-3" />
+              Details
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 }
 
