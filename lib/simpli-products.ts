@@ -1657,4 +1657,65 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "der-loft-riese",
+    name: "Der Loft-Riese",
+    description: "Urban, offen, brutal ehrlich. Der Loft-Riese verkörpert den industriellen Charme moderner Loftwohnungen. Offene Module ohne Rückwand lassen Licht durch und schaffen Durchsicht, während die zentrale Achse mit offenen Fächern Akzente setzt. Unten praktisch mit Türen und Schubladen.",
+    subtitle: "Urban, offen, brutal ehrlich",
+    artNr: "SR-LOFT-RIESE-80-4x3",
+    width: 80,
+    rows: 4,
+    cols: 3,
+    configuration: [
+      ["ohne-rueckwand-80", "offenes-fach-80", "ohne-rueckwand-80"], // Oben (4. Ebene)
+      ["ohne-rueckwand-80", "offenes-fach-80", "ohne-rueckwand-80"], // 3. Ebene
+      ["ohne-rueckwand-80", "offenes-fach-80", "ohne-rueckwand-80"], // 2. Ebene
+      ["mit-tueren-80", "mit-doppelschublade-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 2x mit-tueren @ 65.00 + 1x mit-doppelschublade @ 85.00 = 215.00
+    // 6x ohne-rueckwand @ 35.00 + 3x offenes-fach @ 29.00 = 297.00
+    // Total: 512.00
+    price: 512.0,
+    features: [
+      "4 Ebenen x 3 Spalten (80er)",
+      "Industrieller Loft-Style",
+      "Ohne Rückwand als Raumteiler",
+      "Schubladen + Türen unten",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 3,
+      rows: 4,
+      columnWidths: [75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (mit-tueren | mit-doppelschublade | mit-tueren)
+        [
+          { id: "cell-0-0", type: "mit-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "mit-doppelschublade", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (ohne-rueckwand | offenes-fach | ohne-rueckwand)
+        [
+          { id: "cell-1-0", type: "ohne-rueckwand", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "offenes-fach", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "ohne-rueckwand", row: 1, col: 2, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (ohne-rueckwand | offenes-fach | ohne-rueckwand)
+        [
+          { id: "cell-2-0", type: "ohne-rueckwand", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "ohne-rueckwand", row: 2, col: 2, color: "weiss" },
+        ],
+        // Row 3 = oben (ohne-rueckwand | offenes-fach | ohne-rueckwand)
+        [
+          { id: "cell-3-0", type: "ohne-rueckwand", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "ohne-rueckwand", row: 3, col: 2, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
