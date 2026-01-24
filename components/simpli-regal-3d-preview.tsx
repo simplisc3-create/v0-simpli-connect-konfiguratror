@@ -7,6 +7,18 @@ import type { SimpliRegalProduct } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
 import * as THREE from "three"
 
+// Available colors for cycling
+const AVAILABLE_COLORS = ["weiss", "gruen", "gelb", "rot", "blau"] as const
+
+// Color display values for indicator dots
+const COLOR_HEX_MAP: Record<string, string> = {
+  weiss: "#FFFFFF",
+  gruen: "#2FAE5D",
+  gelb: "#FFD400",
+  rot: "#E53935",
+  blau: "#1E5EFF",
+}
+
 // Fallback box while loading
 function FallbackBox() {
   return (
@@ -17,32 +29,39 @@ function FallbackBox() {
   )
 }
 
-// Auto-rotation component
-function AutoRotate({ isHovered }: { isHovered: boolean }) {
-  const groupRef = useRef<THREE.Group>(null)
-  
-  useFrame((state, delta) => {
-    if (groupRef.current && !isHovered) {
-      groupRef.current.rotation.y += delta * 0.3
-    }
-  })
-  
-  return <group ref={groupRef} />
-}
-
 // The actual 3D shelf scene
 const RegalScene = memo(function RegalScene({ 
   preset,
-  isHovered 
+  isHovered,
+  activeColor
 }: { 
   preset: SimpliRegalProduct["preset"]
   isHovered: boolean 
+  activeColor: string
 }) {
   const groupRef = useRef<THREE.Group>(null)
   
-  useFrame((state, delta) => {
-    if (groupRef.current && !isHovered) {
-      groupRef.current.rotation.y += delta * 0.15
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      if (isHovered) {
+        // Rotate when hovered
+        groupRef.current.rotation.y += delta * 0.8
+      } else {
+        // Smoothly return to front view when not hovered
+        let currentY = groupRef.current.rotation.y % (Math.PI * 2)
+        if (currentY > Math.PI) currentY -= Math.PI * 2
+        if (currentY < -Math.PI) currentY += Math.PI * 2
+        
+        const targetY = 0
+        const diff = targetY - currentY
+        const speed = 8
+        
+        if (Math.abs(diff) > 0.01) {
+          groupRef.current.rotation.y = currentY + diff * Math.min(delta * speed, 1)
+        } else {
+          groupRef.current.rotation.y = 0
+        }
+      }
     }
   })
 
@@ -117,7 +136,7 @@ const RegalScene = memo(function RegalScene({
         cellType: cell.type,
         width: cellWidth,
         height: cellHeight,
-        color: cell.color || "weiss",
+        color: activeColor, // Use active color from cycling
         row: gridRow,
         col: gridCol,
         isBottomModule,
@@ -180,6 +199,8 @@ interface SimpliRegal3DPreviewProps {
 
 export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPreviewProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [hasBeenHovered, setHasBeenHovered] = useState(false)
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
   const [canvasReady, setCanvasReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -209,8 +230,30 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
     return () => clearTimeout(timer)
   }, [isMounted])
 
-  const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+  // Auto cycle colors when not hovered and has been hovered before
+  useEffect(() => {
+    if (!isMounted || !hasBeenHovered || isHovered) return
+    
+    const interval = setInterval(() => {
+      setSelectedColorIndex((prev) => (prev + 1) % AVAILABLE_COLORS.length)
+    }, 1500) // Change color every 1.5 seconds
+    
+    return () => clearInterval(interval)
+  }, [isMounted, hasBeenHovered, isHovered])
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true)
+    if (!hasBeenHovered) {
+      setHasBeenHovered(true)
+    }
+  }, [hasBeenHovered])
+
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
+
+  // Determine the active color - use selected color if has been hovered, otherwise use default
+  const activeColor = hasBeenHovered && !isHovered 
+    ? AVAILABLE_COLORS[selectedColorIndex] 
+    : "weiss"
 
   // Show fallback if no preset
   if (!regal.preset) {
@@ -273,7 +316,7 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
         <Environment preset="studio" background={false} />
 
         <Suspense fallback={<FallbackBox />}>
-          <RegalScene preset={regal.preset} isHovered={isHovered} />
+          <RegalScene preset={regal.preset} isHovered={isHovered} activeColor={activeColor} />
         </Suspense>
 
         <OrbitControls
@@ -285,6 +328,25 @@ export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPre
         />
       </Canvas>
 
+      {/* Color indicator - show current color when cycling */}
+      {hasBeenHovered && !isHovered && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm">
+          {AVAILABLE_COLORS.map((c, index) => (
+            <div
+              key={c}
+              className={`w-3 h-3 rounded-full transition-all duration-300 border border-gray-200 ${
+                selectedColorIndex === index 
+                  ? "scale-125 ring-2 ring-gray-400 ring-offset-1" 
+                  : "opacity-60"
+              }`}
+              style={{
+                backgroundColor: COLOR_HEX_MAP[c] || "#FFFFFF"
+              }}
+            />
+          ))}
+        </div>
+      )}
+      
       {/* Interaction hint */}
       <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
         Ziehen zum Drehen
