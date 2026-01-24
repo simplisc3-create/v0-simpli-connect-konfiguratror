@@ -15,7 +15,7 @@ import {
   Columns,
   Grid,
   Check,
-  Eraser,
+  ArrowLeftRight,
   MousePointer,
 } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
@@ -25,7 +25,7 @@ import { ModulePreview3D } from "./module-preview-3d"
 import type { ModuleType } from "@/lib/glb-registry"
 import { getModuleLabel, getModuleShortLabel } from "@/lib/module-utils"
 
-export type ToolMode = "select" | "brush" | "eraser"
+export type ToolMode = "select" | "swap"
 
 export type WidthFilter = 40 | 80 | "all"
 
@@ -62,6 +62,7 @@ type Props = {
   onDeselectCell?: () => void
   toolMode?: ToolMode
   onSetToolMode?: (mode: ToolMode) => void
+  onSwapModule?: (row: number, col: number, newType: GridCell["type"]) => void
   defaultNewColumnWidth?: 75 | 38
   onSetDefaultColumnWidth?: (width: 75 | 38) => void
 }
@@ -125,6 +126,7 @@ export function ConfiguratorPanel({
   onDeselectCell,
   toolMode = "select",
   onSetToolMode,
+  onSwapModule,
   defaultNewColumnWidth = 75,
   onSetDefaultColumnWidth,
 }: Props) {
@@ -151,17 +153,13 @@ export function ConfiguratorPanel({
 
   const handleCellClick = useCallback(
     (row: number, col: number) => {
-      if (toolMode === "eraser") {
-        onClearCell(row, col)
-      } else if (toolMode === "brush" && selectedTool && selectedTool !== "empty") {
-        onPlaceModule(row, col, selectedTool)
-      } else if (selectedTool === "empty") {
+      if (selectedTool === "empty") {
         onClearCell(row, col)
       } else if (selectedTool) {
         onPlaceModule(row, col, selectedTool)
       }
     },
-    [toolMode, selectedTool, onClearCell, onPlaceModule],
+    [selectedTool, onClearCell, onPlaceModule],
   )
 
   const selectedCellInfo = selectedCell ? config.grid[selectedCell.row]?.[selectedCell.col] : null
@@ -258,6 +256,48 @@ export function ConfiguratorPanel({
               </div>
             </div>
 
+            {/* Swap module section */}
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <ArrowLeftRight className="h-3.5 w-3.5 text-amber-400" />
+                <p className="text-xs text-neutral-400">Modul tauschen:</p>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {moduleTypes
+                  .filter((module) => {
+                    // Filter to only show modules that are compatible with this cell's column width
+                    const columnWidth = config.columnWidths[selectedCell.col]
+                    const widthInCm = columnWidth === 75 ? 80 : 40
+                    return isModuleTypeAvailableForWidth(module.id as ModuleType, widthInCm)
+                  })
+                  .filter((module) => module.id !== selectedCellInfo.type) // Don't show current type
+                  .map((module) => (
+                    <button
+                      key={module.id}
+                      onClick={() => {
+                        onSwapModule?.(selectedCell.row, selectedCell.col, module.id)
+                      }}
+                      className={cn(
+                        "group relative flex flex-col items-center justify-center rounded-lg p-1.5 transition-all border",
+                        "bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-amber-600/20 hover:border-amber-500",
+                      )}
+                      title={`Zu "${module.label}" wechseln`}
+                    >
+                      <div className="h-8 w-12 flex items-center justify-center">
+                        <ModulePreview3D
+                          moduleType={module.id as ModuleType}
+                          width={config.columnWidths[selectedCell.col] === 75 ? 80 : 40}
+                          color={selectedCellInfo.color || "weiss"}
+                        />
+                      </div>
+                      <span className="text-[7px] font-medium leading-tight text-center line-clamp-1">
+                        {module.shortLabel}
+                      </span>
+                    </button>
+                  ))}
+              </div>
+            </div>
+
             {/* Quick actions */}
             <div className="space-y-2">
               <p className="text-xs text-neutral-400">Schnellaktionen:</p>
@@ -309,39 +349,25 @@ export function ConfiguratorPanel({
               title="Auswahl-Modus: Klicken um einzelne Module zu platzieren"
             >
               <MousePointer className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Auswahl</span>
+              <span className="text-[10px] font-medium">Platzieren</span>
             </button>
             <button
-              onClick={() => onSetToolMode?.("brush")}
+              onClick={() => onSetToolMode?.("swap")}
               className={cn(
                 "flex flex-1 flex-col items-center gap-1.5 rounded-xl p-3 transition-all",
-                toolMode === "brush"
-                  ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                toolMode === "swap"
+                  ? "bg-amber-600 text-white ring-2 ring-amber-400"
                   : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
               )}
-              title="Pinsel-Modus: Ziehen um mehrere Module zu platzieren"
+              title="Tauschen-Modus: Klicke auf ein Modul um es gegen ein anderes zu tauschen"
             >
-              <Paintbrush className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Pinsel</span>
-            </button>
-            <button
-              onClick={() => onSetToolMode?.("eraser")}
-              className={cn(
-                "flex flex-1 flex-col items-center gap-1.5 rounded-xl p-3 transition-all",
-                toolMode === "eraser"
-                  ? "bg-red-600 text-white ring-2 ring-red-400"
-                  : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700",
-              )}
-              title="Radiergummi-Modus: Klicken oder Ziehen um Module zu entfernen"
-            >
-              <Eraser className="h-5 w-5" />
-              <span className="text-[10px] font-medium">Radierer</span>
+              <ArrowLeftRight className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Tauschen</span>
             </button>
           </div>
           <p className="mt-2 text-[10px] text-neutral-500">
-            {toolMode === "select" && "Klicke auf Zellen um Module einzeln zu platzieren"}
-            {toolMode === "brush" && "Wähle ein Modul und ziehe über die Zellen"}
-            {toolMode === "eraser" && "Klicke oder ziehe um Module zu entfernen"}
+            {toolMode === "select" && "Klicke auf leere Zellen um Module zu platzieren"}
+            {toolMode === "swap" && "Klicke auf ein Modul um es gegen ein kompatibles zu tauschen"}
           </p>
         </div>
 
