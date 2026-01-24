@@ -508,10 +508,20 @@ const LoadedGLBModel = memo(
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
       const BAR_THICKNESS = 0.01
-      const isSchubladen = cellType === "mit-schubladen"
-      const zOffset = isClosedModule(cellType) ? (isSchubladen ? BAR_THICKNESS + 0.01 : BAR_THICKNESS) : 0
-      return [position[0] + xOffset, position[1] + yOffset, position[2] + zOffset]
-    }, [position, xOffset, yOffset, cellType])
+      const isSchubladen = cellType === "mit-schubladen" || cellType === "mit-doppelschublade" || cellType === "mit-einzelschublade"
+      const closedModuleOffset = isClosedModule(cellType) ? (isSchubladen ? BAR_THICKNESS + 0.01 : BAR_THICKNESS) : 0
+      
+      // Compute bounding box to get actual model depth for front-alignment
+      const boundingBox = new THREE.Box3().setFromObject(scene)
+      const modelSize = boundingBox.getSize(new THREE.Vector3())
+      const modelDepth = modelSize.z
+      
+      // All modules should have their front face at z=0
+      // Since models are centered, we need to offset by half their depth
+      const frontAlignOffset = modelDepth / 2
+      
+      return [position[0] + xOffset, position[1] + yOffset, position[2] + closedModuleOffset + frontAlignOffset]
+    }, [position, xOffset, yOffset, cellType, scene])
 
     return <primitive object={clonedScene} position={adjustedPosition} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
   },
