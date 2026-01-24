@@ -1788,4 +1788,70 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       ],
     },
   },
+  {
+    id: "der-familien-tower",
+    name: "Der Familien-Tower",
+    description: "Das ideale Regal für Familien mit Kindern. Die abschließbaren Fächer links unten schützen Wertvolles und Gefährliches vor neugierigen Kinderhänden, während der Rest des Regals flexibel für alle zugänglich bleibt. Oben offen für Spielzeug und Bücher, unten sicher verschlossen.",
+    subtitle: "Kindersicher + flexibel",
+    artNr: "SR-FAMILIEN-TOWER-80-4x4",
+    width: 80,
+    rows: 4,
+    cols: 4,
+    configuration: [
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // Oben (4. Ebene)
+      ["offenes-fach-80", "offenes-fach-80", "offenes-fach-80", "offenes-fach-80"], // 3. Ebene
+      ["mit-tueren-80", "mit-tueren-80", "mit-tueren-80", "mit-tueren-80"], // 2. Ebene
+      ["abschliessbare-tueren-80", "abschliessbare-tueren-80", "mit-tueren-80", "mit-tueren-80"], // Unten (1. Ebene)
+    ],
+    // Preis berechnen:
+    // 2x abschliessbare-tueren @ 95.00 + 2x mit-tueren @ 65.00 = 320.00
+    // 4x mit-tueren @ 65.00 = 260.00
+    // 8x offenes-fach @ 29.00 = 232.00
+    // Total: 812.00
+    price: 812.0,
+    features: [
+      "4 Ebenen x 4 Spalten (80er)",
+      "Abschließbar links unten",
+      "Kindersicher + familienfreundlich",
+      "Flexibel für alle Generationen",
+      "Komplett-Set inkl. Leiter & Stangen",
+    ],
+    // Konfigurator Preset für 3D Preview
+    preset: {
+      columns: 4,
+      rows: 4,
+      columnWidths: [75, 75, 75, 75] as (75 | 38)[],
+      rowHeights: [38, 38, 38, 38] as (40 | 80 | 120 | 160 | 200)[],
+      grid: [
+        // Row 0 = unten (abschliessbar | abschliessbar | mit-tueren | mit-tueren)
+        [
+          { id: "cell-0-0", type: "abschliessbare-tueren", row: 0, col: 0, color: "weiss" },
+          { id: "cell-0-1", type: "abschliessbare-tueren", row: 0, col: 1, color: "weiss" },
+          { id: "cell-0-2", type: "mit-tueren", row: 0, col: 2, color: "weiss" },
+          { id: "cell-0-3", type: "mit-tueren", row: 0, col: 3, color: "weiss" },
+        ],
+        // Row 1 = 2. Ebene (mit-tueren)
+        [
+          { id: "cell-1-0", type: "mit-tueren", row: 1, col: 0, color: "weiss" },
+          { id: "cell-1-1", type: "mit-tueren", row: 1, col: 1, color: "weiss" },
+          { id: "cell-1-2", type: "mit-tueren", row: 1, col: 2, color: "weiss" },
+          { id: "cell-1-3", type: "mit-tueren", row: 1, col: 3, color: "weiss" },
+        ],
+        // Row 2 = 3. Ebene (offenes-fach)
+        [
+          { id: "cell-2-0", type: "offenes-fach", row: 2, col: 0, color: "weiss" },
+          { id: "cell-2-1", type: "offenes-fach", row: 2, col: 1, color: "weiss" },
+          { id: "cell-2-2", type: "offenes-fach", row: 2, col: 2, color: "weiss" },
+          { id: "cell-2-3", type: "offenes-fach", row: 2, col: 3, color: "weiss" },
+        ],
+        // Row 3 = oben (offenes-fach)
+        [
+          { id: "cell-3-0", type: "offenes-fach", row: 3, col: 0, color: "weiss" },
+          { id: "cell-3-1", type: "offenes-fach", row: 3, col: 1, color: "weiss" },
+          { id: "cell-3-2", type: "offenes-fach", row: 3, col: 2, color: "weiss" },
+          { id: "cell-3-3", type: "offenes-fach", row: 3, col: 3, color: "weiss" },
+        ],
+      ],
+    },
+  },
 ]
