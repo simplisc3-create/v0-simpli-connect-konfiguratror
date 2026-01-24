@@ -392,8 +392,8 @@ export default function ShopPage() {
 
           {/* Content based on tab */}
           {selectedTab === "simpli-regale" ? (
-            /* Simpli Regale - Komplett-Sets - 2 products per row */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            /* Simpli Regale - Komplett-Sets */
+            <div className="space-y-8">
               {productsSimpliRegale.map((regal) => (
                 <SimpliRegalCard key={regal.id} regal={regal} />
               ))}
