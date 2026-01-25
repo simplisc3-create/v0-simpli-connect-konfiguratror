@@ -8,6 +8,7 @@ import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
 import { ContactShadows, Html } from "@react-three/drei"
 import type * as THREE from "three"
+import { ModuleFeet } from "./foot-3d"
 
 type Props = {
   config: ShelfConfig
@@ -324,22 +325,38 @@ export const ShelfScene = memo(function ShelfScene({
 
         const colorToUse = cell.color || "weiss"
 
+        // Determine if we should hide the built-in feet (only when custom foot type is selected)
+        const shouldHideBuiltInFeet = isBottomModule && config.footType && config.footType !== "black-plastic"
+        // Only show custom feet for non-standard foot types
+        const shouldShowCustomFeet = isBottomModule && config.footType && config.footType !== "black-plastic"
+
         return (
-          <GLBModule
-            key={key}
-            position={position}
-            cellType={cell.type}
-            width={width}
-            height={height}
-            depth={0.38}
-            color={colorToUse}
-            row={row}
-            col={col}
-            gridConfig={config}
-            isBottomModule={isBottomModule}
-            isSelected={isSelected}
-            onClick={handleClick}
-          />
+          <group key={key}>
+            <GLBModule
+              position={position}
+              cellType={cell.type}
+              width={width}
+              height={height}
+              depth={0.38}
+              color={colorToUse}
+              row={row}
+              col={col}
+              gridConfig={config}
+              isBottomModule={isBottomModule}
+              isSelected={isSelected}
+              onClick={handleClick}
+              hideBuiltInFeet={shouldHideBuiltInFeet}
+            />
+            {/* Render custom feet on bottom modules when non-standard foot type selected */}
+            {shouldShowCustomFeet && (
+              <ModuleFeet
+                modulePosition={position}
+                moduleWidth={width}
+                moduleDepth={0.38}
+                footType={config.footType}
+              />
+            )}
+          </group>
         )
       })}
 

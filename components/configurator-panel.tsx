@@ -24,6 +24,8 @@ import { ModuleThumbnail3D } from "./module-thumbnail-3d"
 import type { ModuleType } from "@/lib/glb-registry"
 import { getModuleLabel, getModuleShortLabel } from "@/lib/module-utils"
 import { modules80, modules40, getModuleTypeFromThumbnailId } from "@/lib/module-thumbnails"
+import type { FootType } from "./shelf-configurator"
+import Image from "next/image"
 
 
 
@@ -62,6 +64,8 @@ type Props = {
   onDeselectCell?: () => void
   defaultNewColumnWidth?: 75 | 38
   onSetDefaultColumnWidth?: (width: 75 | 38) => void
+  footType?: FootType
+  onSetFootType?: (footType: FootType) => void
 }
 
 const baseColors = [
@@ -123,6 +127,8 @@ export function ConfiguratorPanel({
   onDeselectCell,
   defaultNewColumnWidth = 75,
   onSetDefaultColumnWidth,
+  footType = "black-plastic",
+  onSetFootType,
 }: Props) {
   const [expandedSection, setExpandedSection] = useState<string>("modules")
   const { setItem } = useCartStore()
@@ -385,6 +391,85 @@ export function ConfiguratorPanel({
                   )}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Foot Type Selection */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="mb-2 text-xs font-medium text-gray-600">Fuss-Optionen (4 Stück pro Bodenmodul):</p>
+            <div className="grid grid-cols-3 gap-2">
+              {/* Black Plastic Feet */}
+              <button
+                onClick={() => onSetFootType?.("black-plastic")}
+                className={cn(
+                  "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
+                  footType === "black-plastic"
+                    ? "bg-teal-50 border-teal-400 shadow-md"
+                    : "bg-white border-gray-200 hover:border-gray-300"
+                )}
+              >
+                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div className="flex gap-1">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="w-2 h-2 rounded-full bg-gray-800" />
+                    ))}
+                  </div>
+                </div>
+                <span className="mt-1 text-[9px] font-semibold text-gray-700">Standard</span>
+                {footType === "black-plastic" && (
+                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                )}
+              </button>
+
+              {/* Casters */}
+              <button
+                onClick={() => onSetFootType?.("casters")}
+                className={cn(
+                  "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
+                  footType === "casters"
+                    ? "bg-teal-50 border-teal-400 shadow-md"
+                    : "bg-white border-gray-200 hover:border-gray-300"
+                )}
+              >
+                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <Image
+                    src="/images/feet/casters.webp"
+                    alt="Rollen"
+                    width={80}
+                    height={48}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="mt-1 text-[9px] font-semibold text-gray-700">Rollen</span>
+                {footType === "casters" && (
+                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                )}
+              </button>
+
+              {/* Chrome Adjustable */}
+              <button
+                onClick={() => onSetFootType?.("chrome-adjustable")}
+                className={cn(
+                  "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
+                  footType === "chrome-adjustable"
+                    ? "bg-teal-50 border-teal-400 shadow-md"
+                    : "bg-white border-gray-200 hover:border-gray-300"
+                )}
+              >
+                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <Image
+                    src="/images/feet/chrome-adjustable.webp"
+                    alt="Verchromte Stellfüße"
+                    width={80}
+                    height={48}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="mt-1 text-[9px] font-semibold text-gray-700">Stellfüße</span>
+                {footType === "chrome-adjustable" && (
+                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                )}
+              </button>
             </div>
           </div>
         </div>

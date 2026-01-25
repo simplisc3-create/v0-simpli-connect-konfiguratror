@@ -21,6 +21,7 @@ type GLBModuleProps = {
   isBottomModule?: boolean
   isSelected?: boolean
   onClick?: (row: number, col: number) => void
+  hideBuiltInFeet?: boolean
 }
 
 const urlCache = new Map<string, string>()
@@ -221,6 +222,7 @@ function isFeetPart(
   geometry?: THREE.BufferGeometry,
   parentBoundingBox?: THREE.Box3,
   material?: THREE.Material | THREE.Material[],
+  mesh?: THREE.Mesh,
 ): boolean {
   const nameLower = meshName.toLowerCase()
 
@@ -253,7 +255,16 @@ function isFeetPart(
           const isSmall =
             meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
 
-          if (isSmall) {
+          // Also check if the part is at the bottom of the model (low Y position)
+          const parentMin = new THREE.Vector3()
+          parentBoundingBox.getMin(parentMin)
+          const meshCenter = new THREE.Vector3()
+          meshBox.getCenter(meshCenter)
+          
+          // Feet should be near the bottom 10% of the model
+          const isAtBottom = meshCenter.y < parentMin.y + parentSize.y * 0.15
+
+          if (isSmall && isAtBottom) {
             return true
           }
         }
@@ -310,6 +321,7 @@ export const GLBModule = memo(
     isBottomModule = false,
     isSelected = false,
     onClick,
+    hideBuiltInFeet = false,
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
@@ -401,6 +413,7 @@ export const GLBModule = memo(
         isBottomModule={isBottomModule}
         isSelected={isSelected}
         onClick={onClick}
+        hideBuiltInFeet={hideBuiltInFeet}
       />
     )
   },
@@ -414,7 +427,8 @@ export const GLBModule = memo(
     prev.row === next.row &&
     prev.col === next.col &&
     prev.isBottomModule === next.isBottomModule &&
-    prev.isSelected === next.isSelected,
+    prev.isSelected === next.isSelected &&
+    prev.hideBuiltInFeet === next.hideBuiltInFeet,
 )
 
 const LoadedGLBModel = memo(
@@ -429,6 +443,7 @@ const LoadedGLBModel = memo(
   isBottomModule = false,
   isSelected = false,
   onClick,
+  hideBuiltInFeet = false,
   }: {
   modelUrl: string
     position: [number, number, number]
@@ -440,6 +455,7 @@ const LoadedGLBModel = memo(
   isBottomModule?: boolean
   isSelected?: boolean
   onClick?: (row: number, col: number) => void
+  hideBuiltInFeet?: boolean
   }) {
     console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
     const { scene } = useGLTF(modelUrl)
@@ -478,10 +494,8 @@ const LoadedGLBModel = memo(
     }, [scene, isKlapptuerOben])
 
     const clonedScene = useMemo(() => {
-      console.log("[v0] Cloning scene for module:", moduleKey)
       try {
         const clone = scene.clone(true)
-        console.log("[v0] Scene cloned successfully")
         let mappedColor = targetColor
         if (GERMAN_TO_ENGLISH_COLOR[targetColor]) {
           mappedColor = GERMAN_TO_ENGLISH_COLOR[targetColor]
@@ -500,15 +514,25 @@ const LoadedGLBModel = memo(
           const isFrame = isFramePart(meshName, child.geometry, child.material)
           const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
           const isHandle = isHandlePart(meshName)
-          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material)
+          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material, child)
 
           if (isHandle && isKlapptuerOben) {
             handleMesh = child
           }
 
-          if (isFeet && !isBottomModule) {
-            child.visible = false
-            return
+          // Handle built-in feet:
+          // 1. Not a bottom module - hide feet entirely
+          // 2. Custom feet selected (hideBuiltInFeet = true) - make feet chrome to blend with frame
+          if (isFeet) {
+            if (!isBottomModule) {
+              // Not bottom module - hide feet completely
+              child.visible = false
+              return
+            } else if (hideBuiltInFeet) {
+              // Custom feet selected - chrome-plate the built-in feet to blend with frame
+              child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
+              return
+            }
           }
 
           child.frustumCulled = false
@@ -568,13 +592,12 @@ const LoadedGLBModel = memo(
         }
       })
 
-      console.log("[v0] Scene processing complete for:", moduleKey)
       return clone
     } catch (err) {
         console.error("[v0] Error cloning/processing scene:", err)
         throw err
       }
-    }, [scene, targetColor, moduleKey, cellType, row, isBottomModule])
+    }, [scene, targetColor, moduleKey, cellType, row, isBottomModule, hideBuiltInFeet])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
       const BAR_THICKNESS = 0.01
@@ -603,6 +626,7 @@ const LoadedGLBModel = memo(
     prev.col === next.col &&
     prev.isBottomModule === next.isBottomModule &&
     prev.isSelected === next.isSelected &&
+    prev.hideBuiltInFeet === next.hideBuiltInFeet &&
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],

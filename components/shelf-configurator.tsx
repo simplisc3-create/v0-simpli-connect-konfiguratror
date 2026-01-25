@@ -181,6 +181,8 @@ export type CellId = `c-${number}-${number}`
 export type ColorKey = GridCell["color"]
 export type CellStyles = Record<CellId, { color?: ColorKey }>
 
+export type FootType = "black-plastic" | "casters" | "chrome-adjustable"
+
 export type ShelfConfig = {
   width: 38 | 75
   height: 40 | 80 | 120 | 160 | 200
@@ -208,6 +210,7 @@ export type ShelfConfig = {
   columnWidths: (75 | 38)[]
   rowHeights: (40 | 80 | 120 | 160 | 200)[]
   cellStyles?: CellStyles
+  footType?: FootType
 }
 
 type PresetConfig = {
@@ -233,6 +236,7 @@ const initialConfig: ShelfConfig = {
   columnWidths: [75] as (75 | 38)[],
   rowHeights: [38] as (40 | 80 | 120 | 160 | 200)[],
   cellStyles: {}, // Initialize empty cellStyles
+  footType: "black-plastic", // Default foot type
 }
 
 export function ShelfConfigurator({
@@ -1228,6 +1232,36 @@ export function ShelfConfigurator({
       addItem("SIM023", "Funktionswand Edelstahl", funktionswandCount, 35.0)
     }
 
+    // --- FÜSSE (Feet) ---
+    // Count bottom modules (modules in the lowest row of each column)
+    const bottomModuleCount = (() => {
+      let count = 0
+      for (let col = 0; col < config.columns; col++) {
+        // Find the bottom-most filled cell in this column
+        for (let row = 0; row < config.rows; row++) {
+          const cell = config.grid[row]?.[col]
+          if (cell && cell.type !== "empty" && cell.type !== "ghost") {
+            count++
+            break // Only count the bottom-most module per column
+          }
+        }
+      }
+      return count
+    })()
+
+    // Each bottom module gets 4 feet
+    const feetSetsNeeded = bottomModuleCount // 1 set = 4 feet per module
+    
+    if (feetSetsNeeded > 0 && config.footType) {
+      const footTypeLabels: Record<string, { artNr: string; name: string; price: number }> = {
+        "black-plastic": { artNr: "SIM-FOOT-STD", name: "Standardfüße schwarz (4 Stück)", price: 5.0 },
+        "casters": { artNr: "SIM-FOOT-ROLL", name: "Rollenset (4 Stück)", price: 35.0 },
+        "chrome-adjustable": { artNr: "SIM-FOOT-CHROME", name: "Stellfüße verchromt (4 Stück)", price: 25.0 },
+      }
+      const footData = footTypeLabels[config.footType] || footTypeLabels["black-plastic"]
+      addItem(footData.artNr, footData.name, feetSetsNeeded, footData.price)
+    }
+
     const cellsForDebug = config.grid.flatMap((row, ri) =>
       row.map((cell, ci) => ({
         row: ri,
@@ -1613,6 +1647,8 @@ dpr={[1, 2]}
             onDeselectCell={() => setSelectedCell(null)}
             defaultNewColumnWidth={defaultNewColumnWidth}
             onSetDefaultColumnWidth={setDefaultNewColumnWidth}
+            footType={config.footType}
+            onSetFootType={(footType) => setConfig(prev => ({ ...prev, footType }))}
           />
         </div>
 
@@ -1631,6 +1667,8 @@ dpr={[1, 2]}
             price={bomData.totalPrice}
             defaultNewColumnWidth={defaultNewColumnWidth}
             onSetDefaultColumnWidth={setDefaultNewColumnWidth}
+            footType={config.footType}
+            onSetFootType={(footType) => setConfig(prev => ({ ...prev, footType }))}
           />
         </div>
       </div>
