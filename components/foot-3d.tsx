@@ -152,33 +152,42 @@ export const ModuleFeet = memo(function ModuleFeet({
   footType,
 }: ModuleFeetProps) {
   // Calculate foot positions at the four corners of the module frame tubes
-  // The GLB model is rotated 270deg (3*PI/2), so X and Z axes need to be swapped
+  // The feet should be positioned exactly where the built-in black feet are:
+  // At the bottom of each vertical corner post, at ground level (y=0)
   const footPositions = useMemo(() => {
-    // Due to the 270 degree Y rotation applied to the GLB model:
-    // - Model's local X becomes world -Z
-    // - Model's local Z becomes world X
-    // The frame tubes are at the corners of the module
+    // The GLB model uses a specific frame tube layout:
+    // - Frame tube diameter: ~15mm (0.015m)
+    // - Frame tubes are positioned so their OUTER edge aligns with module boundary
+    // - So the tube CENTER is inset by the tube radius from the module edge
+    // 
+    // After the 270-degree Y rotation applied in glb-module-loader.tsx:
+    // - Original model's +X axis becomes -Z in world space
+    // - Original model's +Z axis becomes +X in world space
+    // - Width (X) and Depth (Z) swap conceptually
+    //
+    // The module position represents the CENTER of the module:
+    // - position[0] = X center
+    // - position[1] = Y center (vertical)
+    // - position[2] = Z center (typically -depth/2, so module front is at z=0)
     
-    // Inset from the frame tube centers (frame tubes are ~1.5cm diameter)
-    const tubeRadius = 0.0075
-    const insetFromEdge = tubeRadius // Position feet at tube center
+    // Frame tube inset from module edges
+    // The tube outer surface is at the edge, so center is inset by radius
+    const tubeInset = 0.0075 // 7.5mm = half of 15mm tube diameter
     
-    // After rotation, module dimensions map as:
-    // moduleWidth corresponds to the X direction in world space
-    // moduleDepth (0.38m) corresponds to Z direction in world space
-    const halfWidth = moduleWidth / 2 - insetFromEdge
-    const halfDepth = moduleDepth / 2 - insetFromEdge
+    // Calculate half dimensions, accounting for tube inset
+    const halfWidth = moduleWidth / 2 - tubeInset
+    const halfDepth = moduleDepth / 2 - tubeInset
     
-    // Y position: feet go at ground level (y=0), just below the bottom frame
-    // The module's position[1] is the vertical center of the module
-    // The feet should be placed at y=0 (floor level)
+    // Y position: feet are at ground level (y=0)
     const baseY = 0
 
-    // Position feet at the four corners
-    // Note: modulePosition[2] is typically negative (module extends backwards from z=0)
+    // Calculate corner positions
+    // The module's Z position is at -depth/2 (centered in depth, front at z=0)
     return [
+      // Front corners (closer to camera, Z closer to 0)
       [modulePosition[0] - halfWidth, baseY, modulePosition[2] + halfDepth] as [number, number, number], // Front left
       [modulePosition[0] + halfWidth, baseY, modulePosition[2] + halfDepth] as [number, number, number], // Front right  
+      // Back corners (further from camera, more negative Z)
       [modulePosition[0] - halfWidth, baseY, modulePosition[2] - halfDepth] as [number, number, number], // Back left
       [modulePosition[0] + halfWidth, baseY, modulePosition[2] - halfDepth] as [number, number, number], // Back right
     ]
