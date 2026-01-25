@@ -63,7 +63,6 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
 import { OrbitControls, Environment, Lightformer } from "@react-three/drei"
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 import { ConfiguratorPanel } from "./configurator-panel"
-import type { ToolMode } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
 import { ConfiguratorHelpBot } from "./configurator-help-bot"
@@ -262,8 +261,6 @@ export function ShelfConfigurator({
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
-
-  const [toolMode, setToolMode] = useState<ToolMode>("select")
 
   // Camera focus state for smooth animation to newest module
   const [cameraTarget, setCameraTarget] = useState<[number, number, number] | null>(null)
@@ -503,15 +500,7 @@ export function ShelfConfigurator({
     (row: number, col: number) => {
       const cell = config.grid[row]?.[col]
 
-      // In swap mode, always select the cell if it has a module
-      if (toolMode === "swap") {
-        if (cell && cell.type !== "empty" && cell.type !== "ghost") {
-          setSelectedCell({ row, col })
-        }
-        return
-      }
-
-      // In select mode, select existing modules or place new ones
+      // Select existing modules or place new ones
       if (cell && cell.type !== "empty" && cell.type !== "ghost") {
         setSelectedCell({ row, col })
         return
@@ -523,7 +512,7 @@ export function ShelfConfigurator({
         placeModule(row, col, selectedTool)
       }
     },
-    [selectedTool, placeModule, config.grid, toolMode],
+    [selectedTool, placeModule, config.grid],
   )
 
   const clearCell = useCallback(
@@ -533,97 +522,7 @@ export function ShelfConfigurator({
     [placeModule],
   )
 
-  const swapModules = useCallback(
-    (row: number, col1: number, col2: number) => {
-      setConfig((prev) => {
-        const cell1 = prev.grid[row]?.[col1]
-        const cell2 = prev.grid[row]?.[col2]
 
-        if (!cell1 || !cell2) return prev
-        if (cell1.type === "empty" || cell1.type === "ghost") return prev
-        if (cell2.type === "empty" || cell2.type === "ghost") return prev
-
-        const newGrid = prev.grid.map((r, ri) =>
-          r.map((cell, ci) => {
-            if (ri === row && ci === col1) {
-              return { ...cell2 }
-            }
-            if (ri === row && ci === col2) {
-              return { ...cell1 }
-            }
-            return cell
-          }),
-        )
-
-        // Also swap column widths if they differ
-        const newColumnWidths = [...prev.columnWidths] as (75 | 38)[]
-        const tempWidth = newColumnWidths[col1]
-        newColumnWidths[col1] = newColumnWidths[col2]
-        newColumnWidths[col2] = tempWidth
-
-        // Swap cell styles
-        const cellId1 = getCellId(row, col1)
-        const cellId2 = getCellId(row, col2)
-        const newCellStyles = { ...(prev.cellStyles || {}) }
-        const tempStyle = newCellStyles[cellId1]
-        newCellStyles[cellId1] = newCellStyles[cellId2]
-        newCellStyles[cellId2] = tempStyle
-
-        const newConfig = {
-          ...prev,
-          grid: newGrid,
-          columnWidths: newColumnWidths,
-          cellStyles: newCellStyles,
-        }
-
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  // Swap the module type of a cell to a new type (keeping color)
-  const swapModuleType = useCallback(
-    (row: number, col: number, newType: GridCell["type"]) => {
-      setConfig((prev) => {
-        const cell = prev.grid[row]?.[col]
-        if (!cell) return prev
-        if (cell.type === "empty" || cell.type === "ghost") return prev
-
-        // Check if new module type is compatible with column width
-        const columnWidth = prev.columnWidths[col]
-        const widthInCm = columnWidth === 75 ? 80 : 40
-        if (!isModuleTypeAvailableForWidth(newType, widthInCm)) {
-          return prev
-        }
-
-        const newGrid = prev.grid.map((r, ri) =>
-          r.map((c, ci) => {
-            if (ri === row && ci === col) {
-              return { ...c, type: newType }
-            }
-            return c
-          }),
-        )
-
-        const newConfig = {
-          ...prev,
-          grid: newGrid,
-        }
-
-        setTimeout(() => saveToHistory(newConfig), 0)
-        return newConfig
-      })
-    },
-    [saveToHistory],
-  )
-
-  // Execute swap for row 1, columns 1 and 3 (0-indexed: row 1, cols 1 and 3)
-  useEffect(() => {
-    // This is a one-time swap - remove after execution
-    // swapModules(1, 1, 3)
-  }, [])
 
   const resizeGrid = useCallback(
     (newRows: number, newCols: number) => {
@@ -1443,7 +1342,6 @@ export function ShelfConfigurator({
                   onCellClick={handleCellClick3D}
                   onCellHover={setHoveredCell}
                   selectedCell={selectedCell}
-                  toolMode={toolMode}
                 />
               </Suspense>
 
@@ -1683,9 +1581,6 @@ export function ShelfConfigurator({
             onApplyColorToAll={applyColorToAll} // Renamed to handleApplyColorToAll in updates
             onClearCellColor={clearCellColor} // Renamed to handleClearCellColor in updates
             onDeselectCell={() => setSelectedCell(null)}
-            toolMode={toolMode}
-            onSetToolMode={setToolMode}
-            onSwapModule={swapModuleType}
             defaultNewColumnWidth={defaultNewColumnWidth}
             onSetDefaultColumnWidth={setDefaultNewColumnWidth}
           />

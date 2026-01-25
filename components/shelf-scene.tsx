@@ -14,7 +14,6 @@ type Props = {
   selectedTool?: GridCell["type"] | null
   hoveredCell?: { row: number; col: number } | null
   selectedCell?: { row: number; col: number } | null
-  toolMode?: "select" | "swap"
   onCellClick?: (row: number, col: number) => void
   onCellHover?: (cell: { row: number; col: number } | null) => void
   onApplyCellColor?: (row: number, col: number, color: string) => void
@@ -150,7 +149,6 @@ export const ShelfScene = memo(function ShelfScene({
   config, 
   hoveredCell, 
   selectedCell, 
-  toolMode = "select",
   onCellClick, 
   onCellHover 
 }: Props) {
@@ -319,7 +317,6 @@ export const ShelfScene = memo(function ShelfScene({
             gridConfig={config}
             isBottomModule={isBottomModule}
             isSelected={isSelected}
-            isSwapMode={toolMode === "swap"}
             onClick={handleClick}
           />
         )
