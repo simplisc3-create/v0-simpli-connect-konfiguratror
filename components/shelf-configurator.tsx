@@ -29,9 +29,9 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("[v0] 3D Canvas Error:", error)
-    console.error("[v0] 3D Canvas Error Info:", errorInfo)
-    console.error("[v0] 3D Canvas Error Stack:", error.stack)
+    console.error("[v0] 3D Canvas Error:", error.message)
+    console.error("[v0] 3D Canvas Error Name:", error.name)
+    console.error("[v0] 3D Canvas Error Component Stack:", errorInfo.componentStack)
     this.props.onError?.(error, errorInfo)
   }
 
@@ -1367,21 +1367,18 @@ export function ShelfConfigurator({
                 toneMappingExposure: 1.0,
                 failIfMajorPerformanceCaveat: false,
               }}
+              dpr={[1, 2]}
+              frameloop="always"
+              performance={{ min: 0.5 }}
               onCreated={(state) => {
                 try {
                   if (state?.gl?.domElement) {
                     state.gl.domElement.style.touchAction = "none"
                   }
+                  state.gl.setClearColor("#f5f5f5", 1)
                 } catch (e) {
-                  // Silently ignore canvas initialization errors
+                  console.error("[v0] Canvas onCreated error:", e)
                 }
-              }}
-dpr={[1, 2]}
-                frameloop="always"
-                performance={{ min: 0.5 }}
-              onCreated={(state) => {
-                // Ensure WebGL context is properly initialized
-                state.gl.setClearColor("#f5f5f5", 1)
               }}
             >
               <color attach="background" args={["#f5f5f5"]} />
