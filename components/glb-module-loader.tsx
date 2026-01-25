@@ -557,35 +557,26 @@ const LoadedGLBModel = memo(
                 const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
                 const isWhitePanel = mappedColor === "white" && !isBottom
 
-                // Panel materials - White panels get extra brightness via MeshStandardMaterial with emissive
-                const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
-                
+                // Create new material for each panel to ensure colors are applied correctly
+                // Don't cache panel materials as they need unique colors per module
                 if (isWhitePanel) {
                   // White panels use MeshStandardMaterial with emissive for extra brightness
-                  child.material = getCachedMaterial(
-                    materialKey,
-                    () =>
-                      new THREE.MeshStandardMaterial({
-                        map: texture,
-                        color: finalColor,
-                        emissive: new THREE.Color("#ffffff"),
-                        emissiveIntensity: 0.15,
-                        roughness: 0.9,
-                        metalness: 0.0,
-                        side: THREE.DoubleSide,
-                      }),
-                  )
+                  child.material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    color: finalColor.clone(),
+                    emissive: new THREE.Color("#ffffff"),
+                    emissiveIntensity: 0.15,
+                    roughness: 0.9,
+                    metalness: 0.0,
+                    side: THREE.DoubleSide,
+                  })
                 } else {
                   // Other colors use MeshLambertMaterial for flat appearance
-                  child.material = getCachedMaterial(
-                    materialKey,
-                    () =>
-                      new THREE.MeshLambertMaterial({
-                        map: texture,
-                        color: finalColor,
-                        side: THREE.DoubleSide,
-                      }),
-                  )
+                  child.material = new THREE.MeshLambertMaterial({
+                    map: texture,
+                    color: finalColor.clone(),
+                    side: THREE.DoubleSide,
+                  })
                 }
               }
             }
