@@ -1,10 +1,45 @@
 "use client"
 
-import React, { Component, type ErrorInfo, type ReactNode } from "react"
-
-import { useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
-import { Canvas, useFrame } from "@react-three/fiber"
-import { AlertTriangle } from "lucide-react"
+import React, { Component, type ErrorInfo, type ReactNode, useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { OrbitControls, Environment, Lightformer } from "@react-three/drei"
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
+import { AlertTriangle, Undo2, Redo2, RotateCcw, X, MousePointer2, Move, ZoomIn, HelpCircle } from "lucide-react"
+import * as THREE from "three"
+import { ConfiguratorPanel } from "./configurator-panel"
+import { ShelfScene } from "./shelf-scene"
+import { ConfiguratorHeader } from "./configurator-header"
+import { ConfiguratorHelpBot } from "./configurator-help-bot"
+import { Button } from "@/components/ui/button"
+import {
+  getSchubladeArtNr,
+  getTuerArtNr,
+  getKlapptuerArtNr,
+  getLeiterArtNr,
+  getKlapptuerObenArtNr,
+  getEinzelschubladeArtNr,
+  getFlaechensetArtNr,
+  flaechensets,
+} from "@/lib/simpli-products"
+import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
+import { LoadingAnimation } from "./loading-animation"
+import { MobileConfiguratorNav } from "./mobile-configurator-nav"
+import { getModuleLabel, getModuleShortLabel, getColorHex, getColorLabel } from "@/lib/module-utils"
+import {
+  getCellId,
+  createInitialGrid,
+  updateGhostCells,
+  pruneCellStyles,
+  isConnectedToExisting,
+  hasSupportBelow,
+  expandGridAroundPlacement,
+} from "@/lib/grid-utils"
+import { useConfigHistory } from "@/hooks/use-config-history"
+import { ValidationAlerts } from "./validation-alerts"
+import { useHeightWarning } from "@/hooks/use-height-warning"
+import type { ConfiguratorConfig, GridCellConfig, ModuleType, CellColor, FootType } from "@/lib/derive"
+import { useCellColors } from "@/hooks/use-cell-colors"
+import { SummaryChips } from "./summary-chips"
 
 // Error Boundary to catch 3D rendering errors and prevent white screen
 interface ErrorBoundaryProps {
@@ -63,42 +98,6 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
     return this.props.children
   }
 }
-import { OrbitControls, Environment, Lightformer } from "@react-three/drei"
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
-import { ConfiguratorPanel } from "./configurator-panel"
-import { ShelfScene } from "./shelf-scene"
-import { ConfiguratorHeader } from "./configurator-header"
-import { ConfiguratorHelpBot } from "./configurator-help-bot"
-import { Undo2, Redo2, RotateCcw, X, MousePointer2, Move, ZoomIn, HelpCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  getSchubladeArtNr,
-  getTuerArtNr,
-  getKlapptuerArtNr,
-  getLeiterArtNr,
-  getKlapptuerObenArtNr,
-  getEinzelschubladeArtNr,
-  getFlaechensetArtNr,
-  flaechensets,
-} from "@/lib/simpli-products"
-import { useThree } from "@react-three/fiber"
-import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
-import * as THREE from "three"
-import { LoadingAnimation } from "./loading-animation"
-import { MobileConfiguratorNav } from "./mobile-configurator-nav"
-import { getModuleLabel, getModuleShortLabel, getColorHex, getColorLabel } from "@/lib/module-utils"
-import {
-  getCellId,
-  createInitialGrid,
-  updateGhostCells,
-  pruneCellStyles,
-  isConnectedToExisting,
-  hasSupportBelow,
-  expandGridAroundPlacement,
-} from "@/lib/grid-utils"
-import { useConfigHistory } from "@/hooks/use-config-history"
-import { useHeightWarning } from "@/hooks/use-height-warning"
-import { useCellColors } from "@/hooks/use-cell-colors"
 
 // CameraController component for smooth camera animation to new modules
 function CameraController({
