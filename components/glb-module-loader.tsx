@@ -1,7 +1,7 @@
 "use client"
 
 import { useGLTF } from "@react-three/drei"
-
+import { Component, type ErrorInfo, type ReactNode } from "react"
 import { useEffect, useState, memo, useMemo, useRef, useCallback } from "react"
 import * as THREE from "three"
 import type { GridCell } from "./shelf-configurator"
@@ -35,6 +35,47 @@ function getCachedMaterial<T extends THREE.Material>(key: string, createMaterial
     materialCache.set(key, createMaterial())
   }
   return materialCache.get(key) as T
+}
+
+// Error boundary for GLB loading errors
+interface GLBErrorBoundaryProps {
+  children: ReactNode
+  fallback?: ReactNode
+  position: [number, number, number]
+  width?: number
+  height?: number
+}
+
+interface GLBErrorBoundaryState {
+  hasError: boolean
+}
+
+class GLBErrorBoundary extends Component<GLBErrorBoundaryProps, GLBErrorBoundaryState> {
+  constructor(props: GLBErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(): GLBErrorBoundaryState {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error("[v0] GLBErrorBoundary caught error:", error.message)
+  }
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      // Render a placeholder box when GLB fails to load
+      return (
+        <mesh position={this.props.position}>
+          <boxGeometry args={[this.props.width || 0.8, this.props.height || 0.4, 0.38]} />
+          <meshStandardMaterial color="#e0e0e0" />
+        </mesh>
+      )
+    }
+    return this.props.children
+  }
 }
 
 const GERMAN_TO_ENGLISH_COLOR: Record<string, string> = {
@@ -360,10 +401,21 @@ export const GLBModule = memo(
             color: "white",
           })
 
-          console.log("[v0] Fetching GLB model:", `/api/blob-models?${params}`)
-          const response = await fetch(`/api/blob-models?${params}`)
+          console.log("[v0] GLBModule: Fetching model for", { cellType, standardWidth, cacheKey })
+          console.log("[v0] GLBModule: API URL:", `/api/blob-models?${params}`)
+          
+          // Add timeout to prevent hanging
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+          
+          const response = await fetch(`/api/blob-models?${params}`, {
+            signal: controller.signal
+          })
+          clearTimeout(timeoutId)
+          
+          console.log("[v0] GLBModule: Response status:", response.status)
           const data = await response.json()
-          console.log("[v0] API response:", data)
+          console.log("[v0] GLBModule: API response data:", data)
 
           if (!data.ok || !data.url) {
             throw new Error(data.error || "Failed to resolve model")
@@ -373,11 +425,17 @@ export const GLBModule = memo(
             throw new Error(`Invalid URL: ${data.url}`)
           }
 
+          console.log("[v0] GLBModule: Successfully resolved URL:", data.url)
           urlCache.set(cacheKey, data.url)
           setModelUrl(data.url)
         } catch (err) {
-          console.error("[v0] Error fetching GLB:", err)
-          setError(err instanceof Error ? err.message : "Unknown error")
+          if (err instanceof Error && err.name === 'AbortError') {
+            console.error("[v0] GLBModule: Request timed out for", cellType)
+            setError("Request timed out")
+          } else {
+            console.error("[v0] GLBModule: Error fetching GLB:", err)
+            setError(err instanceof Error ? err.message : "Unknown error")
+          }
         }
       }
 
@@ -399,22 +457,27 @@ export const GLBModule = memo(
       )
     }
 
-    if (!modelUrl) return null
+    if (!modelUrl) {
+      console.log("[v0] GLBModule: No modelUrl yet, returning null placeholder for", { cellType, row, col })
+      return null
+    }
 
     return (
-      <LoadedGLBModel
-        modelUrl={modelUrl}
-        position={position}
-        moduleKey={`${row}-${col}`}
-        targetColor={colorName}
-        cellType={cellType}
-        row={row}
-        col={col}
-        isBottomModule={isBottomModule}
-        isSelected={isSelected}
-        onClick={onClick}
-        hideBuiltInFeet={hideBuiltInFeet}
-      />
+      <GLBErrorBoundary position={position} width={width} height={height}>
+        <LoadedGLBModel
+          modelUrl={modelUrl}
+          position={position}
+          moduleKey={`${row}-${col}`}
+          targetColor={colorName}
+          cellType={cellType}
+          row={row}
+          col={col}
+          isBottomModule={isBottomModule}
+          isSelected={isSelected}
+          onClick={onClick}
+          hideBuiltInFeet={hideBuiltInFeet}
+        />
+      </GLBErrorBoundary>
     )
   },
   (prev, next) =>

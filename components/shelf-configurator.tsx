@@ -257,8 +257,10 @@ export function ShelfConfigurator({
   // Ensure we only render 3D canvas after component mounts to avoid SSR issues
   useEffect(() => {
     if (typeof window === "undefined") return
+    console.log("[v0] ShelfConfigurator: Setting up mount timer")
     // Simple timeout to ensure DOM is ready
     const timer = setTimeout(() => {
+      console.log("[v0] ShelfConfigurator: Component mounted, isMounted = true")
       setIsMounted(true)
     }, 50)
     return () => clearTimeout(timer)
@@ -1326,8 +1328,13 @@ const toggleDefaultColumnWidth = () => {
   }
 
   if (isLoading) {
-    return <LoadingAnimation onComplete={() => setIsLoading(false)} />
+    return <LoadingAnimation onComplete={() => {
+      console.log("[v0] ShelfConfigurator: LoadingAnimation complete, setting isLoading to false")
+      setIsLoading(false)
+    }} />
   }
+  
+  console.log("[v0] ShelfConfigurator: Rendering main content, isMounted =", isMounted)
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
@@ -1352,7 +1359,7 @@ const toggleDefaultColumnWidth = () => {
             </div>
           )}
 
-          {isMounted && (
+          {isMounted ? (
           <Canvas3DErrorBoundary>
             <Canvas
               shadows={true}
@@ -1368,16 +1375,22 @@ const toggleDefaultColumnWidth = () => {
               dpr={[1, 2]}
               frameloop="always"
               performance={{ min: 0.5 }}
-              onCreated={(state) => {
-                try {
-                  if (state?.gl?.domElement) {
-                    state.gl.domElement.style.touchAction = "none"
+                onCreated={(state) => {
+                  console.log("[v0] Canvas onCreated called, state:", { 
+                    hasGL: !!state?.gl, 
+                    hasScene: !!state?.scene,
+                    hasCamera: !!state?.camera 
+                  })
+                  try {
+                    if (state?.gl?.domElement) {
+                      state.gl.domElement.style.touchAction = "none"
+                    }
+                    state.gl.setClearColor("#f5f5f5", 1)
+                    console.log("[v0] Canvas setup complete")
+                  } catch (e) {
+                    console.error("[v0] Canvas onCreated error:", e)
                   }
-                  state.gl.setClearColor("#f5f5f5", 1)
-                } catch (e) {
-                  console.error("[v0] Canvas onCreated error:", e)
-                }
-              }}
+                }}
             >
               <color attach="background" args={["#f5f5f5"]} />
               <fog attach="fog" args={["#f5f5f5", 6, 20]} />
@@ -1449,6 +1462,13 @@ const toggleDefaultColumnWidth = () => {
               <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
             </Canvas>
           </Canvas3DErrorBoundary>
+          ) : (
+            <div className="flex items-center justify-center h-full bg-neutral-100">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                <p className="text-neutral-600">3D-Ansicht wird geladen...</p>
+              </div>
+            </div>
           )}
 
           {/* CHANGE: Added camera controls info box in top left corner */}
