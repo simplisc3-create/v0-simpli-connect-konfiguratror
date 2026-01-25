@@ -246,10 +246,21 @@ export function ShelfConfigurator({
   const [isLoading, setIsLoading] = useState(true)
   const [showVideoPreview, setShowVideoPreview] = useState(!!presetYoutubeId)
   const [isMounted, setIsMounted] = useState(false)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   
   // Ensure we only render 3D canvas after component mounts to avoid SSR issues
   useEffect(() => {
-    setIsMounted(true)
+    if (typeof window === "undefined") return
+    // Use requestAnimationFrame and setTimeout for robust DOM readiness
+    const frame = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
+        if (canvasContainerRef.current) {
+          setIsMounted(true)
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    })
+    return () => cancelAnimationFrame(frame)
   }, [])
 
   const [defaultNewColumnWidth, setDefaultNewColumnWidth] = useState<75 | 38>(75)
@@ -1329,7 +1340,7 @@ export function ShelfConfigurator({
     <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
-        <div className="relative flex-1">
+        <div ref={canvasContainerRef} className="relative flex-1">
           {showVideoPreview && presetYoutubeId && (
             <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-50 w-32 sm:w-48 h-20 sm:h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
               <button
@@ -1360,6 +1371,15 @@ export function ShelfConfigurator({
                 toneMapping: THREE.ACESFilmicToneMapping,
                 toneMappingExposure: 1.0,
                 failIfMajorPerformanceCaveat: false,
+              }}
+              onCreated={(state) => {
+                try {
+                  if (state?.gl?.domElement) {
+                    state.gl.domElement.style.touchAction = "none"
+                  }
+                } catch (e) {
+                  // Silently ignore canvas initialization errors
+                }
               }}
 dpr={[1, 2]}
                 frameloop="always"

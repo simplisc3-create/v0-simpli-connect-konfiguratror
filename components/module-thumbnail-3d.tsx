@@ -1,6 +1,6 @@
 "use client"
 
-import React, { Suspense, useMemo, useRef, Component, type ReactNode } from "react"
+import React, { Suspense, useMemo, useRef, Component, type ReactNode, useState, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
 import { Environment, useGLTF, OrbitControls } from "@react-three/drei"
 import * as THREE from "three"
@@ -194,6 +194,19 @@ export function ModuleThumbnail3D({
   color = "white",
   className = "",
 }: ModuleThumbnail3DProps) {
+  const [isMounted, setIsMounted] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  useEffect(() => {
+    // Delay mounting to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (containerRef.current) {
+        setIsMounted(true)
+      }
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
+  
   const glbUrl = useMemo(() => {
     try {
       const { url } = resolveGlbUrl({
@@ -222,8 +235,16 @@ export function ModuleThumbnail3D({
   // Front view camera position - looking at the front side of the module
   const cameraPosition: [number, number, number] = [-0.6, 0.05, 0]
 
+  if (!isMounted) {
+    return (
+      <div ref={containerRef} className={`w-full h-full ${className}`}>
+        {fallbackUI}
+      </div>
+    )
+  }
+
   return (
-    <div className={`w-full h-full ${className}`}>
+    <div ref={containerRef} className={`w-full h-full ${className}`}>
       <CanvasErrorBoundary fallback={fallbackUI}>
         <Canvas
           dpr={[1, 1.5]}
