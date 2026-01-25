@@ -1620,7 +1620,7 @@ dpr={[1, 2]}
           )}
         </div>
 
-        <div className="hidden lg:block">
+        <div className="hidden lg:block w-80 xl:w-96 shrink-0">
           <ConfiguratorPanel
             config={config}
             selectedTool={selectedTool}
