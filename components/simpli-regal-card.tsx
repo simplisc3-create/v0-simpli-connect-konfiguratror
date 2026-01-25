@@ -1,17 +1,27 @@
 "use client"
 
 import Link from "next/link"
+import { useMemo } from "react"
 import { Package, Check, ArrowRight, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { SimpliRegalProduct } from "@/lib/simpli-products"
 import { SimpliRegal3DPreview } from "./simpli-regal-3d-preview"
+import { calculatePresetPrice } from "@/lib/price-calculator"
 
 interface SimpliRegalCardProps {
   regal: SimpliRegalProduct
 }
 
 export function SimpliRegalCard({ regal }: SimpliRegalCardProps) {
+  // Calculate price dynamically from preset configuration
+  const calculatedPrice = useMemo(() => {
+    if (regal.preset) {
+      return calculatePresetPrice(regal.preset)
+    }
+    return regal.price // Fallback to static price if no preset
+  }, [regal.preset, regal.price])
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 group">
       <div className="grid md:grid-cols-2 gap-0">
@@ -70,7 +80,7 @@ export function SimpliRegalCard({ regal }: SimpliRegalCardProps) {
             <div className="flex items-end justify-between mb-4">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Komplett-Preis</p>
-                <p className="text-3xl font-bold text-gray-900">{regal.price.toFixed(2)} €</p>
+                <p className="text-3xl font-bold text-gray-900">{calculatedPrice.toFixed(2)} €</p>
               </div>
             </div>
             <div className="flex gap-3">

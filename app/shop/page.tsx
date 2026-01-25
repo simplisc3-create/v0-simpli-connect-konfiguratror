@@ -258,6 +258,14 @@ const categories = [
   { id: "schubladen", name: "Schubladen" },
 ]
 
+// New height-based categories for Simpli Regale
+const simpliRegaleCategories = [
+  { id: "alle", name: "Alle" },
+  { id: "lowboard", name: "Lowboards (40-60 cm)" },
+  { id: "sideboard", name: "Sideboards (80-100 cm)" },
+  { id: "highboard", name: "Highboards (120-400 cm)" },
+]
+
 export default function ShopPage() {
   const [selectedTab, setSelectedTab] = useState<"simpli-regale" | 80 | 40>("simpli-regale")
   const [selectedCategory, setSelectedCategory] = useState("alle")
@@ -272,13 +280,26 @@ export default function ShopPage() {
       ? products40
       : [] // For simpli-regale we'll use a different display
 
-  // Filter by category (only show "schubladen" category for 80cm modules and simpli-regale, not for 40cm)
-  const availableCategories = selectedTab === 80 || selectedTab === "simpli-regale"
-    ? categories 
-    : categories.filter(c => c.id !== "schubladen")
+  // Filter by category - use different categories for Simpli Regale (height-based) vs modules (type-based)
+  const availableCategories = selectedTab === "simpli-regale"
+    ? simpliRegaleCategories
+    : selectedTab === 80
+      ? categories 
+      : categories.filter(c => c.id !== "schubladen")
 
-  // Reset category if switching to 40cm and "schubladen" was selected
-  const effectiveCategory = selectedTab === 40 && selectedCategory === "schubladen" ? "alle" : selectedCategory
+  // Reset category if switching tabs and current category is not valid for new tab
+  const effectiveCategory = (() => {
+    if (selectedTab === "simpli-regale") {
+      // If switching to Simpli Regale and current category is from modules, reset to "alle"
+      if (["offen", "geschlossen", "schubladen"].includes(selectedCategory)) return "alle"
+      return selectedCategory
+    }
+    // If switching to modules and current category is from Simpli Regale, reset to "alle"
+    if (["lowboard", "sideboard", "highboard"].includes(selectedCategory)) return "alle"
+    // For 40cm modules, don't show schubladen
+    if (selectedTab === 40 && selectedCategory === "schubladen") return "alle"
+    return selectedCategory
+  })()
 
   const filteredProducts =
     effectiveCategory === "alle" ? currentProducts : currentProducts.filter((p) => p.category === effectiveCategory)
@@ -349,7 +370,7 @@ export default function ShopPage() {
             </div>
             <p className="mt-2 text-sm text-gray-500">
               {selectedTab === "simpli-regale"
-                ? "Alle verfügbaren Module - komplettes Sortiment in einer Übersicht"
+                ? "Vorkonfigurierte Komplett-Sets - sortiert nach Höhe"
                 : selectedTab === 80 
                   ? "Breite Module (80cm) - ideal für große Regale" 
                   : "Schmale Module (40cm) - perfekt für kompakte Lösungen"}

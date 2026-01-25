@@ -562,17 +562,13 @@ const LoadedGLBModel = memo(
                       }),
                   )
                 } else if (isRedPanel) {
-                  // Red panels use MeshStandardMaterial with emissive for same brightness as white
+                  // Red panels use MeshLambertMaterial for flat appearance (no emissive)
                   child.material = getCachedMaterial(
                     materialKey,
                     () =>
-                      new THREE.MeshStandardMaterial({
+                      new THREE.MeshLambertMaterial({
                         map: texture,
                         color: finalColor,
-                        emissive: new THREE.Color("#E53935"),
-                        emissiveIntensity: 0.15,
-                        roughness: 0.9,
-                        metalness: 0.0,
                         side: THREE.DoubleSide,
                       }),
                   )

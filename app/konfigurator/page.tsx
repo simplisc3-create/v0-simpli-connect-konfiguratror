@@ -1,4 +1,12 @@
 import { ShelfConfigurator } from "@/components/shelf-configurator"
+import { productsSimpliRegale } from "@/lib/simpli-products"
+
+// Build presets from Simpli Regale products
+const simpliRegalePresets = Object.fromEntries(
+  productsSimpliRegale
+    .filter(product => product.preset)
+    .map(product => [product.id, product.preset])
+)
 
 const presets = {
   wohnzimmer: {
@@ -409,8 +417,12 @@ export default async function KonfiguratorPage({
   searchParams: Promise<{ preset?: string }>
 }) {
   const params = await searchParams
-  const presetKey = params.preset as keyof typeof presets
-  const preset = presetKey && presets[presetKey] ? presets[presetKey] : undefined
+  const presetKey = params.preset as string
+  
+  // First check module presets, then Simpli Regale presets
+  const preset = presetKey 
+    ? (presets[presetKey as keyof typeof presets] || simpliRegalePresets[presetKey])
+    : undefined
 
   return (
     <main className="h-screen w-screen overflow-hidden bg-white">
