@@ -172,3 +172,17 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Marquee animation for module header */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
