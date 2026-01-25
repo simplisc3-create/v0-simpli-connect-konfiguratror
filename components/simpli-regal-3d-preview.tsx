@@ -37,7 +37,7 @@ const AVAILABLE_COLORS = ["weiss", "gruen", "gelb", "rot", "blau"] as const
 const COLOR_HEX_MAP: Record<string, string> = {
   weiss: "#FFFFFF",
   gruen: "#2FAE5D",
-  gelb: "#FFD400",
+  gelb: "#FFEA00", // Brighter, more saturated yellow
   rot: "#E53935",
   blau: "#1E5EFF",
 }

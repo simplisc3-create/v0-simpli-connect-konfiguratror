@@ -45,7 +45,7 @@ const TARGET_COLORS: Record<string, THREE.Color> = {
   black: new THREE.Color("#111111"),
   blue: new THREE.Color("#1E5EFF"),
   green: new THREE.Color("#2FAE5D"),
-  yellow: new THREE.Color("#FFD400"),
+  yellow: new THREE.Color("#FFEA00"), // Brighter, more saturated yellow
   orange: new THREE.Color("#FF8A00"),
   red: new THREE.Color("#E53935"),
 }

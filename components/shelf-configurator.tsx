@@ -1,9 +1,65 @@
 "use client"
 
-import React from "react"
+import React, { Component, type ErrorInfo, type ReactNode } from "react"
 
 import { useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
+
+// Error Boundary to catch 3D rendering errors and prevent white screen
+interface ErrorBoundaryProps {
+  children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error("[v0] 3D Canvas Error:", error, errorInfo)
+    this.props.onError?.(error, errorInfo)
+  }
+
+  handleRetry = (): void => {
+    this.setState({ hasError: false, error: null })
+  }
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 text-neutral-700 p-4">
+            <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">3D-Ansicht konnte nicht geladen werden</h3>
+            <p className="text-sm text-neutral-500 mb-4 text-center max-w-md">
+              Es gab ein Problem beim Laden der 3D-Vorschau. Bitte versuchen Sie es erneut.
+            </p>
+            <button
+              onClick={this.handleRetry}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Erneut versuchen
+            </button>
+          </div>
+        )
+      )
+    }
+
+    return this.props.children
+  }
+}
 import { OrbitControls, Environment, Lightformer } from "@react-three/drei"
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
 import { ConfiguratorPanel } from "./configurator-panel"
@@ -1328,64 +1384,70 @@ export function ShelfConfigurator({
             </div>
           )}
 
-          <Canvas
-            shadows={true}
-            camera={{ position: [0, 0.4, 2.5], fov: 50 }}
-            gl={{
-              antialias: true,
-              alpha: true,
-              preserveDrawingBuffer: true,
-              toneMapping: THREE.ACESFilmicToneMapping,
-              toneMappingExposure: 1.0,
-            }}
-            dpr={[1, 2]}
-            frameloop="demand"
-            performance={{ min: 0.5 }}
-          >
-            <color attach="background" args={["#f5f5f5"]} />
-            <fog attach="fog" args={["#f5f5f5", 6, 20]} />
-
-            {/* Flat lighting for true panel colors */}
-            <ambientLight intensity={0.7} />
-            <directionalLight
-              position={[2, 5, 3]}
-              intensity={0.35}
-              castShadow
-              shadow-mapSize-width={2048}
-              shadow-mapSize-height={2048}
-              shadow-camera-far={50}
-              shadow-camera-left={-10}
-              shadow-camera-right={10}
-              shadow-camera-top={10}
-              shadow-camera-bottom={-10}
-              shadow-bias={-0.0001}
-            />
-            <directionalLight position={[-2, 3, 1]} intensity={0.15} />
-            
-            {/* Environment only for chrome reflections */}
-            <Environment preset="studio" background={false} />
-
-            <Suspense
-              fallback={
-                <mesh>
-                  <boxGeometry args={[0.5, 0.5, 0.5]} />
-                  <meshBasicMaterial color="#e0e0e0" />
-                </mesh>
-              }
+          <Canvas3DErrorBoundary>
+            <Canvas
+              shadows={true}
+              camera={{ position: [0, 0.4, 2.5], fov: 50 }}
+              gl={{
+                antialias: true,
+                alpha: true,
+                preserveDrawingBuffer: true,
+                toneMapping: THREE.ACESFilmicToneMapping,
+                toneMappingExposure: 1.0,
+                failIfMajorPerformanceCaveat: false,
+              }}
+              dpr={[1, 2]}
+              frameloop="demand"
+              performance={{ min: 0.5 }}
+              onCreated={(state) => {
+                // Ensure WebGL context is properly initialized
+                state.gl.setClearColor("#f5f5f5", 1)
+              }}
             >
-              <InvalidateOnChange gridHash={JSON.stringify(config.grid)} />
-              <ShelfScene
-                config={config}
-                selectedTool={selectedTool}
-                hoveredCell={hoveredCell}
-                onCellClick={handleCellClick3D}
-                onCellHover={setHoveredCell}
-                selectedCell={selectedCell}
-                toolMode={toolMode}
-              />
-            </Suspense>
+              <color attach="background" args={["#f5f5f5"]} />
+              <fog attach="fog" args={["#f5f5f5", 6, 20]} />
 
-<OrbitControls
+              {/* Flat lighting for true panel colors */}
+              <ambientLight intensity={0.7} />
+              <directionalLight
+                position={[2, 5, 3]}
+                intensity={0.35}
+                castShadow
+                shadow-mapSize-width={2048}
+                shadow-mapSize-height={2048}
+                shadow-camera-far={50}
+                shadow-camera-left={-10}
+                shadow-camera-right={10}
+                shadow-camera-top={10}
+                shadow-camera-bottom={-10}
+                shadow-bias={-0.0001}
+              />
+              <directionalLight position={[-2, 3, 1]} intensity={0.15} />
+              
+              {/* Environment only for chrome reflections */}
+              <Environment preset="studio" background={false} />
+
+              <Suspense
+                fallback={
+                  <mesh>
+                    <boxGeometry args={[0.5, 0.5, 0.5]} />
+                    <meshBasicMaterial color="#e0e0e0" />
+                  </mesh>
+                }
+              >
+                <InvalidateOnChange gridHash={JSON.stringify(config.grid)} />
+                <ShelfScene
+                  config={config}
+                  selectedTool={selectedTool}
+                  hoveredCell={hoveredCell}
+                  onCellClick={handleCellClick3D}
+                  onCellHover={setHoveredCell}
+                  selectedCell={selectedCell}
+                  toolMode={toolMode}
+                />
+              </Suspense>
+
+              <OrbitControls
                 ref={orbitControlsRef}
                 makeDefault
                 minPolarAngle={0.3}
@@ -1406,8 +1468,9 @@ export function ShelfConfigurator({
                   }
                 }}
               />
-            <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
-          </Canvas>
+              <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
+            </Canvas>
+          </Canvas3DErrorBoundary>
 
           {/* CHANGE: Added camera controls info box in top left corner */}
           <div className="absolute left-2 sm:left-4 top-2 sm:top-4 z-10">
