@@ -34,102 +34,88 @@ export function SiteHeader({ transparent = false }: SiteHeaderProps) {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isTransparent 
-            ? "bg-transparent" 
-            : "bg-background/95 backdrop-blur-md border-b border-border"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isTransparent ? "bg-transparent" : "bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
-          {/* Mobile menu button */}
+        <style jsx>{`
+          @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+          .blink-animation {
+            animation: blink 1s ease-in-out infinite;
+          }
+        `}</style>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className={`md:hidden p-2 -ml-2 rounded-lg transition-colors ${
-              isTransparent 
-                ? "text-white hover:bg-white/10" 
-                : "text-foreground hover:bg-muted"
+              isTransparent ? "text-white hover:bg-white/10" : "text-gray-900 hover:bg-gray-100"
             }`}
-            aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          {/* Logo */}
           <Link
             href="/"
-            className={`transition-colors duration-300 ${
-              isTransparent 
-                ? "text-white hover:text-white/80" 
-                : "text-foreground hover:text-foreground/80"
-            }`}
+            className={`transition-colors duration-300 ${isTransparent ? "text-white/90 hover:text-white" : "text-gray-900 hover:text-gray-600"}`}
           >
-            <span className="font-serif text-xl sm:text-2xl tracking-tight">
+            <span className="font-bold tracking-widest uppercase text-base sm:text-2xl md:text-3xl">
               Simpli Connect
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-10">
+          <div className="hidden md:flex items-center gap-8">
             <Link
               href="/shop"
-              className={`text-sm font-medium transition-colors duration-300 ${
-                isTransparent 
-                  ? "text-white/80 hover:text-white" 
-                  : "text-muted-foreground hover:text-foreground"
+              className={`font-medium transition-colors duration-300 ${
+                isTransparent ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
               }`}
             >
               Shop
             </Link>
             <Link
               href="/konfigurator"
-              className={`text-sm font-medium transition-colors duration-300 ${
-                isTransparent 
-                  ? "text-white/80 hover:text-white" 
-                  : "text-muted-foreground hover:text-foreground"
+              className={`font-medium transition-colors duration-300 ${
+                isTransparent ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
               }`}
             >
               Konfigurator
             </Link>
             <Link
               href="/simpli-connected"
-              className={`text-sm font-medium transition-colors duration-300 ${
-                isTransparent 
-                  ? "text-white/80 hover:text-white" 
-                  : "text-muted-foreground hover:text-foreground"
+              className={`font-medium transition-colors duration-300 ${
+                isTransparent ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
               }`}
             >
               Simpli Connected
             </Link>
             <Link
               href="/kontakt"
-              className={`text-sm font-medium transition-colors duration-300 ${
-                isTransparent 
-                  ? "text-white/80 hover:text-white" 
-                  : "text-muted-foreground hover:text-foreground"
+              className={`font-medium transition-colors duration-300 ${
+                isTransparent ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
               }`}
             >
               Kontakt
             </Link>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <a
               href="https://simpli-connect-voice-agent-373433007851.us-west1.run.app"
               target="_blank"
               rel="noopener noreferrer"
+              className="blink-animation"
             >
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 rounded-full transition-all duration-300 ${
-                  isTransparent
-                    ? "bg-white/10 border-white/30 text-white hover:bg-white hover:text-foreground"
-                    : "bg-destructive border-destructive text-destructive-foreground hover:bg-destructive/90"
-                }`}
+                className="gap-1 sm:gap-2 px-2 sm:px-3 bg-red-600 border-red-600 text-white hover:bg-red-700 hover:border-red-700"
               >
                 <Phone className="w-4 h-4" />
-                <span className="hidden sm:inline text-xs font-semibold">SOS</span>
+                <span className="font-bold text-xs hidden sm:inline">SOS</span>
               </Button>
             </a>
 
@@ -137,58 +123,54 @@ export function SiteHeader({ transparent = false }: SiteHeaderProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 rounded-full transition-all duration-300 ${
+                className={`gap-1 sm:gap-2 px-2 sm:px-3 transition-all duration-300 ${
                   isTransparent
-                    ? "bg-white/10 border-white/30 text-white hover:bg-white hover:text-foreground"
-                    : "bg-transparent border-border text-foreground hover:bg-muted"
+                    ? "bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    : "bg-transparent border-gray-200 text-gray-900 hover:bg-gray-100"
                 }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span className="text-sm tabular-nums">({mounted ? getTotalItems() : 0})</span>
+                <span className="text-sm">({mounted ? getTotalItems() : 0})</span>
               </Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div 
-            className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" 
-            onClick={() => setMobileMenuOpen(false)} 
-          />
-          <div className="absolute top-[65px] left-0 right-0 bg-background border-b border-border shadow-lg">
-            <nav className="flex flex-col py-2">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+          <div className="absolute top-[60px] left-0 right-0 bg-white shadow-lg">
+            <div className="flex flex-col py-4">
               <Link
                 href="/shop"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-6 py-4 text-base font-medium text-foreground hover:bg-muted transition-colors"
+                className="px-6 py-3 text-lg font-medium text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 Shop
               </Link>
               <Link
                 href="/konfigurator"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-6 py-4 text-base font-medium text-foreground hover:bg-muted transition-colors"
+                className="px-6 py-3 text-lg font-medium text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 Konfigurator
               </Link>
               <Link
                 href="/simpli-connected"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-6 py-4 text-base font-medium text-foreground hover:bg-muted transition-colors"
+                className="px-6 py-3 text-lg font-medium text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 Simpli Connected
               </Link>
               <Link
                 href="/kontakt"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-6 py-4 text-base font-medium text-foreground hover:bg-muted transition-colors"
+                className="px-6 py-3 text-lg font-medium text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 Kontakt
               </Link>
-            </nav>
+            </div>
           </div>
         </div>
       )}

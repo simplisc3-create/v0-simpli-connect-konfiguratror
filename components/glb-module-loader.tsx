@@ -533,27 +533,47 @@ const LoadedGLBModel = memo(
             }
           }
 
-          if (child.material) {
-            if (isFrame) {
-              child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL.clone())
-            } else {
-              const oldMat = child.material as THREE.MeshStandardMaterial
-              const texture = oldMat.map || null
-              const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
+            if (child.material) {
+              if (isFrame) {
+                child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL.clone())
+              } else {
+                const oldMat = child.material as THREE.MeshStandardMaterial
+                const texture = oldMat.map || null
+                const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
+                const isWhitePanel = mappedColor === "white" && !isBottom
 
-              // Panel materials - MeshLambertMaterial for flat colors without reflections
-              const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
-              child.material = getCachedMaterial(
-                materialKey,
-                () =>
-                  new THREE.MeshLambertMaterial({
-                    map: texture,
-                    color: finalColor,
-                    side: THREE.DoubleSide,
-                  }),
-              )
+                // Panel materials - White panels get extra brightness via MeshStandardMaterial with emissive
+                const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
+                
+                if (isWhitePanel) {
+                  // White panels use MeshStandardMaterial with emissive for extra brightness
+                  child.material = getCachedMaterial(
+                    materialKey,
+                    () =>
+                      new THREE.MeshStandardMaterial({
+                        map: texture,
+                        color: finalColor,
+                        emissive: new THREE.Color("#ffffff"),
+                        emissiveIntensity: 0.15,
+                        roughness: 0.9,
+                        metalness: 0.0,
+                        side: THREE.DoubleSide,
+                      }),
+                  )
+                } else {
+                  // Other colors use MeshLambertMaterial for flat appearance
+                  child.material = getCachedMaterial(
+                    materialKey,
+                    () =>
+                      new THREE.MeshLambertMaterial({
+                        map: texture,
+                        color: finalColor,
+                        side: THREE.DoubleSide,
+                      }),
+                  )
+                }
+              }
             }
-          }
         }
       })
 
