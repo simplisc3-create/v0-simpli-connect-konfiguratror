@@ -266,11 +266,23 @@ export function ShelfConfigurator({
   const [cameraTarget, setCameraTarget] = useState<[number, number, number] | null>(null)
   const orbitControlsRef = useRef<OrbitControlsImpl>(null)
 
-  // Calculate initial camera target based on shelf dimensions (center of shelf)
+  // Calculate initial camera target - focus on the ghost cell at the start (bottom center)
+  // For the initial state with just a ghost cell, we want to focus near ground level
   const initialCameraTarget = useMemo<[number, number, number]>(() => {
-    const totalHeight = config.rowHeights.reduce((sum, h) => sum + h, 0) / 100
-    return [0, totalHeight / 2, 0]
-  }, [config.rowHeights])
+    // Check if there are any real modules (not ghost or empty)
+    const hasRealModules = config.grid.some(row => 
+      row.some(cell => cell.type !== "ghost" && cell.type !== "empty")
+    )
+    
+    if (hasRealModules) {
+      // If there are real modules, center on the shelf
+      const totalHeight = config.rowHeights.reduce((sum, h) => sum + h, 0) / 100
+      return [0, totalHeight / 2, 0]
+    }
+    
+    // For initial ghost cell state, focus at roughly the ghost cell position (y=0.2)
+    return [0, 0.2, 0]
+  }, [config.grid, config.rowHeights])
 
   const smoothTarget = useRef(new THREE.Vector3(0, 0.3, 0))
   const isAnimating = useRef(false)
@@ -1306,9 +1318,9 @@ export function ShelfConfigurator({
                 toneMappingExposure: 1.0,
                 failIfMajorPerformanceCaveat: false,
               }}
-              dpr={[1, 2]}
-              frameloop="demand"
-              performance={{ min: 0.5 }}
+dpr={[1, 2]}
+                frameloop="always"
+                performance={{ min: 0.5 }}
               onCreated={(state) => {
                 // Ensure WebGL context is properly initialized
                 state.gl.setClearColor("#f5f5f5", 1)
@@ -1359,6 +1371,7 @@ export function ShelfConfigurator({
               <OrbitControls
                 ref={orbitControlsRef}
                 makeDefault
+                target={initialCameraTarget}
                 minPolarAngle={0.3}
                 maxPolarAngle={Math.PI / 2.1}
                 minDistance={1}
@@ -1668,37 +1681,4 @@ function getToolLabel(tool: GridCell["type"]): string {
     "mit-einzelschublade": "Mit Einzelschublade",
   }
   return labels[tool] ?? getModuleShortLabel(tool)
-}
-
-// Smooth camera animation hook
-const useSmoothCameraAnimation = (target: [number, number, number] | null, controlsRef: React.RefObject<OrbitControlsImpl | null>) => {
-  const smoothTarget = useRef(new THREE.Vector3(0, 0.3, 0))
-  const isAnimating = useRef(false)
-
-  const animateCamera = () => {
-    if (!controlsRef.current || !target) return
-
-    const targetVec = new THREE.Vector3(target[0], target[1], target[2])
-    
-    // Smoothly interpolate current target toward new target
-    smoothTarget.current.lerp(targetVec, 0.08)
-    
-    // Update orbit controls target
-    controlsRef.current.target.copy(smoothTarget.current)
-    controlsRef.current.update()
-
-    // Check if animation is complete (close enough to target)
-    const distance = smoothTarget.current.distanceTo(targetVec)
-    if (distance < 0.01 && isAnimating.current) {
-      isAnimating.current = false
-    }
-  }
-
-  useFrame(animateCamera)
-
-  useEffect(() => {
-    if (target) {
-      isAnimating.current = true
-    }
-  }, [target])
 }
