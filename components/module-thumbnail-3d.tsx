@@ -166,7 +166,7 @@ function StaticModel({ url, color }: { url: string; color: string }) {
   }, [scene, color])
 
   return (
-    <group ref={groupRef} rotation={[0, Math.PI / 2, 0]}>
+    <group ref={groupRef} rotation={[0, Math.PI, 0]}>
       {clonedScene && <primitive object={clonedScene} />}
     </group>
   )
