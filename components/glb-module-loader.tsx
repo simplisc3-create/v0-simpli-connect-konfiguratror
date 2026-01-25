@@ -595,7 +595,8 @@ const LoadedGLBModel = memo(
       return clone
     } catch (err) {
         console.error("[v0] Error cloning/processing scene:", err)
-        throw err
+        // Return the original scene as fallback instead of throwing
+        return scene.clone()
       }
     }, [scene, targetColor, moduleKey, cellType, row, isBottomModule, hideBuiltInFeet])
 

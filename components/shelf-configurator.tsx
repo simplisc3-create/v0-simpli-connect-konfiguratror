@@ -64,9 +64,7 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("[v0] 3D Canvas Error:", error.message)
-    console.error("[v0] 3D Canvas Error Name:", error.name)
-    console.error("[v0] 3D Canvas Error Component Stack:", errorInfo.componentStack)
+    console.error("[v0] 3D Canvas Error:", error.message, error.stack?.slice(0, 300))
     this.props.onError?.(error, errorInfo)
   }
 
@@ -97,6 +95,15 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
 
     return this.props.children
   }
+}
+
+// InvalidateOnChange - forces re-render when grid changes
+function InvalidateOnChange({ gridHash }: { gridHash: string }) {
+  const { invalidate } = useThree()
+  useEffect(() => {
+    invalidate()
+  }, [gridHash, invalidate])
+  return null
 }
 
 // CameraController component for smooth camera animation to new modules
@@ -1314,15 +1321,7 @@ export function ShelfConfigurator({
     return { items: filteredItems, totalPrice: filteredTotalPrice }
   }, [gridHash])
 
-  function InvalidateOnChange({ gridHash }: { gridHash: string }) {
-    const { invalidate } = useThree()
-    useEffect(() => {
-      invalidate()
-    }, [gridHash, invalidate])
-    return null
-  }
-
-  const toggleDefaultColumnWidth = () => {
+const toggleDefaultColumnWidth = () => {
     setDefaultNewColumnWidth((prev) => (prev === 75 ? 38 : 75))
   }
 
