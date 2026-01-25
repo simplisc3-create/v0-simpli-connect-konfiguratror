@@ -653,11 +653,16 @@ export function ShelfConfigurator({
     setSelectedColor("weiss")
     setSelectedCell(null)
     setToolMode("select") // Reset tool mode
-    setCameraTarget(null) // Reset camera target to allow recalculation
     
-    // Reset camera to initial position
+    // Reset camera to focus on ghost sphere at initial position (center of first module)
+    // Initial grid has 1 row with height 38cm = 0.38m, so center is at y = 0.19m
+    const initialTargetY = 0.38 / 2 // Center of the first 38cm row
+    setCameraTarget([0, initialTargetY, 0])
+    
+    // Also reset OrbitControls to initial state
     if (orbitControlsRef.current) {
-      orbitControlsRef.current.reset()
+      orbitControlsRef.current.target.set(0, initialTargetY, 0)
+      orbitControlsRef.current.update()
     }
   }, [resetHistory])
 
