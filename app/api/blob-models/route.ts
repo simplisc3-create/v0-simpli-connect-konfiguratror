@@ -31,7 +31,6 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       url: result.url,
-      filename: result.filename,
       variantCode: result.variantCode,
     })
   } catch (err: any) {

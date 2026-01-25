@@ -671,7 +671,6 @@ export function ShelfConfigurator({
     setSelectedTool("offenes-fach")
     setSelectedColor("weiss")
     setSelectedCell(null)
-    setToolMode("select") // Reset tool mode
     
     // Reset camera to focus on ghost sphere at initial position (center of first module)
     // Initial grid has 1 row with height 38cm = 0.38m, so center is at y = 0.19m
