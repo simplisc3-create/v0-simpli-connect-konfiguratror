@@ -171,7 +171,7 @@ export type GridCell = {
     | "mit-einzelschublade"
   row: number
   col: number
-  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "red"
+  color?: "weiss" | "schwarz" | "blau" | "gruen" | "gelb" | "orange" | "rot"
 }
 
 export type CellId = `c-${number}-${number}`

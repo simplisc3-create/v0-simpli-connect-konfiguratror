@@ -57,7 +57,7 @@ export const COLOR_HEX_MAP: Record<NonNullable<ColorKey>, string> = {
   gruen: "#2FAE5D",
   gelb: "#FFEA00", // Brighter, more saturated yellow
   orange: "#FF8A00",
-  red: "#E53935",
+  rot: "#E53935",
 }
 
 export const COLOR_LABEL_MAP: Record<NonNullable<ColorKey>, string> = {
@@ -67,7 +67,7 @@ export const COLOR_LABEL_MAP: Record<NonNullable<ColorKey>, string> = {
   gruen: "Grün",
   gelb: "Gelb",
   orange: "Orange",
-  red: "Rot",
+  rot: "Rot",
 }
 
 export const getColorHex = (color: ColorKey | undefined): string => {
