@@ -1367,6 +1367,9 @@ export function ShelfConfigurator({
                 dampingFactor={0.05}
                 maxAzimuthAngle={Infinity}
                 minAzimuthAngle={-Infinity}
+                enablePan={true}
+                panSpeed={0.8}
+                screenSpacePanning={true}
                 onChange={(e) => {
                   // Prevent camera target from going below floor (y < 0)
                   if (e && e.target) {
