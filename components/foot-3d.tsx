@@ -151,43 +151,53 @@ export const ModuleFeet = memo(function ModuleFeet({
   moduleDepth,
   footType,
 }: ModuleFeetProps) {
-  // Calculate foot positions at the four corners of the module frame tubes
-  // The feet should be positioned exactly where the built-in black feet are:
-  // At the bottom of each vertical corner post, at ground level (y=0)
+  // Calculate foot positions to match exactly where the GLB model's built-in feet are
+  // 
+  // CRITICAL: The GLB model is placed at `position` and then rotated 270 degrees (3*PI/2) around Y
+  // The rotation is applied at the primitive level, so the feet in the GLB rotate with it
+  // 
+  // The GLB model's local coordinate system BEFORE rotation:
+  // - Local X: width direction
+  // - Local Y: height direction  
+  // - Local Z: depth direction
+  //
+  // After 270-degree Y rotation (same as -90 degrees):
+  // - Local +X becomes World -Z
+  // - Local +Z becomes World +X
+  // - Local Y stays World Y
+  //
+  // So the corners of the frame tubes (which are at the module edges in LOCAL space)
+  // end up at different positions in WORLD space
+  
   const footPositions = useMemo(() => {
-    // The GLB model uses a specific frame tube layout:
-    // - Frame tube diameter: ~15mm (0.015m)
-    // - Frame tubes are positioned so their OUTER edge aligns with module boundary
-    // - So the tube CENTER is inset by the tube radius from the module edge
-    // 
-    // After the 270-degree Y rotation applied in glb-module-loader.tsx:
-    // - Original model's +X axis becomes -Z in world space
-    // - Original model's +Z axis becomes +X in world space
-    // - Width (X) and Depth (Z) swap conceptually
+    // The moduleWidth passed is the WORLD width (what we see horizontally)
+    // The moduleDepth passed is the WORLD depth (0.38m, what extends back from camera)
     //
-    // The module position represents the CENTER of the module:
-    // - position[0] = X center
-    // - position[1] = Y center (vertical)
-    // - position[2] = Z center (typically -depth/2, so module front is at z=0)
+    // Because of the 270-degree rotation:
+    // - What looks like WIDTH in the scene was originally the model's DEPTH (Z)
+    // - What looks like DEPTH in the scene was originally the model's WIDTH (X)
+    //
+    // The frame tubes in the GLB are at the edges of the module geometry
+    // After rotation, they map to world coordinates as follows:
     
-    // Frame tube inset from module edges
-    // The tube outer surface is at the edge, so center is inset by radius
-    const tubeInset = 0.0075 // 7.5mm = half of 15mm tube diameter
-    
-    // Calculate half dimensions, accounting for tube inset
-    const halfWidth = moduleWidth / 2 - tubeInset
-    const halfDepth = moduleDepth / 2 - tubeInset
+    // For a module centered at modulePosition:
+    // - halfWidth extends left/right in world X
+    // - halfDepth extends forward/back in world Z
+    const halfWidth = moduleWidth / 2
+    const halfDepth = moduleDepth / 2
     
     // Y position: feet are at ground level (y=0)
     const baseY = 0
 
-    // Calculate corner positions
-    // The module's Z position is at -depth/2 (centered in depth, front at z=0)
+    // The modulePosition[2] is typically -0.19 (half depth back from z=0)
+    // Front of module is at z = modulePosition[2] + halfDepth ≈ 0
+    // Back of module is at z = modulePosition[2] - halfDepth ≈ -0.38
+    
     return [
-      // Front corners (closer to camera, Z closer to 0)
+      // Front corners (z closer to 0)
       [modulePosition[0] - halfWidth, baseY, modulePosition[2] + halfDepth] as [number, number, number], // Front left
       [modulePosition[0] + halfWidth, baseY, modulePosition[2] + halfDepth] as [number, number, number], // Front right  
-      // Back corners (further from camera, more negative Z)
+      // Back corners (z more negative)
       [modulePosition[0] - halfWidth, baseY, modulePosition[2] - halfDepth] as [number, number, number], // Back left
       [modulePosition[0] + halfWidth, baseY, modulePosition[2] - halfDepth] as [number, number, number], // Back right
     ]
