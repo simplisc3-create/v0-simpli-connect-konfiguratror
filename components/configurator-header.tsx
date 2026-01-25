@@ -30,12 +30,12 @@ const marqueeItems: MarqueeItem[] = [
 ]
 
 function ModuleMarquee() {
-  // Double the items for seamless loop
-  const allItems = [...marqueeItems, ...marqueeItems]
+  // Triple the items for truly seamless loop
+  const allItems = [...marqueeItems, ...marqueeItems, ...marqueeItems]
   
   return (
     <div className="w-full overflow-hidden">
-      <div className="flex animate-marquee items-center">
+      <div className="flex animate-marquee-continuous items-center whitespace-nowrap">
         {allItems.map((item, index) => (
           item.type === "module" ? (
             <div
@@ -76,8 +76,8 @@ export function ConfiguratorHeader() {
         </div>
       </div>
       
-      {/* Animated module marquee with integrated text */}
-      <div className="flex-1 mx-4 hidden sm:block">
+      {/* Animated module marquee with integrated text - visible on all screen sizes */}
+      <div className="flex-1 mx-2 sm:mx-4">
         <ModuleMarquee />
       </div>
       

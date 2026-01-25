@@ -173,16 +173,17 @@
   display: none;
 }
 
-/* Marquee animation for module header */
-@keyframes marquee {
+/* Marquee animation for module header - continuous seamless loop */
+@keyframes marquee-continuous {
   0% {
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-33.333%);
   }
 }
 
-.animate-marquee {
-  animation: marquee 20s linear infinite;
+.animate-marquee-continuous {
+  animation: marquee-continuous 15s linear infinite;
+  will-change: transform;
 }
