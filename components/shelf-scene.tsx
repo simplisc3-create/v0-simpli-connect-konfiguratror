@@ -282,19 +282,14 @@ export const ShelfScene = memo(function ShelfScene({
 
   return (
     <group>
-      {/* Dark floor - positioned at y=0 with ContactShadows on top */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color="#1a1a1a" roughness={0.85} metalness={0.1} />
-      </mesh>
-
+      {/* White floor - matches background for seamless look */}
       <ContactShadows
-        position={[0, 0.001, 0]}
-        opacity={0.4}
-        scale={6}
-        blur={2.5}
+        position={[0, 0, 0]}
+        opacity={0.25}
+        scale={8}
+        blur={2}
         far={2}
-        resolution={512}
+        resolution={256}
         color="#000000"
       />
 
