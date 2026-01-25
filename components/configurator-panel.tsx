@@ -20,8 +20,10 @@ import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
 import { ModulePreview3D } from "./module-preview-3d"
+import { ModuleThumbnail3D } from "./module-thumbnail-3d"
 import type { ModuleType } from "@/lib/glb-registry"
 import { getModuleLabel, getModuleShortLabel } from "@/lib/module-utils"
+import { modules80, modules40, getModuleTypeFromThumbnailId } from "@/lib/module-thumbnails"
 
 
 
@@ -322,36 +324,36 @@ export function ConfiguratorPanel({
             </div>
           </div>
 
-          {/* Module Grid */}
-          <div className="grid grid-cols-4 gap-2">
-            {moduleTypes
-              .filter((module) => isModuleTypeAvailableForWidth(module.id as ModuleType, widthFilter === "all" ? 80 : widthFilter))
-              .map((module) => {
-                return (
-                  <button
-                    key={module.id}
-                    className={cn(
-                      "group relative flex flex-col items-center justify-center rounded-xl p-2 transition-all border-2 cursor-pointer",
-                      selectedTool === module.id
-                        ? "bg-teal-50 border-teal-400 text-teal-700 shadow-sm shadow-teal-100"
-                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300",
-                    )}
-                    onClick={() => onSelectTool(module.id)}
-                    title={module.label}
-                  >
-                    <div className="h-12 w-16 flex items-center justify-center">
-                      <ModulePreview3D
-                        moduleType={module.id as ModuleType}
-                        width={widthFilter === "all" ? 80 : widthFilter}
-                        color={selectedColor}
-                      />
-                    </div>
-                    <span className="text-[8px] font-semibold leading-tight text-center line-clamp-1">
-                      {module.shortLabel}
-                    </span>
-                  </button>
-                )
-              })}
+          {/* Module Grid with 3D Thumbnails */}
+          <div className="grid grid-cols-3 gap-3">
+            {(widthFilter === 80 ? modules80 : modules40).map((module) => {
+              const actualModuleType = getModuleTypeFromThumbnailId(module.id)
+              
+              return (
+                <button
+                  key={module.id}
+                  className={cn(
+                    "group relative flex flex-col items-center justify-center rounded-xl p-2 transition-all border-2 cursor-pointer",
+                    selectedTool === actualModuleType
+                      ? "bg-teal-50 border-teal-400 text-teal-700 shadow-md shadow-teal-100"
+                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm",
+                  )}
+                  onClick={() => onSelectTool(actualModuleType)}
+                  title={module.name}
+                >
+                  <div className="relative h-16 w-full flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                    <ModuleThumbnail3D
+                      moduleType={actualModuleType as ModuleType}
+                      width={widthFilter === 80 ? 80 : 40}
+                      color={selectedColor === "weiss" ? "white" : selectedColor === "schwarz" ? "black" : selectedColor === "blau" ? "blue" : selectedColor === "gruen" ? "green" : selectedColor === "gelb" ? "yellow" : selectedColor === "rot" ? "red" : "white"}
+                    />
+                  </div>
+                  <span className="mt-1.5 text-[9px] font-semibold leading-tight text-center line-clamp-2">
+                    {module.name}
+                  </span>
+                </button>
+              )
+            })}
           </div>
           <p className="mt-3 text-[10px] text-gray-500">
             {widthFilter === 80 ? "80cm breite Module" : widthFilter === 40 ? "40cm breite Module" : "Alle Module"}
