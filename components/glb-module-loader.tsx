@@ -494,10 +494,8 @@ const LoadedGLBModel = memo(
     }, [scene, isKlapptuerOben])
 
     const clonedScene = useMemo(() => {
-      console.log("[v0] Cloning scene for module:", moduleKey, "hideBuiltInFeet:", hideBuiltInFeet, "isBottomModule:", isBottomModule)
       try {
         const clone = scene.clone(true)
-        console.log("[v0] Scene cloned successfully")
         let mappedColor = targetColor
         if (GERMAN_TO_ENGLISH_COLOR[targetColor]) {
           mappedColor = GERMAN_TO_ENGLISH_COLOR[targetColor]
@@ -522,14 +520,17 @@ const LoadedGLBModel = memo(
             handleMesh = child
           }
 
-          // Hide built-in feet if:
-          // 1. Not a bottom module (feet only on bottom)
-          // 2. Or custom feet are selected (hideBuiltInFeet = true)
+          // Handle built-in feet:
+          // 1. Not a bottom module - hide feet entirely
+          // 2. Custom feet selected (hideBuiltInFeet = true) - make feet chrome to blend with frame
           if (isFeet) {
-            console.log("[v0] Found feet mesh:", meshName, "isBottomModule:", isBottomModule, "hideBuiltInFeet:", hideBuiltInFeet)
-            if (!isBottomModule || hideBuiltInFeet) {
-              console.log("[v0] Hiding feet mesh:", meshName)
+            if (!isBottomModule) {
+              // Not bottom module - hide feet completely
               child.visible = false
+              return
+            } else if (hideBuiltInFeet) {
+              // Custom feet selected - chrome-plate the built-in feet to blend with frame
+              child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
               return
             }
           }
@@ -591,7 +592,6 @@ const LoadedGLBModel = memo(
         }
       })
 
-      console.log("[v0] Scene processing complete for:", moduleKey)
       return clone
     } catch (err) {
         console.error("[v0] Error cloning/processing scene:", err)
