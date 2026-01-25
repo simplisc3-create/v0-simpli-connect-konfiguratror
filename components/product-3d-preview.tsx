@@ -58,6 +58,16 @@ const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
 })
 
+// Material cache to avoid creating new materials for each model instance
+const materialCache = new Map<string, THREE.Material>()
+
+function getCachedMaterial<T extends THREE.Material>(key: string, createMaterial: () => T): T {
+  if (!materialCache.has(key)) {
+    materialCache.set(key, createMaterial())
+  }
+  return materialCache.get(key) as T
+}
+
 // Keywords for frame detection (same as glb-module-loader)
 const FRAME_KEYWORDS = ["frame", "tube", "pipe", "chrome", "metal", "stahl", "rohr", "gestell", "rahmen", "strebe", "stange", "bar"]
 const PANEL_KEYWORDS = ["panel", "board", "platte", "shelf", "regal", "seite", "side", "back", "rear", "rueck", "door", "tuer", "drawer", "schublade", "front", "deckel", "cover", "floor", "ceiling", "bodenplatte", "deckenplatte", "top", "bottom"]
@@ -147,13 +157,16 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
         }
         
         if (isFrame) {
-          child.material = CHROME_MATERIAL.clone()
+          child.material = getCachedMaterial("chrome-preview", () => CHROME_MATERIAL)
         } else {
           const finalColor = isBottom ? TARGET_COLORS.black : targetColor
-          child.material = new THREE.MeshLambertMaterial({
-            color: finalColor,
-            side: THREE.DoubleSide,
-          })
+          const colorKey = isBottom ? "black" : color
+          child.material = getCachedMaterial(`panel-${colorKey}`, () => 
+            new THREE.MeshLambertMaterial({
+              color: finalColor,
+              side: THREE.DoubleSide,
+            })
+          )
         }
       }
     })
