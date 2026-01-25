@@ -478,16 +478,19 @@ const LoadedGLBModel = memo(
     }, [scene, isKlapptuerOben])
 
     const clonedScene = useMemo(() => {
-      const clone = scene.clone(true)
-      let mappedColor = targetColor
-      if (GERMAN_TO_ENGLISH_COLOR[targetColor]) {
-        mappedColor = GERMAN_TO_ENGLISH_COLOR[targetColor]
-      } else if (HEX_TO_COLOR_NAME[targetColor]) {
-        mappedColor = HEX_TO_COLOR_NAME[targetColor]
-      }
-      const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS.white
+      console.log("[v0] Cloning scene for module:", moduleKey)
+      try {
+        const clone = scene.clone(true)
+        console.log("[v0] Scene cloned successfully")
+        let mappedColor = targetColor
+        if (GERMAN_TO_ENGLISH_COLOR[targetColor]) {
+          mappedColor = GERMAN_TO_ENGLISH_COLOR[targetColor]
+        } else if (HEX_TO_COLOR_NAME[targetColor]) {
+          mappedColor = HEX_TO_COLOR_NAME[targetColor]
+        }
+        const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS.white
 
-      const parentBoundingBox = new THREE.Box3().setFromObject(clone)
+        const parentBoundingBox = new THREE.Box3().setFromObject(clone)
 
       let handleMesh: THREE.Mesh | null = null
 
@@ -565,7 +568,12 @@ const LoadedGLBModel = memo(
         }
       })
 
+      console.log("[v0] Scene processing complete for:", moduleKey)
       return clone
+    } catch (err) {
+        console.error("[v0] Error cloning/processing scene:", err)
+        throw err
+      }
     }, [scene, targetColor, moduleKey, cellType, row, isBottomModule])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
