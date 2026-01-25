@@ -441,7 +441,9 @@ const LoadedGLBModel = memo(
   isSelected?: boolean
   onClick?: (row: number, col: number) => void
   }) {
+    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
     const { scene } = useGLTF(modelUrl)
+    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null")
     const groupRef = useRef<THREE.Group>(null)
 
   
