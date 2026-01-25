@@ -1156,7 +1156,7 @@ export const colorHexMap: Record<ShelfColor | "satiniert", string> = {
   schwarz: "#111111",
   blau: "#1E5EFF",
   gruen: "#2FAE5D",
-  gelb: "#FFD400",
+  gelb: "#FFEA00", // Brighter, more saturated yellow
   orange: "#FF8A00",
   rot: "#E53935",
   satiniert: "#e8e8e8",

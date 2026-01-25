@@ -55,7 +55,7 @@ export const COLOR_HEX_MAP: Record<NonNullable<ColorKey>, string> = {
   schwarz: "#111111",
   blau: "#1E5EFF",
   gruen: "#2FAE5D",
-  gelb: "#FFD400",
+  gelb: "#FFEA00", // Brighter, more saturated yellow
   orange: "#FF8A00",
   red: "#E53935",
 }

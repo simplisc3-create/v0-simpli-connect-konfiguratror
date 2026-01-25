@@ -60,6 +60,8 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#2FAE5D": "green",
   "#ffd400": "yellow",
   "#FFD400": "yellow",
+  "#ffea00": "yellow",
+  "#FFEA00": "yellow",
   "#ff8a00": "orange",
   "#FF8A00": "orange",
   "#e53935": "red",
@@ -74,7 +76,7 @@ const TARGET_COLORS: Record<string, THREE.Color> = {
   black: new THREE.Color("#111111"),
   blue: new THREE.Color("#1E5EFF"),
   green: new THREE.Color("#2FAE5D"),
-  yellow: new THREE.Color("#FFD400"),
+  yellow: new THREE.Color("#FFEA00"), // Brighter, more saturated yellow
   orange: new THREE.Color("#FF8A00"),
   red: new THREE.Color("#E53935"),
 }
@@ -541,9 +543,9 @@ const LoadedGLBModel = memo(
                 const texture = oldMat.map || null
                 const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
                 const isWhitePanel = mappedColor === "white" && !isBottom
-                const isRedPanel = mappedColor === "red" && !isBottom
+                const isYellowPanel = mappedColor === "yellow" && !isBottom
 
-                // Panel materials - White and red panels get extra brightness via MeshStandardMaterial with emissive
+                // Panel materials - White and yellow panels get extra brightness via MeshStandardMaterial with emissive
                 const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
                 
                 if (isWhitePanel) {
@@ -561,14 +563,18 @@ const LoadedGLBModel = memo(
                         side: THREE.DoubleSide,
                       }),
                   )
-                } else if (isRedPanel) {
-                  // Red panels use MeshLambertMaterial for flat appearance (no emissive)
+                } else if (isYellowPanel) {
+                  // Yellow panels use MeshStandardMaterial with emissive for vibrant, saturated appearance
                   child.material = getCachedMaterial(
                     materialKey,
                     () =>
-                      new THREE.MeshLambertMaterial({
+                      new THREE.MeshStandardMaterial({
                         map: texture,
                         color: finalColor,
+                        emissive: new THREE.Color("#FFEA00"),
+                        emissiveIntensity: 0.25,
+                        roughness: 0.7,
+                        metalness: 0.0,
                         side: THREE.DoubleSide,
                       }),
                   )
