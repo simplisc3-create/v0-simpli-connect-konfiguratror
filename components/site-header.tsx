@@ -38,16 +38,6 @@ export function SiteHeader({ transparent = false }: SiteHeaderProps) {
           isTransparent ? "bg-transparent" : "bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm"
         }`}
       >
-        <style jsx>{`
-          @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-          }
-          .blink-animation {
-            animation: blink 1s ease-in-out infinite;
-          }
-        `}</style>
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Upload, X } from "lucide-react"
 
 interface ImageUploadProps {
@@ -63,11 +64,18 @@ export function ImageUpload({ onImageUpload, alt, fallbackImage }: ImageUploadPr
     <div className="relative w-full h-full group bg-input">
       {imageToDisplay ? (
         <>
-          
+          <Image
+            src={imageToDisplay}
+            alt={alt}
+            fill
+            sizes="(max-width: 640px) 280px, 33vw"
+            className="object-cover"
+            priority={false}
+          />
           {uploadedImage && (
             <button
               onClick={handleRemove}
-              className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 right-2 p-2 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
               aria-label="Bild entfernen"
             >
               <X className="w-4 h-4" />

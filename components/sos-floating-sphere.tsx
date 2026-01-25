@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react"
 import { Phone, X, Minus, Maximize2, Minimize2 } from "lucide-react"
 
 export function SosFloatingSphere() {
+  const [mounted, setMounted] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [position, setPosition] = useState({ x: 20, y: 200 })
   const [size, setSize] = useState({ width: 280, height: 500 })
@@ -26,6 +27,7 @@ export function SosFloatingSphere() {
   })
 
   useEffect(() => {
+    setMounted(true)
     setPosition({ x: 20, y: window.innerHeight - 520 })
   }, [])
 
@@ -85,6 +87,8 @@ export function SosFloatingSphere() {
       window.removeEventListener("mouseup", handleMouseUp)
     }
   }, [isDragging, isResizing, size.width, size.height])
+
+  if (!mounted) return null
 
   return (
     <>
