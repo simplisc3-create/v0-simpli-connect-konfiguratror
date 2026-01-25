@@ -117,7 +117,7 @@ export default function DieKlarlinieProductPage() {
               <Button size="lg" className={`w-full gap-3 text-lg py-7 font-semibold transition-all ${added ? "bg-green-600 hover:bg-green-600" : "bg-gray-900 hover:bg-gray-800"}`} onClick={handleAddToCart}>
                 {added ? (<><Check className="w-6 h-6" />Hinzugefügt!</>) : (<><ShoppingCart className="w-6 h-6" />In den Warenkorb - {regal.price.toFixed(2)} EUR</>)}
               </Button>
-              <Link href={`/konfigurator`} className="block">
+              <Link href={`/konfigurator?preset=die-klarlinie`} className="block">
                 <Button variant="outline" size="lg" className="w-full gap-2 py-6 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent">
                   <Package className="w-5 h-5" />Im Konfigurator anpassen
                 </Button>
