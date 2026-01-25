@@ -1,7 +1,7 @@
 "use client"
 
 import { useGLTF } from "@react-three/drei"
-import { useFrame } from "@react-three/fiber"
+
 import { useEffect, useState, memo, useMemo, useRef, useCallback } from "react"
 import * as THREE from "three"
 import type { GridCell } from "./shelf-configurator"
@@ -20,7 +20,6 @@ type GLBModuleProps = {
   modelUrl?: string
   isBottomModule?: boolean
   isSelected?: boolean
-  isSwapMode?: boolean
   onClick?: (row: number, col: number) => void
 }
 
@@ -310,7 +309,6 @@ export const GLBModule = memo(
     modelUrl: explicitModelUrl,
     isBottomModule = false,
     isSelected = false,
-    isSwapMode = false,
     onClick,
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
@@ -399,7 +397,6 @@ export const GLBModule = memo(
         col={col}
         isBottomModule={isBottomModule}
         isSelected={isSelected}
-        isSwapMode={isSwapMode}
         onClick={onClick}
       />
     )
@@ -414,8 +411,7 @@ export const GLBModule = memo(
     prev.row === next.row &&
     prev.col === next.col &&
     prev.isBottomModule === next.isBottomModule &&
-    prev.isSelected === next.isSelected &&
-    prev.isSwapMode === next.isSwapMode,
+    prev.isSelected === next.isSelected,
 )
 
 const LoadedGLBModel = memo(
@@ -426,45 +422,26 @@ const LoadedGLBModel = memo(
     targetColor,
     cellType = "offen",
     row = 0,
-    col = 0,
-    isBottomModule = false,
-    isSelected = false,
-    isSwapMode = false,
-    onClick,
+  col = 0,
+  isBottomModule = false,
+  isSelected = false,
+  onClick,
   }: {
-    modelUrl: string
+  modelUrl: string
     position: [number, number, number]
     moduleKey: string
     targetColor: string
     cellType?: string
     row?: number
-    col?: number
-    isBottomModule?: boolean
-    isSelected?: boolean
-    isSwapMode?: boolean
-    onClick?: (row: number, col: number) => void
+  col?: number
+  isBottomModule?: boolean
+  isSelected?: boolean
+  onClick?: (row: number, col: number) => void
   }) {
     const { scene } = useGLTF(modelUrl)
     const groupRef = useRef<THREE.Group>(null)
-    const [hovered, setHovered] = useState(false)
-    // Track pulse value for selection highlight - using ref to avoid re-renders
-    const pulseRef = useRef(0)
 
-    // Blinking animation for selected modules in swap mode - only runs when needed
-    useFrame((state) => {
-      if (!groupRef.current) return
-      
-      if (isSelected && isSwapMode) {
-        // Create a pulsing scale effect
-        const pulse = 1 + Math.sin(state.clock.elapsedTime * 6) * 0.02
-        groupRef.current.scale.setScalar(pulse)
-        // Store pulse value for ring opacity
-        pulseRef.current = 0.8 + Math.sin(state.clock.elapsedTime * 6) * 0.2
-      } else if (groupRef.current.scale.x !== 1) {
-        // Only reset if not already at 1
-        groupRef.current.scale.setScalar(1)
-      }
-    })
+  
 
     const handleClick = useCallback((e: THREE.Event) => {
       e.stopPropagation()
@@ -475,14 +452,9 @@ const LoadedGLBModel = memo(
 
     const handlePointerOver = useCallback((e: THREE.Event) => {
       e.stopPropagation()
-      if (isSwapMode) {
-        setHovered(true)
-        document.body.style.cursor = "pointer"
-      }
-    }, [isSwapMode])
-
+    }, [])
+    
     const handlePointerOut = useCallback(() => {
-      setHovered(false)
       document.body.style.cursor = "auto"
     }, [])
 
@@ -552,9 +524,8 @@ const LoadedGLBModel = memo(
                 const texture = oldMat.map || null
                 const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
                 const isWhitePanel = mappedColor === "white" && !isBottom
-                const isYellowPanel = mappedColor === "yellow" && !isBottom
 
-                // Panel materials - White and yellow panels get extra brightness via MeshStandardMaterial with emissive
+                // Panel materials - White panels get extra brightness via MeshStandardMaterial with emissive
                 const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
                 
                 if (isWhitePanel) {
@@ -568,21 +539,6 @@ const LoadedGLBModel = memo(
                         emissive: new THREE.Color("#ffffff"),
                         emissiveIntensity: 0.15,
                         roughness: 0.9,
-                        metalness: 0.0,
-                        side: THREE.DoubleSide,
-                      }),
-                  )
-                } else if (isYellowPanel) {
-                  // Yellow panels use MeshStandardMaterial with emissive for vibrant, saturated appearance
-                  child.material = getCachedMaterial(
-                    materialKey,
-                    () =>
-                      new THREE.MeshStandardMaterial({
-                        map: texture,
-                        color: finalColor,
-                        emissive: new THREE.Color("#FFEA00"),
-                        emissiveIntensity: 0.25,
-                        roughness: 0.7,
                         metalness: 0.0,
                         side: THREE.DoubleSide,
                       }),
@@ -622,20 +578,6 @@ const LoadedGLBModel = memo(
         onPointerOut={handlePointerOut}
       >
         <primitive object={clonedScene} position={adjustedPosition} rotation={[0, (3 * Math.PI) / 2, 0]} scale={1} />
-        {/* Selection highlight ring for swap mode */}
-        {isSelected && isSwapMode && (
-          <mesh position={[adjustedPosition[0], adjustedPosition[1], adjustedPosition[2] + 0.2]} rotation={[0, 0, 0]}>
-            <ringGeometry args={[0.25, 0.28, 32]} />
-            <meshBasicMaterial color="#f59e0b" transparent opacity={0.9} side={THREE.DoubleSide} />
-          </mesh>
-        )}
-        {/* Hover highlight for swap mode */}
-        {hovered && isSwapMode && !isSelected && (
-          <mesh position={[adjustedPosition[0], adjustedPosition[1], adjustedPosition[2] + 0.2]} rotation={[0, 0, 0]}>
-            <ringGeometry args={[0.22, 0.25, 32]} />
-            <meshBasicMaterial color="#fbbf24" transparent opacity={0.5} side={THREE.DoubleSide} />
-          </mesh>
-        )}
       </group>
     )
   },
@@ -648,7 +590,6 @@ const LoadedGLBModel = memo(
     prev.col === next.col &&
     prev.isBottomModule === next.isBottomModule &&
     prev.isSelected === next.isSelected &&
-    prev.isSwapMode === next.isSwapMode &&
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],

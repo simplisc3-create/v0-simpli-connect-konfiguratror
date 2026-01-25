@@ -15,8 +15,6 @@ import {
   Columns,
   Grid,
   Check,
-  ArrowLeftRight,
-  MousePointer,
 } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
@@ -25,7 +23,7 @@ import { ModulePreview3D } from "./module-preview-3d"
 import type { ModuleType } from "@/lib/glb-registry"
 import { getModuleLabel, getModuleShortLabel } from "@/lib/module-utils"
 
-export type ToolMode = "select" | "swap"
+
 
 export type WidthFilter = 40 | 80 | "all"
 
@@ -60,9 +58,6 @@ type Props = {
   onApplyColorToAll?: (color: ColorKey) => void
   onClearCellColor?: (row: number, col: number) => void
   onDeselectCell?: () => void
-  toolMode?: ToolMode
-  onSetToolMode?: (mode: ToolMode) => void
-  onSwapModule?: (row: number, col: number, newType: GridCell["type"]) => void
   defaultNewColumnWidth?: 75 | 38
   onSetDefaultColumnWidth?: (width: 75 | 38) => void
 }
@@ -124,9 +119,6 @@ export function ConfiguratorPanel({
   onApplyColorToAll,
   onClearCellColor,
   onDeselectCell,
-  toolMode = "select",
-  onSetToolMode,
-  onSwapModule,
   defaultNewColumnWidth = 75,
   onSetDefaultColumnWidth,
 }: Props) {
@@ -258,48 +250,6 @@ export function ConfiguratorPanel({
               </div>
             </div>
 
-            {/* Swap module section */}
-            <div className="mb-3">
-              <div className="flex items-center gap-2 mb-2">
-                <ArrowLeftRight className="h-3.5 w-3.5 text-amber-500" />
-                <p className="text-xs font-medium text-gray-600">Modul tauschen:</p>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {moduleTypes
-                  .filter((module) => {
-                    // Filter to only show modules that are compatible with this cell's column width
-                    const columnWidth = config.columnWidths[selectedCell.col]
-                    const widthInCm = columnWidth === 75 ? 80 : 40
-                    return isModuleTypeAvailableForWidth(module.id as ModuleType, widthInCm)
-                  })
-                  .filter((module) => module.id !== selectedCellInfo.type) // Don't show current type
-                  .map((module) => (
-                    <button
-                      key={module.id}
-                      onClick={() => {
-                        onSwapModule?.(selectedCell.row, selectedCell.col, module.id)
-                      }}
-                      className={cn(
-                        "group relative flex flex-col items-center justify-center rounded-lg p-1.5 transition-all border",
-                        "bg-white border-gray-200 text-gray-700 hover:bg-amber-50 hover:border-amber-400 shadow-sm",
-                      )}
-                      title={`Zu "${module.label}" wechseln`}
-                    >
-                      <div className="h-8 w-12 flex items-center justify-center">
-                        <ModulePreview3D
-                          moduleType={module.id as ModuleType}
-                          width={config.columnWidths[selectedCell.col] === 75 ? 80 : 40}
-                          color={selectedCellInfo.color || "weiss"}
-                        />
-                      </div>
-                      <span className="text-[7px] font-medium leading-tight text-center line-clamp-1 text-gray-600">
-                        {module.shortLabel}
-                      </span>
-                    </button>
-                  ))}
-              </div>
-            </div>
-
             {/* Quick actions */}
             <div className="space-y-2">
               <p className="text-xs font-medium text-gray-600">Schnellaktionen:</p>
@@ -336,42 +286,6 @@ export function ConfiguratorPanel({
             </div>
           </div>
         )}
-
-        <div className="border-b border-gray-100 p-4">
-          <h3 className="mb-3 text-sm font-semibold text-gray-900">Werkzeuge</h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => onSetToolMode?.("select")}
-              className={cn(
-                "flex flex-1 flex-col items-center gap-1.5 rounded-xl p-3 transition-all shadow-sm",
-                toolMode === "select"
-                  ? "bg-teal-500 text-white shadow-md shadow-teal-200"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200",
-              )}
-              title="Auswahl-Modus: Klicken um einzelne Module zu platzieren"
-            >
-              <MousePointer className="h-5 w-5" />
-              <span className="text-[10px] font-semibold">Platzieren</span>
-            </button>
-            <button
-              onClick={() => onSetToolMode?.("swap")}
-              className={cn(
-                "flex flex-1 flex-col items-center gap-1.5 rounded-xl p-3 transition-all shadow-sm",
-                toolMode === "swap"
-                  ? "bg-amber-500 text-white shadow-md shadow-amber-200"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200",
-              )}
-              title="Tauschen-Modus: Klicke auf ein Modul um es gegen ein anderes zu tauschen"
-            >
-              <ArrowLeftRight className="h-5 w-5" />
-              <span className="text-[10px] font-semibold">Tauschen</span>
-            </button>
-          </div>
-          <p className="mt-2 text-[10px] text-gray-500">
-            {toolMode === "select" && "Klicke auf leere Zellen um Module zu platzieren"}
-            {toolMode === "swap" && "Klicke auf ein Modul um es gegen ein kompatibles zu tauschen"}
-          </p>
-        </div>
 
         <div className="border-b border-gray-100 p-4">
           {/* Tab Navigation */}
