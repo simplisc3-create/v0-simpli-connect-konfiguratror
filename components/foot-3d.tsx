@@ -189,10 +189,9 @@ export const ModuleFeet = memo(function ModuleFeet({
     const halfWidth = moduleWidth / 2
     const halfDepth = moduleDepth / 2
     
-    // Y position: feet should sit on the ground at y=0
-    // The foot geometry is built with its base at approximately y=0
-    // The floor/ground plane is at y=0
-    const baseY = 0
+    // Y position: feet should sit on the ground
+    // Adjusted 2cm lower to align with GLB model's built-in feet position
+    const baseY = -0.02
 
     // The modulePosition[2] is typically -0.19 (half depth back from z=0)
     // Front of module is at z = modulePosition[2] + halfDepth ≈ 0
