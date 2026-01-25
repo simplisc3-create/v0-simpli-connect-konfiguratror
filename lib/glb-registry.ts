@@ -126,6 +126,18 @@ export const COLOR_KEYS: ColorKey[] = ["white", "green", "yellow", "red", "blue"
 
 const GLB_BASE_URL = "https://xo2a99j1qyph0ija.public.blob.vercel-storage.com"
 
+// Local fallback files available in /public/images/
+const LOCAL_GLB_FILES: Record<string, string> = {
+  // white 80cm modules
+  "white-80-1-7": "/images/80x40x40-1-7-white-optimized.glb", // abschliessbare-tueren
+  // mit-klapptuer-oben special files
+  "white-80-klapptuer-oben": "/images/80x40x40b-1-2-white-optimized.glb",
+  "blue-80-klapptuer-oben": "/images/80x40x40b-1-2-blue-optimized.glb",
+  "green-80-klapptuer-oben": "/images/80x40x40b-1-2-green-optimized.glb",
+  "red-80-klapptuer-oben": "/images/80x40x40b-1-2-red-optimized.glb",
+  "yellow-80-klapptuer-oben": "/images/80x40x40b-1-2-yellow-optimized.glb",
+}
+
 function buildGlbUrl(color: ColorKey, width: WidthKey, variantCode: string): string {
   const folder = `${color}${width}`
   const dimensions = width === 80 ? "80x40x40" : "40x40x40"
@@ -133,6 +145,12 @@ function buildGlbUrl(color: ColorKey, width: WidthKey, variantCode: string): str
   const separator = color === "white" && width === 80 ? "-" : "_"
 
   const filename = `${dimensions}-${variantCode}-${color}${separator}optimized.glb`
+
+  // Check for local fallback first
+  const localKey = `${color}-${width}-${variantCode}`
+  if (LOCAL_GLB_FILES[localKey]) {
+    return LOCAL_GLB_FILES[localKey]
+  }
 
   return `${GLB_BASE_URL}/${folder}/${filename}`
 }

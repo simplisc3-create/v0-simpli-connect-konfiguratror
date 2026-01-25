@@ -24,6 +24,7 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
+    console.log("[v0] LoadingAnimation: Starting animation")
     const cellDelay = ANIMATION_DURATION / TOTAL_CELLS
     let currentCell = 0
 
@@ -34,12 +35,17 @@ export function LoadingAnimation({ onComplete }: { onComplete: () => void }) {
         currentCell++
       } else {
         if (intervalRef.current) clearInterval(intervalRef.current)
+        console.log("[v0] LoadingAnimation: Animation complete, calling onComplete in 500ms")
         // Wait a moment before completing
-        setTimeout(onComplete, 500)
+        setTimeout(() => {
+          console.log("[v0] LoadingAnimation: Calling onComplete now")
+          onComplete()
+        }, 500)
       }
     }, cellDelay)
 
     return () => {
+      console.log("[v0] LoadingAnimation: Cleaning up")
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [onComplete])

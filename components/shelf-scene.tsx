@@ -159,22 +159,35 @@ export const ShelfScene = memo(function ShelfScene({
   onCellClick, 
   onCellHover 
 }: Props) {
-  // Early return if config is invalid
-  if (!config || !config.grid || !Array.isArray(config.grid)) {
-    console.error("[v0] ShelfScene: Invalid config received", config)
-    return null
-  }
+  console.log("[v0] ShelfScene: Rendering with config", {
+    columns: config?.columns,
+    rows: config?.rows,
+    gridLength: config?.grid?.length,
+    hasGrid: !!config?.grid,
+    columnWidths: config?.columnWidths,
+    rowHeights: config?.rowHeights,
+  })
+  
+  // Ensure columnWidths and rowHeights exist with defaults (must be before any hooks)
+  const safeColumnWidths = useMemo(() => 
+    config?.columnWidths?.length > 0 ? config.columnWidths : [75],
+    [config?.columnWidths]
+  )
+  const safeRowHeights = useMemo(() => 
+    config?.rowHeights?.length > 0 ? config.rowHeights : [38],
+    [config?.rowHeights]
+  )
   
   const gridHash = useMemo(() => {
-    if (!config.grid || !Array.isArray(config.grid)) return ""
+    if (!config?.grid || !Array.isArray(config.grid)) return ""
     return JSON.stringify({
       grid: config.grid.map((row) => row?.map((cell) => ({ type: cell?.type, color: cell?.color })) || []),
-      columns: config.columns,
-      rows: config.rows,
-      columnWidths: config.columnWidths,
-      rowHeights: config.rowHeights,
+      columns: config?.columns || 1,
+      rows: config?.rows || 1,
+      columnWidths: safeColumnWidths,
+      rowHeights: safeRowHeights,
     })
-  }, [config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
+  }, [config?.grid, config?.columns, config?.rows, safeColumnWidths, safeRowHeights])
 
   const { glbModules, snapPoints, hasRealModules } = useMemo(() => {
     const glbs: {
@@ -198,12 +211,15 @@ export const ShelfScene = memo(function ShelfScene({
     const depth = 0.38
     const columnTubeOverlap = 0.003
     const rowTubeOverlap = 0.003
+    
+    const cols = config?.columns || 1
+    const rows = config?.rows || 1
 
     // Check if there are any real modules (not ghost or empty)
     let foundRealModule = false
-    for (let r = 0; r < config.rows && !foundRealModule; r++) {
-      for (let c = 0; c < config.columns && !foundRealModule; c++) {
-        const cell = config.grid[r]?.[c]
+    for (let r = 0; r < rows && !foundRealModule; r++) {
+      for (let c = 0; c < cols && !foundRealModule; c++) {
+        const cell = config?.grid?.[r]?.[c]
         if (cell && cell.type !== "ghost" && cell.type !== "empty") {
           foundRealModule = true
         }
@@ -213,11 +229,11 @@ export const ShelfScene = memo(function ShelfScene({
     // Calculate column centers
     const columnCenters: number[] = []
     let totalWidth = 0
-    for (let col = 0; col < config.columns; col++) {
-      const colWidth = config.columnWidths[col] / 100
+    for (let col = 0; col < cols; col++) {
+      const colWidth = (safeColumnWidths[col] || 75) / 100
       let xPos = 0
       for (let c = 0; c < col; c++) {
-        xPos += config.columnWidths[c] / 100 - columnTubeOverlap
+        xPos += (safeColumnWidths[c] || 75) / 100 - columnTubeOverlap
       }
       columnCenters.push(xPos + colWidth / 2)
       totalWidth += colWidth
@@ -226,11 +242,11 @@ export const ShelfScene = memo(function ShelfScene({
 
     // Calculate row centers
     const rowCenters: number[] = []
-    for (let row = 0; row < config.rows; row++) {
-      const rowHeight = config.rowHeights[row] / 100
+    for (let row = 0; row < rows; row++) {
+      const rowHeight = (safeRowHeights[row] || 38) / 100
       let yPos = 0
       for (let r = 0; r < row; r++) {
-        yPos += config.rowHeights[r] / 100 - rowTubeOverlap
+        yPos += (safeRowHeights[r] || 38) / 100 - rowTubeOverlap
       }
       rowCenters.push(yPos + rowHeight / 2)
     }
@@ -238,7 +254,7 @@ export const ShelfScene = memo(function ShelfScene({
     const offsetX = -totalWidth / 2
 
     // Safely iterate over grid
-    if (!config.grid || !Array.isArray(config.grid)) {
+    if (!config?.grid || !Array.isArray(config.grid)) {
       return { glbModules: glbs, snapPoints: snaps, hasRealModules: false }
     }
 
@@ -246,8 +262,8 @@ export const ShelfScene = memo(function ShelfScene({
       if (!rowCells || !Array.isArray(rowCells)) return
       rowCells.forEach((cell, gridCol) => {
         if (!cell) return
-        const cellWidth = config.columnWidths[gridCol] / 100
-        const cellHeight = config.rowHeights[gridRow] / 100
+        const cellWidth = (safeColumnWidths[gridCol] || 75) / 100
+        const cellHeight = (safeRowHeights[gridRow] || 38) / 100
 
         let zOffset = 0
         if (cell.type === "mit-doppelschublade" || cell.type === "abschliessbare-tueren") {
@@ -297,8 +313,14 @@ export const ShelfScene = memo(function ShelfScene({
       })
     })
 
+    console.log("[v0] ShelfScene: Generated modules", { 
+      glbCount: glbs.length, 
+      snapCount: snaps.length, 
+      hasRealModules: foundRealModule,
+      glbModules: glbs.map(g => ({ type: g.cell.type, row: g.row, col: g.col }))
+    })
     return { glbModules: glbs, snapPoints: snaps, hasRealModules: foundRealModule }
-  }, [gridHash, config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
+  }, [gridHash, config?.grid, config?.columns, config?.rows, safeColumnWidths, safeRowHeights])
 
   const handleClick = useCallback(
     (row: number, col: number) => {
@@ -313,9 +335,31 @@ export const ShelfScene = memo(function ShelfScene({
     },
     [onCellHover],
   )
+  
+  // Early return if config is invalid - AFTER all hooks
+  if (!config || !config.grid || !Array.isArray(config.grid)) {
+    console.error("[v0] ShelfScene: Invalid config received", config)
+    // Return a visible placeholder so we know the scene is at least rendering
+    return (
+      <group>
+        <mesh position={[0, 0.5, 0]}>
+          <boxGeometry args={[0.5, 0.5, 0.5]} />
+          <meshStandardMaterial color="#ff0000" />
+        </mesh>
+      </group>
+    )
+  }
 
+  console.log("[v0] ShelfScene: Rendering 3D content with", { glbCount: glbModules.length, snapCount: snapPoints.length })
+  
   return (
     <group>
+      {/* Debug: visible floor plane to confirm 3D is rendering */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+        <planeGeometry args={[10, 10]} />
+        <meshStandardMaterial color="#f5f5f5" />
+      </mesh>
+      
       {/* White floor - matches background for seamless look */}
       <ContactShadows
         position={[0, 0, 0]}
@@ -328,8 +372,8 @@ export const ShelfScene = memo(function ShelfScene({
       />
 
       {glbModules.map(({ key, position, cell, row, col, width, height }) => {
-        const maxRowInColumn = config.grid.reduce((max, gridRow, rowIndex) => {
-          if (gridRow[col] && gridRow[col].type !== "empty" && gridRow[col].type !== "ghost") {
+        const maxRowInColumn = (config.grid || []).reduce((max, gridRow, rowIndex) => {
+          if (gridRow?.[col] && gridRow[col].type !== "empty" && gridRow[col].type !== "ghost") {
             return Math.max(max, rowIndex)
           }
           return max
