@@ -222,6 +222,7 @@ function isFeetPart(
   geometry?: THREE.BufferGeometry,
   parentBoundingBox?: THREE.Box3,
   material?: THREE.Material | THREE.Material[],
+  mesh?: THREE.Mesh,
 ): boolean {
   const nameLower = meshName.toLowerCase()
 
@@ -254,7 +255,16 @@ function isFeetPart(
           const isSmall =
             meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
 
-          if (isSmall) {
+          // Also check if the part is at the bottom of the model (low Y position)
+          const parentMin = new THREE.Vector3()
+          parentBoundingBox.getMin(parentMin)
+          const meshCenter = new THREE.Vector3()
+          meshBox.getCenter(meshCenter)
+          
+          // Feet should be near the bottom 10% of the model
+          const isAtBottom = meshCenter.y < parentMin.y + parentSize.y * 0.15
+
+          if (isSmall && isAtBottom) {
             return true
           }
         }
@@ -484,7 +494,7 @@ const LoadedGLBModel = memo(
     }, [scene, isKlapptuerOben])
 
     const clonedScene = useMemo(() => {
-      console.log("[v0] Cloning scene for module:", moduleKey)
+      console.log("[v0] Cloning scene for module:", moduleKey, "hideBuiltInFeet:", hideBuiltInFeet, "isBottomModule:", isBottomModule)
       try {
         const clone = scene.clone(true)
         console.log("[v0] Scene cloned successfully")
@@ -506,7 +516,7 @@ const LoadedGLBModel = memo(
           const isFrame = isFramePart(meshName, child.geometry, child.material)
           const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
           const isHandle = isHandlePart(meshName)
-          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material)
+          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material, child)
 
           if (isHandle && isKlapptuerOben) {
             handleMesh = child
@@ -515,9 +525,13 @@ const LoadedGLBModel = memo(
           // Hide built-in feet if:
           // 1. Not a bottom module (feet only on bottom)
           // 2. Or custom feet are selected (hideBuiltInFeet = true)
-          if (isFeet && (!isBottomModule || hideBuiltInFeet)) {
-            child.visible = false
-            return
+          if (isFeet) {
+            console.log("[v0] Found feet mesh:", meshName, "isBottomModule:", isBottomModule, "hideBuiltInFeet:", hideBuiltInFeet)
+            if (!isBottomModule || hideBuiltInFeet) {
+              console.log("[v0] Hiding feet mesh:", meshName)
+              child.visible = false
+              return
+            }
           }
 
           child.frustumCulled = false

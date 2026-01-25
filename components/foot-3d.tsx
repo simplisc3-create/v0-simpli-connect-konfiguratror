@@ -35,64 +35,71 @@ const RUBBER_MATERIAL = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 })
 
-// Black plastic foot - simple cap design
+// Black plastic foot - simple cap design that matches GLB model's feet
+// Base sits on ground at y=0
 const BlackPlasticFoot = memo(function BlackPlasticFoot({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      {/* Main cap body */}
-      <mesh position={[0, 0.005, 0]} material={BLACK_PLASTIC_MATERIAL}>
-        <cylinderGeometry args={[0.012, 0.014, 0.01, 16]} />
+      {/* Main cap body - cylinder sitting on ground */}
+      <mesh position={[0, 0.006, 0]} material={BLACK_PLASTIC_MATERIAL}>
+        <cylinderGeometry args={[0.011, 0.013, 0.012, 16]} />
       </mesh>
       {/* Rounded top */}
       <mesh position={[0, 0.012, 0]} material={BLACK_PLASTIC_MATERIAL}>
-        <sphereGeometry args={[0.012, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <sphereGeometry args={[0.011, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
       </mesh>
     </group>
   )
 })
 
 // Caster wheel - swivel caster with wheel
+// All Y positions are relative to the BOTTOM of the caster (wheel touches ground at y=0)
 const CasterFoot = memo(function CasterFoot({ position }: { position: [number, number, number] }) {
+  // Wheel radius is 0.012, so wheel center is at y=0.012 when bottom touches ground
+  const wheelRadius = 0.012
+  const wheelY = wheelRadius
   return (
     <group position={position}>
-      {/* Mounting plate/stem */}
-      <mesh position={[0, 0.035, 0]} material={CHROME_MATERIAL}>
+      {/* Mounting plate/stem - goes into frame tube */}
+      <mesh position={[0, wheelY + 0.028, 0]} material={CHROME_MATERIAL}>
         <cylinderGeometry args={[0.006, 0.006, 0.02, 12]} />
       </mesh>
       {/* Swivel housing */}
-      <mesh position={[0, 0.022, 0]} material={CHROME_MATERIAL}>
+      <mesh position={[0, wheelY + 0.015, 0]} material={CHROME_MATERIAL}>
         <cylinderGeometry args={[0.012, 0.01, 0.008, 16]} />
       </mesh>
       {/* Fork arms */}
-      <mesh position={[0.008, 0.012, 0]} material={CHROME_MATERIAL}>
-        <boxGeometry args={[0.003, 0.02, 0.006]} />
+      <mesh position={[0.008, wheelY + 0.002, 0]} material={CHROME_MATERIAL}>
+        <boxGeometry args={[0.003, 0.018, 0.006]} />
       </mesh>
-      <mesh position={[-0.008, 0.012, 0]} material={CHROME_MATERIAL}>
-        <boxGeometry args={[0.003, 0.02, 0.006]} />
+      <mesh position={[-0.008, wheelY + 0.002, 0]} material={CHROME_MATERIAL}>
+        <boxGeometry args={[0.003, 0.018, 0.006]} />
       </mesh>
-      {/* Wheel */}
-      <mesh position={[0, 0.01, 0]} rotation={[0, 0, Math.PI / 2]} material={DARK_CHROME_MATERIAL}>
-        <cylinderGeometry args={[0.01, 0.01, 0.008, 24]} />
+      {/* Wheel - center at wheelY so bottom is at y=0 */}
+      <mesh position={[0, wheelY, 0]} rotation={[0, 0, Math.PI / 2]} material={DARK_CHROME_MATERIAL}>
+        <cylinderGeometry args={[wheelRadius, wheelRadius, 0.008, 24]} />
       </mesh>
-      {/* Wheel center cap */}
-      <mesh position={[0.005, 0.01, 0]} rotation={[0, 0, Math.PI / 2]} material={BLACK_PLASTIC_MATERIAL}>
-        <cylinderGeometry args={[0.006, 0.006, 0.002, 16]} />
+      {/* Wheel center caps */}
+      <mesh position={[0.005, wheelY, 0]} rotation={[0, 0, Math.PI / 2]} material={BLACK_PLASTIC_MATERIAL}>
+        <cylinderGeometry args={[0.007, 0.007, 0.002, 16]} />
       </mesh>
-      <mesh position={[-0.005, 0.01, 0]} rotation={[0, 0, Math.PI / 2]} material={BLACK_PLASTIC_MATERIAL}>
-        <cylinderGeometry args={[0.006, 0.006, 0.002, 16]} />
+      <mesh position={[-0.005, wheelY, 0]} rotation={[0, 0, Math.PI / 2]} material={BLACK_PLASTIC_MATERIAL}>
+        <cylinderGeometry args={[0.007, 0.007, 0.002, 16]} />
       </mesh>
     </group>
   )
 })
 
 // Chrome adjustable foot - leveling foot with threaded stem
+// Base sits on ground at y=0, stem goes up into frame tube
 const ChromeAdjustableFoot = memo(function ChromeAdjustableFoot({ position }: { position: [number, number, number] }) {
-  // Create threaded appearance with rings
+  // Create threaded appearance with rings on the stem
   const threadRings = useMemo(() => {
     const rings = []
-    for (let i = 0; i < 8; i++) {
+    const stemStartY = 0.018 // Where the stem starts (above hex nut)
+    for (let i = 0; i < 6; i++) {
       rings.push(
-        <mesh key={i} position={[0, 0.025 + i * 0.003, 0]} material={CHROME_MATERIAL}>
+        <mesh key={i} position={[0, stemStartY + 0.005 + i * 0.004, 0]} material={CHROME_MATERIAL}>
           <torusGeometry args={[0.004, 0.0008, 8, 16]} />
         </mesh>
       )
@@ -102,21 +109,17 @@ const ChromeAdjustableFoot = memo(function ChromeAdjustableFoot({ position }: { 
 
   return (
     <group position={position}>
-      {/* Base plate - domed chrome */}
-      <mesh position={[0, 0.003, 0]} material={CHROME_MATERIAL}>
-        <cylinderGeometry args={[0.015, 0.016, 0.006, 24]} />
-      </mesh>
-      {/* Dome top */}
-      <mesh position={[0, 0.007, 0]} material={CHROME_MATERIAL}>
-        <sphereGeometry args={[0.015, 24, 12, 0, Math.PI * 2, 0, Math.PI / 3]} />
+      {/* Base plate - domed chrome, sitting on ground */}
+      <mesh position={[0, 0.004, 0]} material={CHROME_MATERIAL}>
+        <cylinderGeometry args={[0.014, 0.016, 0.008, 24]} />
       </mesh>
       {/* Hex nut */}
-      <mesh position={[0, 0.015, 0]} rotation={[0, Math.PI / 6, 0]} material={CHROME_MATERIAL}>
-        <cylinderGeometry args={[0.007, 0.007, 0.006, 6]} />
+      <mesh position={[0, 0.012, 0]} rotation={[0, Math.PI / 6, 0]} material={CHROME_MATERIAL}>
+        <cylinderGeometry args={[0.006, 0.006, 0.008, 6]} />
       </mesh>
-      {/* Threaded stem */}
-      <mesh position={[0, 0.035, 0]} material={CHROME_MATERIAL}>
-        <cylinderGeometry args={[0.004, 0.004, 0.03, 12]} />
+      {/* Threaded stem - goes up into frame tube */}
+      <mesh position={[0, 0.032, 0]} material={CHROME_MATERIAL}>
+        <cylinderGeometry args={[0.004, 0.004, 0.032, 12]} />
       </mesh>
       {/* Thread rings for detail */}
       {threadRings}
@@ -186,7 +189,9 @@ export const ModuleFeet = memo(function ModuleFeet({
     const halfWidth = moduleWidth / 2
     const halfDepth = moduleDepth / 2
     
-    // Y position: feet are at ground level (y=0)
+    // Y position: feet should sit on the ground at y=0
+    // The foot geometry is built with its base at approximately y=0
+    // The floor/ground plane is at y=0
     const baseY = 0
 
     // The modulePosition[2] is typically -0.19 (half depth back from z=0)
