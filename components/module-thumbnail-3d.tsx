@@ -219,8 +219,8 @@ export function ModuleThumbnail3D({
     return fallbackUI
   }
 
-  // Front view camera position - rotated 90 degrees to show frontal view
-  const cameraPosition: [number, number, number] = [0.6, 0.05, 0]
+  // Front view camera position - looking at the front side of the module
+  const cameraPosition: [number, number, number] = [-0.6, 0.05, 0]
 
   return (
     <div className={`w-full h-full ${className}`}>
