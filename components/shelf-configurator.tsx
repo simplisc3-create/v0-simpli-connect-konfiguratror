@@ -28,7 +28,9 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("[v0] 3D Canvas Error:", error, errorInfo)
+    console.error("[v0] 3D Canvas Error:", error)
+    console.error("[v0] 3D Canvas Error Info:", errorInfo)
+    console.error("[v0] 3D Canvas Error Stack:", error.stack)
     this.props.onError?.(error, errorInfo)
   }
 
