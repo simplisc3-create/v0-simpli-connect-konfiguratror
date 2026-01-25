@@ -21,6 +21,7 @@ type GLBModuleProps = {
   isBottomModule?: boolean
   isSelected?: boolean
   onClick?: (row: number, col: number) => void
+  hideBuiltInFeet?: boolean
 }
 
 const urlCache = new Map<string, string>()
@@ -310,6 +311,7 @@ export const GLBModule = memo(
     isBottomModule = false,
     isSelected = false,
     onClick,
+    hideBuiltInFeet = false,
   }: GLBModuleProps) {
     const colorName = useMemo(() => getColorName(color), [color])
     const standardWidth = useMemo(() => getStandardWidth(width), [width])
@@ -401,6 +403,7 @@ export const GLBModule = memo(
         isBottomModule={isBottomModule}
         isSelected={isSelected}
         onClick={onClick}
+        hideBuiltInFeet={hideBuiltInFeet}
       />
     )
   },
@@ -414,7 +417,8 @@ export const GLBModule = memo(
     prev.row === next.row &&
     prev.col === next.col &&
     prev.isBottomModule === next.isBottomModule &&
-    prev.isSelected === next.isSelected,
+    prev.isSelected === next.isSelected &&
+    prev.hideBuiltInFeet === next.hideBuiltInFeet,
 )
 
 const LoadedGLBModel = memo(
@@ -429,6 +433,7 @@ const LoadedGLBModel = memo(
   isBottomModule = false,
   isSelected = false,
   onClick,
+  hideBuiltInFeet = false,
   }: {
   modelUrl: string
     position: [number, number, number]
@@ -440,6 +445,7 @@ const LoadedGLBModel = memo(
   isBottomModule?: boolean
   isSelected?: boolean
   onClick?: (row: number, col: number) => void
+  hideBuiltInFeet?: boolean
   }) {
     console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
     const { scene } = useGLTF(modelUrl)
@@ -506,7 +512,10 @@ const LoadedGLBModel = memo(
             handleMesh = child
           }
 
-          if (isFeet && !isBottomModule) {
+          // Hide built-in feet if:
+          // 1. Not a bottom module (feet only on bottom)
+          // 2. Or custom feet are selected (hideBuiltInFeet = true)
+          if (isFeet && (!isBottomModule || hideBuiltInFeet)) {
             child.visible = false
             return
           }
@@ -574,7 +583,7 @@ const LoadedGLBModel = memo(
         console.error("[v0] Error cloning/processing scene:", err)
         throw err
       }
-    }, [scene, targetColor, moduleKey, cellType, row, isBottomModule])
+    }, [scene, targetColor, moduleKey, cellType, row, isBottomModule, hideBuiltInFeet])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
       const BAR_THICKNESS = 0.01
@@ -603,6 +612,7 @@ const LoadedGLBModel = memo(
     prev.col === next.col &&
     prev.isBottomModule === next.isBottomModule &&
     prev.isSelected === next.isSelected &&
+    prev.hideBuiltInFeet === next.hideBuiltInFeet &&
     prev.position[0] === next.position[0] &&
     prev.position[1] === next.position[1] &&
     prev.position[2] === next.position[2],

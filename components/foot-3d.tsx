@@ -152,24 +152,33 @@ export const ModuleFeet = memo(function ModuleFeet({
   footType,
 }: ModuleFeetProps) {
   // Calculate foot positions at the four corners of the module frame tubes
-  // The GLB models are rotated 270deg (3*PI/2), so we need to account for that
+  // The GLB model is rotated 270deg (3*PI/2), so X and Z axes need to be swapped
   const footPositions = useMemo(() => {
-    // Inset from frame tube edges
-    const insetX = 0.015 // Inset from width edges
-    const insetZ = 0.015 // Inset from depth edges
+    // Due to the 270 degree Y rotation applied to the GLB model:
+    // - Model's local X becomes world -Z
+    // - Model's local Z becomes world X
+    // The frame tubes are at the corners of the module
     
-    const halfWidth = moduleWidth / 2 - insetX
-    const halfDepth = moduleDepth / 2 - insetZ
+    // Inset from the frame tube centers (frame tubes are ~1.5cm diameter)
+    const tubeRadius = 0.0075
+    const insetFromEdge = tubeRadius // Position feet at tube center
     
-    // Base Y is at ground level (y=0) since the module extends upward
-    // The GLB model positions place the module center at the position
-    // The bottom of the module frame is at modulePosition[1] - (moduleHeight/2)
-    // For a 38/40cm row height, that's about 0.19m down from center
-    const baseY = 0 // Ground level
+    // After rotation, module dimensions map as:
+    // moduleWidth corresponds to the X direction in world space
+    // moduleDepth (0.38m) corresponds to Z direction in world space
+    const halfWidth = moduleWidth / 2 - insetFromEdge
+    const halfDepth = moduleDepth / 2 - insetFromEdge
+    
+    // Y position: feet go at ground level (y=0), just below the bottom frame
+    // The module's position[1] is the vertical center of the module
+    // The feet should be placed at y=0 (floor level)
+    const baseY = 0
 
+    // Position feet at the four corners
+    // Note: modulePosition[2] is typically negative (module extends backwards from z=0)
     return [
       [modulePosition[0] - halfWidth, baseY, modulePosition[2] + halfDepth] as [number, number, number], // Front left
-      [modulePosition[0] + halfWidth, baseY, modulePosition[2] + halfDepth] as [number, number, number], // Front right
+      [modulePosition[0] + halfWidth, baseY, modulePosition[2] + halfDepth] as [number, number, number], // Front right  
       [modulePosition[0] - halfWidth, baseY, modulePosition[2] - halfDepth] as [number, number, number], // Back left
       [modulePosition[0] + halfWidth, baseY, modulePosition[2] - halfDepth] as [number, number, number], // Back right
     ]

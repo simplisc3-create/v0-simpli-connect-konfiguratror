@@ -325,6 +325,11 @@ export const ShelfScene = memo(function ShelfScene({
 
         const colorToUse = cell.color || "weiss"
 
+        // Determine if we should hide the built-in feet (only when custom foot type is selected)
+        const shouldHideBuiltInFeet = isBottomModule && config.footType && config.footType !== "black-plastic"
+        // Only show custom feet for non-standard foot types
+        const shouldShowCustomFeet = isBottomModule && config.footType && config.footType !== "black-plastic"
+
         return (
           <group key={key}>
             <GLBModule
@@ -340,9 +345,10 @@ export const ShelfScene = memo(function ShelfScene({
               isBottomModule={isBottomModule}
               isSelected={isSelected}
               onClick={handleClick}
+              hideBuiltInFeet={shouldHideBuiltInFeet}
             />
-            {/* Render feet on bottom modules */}
-            {isBottomModule && config.footType && (
+            {/* Render custom feet on bottom modules when non-standard foot type selected */}
+            {shouldShowCustomFeet && (
               <ModuleFeet
                 modulePosition={position}
                 moduleWidth={width}
