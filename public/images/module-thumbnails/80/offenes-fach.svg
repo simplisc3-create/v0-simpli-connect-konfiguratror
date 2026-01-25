@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" fill="none">
+  <!-- Chrome frame -->
+  <rect x="2" y="2" width="116" height="56" rx="1" stroke="#C0C0C0" stroke-width="3" fill="none"/>
+  <!-- Horizontal bars -->
+  <line x1="2" y1="30" x2="118" y2="30" stroke="#D4D4D4" stroke-width="1.5"/>
+  <!-- Open compartment indication -->
+  <rect x="8" y="8" width="104" height="18" fill="#F5F5F5" rx="1"/>
+  <rect x="8" y="34" width="104" height="18" fill="#F5F5F5" rx="1"/>
+</svg>

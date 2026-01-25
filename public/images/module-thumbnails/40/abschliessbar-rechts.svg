@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" fill="none">
+  <!-- Chrome frame -->
+  <rect x="2" y="2" width="56" height="56" rx="1" stroke="#C0C0C0" stroke-width="3" fill="none"/>
+  <!-- Open top compartment -->
+  <rect x="8" y="8" width="44" height="18" fill="#F5F5F5" rx="1"/>
+  <!-- Door (bottom, full width) - hinged right -->
+  <rect x="8" y="30" width="44" height="24" fill="#FFFFFF" stroke="#D4D4D4" stroke-width="1" rx="1"/>
+  <!-- Handle on left side -->
+  <circle cx="14" cy="42" r="2" fill="#A0A0A0"/>
+  <!-- Lock indicator -->
+  <rect x="12" y="38" width="8" height="8" fill="#FFD700" stroke="#C0A000" stroke-width="0.5" rx="1"/>
+  <circle cx="16" cy="41" r="1" fill="#8B7500"/>
+</svg>
