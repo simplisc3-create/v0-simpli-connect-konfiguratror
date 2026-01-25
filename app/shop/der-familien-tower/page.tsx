@@ -9,8 +9,10 @@ import { Separator } from "@/components/ui/separator"
 import { SimpliRegal3DPreview } from "@/components/simpli-regal-3d-preview"
 import { useCartStore } from "@/lib/cart-store"
 import { productsSimpliRegale } from "@/lib/simpli-products"
+import { calculatePresetPrice } from "@/lib/price-calculator"
 
 const regal = productsSimpliRegale.find(r => r.id === "der-familien-tower")!
+const calculatedPrice = regal.preset ? calculatePresetPrice(regal.preset) : calculatedPrice
 
 export default function DerFamilienTowerProductPage() {
   const [added, setAdded] = useState(false)
@@ -23,7 +25,7 @@ export default function DerFamilienTowerProductPage() {
   }, [])
 
   const handleAddToCart = () => {
-    addItem({ id: regal.id, name: regal.name, artNr: regal.artNr, price: regal.price })
+    addItem({ id: regal.id, name: regal.name, artNr: regal.artNr, price: calculatedPrice })
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
@@ -89,7 +91,7 @@ export default function DerFamilienTowerProductPage() {
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mt-2 text-balance">{regal.name}</h1>
             <p className="text-lg text-gray-600 mt-2">{regal.subtitle}</p>
             <div className="flex items-baseline gap-3 mt-6">
-              <span className="text-5xl font-bold text-gray-900">{regal.price.toFixed(2)}</span>
+              <span className="text-5xl font-bold text-gray-900">{calculatedPrice.toFixed(2)}</span>
               <span className="text-2xl text-gray-500">EUR</span>
             </div>
             <p className="text-sm text-gray-500">inkl. MwSt. zzgl. Versand</p>
@@ -108,7 +110,7 @@ export default function DerFamilienTowerProductPage() {
 
             <div className="space-y-4">
               <Button size="lg" className={`w-full gap-3 text-lg py-7 font-semibold transition-all ${added ? "bg-green-600 hover:bg-green-600" : "bg-gray-900 hover:bg-gray-800"}`} onClick={handleAddToCart}>
-                {added ? (<><Check className="w-6 h-6" />Hinzugefügt!</>) : (<><ShoppingCart className="w-6 h-6" />In den Warenkorb - {regal.price.toFixed(2)} EUR</>)}
+                {added ? (<><Check className="w-6 h-6" />Hinzugefügt!</>) : (<><ShoppingCart className="w-6 h-6" />In den Warenkorb - {calculatedPrice.toFixed(2)} EUR</>)}
               </Button>
               <Link href="/konfigurator?preset=der-familien-tower" className="block">
                 <Button variant="outline" size="lg" className="w-full gap-2 py-6 border-2 border-teal-600 text-teal-600 hover:bg-teal-50 bg-transparent">
