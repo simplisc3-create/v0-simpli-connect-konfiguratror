@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { ShelfConfig, GridCell, ColorKey } from "./shelf-configurator"
+import type { ShelfConfig, GridCell, ColorKey, FootType } from "./shelf-configurator"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { ShoppingCart, ChevronUp, List, Palette, Box, Check, X, Ruler } from "lucide-react"
 import { colorHexMap } from "@/lib/simpli-products"
@@ -32,6 +33,8 @@ type Props = {
   price: number
   defaultNewColumnWidth?: 75 | 38
   onSetDefaultColumnWidth?: (width: 75 | 38) => void
+  footType?: FootType
+  onSetFootType?: (footType: FootType) => void
 }
 
 const allColors = [
@@ -71,6 +74,8 @@ export function MobileConfiguratorNav({
   price,
   defaultNewColumnWidth = 75,
   onSetDefaultColumnWidth,
+  footType = "black-plastic",
+  onSetFootType,
 }: Props) {
   const [activeTab, setActiveTab] = useState<MobileTab | null>(null)
   const { setItem } = useCartStore()
@@ -336,6 +341,80 @@ export function MobileConfiguratorNav({
                           {mat === "metall" ? "Metall" : "Glas"}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Foot Type Selection */}
+                  <div className="mt-6">
+                    <p className="mb-3 text-sm text-neutral-400">Fuss-Optionen (4 Stück pro Bodenmodul)</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => {
+                          onSetFootType?.("black-plastic")
+                          setActiveTab(null)
+                        }}
+                        className={cn(
+                          "flex flex-col items-center rounded-xl p-2 transition-all",
+                          footType === "black-plastic"
+                            ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                            : "bg-neutral-800 text-neutral-300",
+                        )}
+                      >
+                        <div className="h-8 w-full flex items-center justify-center">
+                          <div className="flex gap-0.5">
+                            {[...Array(4)].map((_, i) => (
+                              <div key={i} className="w-1.5 h-1.5 rounded-full bg-current" />
+                            ))}
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-medium">Standard</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          onSetFootType?.("casters")
+                          setActiveTab(null)
+                        }}
+                        className={cn(
+                          "flex flex-col items-center rounded-xl p-2 transition-all",
+                          footType === "casters"
+                            ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                            : "bg-neutral-800 text-neutral-300",
+                        )}
+                      >
+                        <div className="h-8 w-full flex items-center justify-center overflow-hidden">
+                          <Image
+                            src="/images/feet/casters.webp"
+                            alt="Rollen"
+                            width={48}
+                            height={32}
+                            className="object-contain"
+                          />
+                        </div>
+                        <span className="text-[9px] font-medium">Rollen</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          onSetFootType?.("chrome-adjustable")
+                          setActiveTab(null)
+                        }}
+                        className={cn(
+                          "flex flex-col items-center rounded-xl p-2 transition-all",
+                          footType === "chrome-adjustable"
+                            ? "bg-teal-600 text-white ring-2 ring-teal-400"
+                            : "bg-neutral-800 text-neutral-300",
+                        )}
+                      >
+                        <div className="h-8 w-full flex items-center justify-center overflow-hidden">
+                          <Image
+                            src="/images/feet/chrome-adjustable.webp"
+                            alt="Stellfüße"
+                            width={48}
+                            height={32}
+                            className="object-contain"
+                          />
+                        </div>
+                        <span className="text-[9px] font-medium">Stellfüße</span>
+                      </button>
                     </div>
                   </div>
                 </div>

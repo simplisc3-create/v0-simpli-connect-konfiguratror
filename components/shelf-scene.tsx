@@ -8,6 +8,7 @@ import { colorHexMap } from "@/lib/simpli-products"
 import { GLBModule } from "./glb-module-loader"
 import { ContactShadows, Html } from "@react-three/drei"
 import type * as THREE from "three"
+import { ModuleFeet } from "./foot-3d"
 
 type Props = {
   config: ShelfConfig
@@ -325,21 +326,31 @@ export const ShelfScene = memo(function ShelfScene({
         const colorToUse = cell.color || "weiss"
 
         return (
-          <GLBModule
-            key={key}
-            position={position}
-            cellType={cell.type}
-            width={width}
-            height={height}
-            depth={0.38}
-            color={colorToUse}
-            row={row}
-            col={col}
-            gridConfig={config}
-            isBottomModule={isBottomModule}
-            isSelected={isSelected}
-            onClick={handleClick}
-          />
+          <group key={key}>
+            <GLBModule
+              position={position}
+              cellType={cell.type}
+              width={width}
+              height={height}
+              depth={0.38}
+              color={colorToUse}
+              row={row}
+              col={col}
+              gridConfig={config}
+              isBottomModule={isBottomModule}
+              isSelected={isSelected}
+              onClick={handleClick}
+            />
+            {/* Render feet on bottom modules */}
+            {isBottomModule && config.footType && (
+              <ModuleFeet
+                modulePosition={position}
+                moduleWidth={width}
+                moduleDepth={0.38}
+                footType={config.footType}
+              />
+            )}
+          </group>
         )
       })}
 
