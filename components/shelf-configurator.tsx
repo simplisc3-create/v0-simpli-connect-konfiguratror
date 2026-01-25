@@ -4,6 +4,7 @@ import React, { Component, type ErrorInfo, type ReactNode } from "react"
 
 import { useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
+import { AlertTriangle } from "lucide-react"
 
 // Error Boundary to catch 3D rendering errors and prevent white screen
 interface ErrorBoundaryProps {
@@ -68,7 +69,7 @@ import { ConfiguratorPanel } from "./configurator-panel"
 import { ShelfScene } from "./shelf-scene"
 import { ConfiguratorHeader } from "./configurator-header"
 import { ConfiguratorHelpBot } from "./configurator-help-bot"
-import { Undo2, Redo2, RotateCcw, AlertTriangle, X, MousePointer2, Move, ZoomIn, HelpCircle } from "lucide-react"
+import { Undo2, Redo2, RotateCcw, X, MousePointer2, Move, ZoomIn, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   getSchubladeArtNr,
