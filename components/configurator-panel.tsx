@@ -20,10 +20,10 @@ import { colorHexMap } from "@/lib/simpli-products"
 import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
 import { useCartStore } from "@/lib/cart-store"
 import { ModulePreview3D } from "./module-preview-3d"
+import { ModuleThumbnail3D } from "./module-thumbnail-3d"
 import type { ModuleType } from "@/lib/glb-registry"
 import { getModuleLabel, getModuleShortLabel } from "@/lib/module-utils"
-import { modules80, modules40 } from "@/lib/module-thumbnails"
-import Image from "next/image"
+import { modules80, modules40, getModuleTypeFromThumbnailId } from "@/lib/module-thumbnails"
 
 
 
@@ -324,39 +324,10 @@ export function ConfiguratorPanel({
             </div>
           </div>
 
-          {/* Module Grid with Thumbnails */}
+          {/* Module Grid with 3D Thumbnails */}
           <div className="grid grid-cols-3 gap-3">
             {(widthFilter === 80 ? modules80 : modules40).map((module) => {
-              const moduleTypeId = moduleTypes.find(m => 
-                module.name.toLowerCase().includes(m.label.toLowerCase().split(" ")[0]) ||
-                m.label.toLowerCase().includes(module.name.toLowerCase().split(" ")[0])
-              )?.id || module.id.replace(/^[12]-/, "").replace(/b$/, "") as GridCell["type"]
-              
-              // Map thumbnail module IDs to actual moduleType IDs
-              const getModuleTypeFromId = (id: string): GridCell["type"] => {
-                const mapping: Record<string, GridCell["type"]> = {
-                  "1-1": "offenes-fach",
-                  "1-2": "ohne-seitenwaende",
-                  "1-3": "mit-rueckwand",
-                  "1-4": "mit-klapptuer",
-                  "1-4b": "mit-klapptuer-oben",
-                  "1-5": "mit-doppelschublade",
-                  "1-5b": "mit-einzelschublade",
-                  "1-6": "mit-tueren",
-                  "1-7": "abschliessbare-tueren",
-                  "1-8": "ohne-rueckwand",
-                  "2-1": "offenes-fach",
-                  "2-2": "ohne-seitenwaende",
-                  "2-3": "mit-rueckwand",
-                  "2-4": "mit-tuere-rechts",
-                  "2-5": "mit-tuere-links",
-                  "2-6": "abschliessbar-links",
-                  "2-7": "abschliessbar-rechts",
-                }
-                return mapping[id] || "offenes-fach"
-              }
-              
-              const actualModuleType = getModuleTypeFromId(module.id)
+              const actualModuleType = getModuleTypeFromThumbnailId(module.id)
               
               return (
                 <button
@@ -370,13 +341,11 @@ export function ConfiguratorPanel({
                   onClick={() => onSelectTool(actualModuleType)}
                   title={module.name}
                 >
-                  <div className="relative h-14 w-full flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-                    <Image
-                      src={module.thumbnail}
-                      alt={module.name}
-                      width={widthFilter === 80 ? 80 : 50}
-                      height={40}
-                      className="object-contain"
+                  <div className="relative h-16 w-full flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                    <ModuleThumbnail3D
+                      moduleType={actualModuleType as ModuleType}
+                      width={widthFilter === 80 ? 80 : 40}
+                      color={selectedColor === "weiss" ? "white" : selectedColor === "schwarz" ? "black" : selectedColor === "blau" ? "blue" : selectedColor === "gruen" ? "green" : selectedColor === "gelb" ? "yellow" : selectedColor === "rot" ? "red" : "white"}
                     />
                   </div>
                   <span className="mt-1.5 text-[9px] font-semibold leading-tight text-center line-clamp-2">

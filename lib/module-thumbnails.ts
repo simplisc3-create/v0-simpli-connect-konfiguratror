@@ -147,3 +147,46 @@ export function getModuleThumbnail(id: string): ModuleThumbnail | undefined {
 export function getModulesByWidth(width: 40 | 80): ModuleThumbnail[] {
   return width === 80 ? modules80 : modules40
 }
+
+// Map thumbnail module IDs to actual moduleType IDs used by the configurator
+export type ModuleTypeId = 
+  | "offenes-fach"
+  | "ohne-seitenwaende"
+  | "mit-rueckwand"
+  | "mit-klapptuer"
+  | "mit-klapptuer-oben"
+  | "mit-doppelschublade"
+  | "mit-einzelschublade"
+  | "mit-tueren"
+  | "abschliessbare-tueren"
+  | "ohne-rueckwand"
+  | "mit-tuere-rechts"
+  | "mit-tuere-links"
+  | "abschliessbar-links"
+  | "abschliessbar-rechts"
+
+const thumbnailIdToModuleType: Record<string, ModuleTypeId> = {
+  // 80cm modules
+  "1-1": "offenes-fach",
+  "1-2": "ohne-seitenwaende",
+  "1-3": "mit-rueckwand",
+  "1-4": "mit-klapptuer",
+  "1-4b": "mit-klapptuer-oben",
+  "1-5": "mit-doppelschublade",
+  "1-5b": "mit-einzelschublade",
+  "1-6": "mit-tueren",
+  "1-7": "abschliessbare-tueren",
+  "1-8": "ohne-rueckwand",
+  // 40cm modules
+  "2-1": "offenes-fach",
+  "2-2": "ohne-seitenwaende",
+  "2-3": "mit-rueckwand",
+  "2-4": "mit-tuere-rechts",
+  "2-5": "mit-tuere-links",
+  "2-6": "abschliessbar-links",
+  "2-7": "abschliessbar-rechts",
+}
+
+export function getModuleTypeFromThumbnailId(id: string): ModuleTypeId {
+  return thumbnailIdToModuleType[id] || "offenes-fach"
+}
