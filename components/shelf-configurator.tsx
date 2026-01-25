@@ -653,6 +653,12 @@ export function ShelfConfigurator({
     setSelectedColor("weiss")
     setSelectedCell(null)
     setToolMode("select") // Reset tool mode
+    setCameraTarget(null) // Reset camera target to allow recalculation
+    
+    // Reset camera to initial position
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.reset()
+    }
   }, [resetHistory])
 
   type BomItem = {
