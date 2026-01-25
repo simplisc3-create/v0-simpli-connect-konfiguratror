@@ -1153,7 +1153,7 @@ export function getGasdruckdaempferPrice(model: string): number {
 export const colorHexMap: Record<ShelfColor | "satiniert", string> = {
   weiss: "#f5f5f5",
   grau: "#9E9E9E",
-  schwarz: "#111111",
+  schwarz: "#333333",
   blau: "#1E5EFF",
   gruen: "#2FAE5D",
   gelb: "#FFEA00", // Brighter, more saturated yellow

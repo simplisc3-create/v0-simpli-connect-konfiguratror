@@ -653,6 +653,17 @@ export function ShelfConfigurator({
     setSelectedColor("weiss")
     setSelectedCell(null)
     setToolMode("select") // Reset tool mode
+    
+    // Reset camera to focus on ghost sphere at initial position (center of first module)
+    // Initial grid has 1 row with height 38cm = 0.38m, so center is at y = 0.19m
+    const initialTargetY = 0.38 / 2 // Center of the first 38cm row
+    setCameraTarget([0, initialTargetY, 0])
+    
+    // Also reset OrbitControls to initial state
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.target.set(0, initialTargetY, 0)
+      orbitControlsRef.current.update()
+    }
   }, [resetHistory])
 
   type BomItem = {
@@ -1356,6 +1367,9 @@ export function ShelfConfigurator({
                 dampingFactor={0.05}
                 maxAzimuthAngle={Infinity}
                 minAzimuthAngle={-Infinity}
+                enablePan={true}
+                panSpeed={0.8}
+                screenSpacePanning={true}
                 onChange={(e) => {
                   // Prevent camera target from going below floor (y < 0)
                   if (e && e.target) {
