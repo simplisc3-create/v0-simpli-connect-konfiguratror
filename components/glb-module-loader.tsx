@@ -41,13 +41,13 @@ const GERMAN_TO_ENGLISH_COLOR: Record<string, string> = {
   weiss: "white",
   schwarz: "black",
   grau: "gray",
-  anthrazit: "anthrazit",
+  anthrazit: "gray",
   blau: "blue",
   gruen: "green",
   gelb: "yellow",
   orange: "orange",
   rot: "red",
-  beige: "beige",
+  beige: "white",
 }
 
 const HEX_TO_COLOR_NAME: Record<string, string> = {
@@ -71,16 +71,27 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
 }
 
 // Exact Simpli Connect panel colors - matching navigator UI exactly
+// These MUST match the colorHexMap in lib/simpli-products.ts
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color("#FFFFFF"),
+  // English names (mapped from German)
+  white: new THREE.Color("#f5f5f5"),
   grey: new THREE.Color("#9E9E9E"),
   gray: new THREE.Color("#9E9E9E"),
-  black: new THREE.Color("#111111"),
+  black: new THREE.Color("#333333"),
   blue: new THREE.Color("#1E5EFF"),
   green: new THREE.Color("#2FAE5D"),
-  yellow: new THREE.Color("#FFEA00"), // Brighter, more saturated yellow
+  yellow: new THREE.Color("#FFEA00"),
   orange: new THREE.Color("#FF8A00"),
   red: new THREE.Color("#E53935"),
+  // German names (direct usage fallback - orange is same in both languages)
+  weiss: new THREE.Color("#f5f5f5"),
+  schwarz: new THREE.Color("#333333"),
+  grau: new THREE.Color("#9E9E9E"),
+  blau: new THREE.Color("#1E5EFF"),
+  gruen: new THREE.Color("#2FAE5D"),
+  gelb: new THREE.Color("#FFEA00"),
+  rot: new THREE.Color("#E53935"),
+  // Note: orange is the same in German and English, already covered above
 }
 
 // Chrome material - slightly toned down
@@ -360,10 +371,8 @@ export const GLBModule = memo(
             color: "white",
           })
 
-          console.log("[v0] Fetching GLB model:", `/api/blob-models?${params}`)
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
-          console.log("[v0] API response:", data)
 
           if (!data.ok || !data.url) {
             throw new Error(data.error || "Failed to resolve model")
@@ -376,7 +385,6 @@ export const GLBModule = memo(
           urlCache.set(cacheKey, data.url)
           setModelUrl(data.url)
         } catch (err) {
-          console.error("[v0] Error fetching GLB:", err)
           setError(err instanceof Error ? err.message : "Unknown error")
         }
       }
@@ -457,9 +465,7 @@ const LoadedGLBModel = memo(
   onClick?: (row: number, col: number) => void
   hideBuiltInFeet?: boolean
   }) {
-    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
     const { scene } = useGLTF(modelUrl)
-    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null")
     const groupRef = useRef<THREE.Group>(null)
 
   
@@ -502,7 +508,7 @@ const LoadedGLBModel = memo(
         } else if (HEX_TO_COLOR_NAME[targetColor]) {
           mappedColor = HEX_TO_COLOR_NAME[targetColor]
         }
-        const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS.white
+        const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS[targetColor] || TARGET_COLORS.white
 
         const parentBoundingBox = new THREE.Box3().setFromObject(clone)
 
@@ -557,35 +563,26 @@ const LoadedGLBModel = memo(
                 const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
                 const isWhitePanel = mappedColor === "white" && !isBottom
 
-                // Panel materials - White panels get extra brightness via MeshStandardMaterial with emissive
-                const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
-                
+                // Create fresh materials for each color to ensure proper color application
+                // Don't cache panel materials as they need to reflect the current color
                 if (isWhitePanel) {
                   // White panels use MeshStandardMaterial with emissive for extra brightness
-                  child.material = getCachedMaterial(
-                    materialKey,
-                    () =>
-                      new THREE.MeshStandardMaterial({
-                        map: texture,
-                        color: finalColor,
-                        emissive: new THREE.Color("#ffffff"),
-                        emissiveIntensity: 0.15,
-                        roughness: 0.9,
-                        metalness: 0.0,
-                        side: THREE.DoubleSide,
-                      }),
-                  )
+                  child.material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    color: finalColor.clone(),
+                    emissive: new THREE.Color("#ffffff"),
+                    emissiveIntensity: 0.15,
+                    roughness: 0.9,
+                    metalness: 0.0,
+                    side: THREE.DoubleSide,
+                  })
                 } else {
                   // Other colors use MeshLambertMaterial for flat appearance
-                  child.material = getCachedMaterial(
-                    materialKey,
-                    () =>
-                      new THREE.MeshLambertMaterial({
-                        map: texture,
-                        color: finalColor,
-                        side: THREE.DoubleSide,
-                      }),
-                  )
+                  child.material = new THREE.MeshLambertMaterial({
+                    map: texture,
+                    color: finalColor.clone(),
+                    side: THREE.DoubleSide,
+                  })
                 }
               }
             }
@@ -594,7 +591,6 @@ const LoadedGLBModel = memo(
 
       return clone
     } catch (err) {
-        console.error("[v0] Error cloning/processing scene:", err)
         // Return the original scene as fallback instead of throwing
         return scene.clone()
       }
