@@ -1,158 +1,190 @@
 "use client"
-import { Canvas } from "@react-three/fiber"
-import { useGLTF, Environment, Center } from "@react-three/drei"
-import { Suspense, useMemo, useState, useEffect } from "react"
-import * as THREE from "three"
-import { resolveGlbUrl, type ModuleType, type WidthKey } from "@/lib/glb-registry"
+import { memo } from "react"
+import type { ModuleType, WidthKey } from "@/lib/glb-registry"
 import { colorHexMap } from "@/lib/simpli-products"
 import type { ColorKey } from "./shelf-configurator"
-
-const FRAME_KEYWORDS = [
-  "frame",
-  "tube",
-  "pipe",
-  "chrome",
-  "metal",
-  "stahl",
-  "rohr",
-  "gestell",
-  "rahmen",
-  "leiter",
-  "stange",
-  "leg",
-  "upright",
-  "corner",
-  "ecke",
-  "verbinder",
-  "connector",
-  "cylinder",
-  "rod",
-  "bar",
-  "strut",
-  "support",
-  "vertical",
-  "horizontal",
-  "bein",
-  "fuss",
-  "fuß",
-  "fuse",
-]
-
-function isFramePart(name: string): boolean {
-  const lowerName = name.toLowerCase()
-  return FRAME_KEYWORDS.some((keyword) => lowerName.includes(keyword))
-}
-
-function ColoredModel({ url, color }: { url: string; color?: ColorKey }) {
-  const { scene } = useGLTF(url)
-
-  const clonedScene = useMemo(() => {
-    const clone = scene.clone(true)
-    // Get the hex color from colorHexMap, default to white
-    const hexColor = color ? colorHexMap[color] || colorHexMap.weiss : colorHexMap.weiss
-    const panelColor = new THREE.Color(hexColor)
-
-    clone.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        const isFrame = isFramePart(child.name)
-
-        if (isFrame) {
-          // Chrome frame material
-          child.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0.85, 0.85, 0.88),
-            metalness: 0.98,
-            roughness: 0.08,
-            envMapIntensity: 1.5,
-            side: THREE.DoubleSide,
-          })
-        } else if (child.material) {
-          // Colored panels based on selected color
-          const newMaterial = new THREE.MeshStandardMaterial({
-            color: panelColor,
-            roughness: 0.3,
-            metalness: 0.0,
-            side: THREE.DoubleSide,
-          })
-          child.material = newMaterial
-        }
-      }
-    })
-
-    return clone
-  }, [scene, color])
-
-  return (
-    <Center>
-      <primitive object={clonedScene} scale={0.8} rotation={[0.2, -Math.PI * 0.25, 0]} />
-    </Center>
-  )
-}
 
 type ModulePreview3DProps = {
   moduleType: ModuleType
   width?: WidthKey
   className?: string
-  color?: ColorKey // Added color prop
+  color?: ColorKey
 }
 
-export function ModulePreview3D({ moduleType, width = 80, className = "", color }: ModulePreview3DProps) {
-  const [modelUrl, setModelUrl] = useState<string | null>(null)
-  const [loadError, setLoadError] = useState(false)
+// Module icon mapping - using simple SVG icons instead of heavy 3D Canvas
+const moduleIcons: Record<string, { icon: React.ReactNode; label: string }> = {
+  "offenes-fach": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="16" fill="none" stroke="#9ca3af" strokeWidth="0.5" rx="0.5" />
+      </svg>
+    ),
+    label: "Offen",
+  },
+  "ohne-seitenwaende": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <line x1="2" y1="12" x2="30" y2="12" stroke="#9ca3af" strokeWidth="0.5" />
+      </svg>
+    ),
+    label: "Ohne Seiten",
+  },
+  "ohne-rueckwand": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="6" y="6" width="20" height="12" fill="none" stroke="#9ca3af" strokeWidth="0.5" strokeDasharray="2 1" />
+      </svg>
+    ),
+    label: "Ohne Rück",
+  },
+  "mit-rueckwand": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="6" y="6" width="20" height="12" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+      </svg>
+    ),
+    label: "Mit Rück",
+  },
+  "mit-tueren": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="11" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <rect x="17" y="4" width="11" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <circle cx="13" cy="12" r="1" fill="#6b7280" />
+        <circle cx="19" cy="12" r="1" fill="#6b7280" />
+      </svg>
+    ),
+    label: "Mit Türen",
+  },
+  "mit-klapptuer": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <line x1="16" y1="18" x2="16" y2="20" stroke="#6b7280" strokeWidth="1" />
+      </svg>
+    ),
+    label: "Klapptür",
+  },
+  "mit-klapptuer-oben": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <line x1="16" y1="4" x2="16" y2="6" stroke="#6b7280" strokeWidth="1" />
+      </svg>
+    ),
+    label: "Klapptür oben",
+  },
+  "mit-doppelschublade": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="7" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <rect x="4" y="13" width="24" height="7" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <line x1="12" y1="7" x2="20" y2="7" stroke="#6b7280" strokeWidth="1" />
+        <line x1="12" y1="16" x2="20" y2="16" stroke="#6b7280" strokeWidth="1" />
+      </svg>
+    ),
+    label: "Schubladen",
+  },
+  "mit-einzelschublade": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="8" width="24" height="8" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <line x1="12" y1="12" x2="20" y2="12" stroke="#6b7280" strokeWidth="1" />
+      </svg>
+    ),
+    label: "Einzelschublade",
+  },
+  "abschliessbare-tueren": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="11" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <rect x="17" y="4" width="11" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <rect cx="13" cy="12" x="12" y="10" width="2" height="4" fill="#6b7280" rx="0.5" />
+        <rect cx="19" cy="12" x="18" y="10" width="2" height="4" fill="#6b7280" rx="0.5" />
+      </svg>
+    ),
+    label: "Abschließbar",
+  },
+  "mit-tuere-links": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <circle cx="24" cy="12" r="1" fill="#6b7280" />
+      </svg>
+    ),
+    label: "Türe Links",
+  },
+  "mit-tuere-rechts": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <circle cx="8" cy="12" r="1" fill="#6b7280" />
+      </svg>
+    ),
+    label: "Türe Rechts",
+  },
+  "abschliessbar-links": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <rect x="22" y="10" width="2" height="4" fill="#6b7280" rx="0.5" />
+      </svg>
+    ),
+    label: "Abschl. Links",
+  },
+  "abschliessbar-rechts": {
+    icon: (
+      <svg viewBox="0 0 32 24" className="w-full h-full">
+        <rect x="2" y="2" width="28" height="20" fill="currentColor" stroke="#9ca3af" strokeWidth="1" rx="1" />
+        <rect x="4" y="4" width="24" height="16" fill="currentColor" stroke="#6b7280" strokeWidth="0.8" rx="0.5" />
+        <rect x="8" y="10" width="2" height="4" fill="#6b7280" rx="0.5" />
+      </svg>
+    ),
+    label: "Abschl. Rechts",
+  },
+}
 
-  useEffect(() => {
-    setLoadError(false)
-    try {
-      // Always use white color for GLB lookup (the actual color is applied via material)
-      const { url } = resolveGlbUrl({
-        width,
-        height: 40,
-        moduleType,
-        color: "white",
-      })
-      setModelUrl(url)
-    } catch {
-      // Try alternative width
-      try {
-        const altWidth = width === 80 ? 40 : 80
-        const { url } = resolveGlbUrl({
-          width: altWidth as WidthKey,
-          height: 40,
-          moduleType,
-          color: "white",
-        })
-        setModelUrl(url)
-      } catch {
-        setModelUrl(null)
-        setLoadError(true)
-      }
-    }
-  }, [moduleType, width])
-
-  if (loadError || !modelUrl) {
-    // Fallback: simple colored box icon
-    const bgColor = color ? colorHexMap[color] : colorHexMap.weiss
-    return (
-      <div className={`w-full h-full flex items-center justify-center ${className}`}>
-        <div className="w-8 h-6 rounded-sm border border-gray-400" style={{ backgroundColor: bgColor }} />
-      </div>
-    )
-  }
+// Lightweight SVG-based preview component - NO Canvas, NO 3D rendering
+export const ModulePreview3D = memo(function ModulePreview3D({ 
+  moduleType, 
+  width = 80, 
+  className = "", 
+  color 
+}: ModulePreview3DProps) {
+  const bgColor = color ? colorHexMap[color] : colorHexMap.weiss
+  const moduleIcon = moduleIcons[moduleType] || moduleIcons["offenes-fach"]
+  
+  // Determine text color based on background brightness
+  const isLightColor = color === "weiss" || color === "gelb" || !color
 
   return (
-    <div className={`w-full h-full ${className}`}>
-      <Canvas
-        camera={{ position: [0, 0.2, 1.5], fov: 30 }}
-        gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
-        style={{ background: "transparent" }}
-        frameloop="demand"
-      >
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[2, 3, 2]} intensity={1} />
-        <Suspense fallback={null}>
-          <ColoredModel url={modelUrl} color={color} />
-          <Environment preset="studio" />
-        </Suspense>
-      </Canvas>
+    <div 
+      className={`w-full h-full flex items-center justify-center ${className}`}
+      style={{ color: bgColor }}
+    >
+      <div className="w-10 h-8 relative">
+        {moduleIcon.icon}
+        {/* Chrome frame accent */}
+        <div 
+          className="absolute inset-0 pointer-events-none rounded-sm"
+          style={{ 
+            boxShadow: 'inset 0 0 0 1px rgba(156, 163, 175, 0.3)',
+          }}
+        />
+      </div>
     </div>
   )
-}
+})
