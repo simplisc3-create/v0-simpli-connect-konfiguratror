@@ -251,16 +251,11 @@ export function ShelfConfigurator({
   // Ensure we only render 3D canvas after component mounts to avoid SSR issues
   useEffect(() => {
     if (typeof window === "undefined") return
-    // Use requestAnimationFrame and setTimeout for robust DOM readiness
-    const frame = requestAnimationFrame(() => {
-      const timer = setTimeout(() => {
-        if (canvasContainerRef.current) {
-          setIsMounted(true)
-        }
-      }, 100)
-      return () => clearTimeout(timer)
-    })
-    return () => cancelAnimationFrame(frame)
+    // Simple timeout to ensure DOM is ready
+    const timer = setTimeout(() => {
+      setIsMounted(true)
+    }, 50)
+    return () => clearTimeout(timer)
   }, [])
 
   const [defaultNewColumnWidth, setDefaultNewColumnWidth] = useState<75 | 38>(75)
