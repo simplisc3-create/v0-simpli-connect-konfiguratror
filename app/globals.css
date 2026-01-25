@@ -187,3 +187,13 @@
   animation: marquee-continuous 15s linear infinite;
   will-change: transform;
 }
+
+/* SOS button blink animation */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.blink-animation {
+  animation: blink 1s ease-in-out infinite;
+}

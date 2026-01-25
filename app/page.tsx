@@ -42,14 +42,16 @@ export default function Home() {
 
       <section className="relative h-[100dvh] w-full overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-            <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/0108%281%29-pS6CfKhfSUB0VKDFJvOzkgxn7AYWh3.mov" type="video/quicktime" />
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            preload="auto"
+            poster="/modern-chrome-modular-shelf-system-white-backgroun.jpg"
+            className="w-full h-full object-cover"
+          >
             <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/0108%281%29-pS6CfKhfSUB0VKDFJvOzkgxn7AYWh3.mov" type="video/mp4" />
-            <img
-              src="/modern-chrome-modular-shelf-system-white-backgroun.jpg"
-              alt="Simpli Connect Regalsystem"
-              className="w-full h-full object-cover"
-            />
           </video>
           <div className="absolute inset-0 bg-black/30" />
         </div>
