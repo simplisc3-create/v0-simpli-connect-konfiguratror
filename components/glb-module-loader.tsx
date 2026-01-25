@@ -26,13 +26,15 @@ type GLBModuleProps = {
 
 const urlCache = new Map<string, string>()
 
-const materialCache = new Map<string, THREE.MeshStandardMaterial>()
+const materialCache = new Map<string, THREE.Material>()
 
-function getCachedMaterial(key: string, createMaterial: () => THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+// Get or create a cached material - returns the cached instance directly for better performance
+// Materials are shared across instances since we don't modify them per-instance
+function getCachedMaterial<T extends THREE.Material>(key: string, createMaterial: () => T): T {
   if (!materialCache.has(key)) {
     materialCache.set(key, createMaterial())
   }
-  return materialCache.get(key)!.clone() // Clone to allow per-instance modifications if needed
+  return materialCache.get(key) as T
 }
 
 const GERMAN_TO_ENGLISH_COLOR: Record<string, string> = {
@@ -445,14 +447,21 @@ const LoadedGLBModel = memo(
     const { scene } = useGLTF(modelUrl)
     const groupRef = useRef<THREE.Group>(null)
     const [hovered, setHovered] = useState(false)
+    // Track pulse value for selection highlight - using ref to avoid re-renders
+    const pulseRef = useRef(0)
 
-    // Blinking animation for selected modules in swap mode
+    // Blinking animation for selected modules in swap mode - only runs when needed
     useFrame((state) => {
-      if (groupRef.current && isSelected && isSwapMode) {
+      if (!groupRef.current) return
+      
+      if (isSelected && isSwapMode) {
         // Create a pulsing scale effect
         const pulse = 1 + Math.sin(state.clock.elapsedTime * 6) * 0.02
         groupRef.current.scale.setScalar(pulse)
-      } else if (groupRef.current) {
+        // Store pulse value for ring opacity
+        pulseRef.current = 0.8 + Math.sin(state.clock.elapsedTime * 6) * 0.2
+      } else if (groupRef.current.scale.x !== 1) {
+        // Only reset if not already at 1
         groupRef.current.scale.setScalar(1)
       }
     })
@@ -537,7 +546,7 @@ const LoadedGLBModel = memo(
 
             if (child.material) {
               if (isFrame) {
-                child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL.clone())
+                child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
               } else {
                 const oldMat = child.material as THREE.MeshStandardMaterial
                 const texture = oldMat.map || null
@@ -617,7 +626,7 @@ const LoadedGLBModel = memo(
         {isSelected && isSwapMode && (
           <mesh position={[adjustedPosition[0], adjustedPosition[1], adjustedPosition[2] + 0.2]} rotation={[0, 0, 0]}>
             <ringGeometry args={[0.25, 0.28, 32]} />
-            <meshBasicMaterial color="#f59e0b" transparent opacity={0.8 + Math.sin(Date.now() * 0.01) * 0.2} side={THREE.DoubleSide} />
+            <meshBasicMaterial color="#f59e0b" transparent opacity={0.9} side={THREE.DoubleSide} />
           </mesh>
         )}
         {/* Hover highlight for swap mode */}
