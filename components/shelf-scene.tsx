@@ -159,9 +159,16 @@ export const ShelfScene = memo(function ShelfScene({
   onCellClick, 
   onCellHover 
 }: Props) {
+  // Early return if config is invalid
+  if (!config || !config.grid || !Array.isArray(config.grid)) {
+    console.error("[v0] ShelfScene: Invalid config received", config)
+    return null
+  }
+  
   const gridHash = useMemo(() => {
+    if (!config.grid || !Array.isArray(config.grid)) return ""
     return JSON.stringify({
-      grid: config.grid.map((row) => row.map((cell) => ({ type: cell.type, color: cell.color }))),
+      grid: config.grid.map((row) => row?.map((cell) => ({ type: cell?.type, color: cell?.color })) || []),
       columns: config.columns,
       rows: config.rows,
       columnWidths: config.columnWidths,
@@ -230,8 +237,15 @@ export const ShelfScene = memo(function ShelfScene({
 
     const offsetX = -totalWidth / 2
 
+    // Safely iterate over grid
+    if (!config.grid || !Array.isArray(config.grid)) {
+      return { glbModules: glbs, snapPoints: snaps, hasRealModules: false }
+    }
+
     config.grid.forEach((rowCells, gridRow) => {
+      if (!rowCells || !Array.isArray(rowCells)) return
       rowCells.forEach((cell, gridCol) => {
+        if (!cell) return
         const cellWidth = config.columnWidths[gridCol] / 100
         const cellHeight = config.rowHeights[gridRow] / 100
 

@@ -1,10 +1,45 @@
 "use client"
 
-import React, { Component, type ErrorInfo, type ReactNode } from "react"
-
-import { useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
-import { Canvas, useFrame } from "@react-three/fiber"
-import { AlertTriangle } from "lucide-react"
+import React, { Component, type ErrorInfo, type ReactNode, useState, useCallback, useMemo, Suspense, useEffect, useRef } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { OrbitControls, Environment, Lightformer } from "@react-three/drei"
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
+import { AlertTriangle, Undo2, Redo2, RotateCcw, X, MousePointer2, Move, ZoomIn, HelpCircle } from "lucide-react"
+import * as THREE from "three"
+import { ConfiguratorPanel } from "./configurator-panel"
+import { ShelfScene } from "./shelf-scene"
+import { ConfiguratorHeader } from "./configurator-header"
+import { ConfiguratorHelpBot } from "./configurator-help-bot"
+import { Button } from "@/components/ui/button"
+import {
+  getSchubladeArtNr,
+  getTuerArtNr,
+  getKlapptuerArtNr,
+  getLeiterArtNr,
+  getKlapptuerObenArtNr,
+  getEinzelschubladeArtNr,
+  getFlaechensetArtNr,
+  flaechensets,
+} from "@/lib/simpli-products"
+import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
+import { LoadingAnimation } from "./loading-animation"
+import { MobileConfiguratorNav } from "./mobile-configurator-nav"
+import { getModuleLabel, getModuleShortLabel, getColorHex, getColorLabel } from "@/lib/module-utils"
+import {
+  getCellId,
+  createInitialGrid,
+  updateGhostCells,
+  pruneCellStyles,
+  isConnectedToExisting,
+  hasSupportBelow,
+  expandGridAroundPlacement,
+} from "@/lib/grid-utils"
+import { useConfigHistory } from "@/hooks/use-config-history"
+import { ValidationAlerts } from "./validation-alerts"
+import { useHeightWarning } from "@/hooks/use-height-warning"
+import type { ConfiguratorConfig, GridCellConfig, ModuleType, CellColor, FootType } from "@/lib/derive"
+import { useCellColors } from "@/hooks/use-cell-colors"
+import { SummaryChips } from "./summary-chips"
 
 // Error Boundary to catch 3D rendering errors and prevent white screen
 interface ErrorBoundaryProps {
@@ -29,9 +64,7 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("[v0] 3D Canvas Error:", error)
-    console.error("[v0] 3D Canvas Error Info:", errorInfo)
-    console.error("[v0] 3D Canvas Error Stack:", error.stack)
+    console.error("[v0] 3D Canvas Error:", error.message, error.stack?.slice(0, 300))
     this.props.onError?.(error, errorInfo)
   }
 
@@ -63,42 +96,15 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
     return this.props.children
   }
 }
-import { OrbitControls, Environment, Lightformer } from "@react-three/drei"
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
-import { ConfiguratorPanel } from "./configurator-panel"
-import { ShelfScene } from "./shelf-scene"
-import { ConfiguratorHeader } from "./configurator-header"
-import { ConfiguratorHelpBot } from "./configurator-help-bot"
-import { Undo2, Redo2, RotateCcw, X, MousePointer2, Move, ZoomIn, HelpCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  getSchubladeArtNr,
-  getTuerArtNr,
-  getKlapptuerArtNr,
-  getLeiterArtNr,
-  getKlapptuerObenArtNr,
-  getEinzelschubladeArtNr,
-  getFlaechensetArtNr,
-  flaechensets,
-} from "@/lib/simpli-products"
-import { useThree } from "@react-three/fiber"
-import { isModuleTypeAvailableForWidth } from "@/lib/glb-registry"
-import * as THREE from "three"
-import { LoadingAnimation } from "./loading-animation"
-import { MobileConfiguratorNav } from "./mobile-configurator-nav"
-import { getModuleLabel, getModuleShortLabel, getColorHex, getColorLabel } from "@/lib/module-utils"
-import {
-  getCellId,
-  createInitialGrid,
-  updateGhostCells,
-  pruneCellStyles,
-  isConnectedToExisting,
-  hasSupportBelow,
-  expandGridAroundPlacement,
-} from "@/lib/grid-utils"
-import { useConfigHistory } from "@/hooks/use-config-history"
-import { useHeightWarning } from "@/hooks/use-height-warning"
-import { useCellColors } from "@/hooks/use-cell-colors"
+
+// InvalidateOnChange - forces re-render when grid changes
+function InvalidateOnChange({ gridHash }: { gridHash: string }) {
+  const { invalidate } = useThree()
+  useEffect(() => {
+    invalidate()
+  }, [gridHash, invalidate])
+  return null
+}
 
 // CameraController component for smooth camera animation to new modules
 function CameraController({
@@ -245,6 +251,18 @@ export function ShelfConfigurator({
 }: { initialPreset?: PresetConfig; presetYoutubeId?: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [showVideoPreview, setShowVideoPreview] = useState(!!presetYoutubeId)
+  const [isMounted, setIsMounted] = useState(false)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Ensure we only render 3D canvas after component mounts to avoid SSR issues
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    // Simple timeout to ensure DOM is ready
+    const timer = setTimeout(() => {
+      setIsMounted(true)
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [])
 
   const [defaultNewColumnWidth, setDefaultNewColumnWidth] = useState<75 | 38>(75)
 
@@ -671,7 +689,6 @@ export function ShelfConfigurator({
     setSelectedTool("offenes-fach")
     setSelectedColor("weiss")
     setSelectedCell(null)
-    setToolMode("select") // Reset tool mode
     
     // Reset camera to focus on ghost sphere at initial position (center of first module)
     // Initial grid has 1 row with height 38cm = 0.38m, so center is at y = 0.19m
@@ -1304,15 +1321,7 @@ export function ShelfConfigurator({
     return { items: filteredItems, totalPrice: filteredTotalPrice }
   }, [gridHash])
 
-  function InvalidateOnChange({ gridHash }: { gridHash: string }) {
-    const { invalidate } = useThree()
-    useEffect(() => {
-      invalidate()
-    }, [gridHash, invalidate])
-    return null
-  }
-
-  const toggleDefaultColumnWidth = () => {
+const toggleDefaultColumnWidth = () => {
     setDefaultNewColumnWidth((prev) => (prev === 75 ? 38 : 75))
   }
 
@@ -1324,7 +1333,7 @@ export function ShelfConfigurator({
     <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
-        <div className="relative flex-1">
+        <div ref={canvasContainerRef} className="relative flex-1">
           {showVideoPreview && presetYoutubeId && (
             <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-50 w-32 sm:w-48 h-20 sm:h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
               <button
@@ -1343,6 +1352,7 @@ export function ShelfConfigurator({
             </div>
           )}
 
+          {isMounted && (
           <Canvas3DErrorBoundary>
             <Canvas
               shadows={true}
@@ -1355,12 +1365,18 @@ export function ShelfConfigurator({
                 toneMappingExposure: 1.0,
                 failIfMajorPerformanceCaveat: false,
               }}
-dpr={[1, 2]}
-                frameloop="always"
-                performance={{ min: 0.5 }}
+              dpr={[1, 2]}
+              frameloop="always"
+              performance={{ min: 0.5 }}
               onCreated={(state) => {
-                // Ensure WebGL context is properly initialized
-                state.gl.setClearColor("#f5f5f5", 1)
+                try {
+                  if (state?.gl?.domElement) {
+                    state.gl.domElement.style.touchAction = "none"
+                  }
+                  state.gl.setClearColor("#f5f5f5", 1)
+                } catch (e) {
+                  console.error("[v0] Canvas onCreated error:", e)
+                }
               }}
             >
               <color attach="background" args={["#f5f5f5"]} />
@@ -1433,6 +1449,7 @@ dpr={[1, 2]}
               <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
             </Canvas>
           </Canvas3DErrorBoundary>
+          )}
 
           {/* CHANGE: Added camera controls info box in top left corner */}
           <div className="absolute left-2 sm:left-4 top-2 sm:top-4 z-10">
@@ -1621,7 +1638,7 @@ dpr={[1, 2]}
           )}
         </div>
 
-        <div className="hidden lg:block">
+        <div className="hidden lg:block w-80 xl:w-96 shrink-0">
           <ConfiguratorPanel
             config={config}
             selectedTool={selectedTool}
