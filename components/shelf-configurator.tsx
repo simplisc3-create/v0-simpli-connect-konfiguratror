@@ -245,6 +245,12 @@ export function ShelfConfigurator({
 }: { initialPreset?: PresetConfig; presetYoutubeId?: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [showVideoPreview, setShowVideoPreview] = useState(!!presetYoutubeId)
+  const [isMounted, setIsMounted] = useState(false)
+  
+  // Ensure we only render 3D canvas after component mounts to avoid SSR issues
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const [defaultNewColumnWidth, setDefaultNewColumnWidth] = useState<75 | 38>(75)
 
@@ -1342,6 +1348,7 @@ export function ShelfConfigurator({
             </div>
           )}
 
+          {isMounted && (
           <Canvas3DErrorBoundary>
             <Canvas
               shadows={true}
@@ -1432,6 +1439,7 @@ dpr={[1, 2]}
               <CameraController target={cameraTarget} controlsRef={orbitControlsRef} initialTarget={initialCameraTarget} />
             </Canvas>
           </Canvas3DErrorBoundary>
+          )}
 
           {/* CHANGE: Added camera controls info box in top left corner */}
           <div className="absolute left-2 sm:left-4 top-2 sm:top-4 z-10">
