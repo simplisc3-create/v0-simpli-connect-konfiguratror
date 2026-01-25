@@ -48,7 +48,6 @@ export default function Home() {
             muted 
             playsInline 
             preload="auto"
-            poster="/modern-chrome-modular-shelf-system-white-backgroun.jpg"
             className="w-full h-full object-cover"
           >
             <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/0108%281%29-pS6CfKhfSUB0VKDFJvOzkgxn7AYWh3.mov" type="video/mp4" />

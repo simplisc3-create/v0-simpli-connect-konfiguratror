@@ -38,6 +38,7 @@ const SnapPoint = memo(function SnapPoint({
   onClick,
   onHover,
   isVertical = false,
+  isInitial = false,
 }: {
   position: [number, number, number]
   row: number
@@ -46,21 +47,26 @@ const SnapPoint = memo(function SnapPoint({
   onClick: (row: number, col: number) => void
   onHover: (cell: { row: number; col: number } | null) => void
   isVertical?: boolean
+  isInitial?: boolean
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
   const [localHover, setLocalHover] = useState(false)
   const showHover = isHovered || localHover
 
+  // Scale factors for initial ghost sphere (larger and more visible)
+  const scaleFactor = isInitial ? 2.5 : 1
+
   // Animate the glow effect
   useFrame((state) => {
     if (glowRef.current) {
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1
+      const baseScale = isInitial ? 1.2 : 1
+      const scale = baseScale + Math.sin(state.clock.elapsedTime * 2) * 0.15
       glowRef.current.scale.setScalar(showHover ? scale * 1.5 : scale)
     }
     if (meshRef.current) {
       const material = meshRef.current.material as THREE.MeshStandardMaterial
-      material.emissiveIntensity = showHover ? 2 : 0.8 + Math.sin(state.clock.elapsedTime * 3) * 0.2
+      material.emissiveIntensity = showHover ? 2.5 : (isInitial ? 1.5 : 0.8) + Math.sin(state.clock.elapsedTime * 3) * 0.3
     }
   })
 
@@ -97,32 +103,32 @@ const SnapPoint = memo(function SnapPoint({
     <group position={position}>
       {/* Outer glow ring */}
       <mesh ref={glowRef} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.06, 0.008, 8, 32]} />
+        <torusGeometry args={[0.06 * scaleFactor, 0.008 * scaleFactor, 8, 32]} />
         <meshStandardMaterial
           color={glowColor}
           transparent
-          opacity={showHover ? 0.8 : 0.4}
+          opacity={showHover ? 0.8 : (isInitial ? 0.6 : 0.4)}
           emissive={glowColor}
-          emissiveIntensity={showHover ? 1.5 : 0.5}
+          emissiveIntensity={showHover ? 1.5 : (isInitial ? 1 : 0.5)}
         />
       </mesh>
 
       {/* Central dot */}
       <mesh ref={meshRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
-        <sphereGeometry args={[0.04, 16, 16]} />
+        <sphereGeometry args={[0.04 * scaleFactor, 16, 16]} />
         <meshStandardMaterial
           color={showHover ? hoverColor : baseColor}
           emissive={showHover ? hoverColor : baseColor}
-          emissiveIntensity={showHover ? 2 : 1}
+          emissiveIntensity={showHover ? 2 : (isInitial ? 1.5 : 1)}
           metalness={0.3}
           roughness={0.2}
         />
       </mesh>
 
-      {/* Plus icon on hover */}
-      {showHover && (
-        <Html center distanceFactor={3} style={{ pointerEvents: "none" }}>
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/90 text-white font-bold text-lg shadow-lg shadow-emerald-500/50 animate-pulse">
+      {/* Plus icon - always show for initial, show on hover otherwise */}
+      {(showHover || isInitial) && (
+        <Html center distanceFactor={isInitial ? 2 : 3} style={{ pointerEvents: "none" }}>
+          <div className={`flex items-center justify-center rounded-full bg-emerald-500/90 text-white font-bold shadow-lg shadow-emerald-500/50 ${isInitial ? 'w-12 h-12 text-2xl animate-bounce' : 'w-8 h-8 text-lg animate-pulse'}`}>
             +
           </div>
         </Html>
@@ -162,7 +168,7 @@ export const ShelfScene = memo(function ShelfScene({
     })
   }, [config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
 
-  const { glbModules, snapPoints } = useMemo(() => {
+  const { glbModules, snapPoints, hasRealModules } = useMemo(() => {
     const glbs: {
       key: string
       position: [number, number, number]
@@ -178,11 +184,23 @@ export const ShelfScene = memo(function ShelfScene({
       row: number
       col: number
       isVertical: boolean
+      isInitial: boolean
     }[] = []
 
     const depth = 0.38
     const columnTubeOverlap = 0.003
     const rowTubeOverlap = 0.003
+
+    // Check if there are any real modules (not ghost or empty)
+    let foundRealModule = false
+    for (let r = 0; r < config.rows && !foundRealModule; r++) {
+      for (let c = 0; c < config.columns && !foundRealModule; c++) {
+        const cell = config.grid[r]?.[c]
+        if (cell && cell.type !== "ghost" && cell.type !== "empty") {
+          foundRealModule = true
+        }
+      }
+    }
 
     // Calculate column centers
     const columnCenters: number[] = []
@@ -210,7 +228,6 @@ export const ShelfScene = memo(function ShelfScene({
     }
 
     const offsetX = -totalWidth / 2
-    const offsetZ = 0
 
     config.grid.forEach((rowCells, gridRow) => {
       rowCells.forEach((cell, gridCol) => {
@@ -236,7 +253,10 @@ export const ShelfScene = memo(function ShelfScene({
             config.grid[gridRow - 1]?.[gridCol]?.type !== "empty" &&
             config.grid[gridRow - 1]?.[gridCol]?.type !== "ghost"
 
-          const snapPosition: [number, number, number] = isAboveModule
+          // For the initial ghost (no real modules yet), position at center, closer to camera
+          const snapPosition: [number, number, number] = !foundRealModule
+            ? [0, 0.2, 0.15] // Center position, slightly raised, in front for visibility
+            : isAboveModule
             ? [position[0], position[1] - cellHeight / 2 + 0.05, position[2] + depth / 2]
             : [position[0], position[1], 0.05] // Front snap point at z=0.05
 
@@ -246,6 +266,7 @@ export const ShelfScene = memo(function ShelfScene({
             row: gridRow,
             col: gridCol,
             isVertical: isAboveModule,
+            isInitial: !foundRealModule,
           })
         } else if (cell.type !== "empty") {
           glbs.push({
@@ -261,7 +282,7 @@ export const ShelfScene = memo(function ShelfScene({
       })
     })
 
-    return { glbModules: glbs, snapPoints: snaps }
+    return { glbModules: glbs, snapPoints: snaps, hasRealModules: foundRealModule }
   }, [gridHash, config.grid, config.columns, config.rows, config.columnWidths, config.rowHeights])
 
   const handleClick = useCallback(
@@ -322,7 +343,7 @@ export const ShelfScene = memo(function ShelfScene({
         )
       })}
 
-      {snapPoints.map(({ key, position, row, col, isVertical }) => (
+      {snapPoints.map(({ key, position, row, col, isVertical, isInitial }) => (
         <SnapPoint
           key={key}
           position={position}
@@ -332,6 +353,7 @@ export const ShelfScene = memo(function ShelfScene({
           onClick={handleClick}
           onHover={handleHover}
           isVertical={isVertical}
+          isInitial={isInitial}
         />
       ))}
     </group>
