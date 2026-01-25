@@ -858,7 +858,7 @@ export const schubladenTueren: Product[] = [
 // SIMPLI REGALE - Vorkonfigurierte Komplett-Sets
 // =============================================================================
 
-export type SimpliRegalCategory = "offen" | "geschlossen" | "schubladen"
+export type SimpliRegalCategory = "lowboard" | "sideboard" | "highboard"
 
 export interface SimpliRegalProduct {
   id: string
@@ -1199,7 +1199,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Seitenfächer mit Rückwand",
       "Komplett-Set inkl. Rahmen",
     ],
-    category: "schubladen",
+    category: "lowboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1237,7 +1237,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Offene Fächer oben",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "offen",
+    category: "sideboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1282,7 +1282,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Klassische Türen oben",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "geschlossen",
+    category: "sideboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1327,7 +1327,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Türen unten für Stauraum",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "geschlossen",
+    category: "sideboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1373,7 +1373,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Rückwand unten für Stabilität",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "offen",
+    category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1431,7 +1431,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Perfekt für Showrooms",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "offen",
+    category: "highboard",
     // Konfigurator Preset für 3D Preview (gestaffelt)
     preset: {
       columns: 4,
@@ -1499,7 +1499,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Offene Fächer oben",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "geschlossen",
+    category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1563,7 +1563,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Architektonisches Design",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "offen",
+    category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 2,
@@ -1628,7 +1628,7 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
       "Maximale Präsentationsfläche oben",
       "Komplett-Set inkl. Leiter & Stangen",
     ],
-    category: "offen",
+    category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1691,12 +1691,12 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     price: 512.0,
     features: [
       "4 Ebenen x 3 Spalten (80er)",
-      "Industrieller Loft-Style",
-      "Ohne Rückwand als Raumteiler",
-      "Schubladen + Türen unten",
-      "Komplett-Set inkl. Leiter & Stangen",
-    ],
-    category: "offen",
+  "Industrieller Loft-Style",
+  "Ohne Rückwand als Raumteiler",
+  "Schubladen + Türen unten",
+  "Komplett-Set inkl. Leiter & Stangen",
+  ],
+  category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1756,12 +1756,12 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     price: 595.0,
     features: [
       "5 Ebenen x 3 Spalten (80er)",
-      "Einzigartige Modulkombination",
-      "Klapptür als zentrales Element",
-      "Perfekte Balance aus Design + Funktion",
-      "Komplett-Set inkl. Leiter & Stangen",
-    ],
-    category: "geschlossen",
+  "Einzigartige Modulkombination",
+  "Klapptür als zentrales Element",
+  "Perfekte Balance aus Design + Funktion",
+  "Komplett-Set inkl. Leiter & Stangen",
+  ],
+  category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1825,12 +1825,12 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     price: 812.0,
     features: [
       "4 Ebenen x 4 Spalten (80er)",
-      "Abschließbar links unten",
-      "Kindersicher + familienfreundlich",
-      "Flexibel für alle Generationen",
-      "Komplett-Set inkl. Leiter & Stangen",
-    ],
-    category: "geschlossen",
+  "Abschließbar links unten",
+  "Kindersicher + familienfreundlich",
+  "Flexibel für alle Generationen",
+  "Komplett-Set inkl. Leiter & Stangen",
+  ],
+  category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 4,
@@ -1894,12 +1894,12 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     price: 750.0,
     features: [
       "5 Ebenen x 3 Spalten (80er)",
-      "Doppelschubladen unten",
-      "Logischer Aufbau von unten nach oben",
-      "Maximaler Stauraum",
-      "Komplett-Set inkl. Leiter & Stangen",
-    ],
-    category: "schubladen",
+  "Doppelschubladen unten",
+  "Logischer Aufbau von unten nach oben",
+  "Maximaler Stauraum",
+  "Komplett-Set inkl. Leiter & Stangen",
+  ],
+  category: "highboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 3,
@@ -1957,12 +1957,12 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     price: 260.0,
     features: [
       "1 Ebene x 4 Spalten (80er)",
-      "Komplett geschlossene Front",
-      "Zeitloses Design",
-      "Ideal als TV-Lowboard oder Sideboard",
-      "Komplett-Set inkl. Leiter & Stangen",
-    ],
-    category: "geschlossen",
+  "Komplett geschlossene Front",
+  "Zeitloses Design",
+  "Ideal als TV-Lowboard oder Sideboard",
+  "Komplett-Set inkl. Leiter & Stangen",
+  ],
+  category: "lowboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 4,
@@ -1999,12 +1999,12 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     price: 142.0,
     features: [
       "1 Ebene x 4 Spalten (80er)",
-      "Rückwände aussen für Kabelführung",
-      "Offene Mitte für Technik",
-      "Optimale Belüftung",
-      "Komplett-Set inkl. Leiter & Stangen",
-    ],
-    category: "offen",
+  "Rückwände aussen für Kabelführung",
+  "Offene Mitte für Technik",
+  "Optimale Belüftung",
+  "Komplett-Set inkl. Leiter & Stangen",
+  ],
+  category: "lowboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 4,
@@ -2042,12 +2042,12 @@ export const productsSimpliRegale: SimpliRegalProduct[] = [
     price: 376.0,
     features: [
       "2 Ebenen x 4 Spalten (80er)",
-      "Türen unten für Stauraum",
-      "Offene Fächer oben für Deko",
-      "Vielseitig einsetzbar",
-      "Komplett-Set inkl. Leiter & Stangen",
-    ],
-    category: "geschlossen",
+  "Türen unten für Stauraum",
+  "Offene Fächer oben für Deko",
+  "Vielseitig einsetzbar",
+  "Komplett-Set inkl. Leiter & Stangen",
+  ],
+  category: "sideboard",
     // Konfigurator Preset für 3D Preview
     preset: {
       columns: 4,
