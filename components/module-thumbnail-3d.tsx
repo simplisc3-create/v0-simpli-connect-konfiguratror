@@ -166,7 +166,7 @@ function StaticModel({ url, color }: { url: string; color: string }) {
   }, [scene, color])
 
   return (
-    <group ref={groupRef} rotation={[0, Math.PI, 0]}>
+    <group ref={groupRef} rotation={[0, Math.PI / 2, 0]}>
       {clonedScene && <primitive object={clonedScene} />}
     </group>
   )
@@ -219,8 +219,8 @@ export function ModuleThumbnail3D({
     return fallbackUI
   }
 
-  // Front view camera position - looking straight at the module
-  const cameraPosition: [number, number, number] = [0, 0.05, 0.6]
+  // Front view camera position - rotated 90 degrees to show frontal view
+  const cameraPosition: [number, number, number] = [0.6, 0.05, 0]
 
   return (
     <div className={`w-full h-full ${className}`}>
