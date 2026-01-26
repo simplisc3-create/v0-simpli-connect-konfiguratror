@@ -201,36 +201,36 @@ export function ConfiguratorPanel({
   const totalPrice = price || 0
 
   return (
-    <div className="flex h-full flex-col bg-white text-gray-900 overflow-hidden shadow-xl">
+    <div className="flex h-full flex-col bg-card text-foreground overflow-hidden shadow-xl">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {selectedCell && selectedCellInfo && selectedCellInfo.type !== "empty" && selectedCellInfo.type !== "ghost" && (
-          <div className="border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white p-4">
+          <div className="border-b border-border bg-muted p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10">
-                  <Paintbrush className="h-4 w-4 text-teal-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <Paintbrush className="h-4 w-4 text-primary" />
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900">Zelle bearbeiten</h3>
+                <h3 className="text-sm font-semibold text-foreground">Zelle bearbeiten</h3>
               </div>
               <button
                 onClick={onDeselectCell}
-                className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="mb-3 rounded-xl bg-white border border-gray-200 p-3 text-xs text-gray-700 shadow-sm">
-              <span className="font-semibold text-gray-900">{getModuleLabel(selectedCellInfo.type)}</span>
-              <span className="ml-2 text-gray-500">
+            <div className="mb-3 rounded-xl bg-background border border-border p-3 text-xs text-foreground shadow-sm">
+              <span className="font-semibold text-foreground">{getModuleLabel(selectedCellInfo.type)}</span>
+              <span className="ml-2 text-muted-foreground">
                 Zeile {selectedCell.row + 1}, Spalte {selectedCell.col + 1}
               </span>
             </div>
 
             {/* Color selection for selected cell */}
             <div className="mb-3">
-              <p className="mb-2 text-xs font-medium text-gray-600">Farbe wählen:</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Farbe wählen:</p>
               <div className="flex flex-wrap gap-2">
                 {[...baseColors, ...specialColors].map((color) => (
                   <button
@@ -239,8 +239,8 @@ export function ConfiguratorPanel({
                     className={cn(
                       "relative h-10 w-10 rounded-xl transition-all shadow-sm",
                       selectedCellInfo.color === color.id
-                        ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white scale-110"
-                        : "ring-1 ring-gray-200 hover:ring-gray-300 hover:scale-105",
+                        ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-110"
+                        : "ring-1 ring-border hover:ring-foreground/50 hover:scale-105",
                     )}
                     style={{ backgroundColor: color.color }}
                     title={color.label}

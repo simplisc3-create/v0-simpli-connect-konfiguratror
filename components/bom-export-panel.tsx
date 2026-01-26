@@ -62,27 +62,27 @@ export function BomExportPanel({ bom, messages, hasErrors, onExportCsv, onExport
             variant={msg.severity === "error" ? "destructive" : msg.severity === "warning" ? "default" : "default"}
             className={
               msg.severity === "error"
-                ? "border-red-500 bg-red-50"
+                ? "border-destructive bg-destructive/10"
                 : msg.severity === "warning"
                   ? "border-amber-500 bg-amber-50"
-                  : "border-blue-500 bg-blue-50"
+                  : "border-primary bg-primary/10"
             }
           >
             {msg.severity === "error" ? (
-              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertCircle className="h-4 w-4 text-destructive" />
             ) : msg.severity === "warning" ? (
               <AlertCircle className="h-4 w-4 text-amber-600" />
             ) : (
-              <Info className="h-4 w-4 text-blue-600" />
+              <Info className="h-4 w-4 text-primary" />
             )}
             <AlertDescription className="text-sm">{msg.message}</AlertDescription>
           </Alert>
         ))}
 
         {!hasErrors && (
-          <Alert className="border-green-500 bg-green-50">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-sm text-green-800">
+          <Alert className="border-secondary bg-secondary/10">
+            <CheckCircle2 className="h-4 w-4 text-secondary" />
+            <AlertDescription className="text-sm text-secondary">
               ✓ Konfiguration ist vollständig und bestellfähig.
             </AlertDescription>
           </Alert>
@@ -92,7 +92,7 @@ export function BomExportPanel({ bom, messages, hasErrors, onExportCsv, onExport
       {/* BOM Table */}
       <Card className="overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-100 border-b">
+          <thead className="bg-muted border-b">
             <tr>
               <th className="px-4 py-2 text-left font-semibold">Kategorie</th>
               <th className="px-4 py-2 text-left font-semibold">Artikel</th>
@@ -101,15 +101,14 @@ export function BomExportPanel({ bom, messages, hasErrors, onExportCsv, onExport
             </tr>
           </thead>
           <tbody>
-            {Object.entries(groupedBom).map(([category, lines]) => (
-              <tbody key={category}>
-                <tr className="bg-gray-50 border-t-2">
-                  <td colSpan={4} className="px-4 py-2 font-semibold text-gray-700">
-                    {categoryLabels[category] || category}
-                  </td>
-                </tr>
-                {lines.map((line, i) => (
-                  <tr key={i} className="border-b hover:bg-gray-50">
+            {Object.entries(groupedBom).map(([category, lines]) => [
+              <tr key={`category-${category}`} className="bg-muted border-t-2">
+                <td colSpan={4} className="px-4 py-2 font-semibold text-foreground">
+                  {categoryLabels[category] || category}
+                </td>
+              </tr>,
+              ...lines.map((line, i) => (
+                <tr key={i} className="border-b hover:bg-muted/50">
                     <td className="px-4 py-2 text-gray-600">{line.sku}</td>
                     <td className="px-4 py-2">{line.name}</td>
                     <td className="px-4 py-2 text-center font-semibold">{line.qty}</td>
