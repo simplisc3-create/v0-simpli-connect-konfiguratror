@@ -116,6 +116,7 @@ export default function ManageImagesPage() {
       <div className="min-h-screen bg-background p-4 md:p-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground">Laden...</p>
+        </div>
       </div>
     )
   }
@@ -134,9 +135,20 @@ export default function ManageImagesPage() {
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="pt-6">
+              <p className="text-3xl font-bold text-primary">{filteredProducts.length}</p>
+              <p className="text-sm text-muted-foreground mt-1">Produkte insgesamt</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-3xl font-bold text-secondary">{Object.keys(imageMap).length}</p>
+              <p className="text-sm text-muted-foreground mt-1">Mit Bildern</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
               <p className="text-3xl font-bold text-destructive">{filteredProducts.length - Object.keys(imageMap).length}</p>
               <p className="text-sm text-muted-foreground mt-1">Noch zu bearbeiten</p>
-              </div>
             </CardContent>
           </Card>
         </div>

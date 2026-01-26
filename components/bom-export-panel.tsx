@@ -109,15 +109,16 @@ export function BomExportPanel({ bom, messages, hasErrors, onExportCsv, onExport
               </tr>,
               ...lines.map((line, i) => (
                 <tr key={i} className="border-b hover:bg-muted/50">
-                    <td className="px-4 py-2 text-gray-600">{line.sku}</td>
-                    <td className="px-4 py-2">{line.name}</td>
-                    <td className="px-4 py-2 text-center font-semibold">{line.qty}</td>
-                    <td className="px-4 py-2">{line.unit}</td>
-                  </tr>
-                ))}
-              </tbody>
-            ))}
+                  <td className="px-4 py-2 text-muted-foreground">{line.sku}</td>
+                  <td className="px-4 py-2 text-foreground">{line.name}</td>
+                  <td className="px-4 py-2 text-center font-semibold">{line.qty}</td>
+                  <td className="px-4 py-2">{line.unit}</td>
+                </tr>
+              )),
+            ])}
           </tbody>
+        </table>
+      </Card>
         </table>
       </Card>
 
