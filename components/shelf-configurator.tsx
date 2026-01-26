@@ -76,15 +76,15 @@ class Canvas3DErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 text-neutral-700 p-4">
-            <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
+          <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground p-4">
+            <AlertTriangle className="w-12 h-12 text-destructive mb-4" />
             <h3 className="text-lg font-semibold mb-2">3D-Ansicht konnte nicht geladen werden</h3>
-            <p className="text-sm text-neutral-500 mb-4 text-center max-w-md">
+            <p className="text-sm text-muted-foreground mb-4 text-center max-w-md">
               Es gab ein Problem beim Laden der 3D-Vorschau. Bitte versuchen Sie es erneut.
             </p>
             <button
               onClick={this.handleRetry}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              className="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors"
             >
               Erneut versuchen
             </button>
@@ -1623,14 +1623,14 @@ const toggleDefaultColumnWidth = () => {
 
           {/* Height Warning */}
           {showHeightWarning && (
-            <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
+            <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-destructive-foreground shadow-lg">
               <AlertTriangle className="h-5 w-5" />
               <span>Die Regalhöhe überschreitet 200 cm.</span>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowHeightWarning(false)}
-                className="ml-2 text-white hover:text-gray-200"
+                className="ml-2 text-destructive-foreground hover:text-destructive-foreground/80"
               >
                 <X className="h-4 w-4" />
               </Button>
