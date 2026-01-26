@@ -587,40 +587,9 @@ const LoadedGLBModel = memo(
               if (isFrame) {
                 child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
               } else {
-                const oldMat = child.material as THREE.MeshStandardMaterial
-                const texture = oldMat.map || null
-                const finalColor = isBottom ? TARGET_COLORS.schwarz : targetColorValue
-                
-                // Create a unique cache key that includes the color
-                const materialKey = `panel-${colorKey}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
-                
-                if (isWhitePanel && !isBottom) {
-                  // White panels use MeshStandardMaterial with emissive for extra brightness
-                  child.material = getCachedMaterial(
-                    materialKey,
-                    () =>
-                      new THREE.MeshStandardMaterial({
-                        map: texture,
-                        color: finalColor.clone(),
-                        emissive: new THREE.Color("#ffffff"),
-                        emissiveIntensity: 0.15,
-                        roughness: 0.9,
-                        metalness: 0.0,
-                        side: THREE.DoubleSide,
-                      }),
-                  )
-                } else {
-                  // Colored panels use MeshLambertMaterial for flat appearance
-                  child.material = getCachedMaterial(
-                    materialKey,
-                    () =>
-                      new THREE.MeshLambertMaterial({
-                        map: texture,
-                        color: finalColor.clone(),
-                        side: THREE.DoubleSide,
-                      }),
-                  )
-                }
+                // Hide the original GLB panel - make it invisible
+                // The panel will be replaced by dynamically colored geometry
+                child.visible = false
               }
             }
           }
