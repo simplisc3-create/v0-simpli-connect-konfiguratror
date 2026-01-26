@@ -52,7 +52,7 @@ export type ColorKey = GridCell["color"]
 export const COLOR_HEX_MAP: Record<NonNullable<ColorKey>, string> = {
   weiss: "#FFFFFF",
   grau: "#9E9E9E",
-  schwarz: "#111111",
+  schwarz: "#333333",
   blau: "#1E5EFF",
   gruen: "#2FAE5D",
   gelb: "#FFEA00", // Brighter, more saturated yellow

@@ -42,7 +42,7 @@ interface Product3DPreviewProps {
 const TARGET_COLORS: Record<string, THREE.Color> = {
   white: new THREE.Color("#FFFFFF"),
   grey: new THREE.Color("#9E9E9E"),
-  black: new THREE.Color("#111111"),
+  black: new THREE.Color("#333333"),
   blue: new THREE.Color("#1E5EFF"),
   green: new THREE.Color("#2FAE5D"),
   yellow: new THREE.Color("#FFEA00"), // Brighter, more saturated yellow
@@ -410,7 +410,7 @@ export function Product3DPreview({
               style={{
                 backgroundColor: c === "white" ? "#FFFFFF" 
                   : c === "grey" ? "#9E9E9E"
-                  : c === "black" ? "#111111"
+                  : c === "black" ? "#333333"
                   : c === "green" ? "#2FAE5D" 
                   : c === "yellow" ? "#FFD400" 
                   : c === "red" ? "#E53935" 

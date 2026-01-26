@@ -55,7 +55,7 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#FFFFFF": "white",
   "#9e9e9e": "grey",
   "#9E9E9E": "grey",
-  "#111111": "black",
+  "#333333": "black",
   "#1e5eff": "blue",
   "#1E5EFF": "blue",
   "#2fae5d": "green",
@@ -75,7 +75,7 @@ const TARGET_COLORS: Record<string, THREE.Color> = {
   white: new THREE.Color("#FFFFFF"),
   grey: new THREE.Color("#9E9E9E"),
   gray: new THREE.Color("#9E9E9E"),
-  black: new THREE.Color("#111111"),
+  black: new THREE.Color("#333333"),
   blue: new THREE.Color("#1E5EFF"),
   green: new THREE.Color("#2FAE5D"),
   yellow: new THREE.Color("#FFEA00"), // Brighter, more saturated yellow
