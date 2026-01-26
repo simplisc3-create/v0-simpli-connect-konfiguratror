@@ -51,10 +51,13 @@ const GERMAN_TO_ENGLISH_COLOR: Record<string, string> = {
 }
 
 const HEX_TO_COLOR_NAME: Record<string, string> = {
+  "#f5f5f5": "white",
+  "#F5F5F5": "white",
   "#ffffff": "white",
   "#FFFFFF": "white",
-  "#9e9e9e": "grey",
-  "#9E9E9E": "grey",
+  "#9e9e9e": "gray",
+  "#9E9E9E": "gray",
+  "#333333": "black",
   "#111111": "black",
   "#1e5eff": "blue",
   "#1E5EFF": "blue",
@@ -70,17 +73,33 @@ const HEX_TO_COLOR_NAME: Record<string, string> = {
   "#E53935": "red",
 }
 
-// Exact Simpli Connect panel colors - matching navigator UI exactly
+// Exact Simpli Connect panel colors - matching colorHexMap from simpli-products.ts exactly
+// Includes both German and English color names for reliable lookup
 const TARGET_COLORS: Record<string, THREE.Color> = {
-  white: new THREE.Color("#FFFFFF"),
+  // White / Weiß
+  white: new THREE.Color("#f5f5f5"),
+  weiss: new THREE.Color("#f5f5f5"),
+  // Gray / Grau
   grey: new THREE.Color("#9E9E9E"),
   gray: new THREE.Color("#9E9E9E"),
-  black: new THREE.Color("#111111"),
+  grau: new THREE.Color("#9E9E9E"),
+  // Black / Schwarz
+  black: new THREE.Color("#333333"),
+  schwarz: new THREE.Color("#333333"),
+  // Blue / Blau
   blue: new THREE.Color("#1E5EFF"),
+  blau: new THREE.Color("#1E5EFF"),
+  // Green / Grün
   green: new THREE.Color("#2FAE5D"),
-  yellow: new THREE.Color("#FFEA00"), // Brighter, more saturated yellow
+  gruen: new THREE.Color("#2FAE5D"),
+  // Yellow / Gelb
+  yellow: new THREE.Color("#FFEA00"),
+  gelb: new THREE.Color("#FFEA00"),
+  // Orange
   orange: new THREE.Color("#FF8A00"),
+  // Red / Rot
   red: new THREE.Color("#E53935"),
+  rot: new THREE.Color("#E53935"),
 }
 
 // Chrome material - slightly toned down
@@ -457,9 +476,9 @@ const LoadedGLBModel = memo(
   onClick?: (row: number, col: number) => void
   hideBuiltInFeet?: boolean
   }) {
-    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
+    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl, "with targetColor:", targetColor)
     const { scene } = useGLTF(modelUrl)
-    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null")
+    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null", "color:", targetColor)
     const groupRef = useRef<THREE.Group>(null)
 
   
@@ -496,57 +515,73 @@ const LoadedGLBModel = memo(
     const clonedScene = useMemo(() => {
       try {
         const clone = scene.clone(true)
-        let mappedColor = targetColor
-        if (GERMAN_TO_ENGLISH_COLOR[targetColor]) {
-          mappedColor = GERMAN_TO_ENGLISH_COLOR[targetColor]
-        } else if (HEX_TO_COLOR_NAME[targetColor]) {
-          mappedColor = HEX_TO_COLOR_NAME[targetColor]
+        
+        // Resolve target color - check both German and English names directly in TARGET_COLORS
+        // TARGET_COLORS now has both German and English keys
+        let targetColorValue = TARGET_COLORS[targetColor]
+        
+        // If not found directly, try mapping German to English
+        if (!targetColorValue && GERMAN_TO_ENGLISH_COLOR[targetColor]) {
+          targetColorValue = TARGET_COLORS[GERMAN_TO_ENGLISH_COLOR[targetColor]]
         }
-        const targetColorValue = TARGET_COLORS[mappedColor] || TARGET_COLORS.white
+        
+        // If still not found, try hex lookup
+        if (!targetColorValue && HEX_TO_COLOR_NAME[targetColor]) {
+          targetColorValue = TARGET_COLORS[HEX_TO_COLOR_NAME[targetColor]]
+        }
+        
+        // Fallback to white
+        if (!targetColorValue) {
+          targetColorValue = TARGET_COLORS.white
+        }
+        
+        // Get the canonical color name for cache keys
+        const colorKey = targetColor || "white"
+        const isWhitePanel = targetColor === "weiss" || targetColor === "white"
 
         const parentBoundingBox = new THREE.Box3().setFromObject(clone)
 
-      let handleMesh: THREE.Mesh | null = null
+        let handleMesh: THREE.Mesh | null = null
 
-      clone.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          const meshName = child.name || ""
-          const isFrame = isFramePart(meshName, child.geometry, child.material)
-          const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
-          const isHandle = isHandlePart(meshName)
-          const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material, child)
+        clone.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const meshName = child.name || ""
+            const isFrame = isFramePart(meshName, child.geometry, child.material)
+            const isBottom = meshName.toLowerCase().includes("bottom") || meshName.toLowerCase().includes("boden")
+            const isHandle = isHandlePart(meshName)
+            const isFeet = isFeetPart(meshName, child.geometry, parentBoundingBox, child.material, child)
 
-          if (isHandle && isKlapptuerOben) {
-            handleMesh = child
-          }
-
-          // Handle built-in feet:
-          // 1. Not a bottom module - hide feet entirely
-          // 2. Custom feet selected (hideBuiltInFeet = true) - make feet chrome to blend with frame
-          if (isFeet) {
-            if (!isBottomModule) {
-              // Not bottom module - hide feet completely
-              child.visible = false
-              return
-            } else if (hideBuiltInFeet) {
-              // Custom feet selected - chrome-plate the built-in feet to blend with frame
-              child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
-              return
+            if (isHandle && isKlapptuerOben) {
+              handleMesh = child
             }
-          }
 
-          child.frustumCulled = false
-          child.castShadow = true
-          child.receiveShadow = true
+            // Handle built-in feet:
+            // 1. Not a bottom module - hide feet entirely
+            // 2. Custom feet selected (hideBuiltInFeet = true) - make feet chrome to blend with frame
+            if (isFeet) {
+              if (!isBottomModule) {
+                // Not bottom module - hide feet completely
+                child.visible = false
+                return
+              } else if (hideBuiltInFeet) {
+                // Custom feet selected - chrome-plate the built-in feet to blend with frame
+                child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
+                return
+              }
+            }
 
-          if (child.geometry) {
-            if (!child.geometry.attributes.normal) {
-              child.geometry.computeVertexNormals()
+            child.frustumCulled = false
+            child.castShadow = true
+            child.receiveShadow = true
+
+            if (child.geometry) {
+              if (!child.geometry.attributes.normal) {
+                child.geometry.computeVertexNormals()
+              }
+              if (child.geometry.attributes.color) {
+                child.geometry.deleteAttribute("color")
+              }
             }
-            if (child.geometry.attributes.color) {
-              child.geometry.deleteAttribute("color")
-            }
-          }
 
             if (child.material) {
               if (isFrame) {
@@ -554,20 +589,19 @@ const LoadedGLBModel = memo(
               } else {
                 const oldMat = child.material as THREE.MeshStandardMaterial
                 const texture = oldMat.map || null
-                const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
-                const isWhitePanel = mappedColor === "white" && !isBottom
-
-                // Panel materials - White panels get extra brightness via MeshStandardMaterial with emissive
-                const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
+                const finalColor = isBottom ? TARGET_COLORS.schwarz : targetColorValue
                 
-                if (isWhitePanel) {
+                // Create a unique cache key that includes the color
+                const materialKey = `panel-${colorKey}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
+                
+                if (isWhitePanel && !isBottom) {
                   // White panels use MeshStandardMaterial with emissive for extra brightness
                   child.material = getCachedMaterial(
                     materialKey,
                     () =>
                       new THREE.MeshStandardMaterial({
                         map: texture,
-                        color: finalColor,
+                        color: finalColor.clone(),
                         emissive: new THREE.Color("#ffffff"),
                         emissiveIntensity: 0.15,
                         roughness: 0.9,
@@ -576,29 +610,31 @@ const LoadedGLBModel = memo(
                       }),
                   )
                 } else {
-                  // Other colors use MeshLambertMaterial for flat appearance
+                  // Colored panels use MeshStandardMaterial for better color appearance
                   child.material = getCachedMaterial(
                     materialKey,
                     () =>
-                      new THREE.MeshLambertMaterial({
+                      new THREE.MeshStandardMaterial({
                         map: texture,
-                        color: finalColor,
+                        color: finalColor.clone(),
+                        roughness: 0.8,
+                        metalness: 0.0,
                         side: THREE.DoubleSide,
                       }),
                   )
                 }
               }
             }
-        }
-      })
+          }
+        })
 
-      return clone
-    } catch (err) {
+        return clone
+      } catch (err) {
         console.error("[v0] Error cloning/processing scene:", err)
         // Return the original scene as fallback instead of throwing
         return scene.clone()
       }
-    }, [scene, targetColor, moduleKey, cellType, row, isBottomModule, hideBuiltInFeet])
+    }, [scene, targetColor, moduleKey, cellType, row, isBottomModule, hideBuiltInFeet, isKlapptuerOben])
 
     const adjustedPosition: [number, number, number] = useMemo(() => {
       const BAR_THICKNESS = 0.01
