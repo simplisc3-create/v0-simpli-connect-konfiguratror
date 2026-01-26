@@ -610,15 +610,13 @@ const LoadedGLBModel = memo(
                       }),
                   )
                 } else {
-                  // Colored panels use MeshStandardMaterial for better color appearance
+                  // Colored panels use MeshLambertMaterial for flat appearance
                   child.material = getCachedMaterial(
                     materialKey,
                     () =>
-                      new THREE.MeshStandardMaterial({
+                      new THREE.MeshLambertMaterial({
                         map: texture,
                         color: finalColor.clone(),
-                        roughness: 0.8,
-                        metalness: 0.0,
                         side: THREE.DoubleSide,
                       }),
                   )
