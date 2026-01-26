@@ -201,36 +201,36 @@ export function ConfiguratorPanel({
   const totalPrice = price || 0
 
   return (
-    <div className="flex h-full flex-col bg-white text-gray-900 overflow-hidden shadow-xl">
+    <div className="flex h-full flex-col bg-card text-card-foreground overflow-hidden shadow-xl">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {selectedCell && selectedCellInfo && selectedCellInfo.type !== "empty" && selectedCellInfo.type !== "ghost" && (
-          <div className="border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white p-4">
+          <div className="border-b border-border bg-gradient-to-br from-muted to-card p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10">
-                  <Paintbrush className="h-4 w-4 text-teal-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                  <Paintbrush className="h-4 w-4 text-accent" />
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900">Zelle bearbeiten</h3>
+                <h3 className="text-sm font-semibold text-foreground">Zelle bearbeiten</h3>
               </div>
               <button
                 onClick={onDeselectCell}
-                className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="mb-3 rounded-xl bg-white border border-gray-200 p-3 text-xs text-gray-700 shadow-sm">
-              <span className="font-semibold text-gray-900">{getModuleLabel(selectedCellInfo.type)}</span>
-              <span className="ml-2 text-gray-500">
+            <div className="mb-3 rounded-xl bg-card border border-border p-3 text-xs text-muted-foreground shadow-sm">
+              <span className="font-semibold text-foreground">{getModuleLabel(selectedCellInfo.type)}</span>
+              <span className="ml-2 text-muted-foreground">
                 Zeile {selectedCell.row + 1}, Spalte {selectedCell.col + 1}
               </span>
             </div>
 
             {/* Color selection for selected cell */}
             <div className="mb-3">
-              <p className="mb-2 text-xs font-medium text-gray-600">Farbe wählen:</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Farbe wählen:</p>
               <div className="flex flex-wrap gap-2">
                 {[...baseColors, ...specialColors].map((color) => (
                   <button
@@ -260,32 +260,32 @@ export function ConfiguratorPanel({
 
             {/* Quick actions */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-600">Schnellaktionen:</p>
+              <p className="text-xs font-medium text-muted-foreground">Schnellaktionen:</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onApplyColorToRow?.(selectedCell.row, selectedColor)}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:border-border transition-all shadow-sm"
                 >
                   <Rows className="h-3.5 w-3.5" />
                   Zeile färben
                 </button>
                 <button
                   onClick={() => onApplyColorToColumn?.(selectedCell.col, selectedColor)}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:border-border transition-all shadow-sm"
                 >
                   <Columns className="h-3.5 w-3.5" />
                   Spalte färben
                 </button>
                 <button
                   onClick={() => onApplyColorToAll?.(selectedColor)}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:border-border transition-all shadow-sm"
                 >
                   <Grid className="h-3.5 w-3.5" />
                   Alle färben
                 </button>
                 <button
                   onClick={() => onClearCellColor?.(selectedCell.row, selectedCell.col)}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 hover:bg-red-100 hover:border-red-300 transition-all"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive hover:bg-destructive/20 hover:border-destructive/50 transition-all"
                 >
                   <X className="h-3.5 w-3.5" />
                   Zurücksetzen
@@ -295,10 +295,10 @@ export function ConfiguratorPanel({
           </div>
         )}
 
-        <div className="border-b border-gray-100 p-4">
+        <div className="border-b border-border p-4">
           {/* Tab Navigation */}
           <div className="mb-4">
-            <div className="flex rounded-xl bg-gray-100 p-1">
+            <div className="flex rounded-xl bg-muted p-1">
               <button
                 onClick={() => {
                   setWidthFilter(80)
@@ -307,8 +307,8 @@ export function ConfiguratorPanel({
                 className={cn(
                   "flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all",
                   widthFilter === 80
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700",
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 80er Module
@@ -321,8 +321,8 @@ export function ConfiguratorPanel({
                 className={cn(
                   "flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all",
                   widthFilter === 40
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700",
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 40er Module
@@ -336,18 +336,18 @@ export function ConfiguratorPanel({
               const actualModuleType = getModuleTypeFromThumbnailId(module.id)
               
               return (
-                <button
+                  <button
                   key={module.id}
                   className={cn(
                     "group relative flex flex-col items-center justify-center rounded-xl p-2 transition-all border-2 cursor-pointer",
                     selectedTool === actualModuleType
-                      ? "bg-teal-50 border-teal-400 text-teal-700 shadow-md shadow-teal-100"
-                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm",
+                      ? "bg-accent/10 border-accent text-accent shadow-md shadow-accent/20"
+                      : "bg-card border-border text-muted-foreground hover:bg-muted hover:border-border hover:shadow-sm",
                   )}
                   onClick={() => onSelectTool(actualModuleType)}
                   title={module.name}
                 >
-                  <div className="relative h-16 w-full flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                  <div className="relative h-16 w-full flex items-center justify-center overflow-hidden rounded-lg bg-muted">
                     <ModuleThumbnail3D
                       moduleType={actualModuleType as ModuleType}
                       width={widthFilter === 80 ? 80 : 40}
@@ -361,12 +361,12 @@ export function ConfiguratorPanel({
               )
             })}
           </div>
-          <p className="mt-3 text-[10px] text-gray-500">
+          <p className="mt-3 text-[10px] text-muted-foreground">
             {widthFilter === 80 ? "80cm breite Module" : widthFilter === 40 ? "40cm breite Module" : "Alle Module"}
           </p>
 
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="mb-2 text-xs font-medium text-gray-600">Farbe für neue Module:</p>
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Farbe für neue Module:</p>
             <div className="flex flex-wrap gap-2">
               {[...baseColors, ...specialColors].map((color) => (
                 <button
@@ -395,8 +395,8 @@ export function ConfiguratorPanel({
           </div>
 
           {/* Foot Type Selection */}
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="mb-2 text-xs font-medium text-gray-600">Fuss-Optionen (4 Stück pro Bodenmodul):</p>
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Fuss-Optionen (4 Stück pro Bodenmodul):</p>
             <div className="grid grid-cols-3 gap-2">
               {/* Black Plastic Feet */}
               <button
@@ -404,20 +404,20 @@ export function ConfiguratorPanel({
                 className={cn(
                   "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
                   footType === "black-plastic"
-                    ? "bg-teal-50 border-teal-400 shadow-md"
-                    : "bg-white border-gray-200 hover:border-gray-300"
+                    ? "bg-accent/10 border-accent shadow-md"
+                    : "bg-card border-border hover:border-border"
                 )}
               >
-                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="h-12 w-full rounded-lg bg-muted flex items-center justify-center overflow-hidden">
                   <div className="flex gap-1">
                     {[...Array(4)].map((_, i) => (
-                      <div key={i} className="w-2 h-2 rounded-full bg-gray-800" />
+                      <div key={i} className="w-2 h-2 rounded-full bg-foreground" />
                     ))}
                   </div>
                 </div>
-                <span className="mt-1 text-[9px] font-semibold text-gray-700">Standard</span>
+                <span className="mt-1 text-[9px] font-semibold text-muted-foreground">Standard</span>
                 {footType === "black-plastic" && (
-                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                  <Check className="absolute top-1 right-1 h-3 w-3 text-accent" />
                 )}
               </button>
 
@@ -427,11 +427,11 @@ export function ConfiguratorPanel({
                 className={cn(
                   "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
                   footType === "casters"
-                    ? "bg-teal-50 border-teal-400 shadow-md"
-                    : "bg-white border-gray-200 hover:border-gray-300"
+                    ? "bg-accent/10 border-accent shadow-md"
+                    : "bg-card border-border hover:border-border"
                 )}
               >
-                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="h-12 w-full rounded-lg bg-muted flex items-center justify-center overflow-hidden">
                   <Image
                     src="/images/feet/casters.webp"
                     alt="Rollen"
@@ -440,9 +440,9 @@ export function ConfiguratorPanel({
                     className="object-contain"
                   />
                 </div>
-                <span className="mt-1 text-[9px] font-semibold text-gray-700">Rollen</span>
+                <span className="mt-1 text-[9px] font-semibold text-muted-foreground">Rollen</span>
                 {footType === "casters" && (
-                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                  <Check className="absolute top-1 right-1 h-3 w-3 text-accent" />
                 )}
               </button>
 
@@ -452,11 +452,11 @@ export function ConfiguratorPanel({
                 className={cn(
                   "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
                   footType === "chrome-adjustable"
-                    ? "bg-teal-50 border-teal-400 shadow-md"
-                    : "bg-white border-gray-200 hover:border-gray-300"
+                    ? "bg-accent/10 border-accent shadow-md"
+                    : "bg-card border-border hover:border-border"
                 )}
               >
-                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="h-12 w-full rounded-lg bg-muted flex items-center justify-center overflow-hidden">
                   <Image
                     src="/images/feet/chrome-adjustable.webp"
                     alt="Verchromte Stellfüße"
@@ -465,9 +465,9 @@ export function ConfiguratorPanel({
                     className="object-contain"
                   />
                 </div>
-                <span className="mt-1 text-[9px] font-semibold text-gray-700">Stellfüße</span>
+                <span className="mt-1 text-[9px] font-semibold text-muted-foreground">Stellfüße</span>
                 {footType === "chrome-adjustable" && (
-                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                  <Check className="absolute top-1 right-1 h-3 w-3 text-accent" />
                 )}
               </button>
             </div>
@@ -475,9 +475,9 @@ export function ConfiguratorPanel({
         </div>
 
         {/* Visual Grid Editor */}
-        <div className="border-b border-gray-100 p-4">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Konfigurations-Raster</h3>
-          <p className="mb-3 text-xs text-gray-500">
+        <div className="border-b border-border p-4">
+          <h3 className="mb-2 text-sm font-semibold text-foreground">Konfigurations-Raster</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
             Klicke auf grüne Geister-Zellen im 3D-Modell um Module zu platzieren
           </p>
 
@@ -487,7 +487,7 @@ export function ConfiguratorPanel({
               <button
                 key={`col-width-${colIndex}`}
                 onClick={() => onSetColumnWidth(colIndex, width === 75 ? 38 : 75)}
-                className="flex-1 rounded-lg bg-gray-100 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-200 transition-all font-medium"
+                className="flex-1 rounded-lg bg-muted px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted/80 transition-all font-medium"
               >
                 {width}cm
               </button>
@@ -501,7 +501,7 @@ export function ConfiguratorPanel({
                 return (
                   <div
                     key={`row-height-${rowIndex}`}
-                    className="flex h-12 w-10 items-center justify-center rounded-lg bg-gray-100 text-[10px] text-gray-600 font-medium"
+                    className="flex h-12 w-10 items-center justify-center rounded-lg bg-muted text-[10px] text-muted-foreground font-medium"
                   >
                     {height}cm
                   </div>
@@ -533,9 +533,9 @@ export function ConfiguratorPanel({
                         "relative flex items-center justify-center rounded-lg border-2 text-[8px] font-semibold cursor-pointer transition-all",
                         isEmpty
                           ? isGhost
-                            ? "border-dashed border-teal-400/60 bg-teal-500/10 hover:bg-teal-500/20"
-                            : "border-dashed border-gray-300"
-                          : "border-solid border-gray-300 hover:border-gray-400 shadow-sm",
+                            ? "border-dashed border-secondary/60 bg-secondary/10 hover:bg-secondary/20"
+                            : "border-dashed border-border"
+                          : "border-solid border-border hover:border-border shadow-sm",
                       )}
                       style={{ backgroundColor: isEmpty ? undefined : bgColor }}
                       title={isGhost ? "Geister-Zelle" : isEmpty ? "Leer" : getModuleLabel(cell.type)}
@@ -543,10 +543,10 @@ export function ConfiguratorPanel({
                     >
                       {isEmpty ? (
                         isGhost ? (
-                          <Plus className="h-3 w-3 text-teal-500" />
+                          <Plus className="h-3 w-3 text-secondary" />
                         ) : null
                       ) : (
-                        <span className={cn("text-center", cellColor === "weiss" || cellColor === "gelb" ? "text-gray-800" : "text-white")}>
+                        <span className={cn("text-center", cellColor === "weiss" || cellColor === "gelb" ? "text-foreground" : "text-primary-foreground")}>
                           {getModuleShortLabel(cell.type)}
                         </span>
                       )}
@@ -556,17 +556,17 @@ export function ConfiguratorPanel({
             </div>
           </div>
 
-          <p className="mt-2 text-[10px] text-gray-500">Tipp: Grüne Zellen im 3D-Modell sind klickbar</p>
+          <p className="mt-2 text-[10px] text-muted-foreground">Tipp: Grüne Zellen im 3D-Modell sind klickbar</p>
         </div>
 
         {/* Shopping List */}
-        <div className="border-b border-gray-100">
+        <div className="border-b border-border">
           <button
             onClick={onToggleShoppingList}
-            className="flex w-full items-center gap-2 p-4 text-left text-gray-900 transition-colors hover:bg-gray-50"
+            className="flex w-full items-center gap-2 p-4 text-left text-foreground transition-colors hover:bg-muted"
           >
-            {showShoppingList ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
-            <List className="h-4 w-4 text-gray-500" />
+            {showShoppingList ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+            <List className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">Einkaufsliste ({shoppingList.length} Produkte)</span>
           </button>
 
@@ -574,26 +574,26 @@ export function ConfiguratorPanel({
             <div className="px-4 pb-4">
               {shoppingList.length === 0 ? (
                 <div className="py-6 text-center">
-                  <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
-                    <ShoppingCart className="h-7 w-7 text-gray-400" />
+                  <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                    <ShoppingCart className="h-7 w-7 text-muted-foreground" />
                   </div>
-                  <p className="text-sm text-gray-500">Noch keine Module hinzugefügt</p>
+                  <p className="text-sm text-muted-foreground">Noch keine Module hinzugefügt</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {shoppingList.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-3 py-2 text-sm"
+                      className="flex items-center justify-between rounded-xl bg-muted border border-border px-3 py-2 text-sm"
                     >
                       <div className="flex-1">
-                        <div className="text-gray-900 font-medium">{item.name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-foreground font-medium">{item.name}</div>
+                        <div className="text-xs text-muted-foreground">
                           Art.Nr: {item.id} | {item.quantity}x à {(item.pricePerUnit || 0).toFixed(2).replace(".", ",")}{" "}
                           EUR
                         </div>
                       </div>
-                      <div className="text-right font-bold text-teal-600">
+                      <div className="text-right font-bold text-accent">
                         {(item.total || 0).toFixed(2).replace(".", ",")} EUR
                       </div>
                     </div>
@@ -606,10 +606,10 @@ export function ConfiguratorPanel({
       </div>
 
       {/* Price & Cart - Fixed at bottom */}
-      <div className="border-t border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4">
+      <div className="border-t border-border bg-gradient-to-br from-muted to-card p-4">
         <div className="mb-3 flex items-baseline justify-between">
-          <span className="text-sm font-medium text-gray-600">Gesamtpreis:</span>
-          <span className="text-3xl font-bold text-gray-900">{totalPrice.toFixed(2).replace(".", ",")} EUR</span>
+          <span className="text-sm font-medium text-muted-foreground">Gesamtpreis:</span>
+          <span className="text-3xl font-bold text-foreground">{totalPrice.toFixed(2).replace(".", ",")} EUR</span>
         </div>
         <button
           onClick={handleAddToCart}
@@ -617,10 +617,10 @@ export function ConfiguratorPanel({
           className={cn(
             "flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-semibold transition-all shadow-sm",
             addedToCart
-              ? "bg-green-500 text-white shadow-green-200 shadow-md"
+              ? "bg-secondary text-secondary-foreground shadow-secondary/20 shadow-md"
               : shoppingList.length === 0
-                ? "cursor-not-allowed bg-gray-200 text-gray-400"
-                : "bg-gray-900 text-white hover:bg-gray-800 shadow-md",
+                ? "cursor-not-allowed bg-muted text-muted-foreground"
+                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md",
           )}
         >
           {addedToCart ? (
@@ -638,7 +638,7 @@ export function ConfiguratorPanel({
         {addedToCart && (
           <a
             href="/warenkorb"
-            className="mt-2 block text-center text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
+            className="mt-2 block text-center text-sm text-accent hover:text-accent/80 font-medium transition-colors"
           >
             Zum Warenkorb
           </a>
