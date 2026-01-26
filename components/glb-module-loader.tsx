@@ -379,10 +379,8 @@ export const GLBModule = memo(
             color: "white",
           })
 
-          console.log("[v0] Fetching GLB model:", `/api/blob-models?${params}`)
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
-          console.log("[v0] API response:", data)
 
           if (!data.ok || !data.url) {
             throw new Error(data.error || "Failed to resolve model")
@@ -395,7 +393,6 @@ export const GLBModule = memo(
           urlCache.set(cacheKey, data.url)
           setModelUrl(data.url)
         } catch (err) {
-          console.error("[v0] Error fetching GLB:", err)
           setError(err instanceof Error ? err.message : "Unknown error")
         }
       }
@@ -476,9 +473,7 @@ const LoadedGLBModel = memo(
   onClick?: (row: number, col: number) => void
   hideBuiltInFeet?: boolean
   }) {
-    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl, "with targetColor:", targetColor)
     const { scene } = useGLTF(modelUrl)
-    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null", "color:", targetColor)
     const groupRef = useRef<THREE.Group>(null)
 
   
@@ -587,9 +582,41 @@ const LoadedGLBModel = memo(
               if (isFrame) {
                 child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
               } else {
-                // Hide the original GLB panel - make it invisible
-                // The panel will be replaced by dynamically colored geometry
-                child.visible = false
+                // Apply color to panel - keep visible with new material
+                const oldMat = child.material as THREE.MeshStandardMaterial
+                const texture = oldMat.map || null
+                const finalColor = isBottom ? TARGET_COLORS.schwarz : targetColorValue
+                
+                // Create a unique cache key that includes the actual color being applied
+                const materialKey = `panel-${colorKey}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
+                
+                if (isWhitePanel && !isBottom) {
+                  // White panels use MeshStandardMaterial with emissive for extra brightness
+                  child.material = getCachedMaterial(
+                    materialKey,
+                    () =>
+                      new THREE.MeshStandardMaterial({
+                        map: texture,
+                        color: finalColor.clone(),
+                        emissive: new THREE.Color("#ffffff"),
+                        emissiveIntensity: 0.15,
+                        roughness: 0.9,
+                        metalness: 0.0,
+                        side: THREE.DoubleSide,
+                      }),
+                  )
+                } else {
+                  // Colored panels use MeshLambertMaterial for flat appearance
+                  child.material = getCachedMaterial(
+                    materialKey,
+                    () =>
+                      new THREE.MeshLambertMaterial({
+                        map: texture,
+                        color: finalColor.clone(),
+                        side: THREE.DoubleSide,
+                      }),
+                  )
+                }
               }
             }
           }
@@ -597,7 +624,6 @@ const LoadedGLBModel = memo(
 
         return clone
       } catch (err) {
-        console.error("[v0] Error cloning/processing scene:", err)
         // Return the original scene as fallback instead of throwing
         return scene.clone()
       }
