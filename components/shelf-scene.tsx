@@ -346,21 +346,11 @@ export const ShelfScene = memo(function ShelfScene({
 
         return (
           <group key={key}>
-            <GLBModule
-              position={position}
-              cellType={cell.type}
-              width={width}
-              height={height}
-              depth={0.38}
-              color={colorToUse}
-              row={row}
-              col={col}
-              gridConfig={config}
-              isBottomModule={isBottomModule}
-              isSelected={isSelected}
-              onClick={handleClick}
-              hideBuiltInFeet={shouldHideBuiltInFeet}
-            />
+            {/* Disable GLB loading to prevent flickering - use procedural boxes */}
+            <mesh position={position}>
+              <boxGeometry args={[width, height, 0.38]} />
+              <meshStandardMaterial color={colorMap[colorToUse] || "#ffffff"} />
+            </mesh>
             {/* Render custom feet on bottom modules when non-standard foot type selected */}
             {shouldShowCustomFeet && (
               <ModuleFeet
