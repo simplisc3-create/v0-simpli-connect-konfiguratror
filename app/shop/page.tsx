@@ -311,12 +311,12 @@ export default function ShopPage() {
   })
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-gray-50">
       <SiteHeader />
 
       <div className="pt-20 pb-16">
         {/* Hero Section */}
-        <div className="relative border-b border-border overflow-hidden">
+        <div className="relative border-b border-gray-100 overflow-hidden">
           <img 
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bgmoduleshop.png-eClL7CKco4EzhVgNEKgd6hFe11YohJ.jpeg"
             alt="Modular shelf on beach"
@@ -336,13 +336,13 @@ export default function ShopPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Width Tabs */}
           <div className="mb-6">
-            <div className="inline-flex rounded-xl bg-muted p-1">
+            <div className="inline-flex rounded-xl bg-gray-200 p-1">
               <button
                 onClick={() => setSelectedTab("simpli-regale")}
                 className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   selectedTab === "simpli-regale"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 Simpli Regale
@@ -351,8 +351,8 @@ export default function ShopPage() {
                 onClick={() => setSelectedTab(80)}
                 className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   selectedTab === 80
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 80er Module
@@ -361,14 +361,14 @@ export default function ShopPage() {
                 onClick={() => setSelectedTab(40)}
                 className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                   selectedTab === 40
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 40er Module
               </button>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-gray-500">
               {selectedTab === "simpli-regale"
                 ? "Vorkonfigurierte Komplett-Sets - sortiert nach Höhe"
                 : selectedTab === 80 
@@ -386,8 +386,8 @@ export default function ShopPage() {
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                     effectiveCategory === cat.id 
-                      ? "bg-primary text-primary-foreground shadow-md" 
-                      : "bg-card text-foreground hover:bg-muted border border-border"
+                      ? "bg-teal-600 text-white shadow-md" 
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
                   }`}
                 >
                   {cat.name}
@@ -395,18 +395,18 @@ export default function ShopPage() {
               ))}
             </div>
             <div className="sm:ml-auto flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sortieren:</span>
+              <span className="text-sm text-gray-500">Sortieren:</span>
               <div className="relative">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-card border border-border rounded-lg px-4 py-2.5 pr-8 text-sm font-medium cursor-pointer hover:border-border transition text-foreground"
+                  className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2.5 pr-8 text-sm font-medium cursor-pointer hover:border-gray-300 transition"
                 >
                   <option value="name">Name</option>
                   <option value="price-asc">Preis aufsteigend</option>
                   <option value="price-desc">Preis absteigend</option>
                 </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
               </div>
             </div>
           </div>
@@ -438,16 +438,16 @@ export default function ShopPage() {
 
 
           {/* CTA Banner */}
-          <div className="mt-16 bg-gradient-to-br from-foreground to-muted rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="mt-16 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-background">Lieber selbst konfigurieren?</h2>
-              <p className="mt-3 text-background/80 max-w-lg">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">Lieber selbst konfigurieren?</h2>
+              <p className="mt-3 text-gray-300 max-w-lg">
                 Mit unserem 3D-Konfigurator stellst du dein Traumregal in Minuten zusammen. 
                 Kombiniere Module, Farben und Größen nach deinen Wünschen.
               </p>
             </div>
             <Link href="/konfigurator">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground whitespace-nowrap gap-2">
+              <Button size="lg" className="bg-teal-500 hover:bg-teal-600 text-white whitespace-nowrap gap-2">
                 Zum Konfigurator
                 <ArrowRight className="w-4 h-4" />
               </Button>
@@ -457,28 +457,28 @@ export default function ShopPage() {
       </div>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-border">
+      <footer className="py-12 px-6 border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-foreground rounded-lg flex items-center justify-center">
-                  <span className="text-background font-bold text-sm">S</span>
+                <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">S</span>
                 </div>
                 <span className="font-semibold">Simpli Connect</span>
               </div>
-              <p className="text-sm text-muted-foreground">Modulare Regalsysteme aus Deutschland.</p>
+              <p className="text-sm text-gray-600">Modulare Regalsysteme aus Deutschland.</p>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Produkte</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-gray-600">
                 <li>
-                  <Link href="/shop" className="hover:text-foreground transition">
+                  <Link href="/shop" className="hover:text-black transition">
                     Shop
                   </Link>
                 </li>
                 <li>
-                  <Link href="/konfigurator" className="hover:text-foreground transition">
+                  <Link href="/konfigurator" className="hover:text-black transition">
                     Konfigurator
                   </Link>
                 </li>
@@ -486,9 +486,9 @@ export default function ShopPage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Unternehmen</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-gray-600">
                 <li>
-                  <Link href="/kontakt" className="hover:text-foreground transition">
+                  <Link href="/kontakt" className="hover:text-black transition">
                     Kontakt
                   </Link>
                 </li>
@@ -496,21 +496,21 @@ export default function ShopPage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Rechtliches</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-gray-600">
                 <li>
-                  <Link href="/impressum" className="hover:text-foreground transition">
+                  <Link href="/impressum" className="hover:text-black transition">
                     Impressum
                   </Link>
                 </li>
                 <li>
-                  <Link href="/datenschutz" className="hover:text-foreground transition">
+                  <Link href="/datenschutz" className="hover:text-black transition">
                     Datenschutz
                   </Link>
                 </li>
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
+          <div className="mt-12 pt-8 border-t border-gray-100 text-center text-sm text-gray-500">
             © 2026 Simpli Connect. Alle Rechte vorbehalten.
           </div>
         </div>
@@ -537,8 +537,8 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
 
   return (
     <Link href={`/shop/${product.id}`} className="block">
-      <div className="group bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg hover:border-border transition-all duration-300">
-        <div className="aspect-square overflow-hidden flex items-center justify-center bg-muted relative">
+      <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+        <div className="aspect-square overflow-hidden flex items-center justify-center bg-gray-50 relative">
           <Product3DPreview
             moduleType={product.glbModule.moduleType}
             color={product.glbModule.color}
@@ -547,7 +547,7 @@ function ProductCard({ product, addItem }: { product: (typeof products)[0]; addI
           />
         </div>
         <div className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">{product.artNr}</p>
+          <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>
           <h3 className="font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">{product.name}</h3>
           <p className="text-sm text-gray-600 mt-1 line-clamp-2">{product.description}</p>
           <div className="mt-4 flex items-center justify-between">
