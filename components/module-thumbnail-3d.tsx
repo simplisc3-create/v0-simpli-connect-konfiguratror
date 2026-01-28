@@ -267,8 +267,9 @@ export function ModuleThumbnail3D({
           
           <Environment preset="studio" background={false} />
 
-          {/* Use fallback only - disable GLB loading to prevent flickering */}
-          <FallbackBox />
+          <Suspense fallback={<FallbackBox />}>
+            <StaticModel url={glbUrl} color={color} />
+          </Suspense>
         </Canvas>
       </CanvasErrorBoundary>
     </div>

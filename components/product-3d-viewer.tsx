@@ -119,11 +119,20 @@ function Scene({ product }: { product: Product }) {
       {/* Use built-in studio preset - more reliable in production */}
       <Environment preset="studio" background={false} />
 
-      {/* Disable GLB loading to prevent flickering - show static placeholder */}
-      <mesh position={[0, height / 2, 0]}>
-        <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial color="#e5e5e5" />
-      </mesh>
+      <Suspense fallback={null}>
+        <GLBModule
+          position={[0, height / 2, 0]}
+          cellType={cellType}
+          width={width}
+          height={height}
+          depth={depth}
+          color={color}
+          row={0}
+          col={0}
+          gridConfig={gridConfig}
+          isBottomModule={true}
+        />
+      </Suspense>
 
       {/* Clean studio floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>

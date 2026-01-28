@@ -360,10 +360,8 @@ export const GLBModule = memo(
             color: "white",
           })
 
-          console.log("[v0] Fetching GLB model:", `/api/blob-models?${params}`)
           const response = await fetch(`/api/blob-models?${params}`)
           const data = await response.json()
-          console.log("[v0] API response:", data)
 
           if (!data.ok || !data.url) {
             throw new Error(data.error || "Failed to resolve model")
@@ -376,7 +374,6 @@ export const GLBModule = memo(
           urlCache.set(cacheKey, data.url)
           setModelUrl(data.url)
         } catch (err) {
-          console.error("[v0] Error fetching GLB:", err)
           setError(err instanceof Error ? err.message : "Unknown error")
         }
       }
@@ -457,9 +454,7 @@ const LoadedGLBModel = memo(
   onClick?: (row: number, col: number) => void
   hideBuiltInFeet?: boolean
   }) {
-    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
     const { scene } = useGLTF(modelUrl)
-    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null")
     const groupRef = useRef<THREE.Group>(null)
 
   
@@ -594,7 +589,6 @@ const LoadedGLBModel = memo(
 
       return clone
     } catch (err) {
-        console.error("[v0] Error cloning/processing scene:", err)
         // Return the original scene as fallback instead of throwing
         return scene.clone()
       }
