@@ -99,7 +99,7 @@ export default function ManageImagesPage() {
     const newMap = { ...imageMap }
     delete newMap[artNr]
     saveImages(newMap)
-    toast.success(`✓ Bild für ${artNr} gelöscht`)
+    toast.success('Bild entfernt')
   }
 
   const filteredProducts = allProducts.filter(
@@ -113,20 +113,19 @@ export default function ManageImagesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-8 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Laden...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
+        <p className="text-gray-600">Laden...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-foreground">Produktbilder verwalten</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold mb-2 text-gray-900">Produktbilder verwalten</h1>
+          <p className="text-gray-600">
             Laden Sie Produktbilder hoch. Diese werden automatisch in Vercel Blob gespeichert und im Shop angezeigt.
           </p>
         </div>
@@ -135,70 +134,84 @@ export default function ManageImagesPage() {
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-3xl font-bold text-primary">{filteredProducts.length}</p>
-              <p className="text-sm text-muted-foreground mt-1">Produkte insgesamt</p>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-blue-600">{filteredProducts.length}</p>
+                <p className="text-sm text-gray-600 mt-1">Produkte insgesamt</p>
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-3xl font-bold text-secondary">{Object.keys(imageMap).length}</p>
-              <p className="text-sm text-muted-foreground mt-1">Mit Bildern</p>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-green-600">{Object.keys(imageMap).length}</p>
+                <p className="text-sm text-gray-600 mt-1">Mit Bildern</p>
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-3xl font-bold text-destructive">{filteredProducts.length - Object.keys(imageMap).length}</p>
-              <p className="text-sm text-muted-foreground mt-1">Noch zu bearbeiten</p>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-orange-600">{filteredProducts.length - Object.keys(imageMap).length}</p>
+                <p className="text-sm text-gray-600 mt-1">Noch zu bearbeiten</p>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Search */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Input
+            type="text"
             placeholder="Nach Artikel-Nr. oder Name suchen..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-muted"
+            className="max-w-md"
           />
         </div>
 
         {/* Products with images */}
         {productsWithImages.length > 0 && (
           <div className="mb-12">
-            <CardHeader className="pb-3 bg-muted">
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-secondary" />
-                <h2 className="text-xl font-semibold text-foreground">Mit Bildern ({productsWithImages.length})</h2>
-              </div>
-            </CardHeader>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Check className="w-5 h-5 text-green-600" />
+              <h2 className="text-xl font-semibold text-gray-900">Mit Bildern ({productsWithImages.length})</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {productsWithImages.map((product) => (
-                <div key={product.artNr} className="border border-border rounded-lg overflow-hidden">
-                  <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-                    {imageMap[product.artNr] ? (
-                      <img
-                        src={imageMap[product.artNr]}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-muted-foreground">Kein Bild</span>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <p className="text-sm text-foreground font-medium">{product.artNr}</p>
-                    <p className="text-sm text-muted-foreground">{product.name}</p>
+                <Card key={product.artNr} className="overflow-hidden hover:shadow-md transition-shadow border-green-200">
+                  <CardHeader className="pb-3 bg-green-50">
+                    <div className="space-y-1">
+                      <CardTitle className="text-base">{product.artNr}</CardTitle>
+                      <p className="text-sm text-gray-600">{product.name}</p>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-3 pt-4">
+                    {/* Image Preview */}
+                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={imageMap[product.artNr] || '/placeholder.svg'}
+                          alt={product.name}
+                          fill
+                          objectFit="cover"
+                          className="w-full h-full"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Remove Button */}
                     <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleRemoveImage(product.artNr)}
-                      variant="ghost"
-                      className="w-full text-xs hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 mt-3"
+                      className="w-full text-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Löschen
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Bild entfernen
                     </Button>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
@@ -207,35 +220,52 @@ export default function ManageImagesPage() {
         {/* Products without images */}
         {productsWithoutImages.length > 0 && (
           <div>
-            <CardHeader className="pb-3 bg-muted">
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-destructive" />
-                <h2 className="text-xl font-semibold text-foreground">Noch zu bearbeiten ({productsWithoutImages.length})</h2>
-              </div>
-            </CardHeader>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Upload className="w-5 h-5 text-orange-600" />
+              <h2 className="text-xl font-semibold text-gray-900">Noch zu bearbeiten ({productsWithoutImages.length})</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {productsWithoutImages.map((product) => (
-                <div key={product.artNr} className="border border-border rounded-lg overflow-hidden">
-                  <label className="cursor-pointer block">
-                    <div className="aspect-square bg-muted rounded-lg border-2 border-dashed border-border flex items-center justify-center">
+                <Card key={product.artNr} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="space-y-1">
+                      <CardTitle className="text-base">{product.artNr}</CardTitle>
+                      <p className="text-sm text-gray-600">{product.name}</p>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-3">
+                    {/* Upload Area */}
+                    <div className="aspect-square bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                      <p className="text-xs text-gray-400 text-center px-2">Klick zum Hochladen</p>
+                    </div>
+
+                    {/* Upload Input */}
+                    <label className="block">
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => e.target.files?.[0] && handleImageUpload(product.artNr, e.target.files[0])}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleImageUpload(product.artNr, e.target.files[0])
+                          }
+                        }}
                         disabled={uploadingArtNr === product.artNr}
                         className="hidden"
                       />
-                      <div className="text-center pointer-events-none">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-xs text-muted-foreground text-center px-2">Klick zum Hochladen</p>
-                      </div>
-                    </div>
-                  </label>
-                  <div className="p-4">
-                    <p className="text-sm text-foreground font-medium">{product.artNr}</p>
-                    <p className="text-sm text-muted-foreground">{product.name}</p>
-                  </div>
-                </div>
+                      <Button
+                        asChild
+                        className="w-full cursor-pointer"
+                        disabled={uploadingArtNr === product.artNr}
+                      >
+                        <span>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {uploadingArtNr === product.artNr ? 'Wird hochgeladen...' : 'Bild hochladen'}
+                        </span>
+                      </Button>
+                    </label>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
@@ -243,7 +273,7 @@ export default function ManageImagesPage() {
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Keine Produkte gefunden</p>
+            <p className="text-gray-500">Keine Produkte gefunden</p>
           </div>
         )}
       </div>

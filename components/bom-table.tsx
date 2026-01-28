@@ -22,12 +22,12 @@ export function BomTable({ bom }: BomTableProps) {
     <div className="space-y-6">
       {Object.entries(grouped).map(([category, lines]) => (
         <div key={category}>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{category}</h3>
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-700">{category}</h3>
 
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted">
+                <TableRow className="bg-gray-50">
                   <TableHead>SKU</TableHead>
                   <TableHead>Beschreibung</TableHead>
                   <TableHead className="text-right">Menge</TableHead>
@@ -39,10 +39,10 @@ export function BomTable({ bom }: BomTableProps) {
                 {lines.map((line, idx) => (
                   <TableRow key={idx}>
                     <TableCell className="font-mono text-sm">{line.sku}</TableCell>
-                    <TableCell className="text-foreground">{line.name}</TableCell>
+                    <TableCell>{line.name}</TableCell>
                     <TableCell className="text-right font-semibold">{line.qty}</TableCell>
                     <TableCell>{line.unit}</TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">
+                    <TableCell className="text-right text-sm text-gray-600">
                       {line.note && <span className="italic">{line.note}</span>}
                     </TableCell>
                   </TableRow>
