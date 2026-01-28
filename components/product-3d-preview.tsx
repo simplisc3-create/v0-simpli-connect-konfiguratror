@@ -216,8 +216,22 @@ function RotatingModel({ url, color, isHovered }: { url: string; color: string; 
   )
 }
 
-function FallbackBox() {
-  const meshRef = useRef<THREE.Mesh>(null)
+function FallbackPanels({ color, width }: { color: string; width: 40 | 80 }) {
+  const meshRef = useRef<THREE.Group>(null)
+  const targetColor = TARGET_COLORS[color] || TARGET_COLORS.white
+  
+  // Get panel dimensions based on width
+  const getPanelDims = () => {
+    if (width === 80) {
+      return { panelW: 0.78, panelH: 0.38, panelD: 0.01 } // 80cm width
+    } else {
+      return { panelW: 0.38, panelH: 0.38, panelD: 0.01 } // 40cm width
+    }
+  }
+  
+  const { panelW, panelH, panelD } = getPanelDims()
+  const frameSpacing = 0.05
+  const frameRadius = 0.008
   
   useFrame((_, delta) => {
     if (meshRef.current) {
@@ -226,12 +240,72 @@ function FallbackBox() {
   })
 
   return (
-    <mesh ref={meshRef}>
-      <boxGeometry args={[0.2, 0.1, 0.2]} />
-      <meshStandardMaterial color="#e5e5e5" />
-    </mesh>
+    <group ref={meshRef}>
+      {/* Top Panel */}
+      <mesh position={[0, panelH / 2 - 0.02, 0]}>
+        <boxGeometry args={[panelW, panelD, panelH]} />
+        <meshLambertMaterial color={targetColor} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Bottom Panel */}
+      <mesh position={[0, -panelH / 2 + 0.02, 0]}>
+        <boxGeometry args={[panelW, panelD, panelH]} />
+        <meshLambertMaterial color="#111111" side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Left Panel */}
+      <mesh position={[-panelW / 2 + 0.005, 0, 0]}>
+        <boxGeometry args={[panelD, panelH, panelH]} />
+        <meshLambertMaterial color={targetColor} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Right Panel */}
+      <mesh position={[panelW / 2 - 0.005, 0, 0]}>
+        <boxGeometry args={[panelD, panelH, panelH]} />
+        <meshLambertMaterial color={targetColor} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Back Panel */}
+      <mesh position={[0, 0, -panelH / 2 + 0.005]}>
+        <boxGeometry args={[panelW, panelH, panelD]} />
+        <meshLambertMaterial color={targetColor} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Front Panel */}
+      <mesh position={[0, 0, panelH / 2 - 0.005]}>
+        <boxGeometry args={[panelW, panelH, panelD]} />
+        <meshLambertMaterial color={targetColor} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Chrome Frame Corners - vertical tubes */}
+      {[
+        [-panelW / 2 + frameSpacing, 0, -panelH / 2 + frameSpacing],
+        [-panelW / 2 + frameSpacing, 0, panelH / 2 - frameSpacing],
+        [panelW / 2 - frameSpacing, 0, -panelH / 2 + frameSpacing],
+        [panelW / 2 - frameSpacing, 0, panelH / 2 - frameSpacing],
+      ].map((pos, idx) => (
+        <mesh key={idx} position={pos as [number, number, number]}>
+          <cylinderGeometry args={[frameRadius, frameRadius, panelH, 8]} />
+          <meshStandardMaterial color={0xc7c7cb} metalness={0.9} roughness={0.1} />
+        </mesh>
+      ))}
+
+      {/* Chrome Frame Horizontals */}
+      {[
+        [-panelW / 2 + frameSpacing, panelH / 2 - frameSpacing, 0],
+        [-panelW / 2 + frameSpacing, -panelH / 2 + frameSpacing, 0],
+        [panelW / 2 - frameSpacing, panelH / 2 - frameSpacing, 0],
+        [panelW / 2 - frameSpacing, -panelH / 2 + frameSpacing, 0],
+      ].map((pos, idx) => (
+        <mesh key={`h${idx}`} position={pos as [number, number, number]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[frameRadius, frameRadius, panelW, 8]} />
+          <meshStandardMaterial color={0xc7c7cb} metalness={0.9} roughness={0.1} />
+        </mesh>
+      ))}
+    </group>
   )
 }
+
 
 // Available colors for cycling
 const AVAILABLE_COLORS = ["white", "green", "yellow", "red", "blue"] as const
@@ -371,9 +445,10 @@ export function Product3DPreview({
           camera={{ position: cameraPosition, fov: 35 }}
           onCreated={(state) => {
             try {
-              // Safely access DOM element with multiple checks
-              if (state && state.gl && state.gl.domElement && typeof state.gl.domElement.addEventListener === 'function') {
-                state.gl.domElement.style.touchAction = 'none'
+              // Safely check if domElement exists before accessing it
+              const domElement = state?.gl?.domElement
+              if (domElement && typeof domElement.addEventListener === 'function') {
+                domElement.style.touchAction = 'none'
               }
             } catch (error) {
               // Silently handle - this is expected during SSR or rapid mounting/unmounting
@@ -390,9 +465,8 @@ export function Product3DPreview({
           
           <Environment preset="studio" background={false} />
 
-          <Suspense fallback={<FallbackBox />}>
-            <RotatingModel url={glbUrl} color={displayColor} isHovered={isHovered} />
-          </Suspense>
+          {/* Directly use fallback panels - skip GLB loading to avoid flickering */}
+          <FallbackPanels color={displayColor} width={width} />
         </Canvas>
       </CanvasErrorBoundary>
       
