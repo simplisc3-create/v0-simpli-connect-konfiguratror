@@ -445,9 +445,10 @@ export function Product3DPreview({
           camera={{ position: cameraPosition, fov: 35 }}
           onCreated={(state) => {
             try {
-              // Safely access DOM element with multiple checks
-              if (state && state.gl && state.gl.domElement && typeof state.gl.domElement.addEventListener === 'function') {
-                state.gl.domElement.style.touchAction = 'none'
+              // Safely check if domElement exists before accessing it
+              const domElement = state?.gl?.domElement
+              if (domElement && typeof domElement.addEventListener === 'function') {
+                domElement.style.touchAction = 'none'
               }
             } catch (error) {
               // Silently handle - this is expected during SSR or rapid mounting/unmounting
