@@ -465,9 +465,8 @@ export function Product3DPreview({
           
           <Environment preset="studio" background={false} />
 
-          <Suspense fallback={<FallbackPanels color={displayColor} width={width} />}>
-            <RotatingModel url={glbUrl} color={displayColor} isHovered={isHovered} />
-          </Suspense>
+          {/* Directly use fallback panels - skip GLB loading to avoid flickering */}
+          <FallbackPanels color={displayColor} width={width} />
         </Canvas>
       </CanvasErrorBoundary>
       
