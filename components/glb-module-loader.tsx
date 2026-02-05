@@ -152,7 +152,7 @@ const PANEL_KEYWORDS = [
 
 const HANDLE_KEYWORDS = ["handle", "griff", "knob", "knauf", "handgriff", "pull", "zieh"]
 
-const FEET_KEYWORDS = ["feet", "foot", "fuss", "fuß", "fuse", "bein", "leg", "standfuß", "standfuss"]
+const FEET_KEYWORDS = ["feet", "foot", "fuss", "fuß", "fuse", "bein", "leg", "standfuß", "standfuss", "gleiter", "kappe", "cap", "endkappe", "stopfen", "kunststoff"]
 
 function isHandlePart(meshName: string): boolean {
   const nameLower = meshName.toLowerCase()
@@ -233,40 +233,53 @@ function isFeetPart(
     }
   }
 
-  // The feet are small black plastic caps at the bottom corners
-  if (material) {
-    const mat = Array.isArray(material) ? material[0] : material
-    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
-      const color = mat.color
-      // Black/dark is when all RGB values are low (< 0.15)
-      const isBlackMaterial = color.r < 0.15 && color.g < 0.15 && color.b < 0.15
+  // Check if this is a small part at the bottom of the model - likely feet
+  if (geometry && parentBoundingBox) {
+    geometry.computeBoundingBox()
+    const meshBox = geometry.boundingBox
+    if (meshBox) {
+      const meshSize = new THREE.Vector3()
+      meshBox.getSize(meshSize)
 
-      if (isBlackMaterial && geometry && parentBoundingBox) {
-        geometry.computeBoundingBox()
-        const meshBox = geometry.boundingBox
-        if (meshBox) {
-          const meshSize = new THREE.Vector3()
-          meshBox.getSize(meshSize)
+      const parentSize = new THREE.Vector3()
+      parentBoundingBox.getSize(parentSize)
 
-          const parentSize = new THREE.Vector3()
-          parentBoundingBox.getSize(parentSize)
+      // Small parts are likely feet (less than 15% of parent size in all dimensions)
+      const isSmall =
+        meshSize.x < parentSize.x * 0.15 && 
+        meshSize.y < parentSize.y * 0.15 && 
+        meshSize.z < parentSize.z * 0.15
 
-          // Small black parts are likely feet (less than 20% of parent size)
-          const isSmall =
-            meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
+      // Also check if the part is at the bottom of the model (low Y position)
+      const parentMin = parentBoundingBox.min
+      const meshCenter = new THREE.Vector3()
+      meshBox.getCenter(meshCenter)
+      
+      // Feet should be near the bottom 20% of the model
+      const isAtBottom = meshCenter.y < parentMin.y + parentSize.y * 0.2
 
-          // Also check if the part is at the bottom of the model (low Y position)
-          const parentMin = parentBoundingBox.min
-          const meshCenter = new THREE.Vector3()
-          meshBox.getCenter(meshCenter)
-          
-          // Feet should be near the bottom 10% of the model
-          const isAtBottom = meshCenter.y < parentMin.y + parentSize.y * 0.15
-
-          if (isSmall && isAtBottom) {
-            return true
-          }
+      // Check if material is black/dark (common for plastic feet)
+      let isBlackMaterial = false
+      if (material) {
+        const mat = Array.isArray(material) ? material[0] : material
+        if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
+          const color = mat.color
+          // Black/dark is when all RGB values are low (< 0.2)
+          isBlackMaterial = color.r < 0.2 && color.g < 0.2 && color.b < 0.2
         }
+      }
+
+      // If it's small and at the bottom, and either black material or very small, it's likely feet
+      if (isSmall && isAtBottom) {
+        // If already black, definitely feet
+        if (isBlackMaterial) return true
+        
+        // If extremely small (< 5% of parent), likely feet regardless of color
+        const isVerySmall = 
+          meshSize.x < parentSize.x * 0.05 && 
+          meshSize.y < parentSize.y * 0.1 && 
+          meshSize.z < parentSize.z * 0.05
+        if (isVerySmall) return true
       }
     }
   }
