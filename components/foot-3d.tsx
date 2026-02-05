@@ -3,46 +3,19 @@
 import { memo, useMemo } from "react"
 import * as THREE from "three"
 import type { FootType } from "./shelf-configurator"
-import type { ColorKey } from "@/lib/simpli-products"
 
 type FootProps = {
   position: [number, number, number]
   footType: FootType
-  color?: ColorKey
 }
 
-// Shared materials for performance - color-specific plastic materials
+// Shared materials for performance
+// Standard foot is ONLY available in black (real product constraint)
 const BLACK_PLASTIC_MATERIAL = new THREE.MeshStandardMaterial({
   color: new THREE.Color("#1a1a1a"),
   roughness: 0.8,
   metalness: 0.1,
 })
-
-const WHITE_PLASTIC_MATERIAL = new THREE.MeshStandardMaterial({
-  color: new THREE.Color("#f5f5f5"),
-  roughness: 0.7,
-  metalness: 0.05,
-})
-
-const ANTHRACITE_PLASTIC_MATERIAL = new THREE.MeshStandardMaterial({
-  color: new THREE.Color("#3a3a3a"),
-  roughness: 0.75,
-  metalness: 0.08,
-})
-
-// Helper function to get the correct plastic material based on color
-function getPlasticMaterial(color?: ColorKey): THREE.MeshStandardMaterial {
-  switch (color) {
-    case "weiss":
-    case "white":
-      return WHITE_PLASTIC_MATERIAL
-    case "anthrazit":
-      return ANTHRACITE_PLASTIC_MATERIAL
-    case "schwarz":
-    default:
-      return BLACK_PLASTIC_MATERIAL
-  }
-}
 
 const CHROME_MATERIAL = new THREE.MeshStandardMaterial({
   color: new THREE.Color(0.92, 0.92, 0.94),
@@ -64,25 +37,21 @@ const RUBBER_MATERIAL = new THREE.MeshStandardMaterial({
 })
 
 // Standard plastic foot - simple cap design that matches GLB model's feet
-// Color matches the module color
+// This foot is ONLY available in black (real product constraint)
 // Base sits on ground at y=0
 const StandardPlasticFoot = memo(function StandardPlasticFoot({ 
-  position, 
-  color 
+  position 
 }: { 
   position: [number, number, number]
-  color?: ColorKey 
 }) {
-  const material = useMemo(() => getPlasticMaterial(color), [color])
-  
   return (
     <group position={position}>
       {/* Main cap body - cylinder sitting on ground */}
-      <mesh position={[0, 0.006, 0]} material={material}>
+      <mesh position={[0, 0.006, 0]} material={BLACK_PLASTIC_MATERIAL}>
         <cylinderGeometry args={[0.011, 0.013, 0.012, 16]} />
       </mesh>
       {/* Rounded top */}
-      <mesh position={[0, 0.012, 0]} material={material}>
+      <mesh position={[0, 0.012, 0]} material={BLACK_PLASTIC_MATERIAL}>
         <sphereGeometry args={[0.011, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
       </mesh>
     </group>
@@ -165,7 +134,7 @@ const ChromeAdjustableFoot = memo(function ChromeAdjustableFoot({ position }: { 
 })
 
 // Main foot component that renders the correct type
-export const Foot3D = memo(function Foot3D({ position, footType, color }: FootProps) {
+export const Foot3D = memo(function Foot3D({ position, footType }: Omit<FootProps, 'color'>) {
   switch (footType) {
     case "casters":
       return <CasterFoot position={position} />
@@ -173,7 +142,7 @@ export const Foot3D = memo(function Foot3D({ position, footType, color }: FootPr
       return <ChromeAdjustableFoot position={position} />
     case "black-plastic":
     default:
-      return <StandardPlasticFoot position={position} color={color} />
+      return <StandardPlasticFoot position={position} />
   }
 })
 
@@ -183,7 +152,6 @@ type ModuleFeetProps = {
   moduleWidth: number
   moduleDepth: number
   footType: FootType
-  color?: ColorKey
 }
 
 export const ModuleFeet = memo(function ModuleFeet({
@@ -191,7 +159,6 @@ export const ModuleFeet = memo(function ModuleFeet({
   moduleWidth,
   moduleDepth,
   footType,
-  color,
 }: ModuleFeetProps) {
   // Calculate foot positions to match exactly where the GLB model's built-in feet are
   // 
@@ -249,7 +216,7 @@ export const ModuleFeet = memo(function ModuleFeet({
   return (
     <group>
   {footPositions.map((pos, index) => (
-  <Foot3D key={`foot-${index}`} position={pos} footType={footType} color={color} />
+  <Foot3D key={`foot-${index}`} position={pos} footType={footType} />
   ))}
     </group>
   )
