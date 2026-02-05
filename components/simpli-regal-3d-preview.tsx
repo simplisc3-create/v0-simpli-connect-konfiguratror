@@ -270,10 +270,9 @@ function calculateCameraSettings(preset: SimpliRegalProduct["preset"]) {
 interface SimpliRegal3DPreviewProps {
   regal: SimpliRegalProduct
   className?: string
-  transparentBackground?: boolean
 }
 
-export function SimpliRegal3DPreview({ regal, className = "", transparentBackground = false }: SimpliRegal3DPreviewProps) {
+export function SimpliRegal3DPreview({ regal, className = "" }: SimpliRegal3DPreviewProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [hasBeenHovered, setHasBeenHovered] = useState(false)
   const [selectedColorIndex, setSelectedColorIndex] = useState(0)
@@ -367,7 +366,7 @@ export function SimpliRegal3DPreview({ regal, className = "", transparentBackgro
   return (
     <div 
       ref={containerRef}
-      className={`relative ${transparentBackground ? 'bg-transparent' : 'bg-gradient-to-br from-gray-50 to-gray-100'} rounded-xl overflow-hidden group ${className}`}
+      className={`relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden group ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -393,7 +392,7 @@ export function SimpliRegal3DPreview({ regal, className = "", transparentBackgro
           }}
           frameloop="always"
         >
-          {!transparentBackground && <color attach="background" args={["#f9fafb"]} />}
+          <color attach="background" args={["#f9fafb"]} />
           
           <ambientLight intensity={0.7} />
           <directionalLight position={[3, 5, 4]} intensity={0.4} castShadow />
@@ -415,8 +414,8 @@ export function SimpliRegal3DPreview({ regal, className = "", transparentBackgro
         </Canvas>
       </CanvasErrorBoundary>
 
-      {/* Color indicator - show current color when cycling (hide on transparent background) */}
-      {!transparentBackground && hasBeenHovered && !isHovered && (
+      {/* Color indicator - show current color when cycling */}
+      {hasBeenHovered && !isHovered && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm z-10">
           {AVAILABLE_COLORS.map((c, index) => (
             <div
@@ -434,12 +433,10 @@ export function SimpliRegal3DPreview({ regal, className = "", transparentBackgro
         </div>
       )}
       
-      {/* Interaction hint (hide on transparent background) */}
-      {!transparentBackground && (
-        <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          Ziehen zum Drehen
-        </div>
-      )}
+      {/* Interaction hint */}
+      <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        Ziehen zum Drehen
+      </div>
     </div>
   )
 }
