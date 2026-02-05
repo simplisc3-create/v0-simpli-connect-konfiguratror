@@ -368,6 +368,7 @@ export const ShelfScene = memo(function ShelfScene({
                 moduleWidth={width}
                 moduleDepth={0.38}
                 footType={config.footType}
+                color={colorToUse}
               />
             )}
           </group>
