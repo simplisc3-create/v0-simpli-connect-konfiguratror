@@ -522,6 +522,7 @@ const LoadedGLBModel = memo(
           // Handle built-in feet:
           // 1. Not a bottom module - hide feet entirely
           // 2. Custom feet selected (hideBuiltInFeet = true) - make feet chrome to blend with frame
+          // 3. Always render feet in black
           if (isFeet) {
             if (!isBottomModule) {
               // Not bottom module - hide feet completely
@@ -530,6 +531,17 @@ const LoadedGLBModel = memo(
             } else if (hideBuiltInFeet) {
               // Custom feet selected - chrome-plate the built-in feet to blend with frame
               child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
+              return
+            } else {
+              // Standard feet are always black
+              child.material = getCachedMaterial("feet-black", () =>
+                new THREE.MeshStandardMaterial({
+                  color: TARGET_COLORS.black,
+                  roughness: 0.8,
+                  metalness: 0.0,
+                  side: THREE.DoubleSide,
+                })
+              )
               return
             }
           }
