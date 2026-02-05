@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense, useRef, memo } from "react"
 import { ArrowLeft, ShoppingCart, Package, Check, Truck, RotateCcw, Award, ChevronRight, Grid3X3, Layers, Sparkles, Box, ChevronLeft, ChevronRight as ChevronRightIcon, Pause, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -10,44 +10,192 @@ import { SimpliRegal3DPreview } from "@/components/simpli-regal-3d-preview"
 import { useCartStore } from "@/lib/cart-store"
 import { productsSimpliRegale } from "@/lib/simpli-products"
 import { calculatePresetPrice } from "@/lib/price-calculator"
+import { Canvas, useFrame } from "@react-three/fiber"
+import { OrbitControls, Environment } from "@react-three/drei"
+import { GLBModule } from "@/components/glb-module-loader"
+import * as THREE from "three"
 
 const regal = productsSimpliRegale.find(r => r.id === "das-lowboard-klassik")!
 const calculatedPrice = regal.preset ? calculatePresetPrice(regal.preset) : regal.price
 
-const heroImages = [
-  "/images/lowboard/lowboard-klassik-1.jpg",
-  "/images/lowboard/lowboard-klassik-2.jpg",
-  "/images/lowboard/lowboard-klassik-3.jpg",
-  "/images/lowboard/lowboard-klassik-4.jpg",
-  "/images/lowboard/lowboard-klassik-5.jpg",
-  "/images/lowboard/lowboard-klassik-6.jpg",
-]
+// Environment presets for slideshow
+const environments = [
+  { name: "studio", label: "Studio" },
+  { name: "apartment", label: "Apartment" },
+  { name: "city", label: "City" },
+  { name: "sunset", label: "Sunset" },
+  { name: "dawn", label: "Dawn" },
+  { name: "lobby", label: "Lobby" },
+] as const
+
+// Hero 3D Scene Component
+const HeroRegalScene = memo(function HeroRegalScene({ 
+  isHovered 
+}: { 
+  isHovered: boolean 
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      // Slow continuous rotation
+      groupRef.current.rotation.y += delta * (isHovered ? 0.5 : 0.15)
+    }
+  })
+
+  const preset = regal.preset
+  if (!preset) return null
+
+  const { columns, rows, columnWidths, rowHeights, grid } = preset
+  const depth = 0.38
+  const columnTubeOverlap = 0.003
+  const rowTubeOverlap = 0.003
+
+  const columnCenters: number[] = []
+  let totalWidth = 0
+  for (let col = 0; col < columns; col++) {
+    const colWidth = columnWidths[col] / 100
+    let xPos = 0
+    for (let c = 0; c < col; c++) {
+      xPos += columnWidths[c] / 100 - columnTubeOverlap
+    }
+    columnCenters.push(xPos + colWidth / 2)
+    totalWidth += colWidth
+    if (col > 0) totalWidth -= columnTubeOverlap
+  }
+
+  const rowCenters: number[] = []
+  for (let row = 0; row < rows; row++) {
+    const rowHeight = rowHeights[row] / 100
+    let yPos = 0
+    for (let r = 0; r < row; r++) {
+      yPos += rowHeights[r] / 100 - rowTubeOverlap
+    }
+    rowCenters.push(yPos + rowHeight / 2)
+  }
+
+  const offsetX = -totalWidth / 2
+
+  const modules: Array<{
+    key: string
+    position: [number, number, number]
+    cellType: string
+    width: number
+    height: number
+    color: string
+    row: number
+    col: number
+    isBottomModule: boolean
+  }> = []
+
+  grid.forEach((rowCells, gridRow) => {
+    rowCells.forEach((cell, gridCol) => {
+      if (cell.type === "empty" || cell.type === "ghost") return
+
+      const cellWidth = columnWidths[gridCol] / 100
+      const cellHeight = rowHeights[gridRow] / 100
+
+      let zOffset = 0
+      if (cell.type === "mit-doppelschublade" || cell.type === "abschliessbare-tueren") {
+        zOffset = 0.01
+      } else if (cell.type === "mit-rueckwand") {
+        zOffset = -0.01
+      }
+
+      const position: [number, number, number] = [
+        columnCenters[gridCol] + offsetX,
+        rowCenters[gridRow],
+        -depth / 2 + zOffset,
+      ]
+
+      const maxRowInColumn = grid.reduce((max, gridRowCells, rowIndex) => {
+        if (gridRowCells[gridCol] && gridRowCells[gridCol].type !== "empty" && gridRowCells[gridCol].type !== "ghost") {
+          return Math.max(max, rowIndex)
+        }
+        return max
+      }, -1)
+      const isBottomModule = gridRow === maxRowInColumn
+
+      modules.push({
+        key: `module-${gridRow}-${gridCol}`,
+        position,
+        cellType: cell.type,
+        width: cellWidth,
+        height: cellHeight,
+        color: "weiss",
+        row: gridRow,
+        col: gridCol,
+        isBottomModule,
+      })
+    })
+  })
+
+  const mockGridConfig = {
+    width: 75 as const,
+    height: 40 as const,
+    sections: columns,
+    levels: rows,
+    material: "metal" as const,
+    finish: "white" as const,
+    grid: grid,
+    columns,
+    rows,
+    columnWidths: columnWidths as (75 | 38)[],
+    rowHeights: rowHeights as (40 | 80 | 120 | 160 | 200)[],
+  }
+
+  return (
+    <group ref={groupRef}>
+      {modules.map(({ key, position, cellType, width, height, color, row, col, isBottomModule }) => (
+        <GLBModule
+          key={key}
+          position={position}
+          cellType={cellType as any}
+          width={width}
+          height={height}
+          depth={depth}
+          color={color as any}
+          row={row}
+          col={col}
+          gridConfig={mockGridConfig}
+          isBottomModule={isBottomModule}
+        />
+      ))}
+    </group>
+  )
+})
 
 export default function DasLowboardKlassikProductPage() {
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"features" | "specs">("features")
   const { addItem } = useCartStore()
-  const [currentSlide, setCurrentSlide] = useState(0)
+  const [currentEnv, setCurrentEnv] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
+  const [isHovered, setIsHovered] = useState(false)
+  const [canvasReady, setCanvasReady] = useState(false)
 
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % heroImages.length)
+  const nextEnv = useCallback(() => {
+    setCurrentEnv((prev) => (prev + 1) % environments.length)
   }, [])
 
-  const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length)
+  const prevEnv = useCallback(() => {
+    setCurrentEnv((prev) => (prev - 1 + environments.length) % environments.length)
   }, [])
 
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0)
+    // Delay canvas ready to ensure smooth mount
+    const timer = setTimeout(() => setCanvasReady(true), 300)
+    return () => clearTimeout(timer)
   }, [])
 
+  // Auto-cycle environments
   useEffect(() => {
     if (!isPlaying) return
-    const interval = setInterval(nextSlide, 5000)
+    const interval = setInterval(nextEnv, 6000)
     return () => clearInterval(interval)
-  }, [isPlaying, nextSlide])
+  }, [isPlaying, nextEnv])
 
   const handleAddToCart = () => {
     addItem({ id: regal.id, name: regal.name, artNr: regal.artNr, price: calculatedPrice })
@@ -88,42 +236,76 @@ export default function DasLowboardKlassikProductPage() {
         </div>
       </header>
 
-      {/* Fullscreen Hero Slideshow */}
-      <section className="relative w-full h-[70vh] md:h-[85vh] overflow-hidden">
-        {/* Background Images */}
-        {heroImages.map((image, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentSlide ? "opacity-100" : "opacity-0"
-            }`}
+      {/* Fullscreen Hero with 3D Model */}
+      <section 
+        className="relative w-full h-[70vh] md:h-[85vh] overflow-hidden bg-gradient-to-br from-gray-100 via-gray-50 to-white"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* 3D Canvas with Real GLB Model */}
+        {canvasReady && (
+          <Canvas
+            dpr={[1, 2]}
+            gl={{
+              antialias: true,
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.2,
+              alpha: true,
+              powerPreference: "high-performance",
+            }}
+            camera={{ position: [0, 0.25, 2.2], fov: 35 }}
+            className="absolute inset-0"
           >
-            <img
-              src={image}
-              alt={`Das Lowboard Klassik - Ansicht ${index + 1}`}
-              className="w-full h-full object-cover"
+            <color attach="background" args={["#f8f9fa"]} />
+            
+            <ambientLight intensity={0.6} />
+            <directionalLight position={[5, 8, 5]} intensity={0.8} castShadow />
+            <directionalLight position={[-3, 4, 2]} intensity={0.3} />
+            <spotLight position={[0, 10, 0]} intensity={0.4} angle={0.5} penumbra={1} />
+            
+            <Environment preset={environments[currentEnv].name} background={false} />
+
+            <Suspense fallback={null}>
+              <HeroRegalScene isHovered={isHovered} />
+            </Suspense>
+
+            <OrbitControls
+              enableZoom={false}
+              enablePan={false}
+              minPolarAngle={Math.PI / 3}
+              maxPolarAngle={Math.PI / 2}
+              target={[0, 0.2, 0]}
+              autoRotate={false}
             />
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          </Canvas>
+        )}
+
+        {/* Loading State */}
+        {!canvasReady && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-3 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+              <span className="text-gray-600 font-medium">3D Modell wird geladen...</span>
+            </div>
           </div>
-        ))}
+        )}
 
         {/* Content Overlay */}
-        <div className="absolute inset-0 flex flex-col justify-end">
+        <div className="absolute inset-0 flex flex-col justify-end pointer-events-none">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-16 md:pb-24">
-            <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 px-4 py-1.5 text-sm font-medium mb-4">
+            <Badge className="bg-gray-900/80 backdrop-blur-sm text-white border-gray-700 px-4 py-1.5 text-sm font-medium mb-4">
               SIMPLI REGAL KOLLEKTION
             </Badge>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold text-gray-900 leading-tight mb-4">
               {regal.name}
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-8 drop-shadow-md">
+            <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mb-8">
               {regal.subtitle} - Zeitlose Eleganz in ihrer pursten Form.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 pointer-events-auto">
               <Button 
                 size="lg" 
-                className="bg-white text-gray-900 hover:bg-gray-100 gap-2 text-base px-8 py-6 font-semibold"
+                className="bg-gray-900 text-white hover:bg-gray-800 gap-2 text-base px-8 py-6 font-semibold shadow-lg"
                 onClick={handleAddToCart}
               >
                 <ShoppingCart className="w-5 h-5" />
@@ -133,7 +315,7 @@ export default function DasLowboardKlassikProductPage() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-2 border-white text-white hover:bg-white/10 bg-transparent gap-2 text-base px-8 py-6 font-semibold"
+                  className="border-2 border-gray-900 text-gray-900 hover:bg-gray-100 bg-white/80 backdrop-blur-sm gap-2 text-base px-8 py-6 font-semibold"
                 >
                   <Package className="w-5 h-5" />
                   Anpassen
@@ -143,43 +325,54 @@ export default function DasLowboardKlassikProductPage() {
           </div>
         </div>
 
+        {/* Environment Label */}
+        <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm px-4 py-2 shadow-sm">
+          <span className="text-xs text-gray-500 uppercase tracking-wide">Umgebung</span>
+          <p className="text-sm font-semibold text-gray-900">{environments[currentEnv].label}</p>
+        </div>
+
         {/* Navigation Controls */}
         <div className="absolute bottom-8 right-4 sm:right-8 flex items-center gap-3">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors"
-            aria-label={isPlaying ? "Pause slideshow" : "Play slideshow"}
+            className="w-10 h-10 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm flex items-center justify-center transition-colors"
+            aria-label={isPlaying ? "Pause" : "Play"}
           >
-            {isPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white" />}
+            {isPlaying ? <Pause className="w-4 h-4 text-gray-700" /> : <Play className="w-4 h-4 text-gray-700" />}
           </button>
           <button
-            onClick={prevSlide}
-            className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors"
-            aria-label="Previous slide"
+            onClick={prevEnv}
+            className="w-10 h-10 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm flex items-center justify-center transition-colors"
+            aria-label="Vorherige Umgebung"
           >
-            <ChevronLeft className="w-5 h-5 text-white" />
+            <ChevronLeft className="w-5 h-5 text-gray-700" />
           </button>
           <button
-            onClick={nextSlide}
-            className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-colors"
-            aria-label="Next slide"
+            onClick={nextEnv}
+            className="w-10 h-10 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm flex items-center justify-center transition-colors"
+            aria-label="Nächste Umgebung"
           >
-            <ChevronRightIcon className="w-5 h-5 text-white" />
+            <ChevronRightIcon className="w-5 h-5 text-gray-700" />
           </button>
         </div>
 
-        {/* Slide Indicators */}
+        {/* Environment Indicators */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
-          {heroImages.map((_, index) => (
+          {environments.map((env, index) => (
             <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
+              key={env.name}
+              onClick={() => setCurrentEnv(index)}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentSlide ? "bg-white w-8" : "bg-white/50 hover:bg-white/70"
+                index === currentEnv ? "bg-gray-900 w-8" : "bg-gray-400 hover:bg-gray-600"
               }`}
-              aria-label={`Go to slide ${index + 1}`}
+              aria-label={`Umgebung: ${env.label}`}
             />
           ))}
+        </div>
+
+        {/* Interaction Hint */}
+        <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm text-xs text-gray-600">
+          Ziehen zum Drehen
         </div>
       </section>
 
