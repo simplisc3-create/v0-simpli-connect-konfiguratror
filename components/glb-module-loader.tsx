@@ -256,8 +256,7 @@ function isFeetPart(
             meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
 
           // Also check if the part is at the bottom of the model (low Y position)
-          const parentMin = new THREE.Vector3()
-          parentBoundingBox.getMin(parentMin)
+          const parentMin = parentBoundingBox.min
           const meshCenter = new THREE.Vector3()
           meshBox.getCenter(meshCenter)
           
