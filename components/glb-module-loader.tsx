@@ -340,65 +340,67 @@ export const GLBModule = memo(
 
     const cacheKey = useMemo(() => `${cellType}-${standardWidth}-white`, [cellType, standardWidth])
 
-    const [modelUrl, setModelUrl] = useState<string | null>(() => {
-      if (explicitModelUrl) return explicitModelUrl
-      return urlCache.get(cacheKey) || null
-    })
-    const [error, setError] = useState<string | null>(null)
-    const fetchedRef = useRef(false)
+  const [modelUrl, setModelUrl] = useState<string | null>(() => {
+    if (explicitModelUrl) return explicitModelUrl
+    return urlCache.get(cacheKey) || null
+  })
+  const [error, setError] = useState<string | null>(null)
+  const lastFetchedCacheKeyRef = useRef<string | null>(null)
 
-    useEffect(() => {
-      if (explicitModelUrl) {
-        setModelUrl(explicitModelUrl)
-        return
-      }
+  useEffect(() => {
+    // Clear error and reset modelUrl when cacheKey changes to allow retry
+    setError(null)
+    
+    if (explicitModelUrl) {
+      setModelUrl(explicitModelUrl)
+      return
+    }
 
-      const cachedUrl = urlCache.get(cacheKey)
-      if (cachedUrl) {
-        setModelUrl(cachedUrl)
-        return
-      }
+    const cachedUrl = urlCache.get(cacheKey)
+    if (cachedUrl) {
+      setModelUrl(cachedUrl)
+      return
+    }
+    
+    // Reset modelUrl while fetching new one
+    setModelUrl(null)
 
-      if (cellType === "empty" || cellType === "ghost") return
-      if (fetchedRef.current) return
-      fetchedRef.current = true
+    if (cellType === "empty" || cellType === "ghost") return
+    
+    // Only skip fetch if we already fetched for this exact cacheKey
+    if (lastFetchedCacheKeyRef.current === cacheKey) return
+    lastFetchedCacheKeyRef.current = cacheKey
 
-      const fetchUrl = async () => {
-        try {
-          const params = new URLSearchParams({
-            moduleType: cellType,
-            width: standardWidth.toString(),
-            height: "40",
-            color: "white",
-          })
+    const fetchUrl = async () => {
+      try {
+        const params = new URLSearchParams({
+          moduleType: cellType,
+          width: standardWidth.toString(),
+          height: "40",
+          color: "white",
+        })
 
-          console.log("[v0] Fetching GLB model:", `/api/blob-models?${params}`)
-          const response = await fetch(`/api/blob-models?${params}`)
-          const data = await response.json()
-          console.log("[v0] API response:", data)
+        const response = await fetch(`/api/blob-models?${params}`)
+        const data = await response.json()
 
-          if (!data.ok || !data.url) {
-            throw new Error(data.error || "Failed to resolve model")
-          }
-
-          if (!data.url.startsWith("https://") && !data.url.startsWith("/")) {
-            throw new Error(`Invalid URL: ${data.url}`)
-          }
-
-          urlCache.set(cacheKey, data.url)
-          setModelUrl(data.url)
-        } catch (err) {
-          console.error("[v0] Error fetching GLB:", err)
-          setError(err instanceof Error ? err.message : "Unknown error")
+        if (!data.ok || !data.url) {
+          throw new Error(data.error || "Failed to resolve model")
         }
+
+        if (!data.url.startsWith("https://") && !data.url.startsWith("/")) {
+          throw new Error(`Invalid URL: ${data.url}`)
+        }
+
+        urlCache.set(cacheKey, data.url)
+        setModelUrl(data.url)
+      } catch (err) {
+        console.error("[v0] Error fetching GLB:", err)
+        setError(err instanceof Error ? err.message : "Unknown error")
       }
+    }
 
-      fetchUrl()
-    }, [cacheKey, explicitModelUrl, cellType, standardWidth, colorName])
-
-    useEffect(() => {
-      fetchedRef.current = false
-    }, [cacheKey])
+    fetchUrl()
+  }, [cacheKey, explicitModelUrl, cellType, standardWidth, colorName])
 
     if (cellType === "empty" || cellType === "ghost") return null
 
@@ -469,9 +471,7 @@ const LoadedGLBModel = memo(
   onClick?: (row: number, col: number) => void
   hideBuiltInFeet?: boolean
   }) {
-    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
     const { scene } = useGLTF(modelUrl)
-    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null")
     const groupRef = useRef<THREE.Group>(null)
 
   
