@@ -10,6 +10,7 @@ type FootProps = {
 }
 
 // Shared materials for performance
+// Standard foot is ONLY available in black (real product constraint)
 const BLACK_PLASTIC_MATERIAL = new THREE.MeshStandardMaterial({
   color: new THREE.Color("#1a1a1a"),
   roughness: 0.8,
@@ -35,9 +36,14 @@ const RUBBER_MATERIAL = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 })
 
-// Black plastic foot - simple cap design that matches GLB model's feet
+// Standard plastic foot - simple cap design that matches GLB model's feet
+// This foot is ONLY available in black (real product constraint)
 // Base sits on ground at y=0
-const BlackPlasticFoot = memo(function BlackPlasticFoot({ position }: { position: [number, number, number] }) {
+const StandardPlasticFoot = memo(function StandardPlasticFoot({ 
+  position 
+}: { 
+  position: [number, number, number]
+}) {
   return (
     <group position={position}>
       {/* Main cap body - cylinder sitting on ground */}
@@ -128,7 +134,7 @@ const ChromeAdjustableFoot = memo(function ChromeAdjustableFoot({ position }: { 
 })
 
 // Main foot component that renders the correct type
-export const Foot3D = memo(function Foot3D({ position, footType }: FootProps) {
+export const Foot3D = memo(function Foot3D({ position, footType }: Omit<FootProps, 'color'>) {
   switch (footType) {
     case "casters":
       return <CasterFoot position={position} />
@@ -136,7 +142,7 @@ export const Foot3D = memo(function Foot3D({ position, footType }: FootProps) {
       return <ChromeAdjustableFoot position={position} />
     case "black-plastic":
     default:
-      return <BlackPlasticFoot position={position} />
+      return <StandardPlasticFoot position={position} />
   }
 })
 
@@ -209,9 +215,9 @@ export const ModuleFeet = memo(function ModuleFeet({
 
   return (
     <group>
-      {footPositions.map((pos, index) => (
-        <Foot3D key={`foot-${index}`} position={pos} footType={footType} />
-      ))}
+  {footPositions.map((pos, index) => (
+  <Foot3D key={`foot-${index}`} position={pos} footType={footType} />
+  ))}
     </group>
   )
 })

@@ -152,7 +152,7 @@ const PANEL_KEYWORDS = [
 
 const HANDLE_KEYWORDS = ["handle", "griff", "knob", "knauf", "handgriff", "pull", "zieh"]
 
-const FEET_KEYWORDS = ["feet", "foot", "fuss", "fuß", "fuse", "bein", "leg", "standfuß", "standfuss"]
+const FEET_KEYWORDS = ["feet", "foot", "fuss", "fuß", "fuse", "bein", "leg", "standfuß", "standfuss", "gleiter", "kappe", "cap", "endkappe", "stopfen", "kunststoff"]
 
 function isHandlePart(meshName: string): boolean {
   const nameLower = meshName.toLowerCase()
@@ -233,41 +233,53 @@ function isFeetPart(
     }
   }
 
-  // The feet are small black plastic caps at the bottom corners
-  if (material) {
-    const mat = Array.isArray(material) ? material[0] : material
-    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
-      const color = mat.color
-      // Black/dark is when all RGB values are low (< 0.15)
-      const isBlackMaterial = color.r < 0.15 && color.g < 0.15 && color.b < 0.15
+  // Check if this is a small part at the bottom of the model - likely feet
+  if (geometry && parentBoundingBox) {
+    geometry.computeBoundingBox()
+    const meshBox = geometry.boundingBox
+    if (meshBox) {
+      const meshSize = new THREE.Vector3()
+      meshBox.getSize(meshSize)
 
-      if (isBlackMaterial && geometry && parentBoundingBox) {
-        geometry.computeBoundingBox()
-        const meshBox = geometry.boundingBox
-        if (meshBox) {
-          const meshSize = new THREE.Vector3()
-          meshBox.getSize(meshSize)
+      const parentSize = new THREE.Vector3()
+      parentBoundingBox.getSize(parentSize)
 
-          const parentSize = new THREE.Vector3()
-          parentBoundingBox.getSize(parentSize)
+      // Small parts are likely feet (less than 15% of parent size in all dimensions)
+      const isSmall =
+        meshSize.x < parentSize.x * 0.15 && 
+        meshSize.y < parentSize.y * 0.15 && 
+        meshSize.z < parentSize.z * 0.15
 
-          // Small black parts are likely feet (less than 20% of parent size)
-          const isSmall =
-            meshSize.x < parentSize.x * 0.2 && meshSize.y < parentSize.y * 0.2 && meshSize.z < parentSize.z * 0.2
+      // Also check if the part is at the bottom of the model (low Y position)
+      const parentMin = parentBoundingBox.min
+      const meshCenter = new THREE.Vector3()
+      meshBox.getCenter(meshCenter)
+      
+      // Feet should be near the bottom 20% of the model
+      const isAtBottom = meshCenter.y < parentMin.y + parentSize.y * 0.2
 
-          // Also check if the part is at the bottom of the model (low Y position)
-          const parentMin = new THREE.Vector3()
-          parentBoundingBox.getMin(parentMin)
-          const meshCenter = new THREE.Vector3()
-          meshBox.getCenter(meshCenter)
-          
-          // Feet should be near the bottom 10% of the model
-          const isAtBottom = meshCenter.y < parentMin.y + parentSize.y * 0.15
-
-          if (isSmall && isAtBottom) {
-            return true
-          }
+      // Check if material is black/dark (common for plastic feet)
+      let isBlackMaterial = false
+      if (material) {
+        const mat = Array.isArray(material) ? material[0] : material
+        if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
+          const color = mat.color
+          // Black/dark is when all RGB values are low (< 0.2)
+          isBlackMaterial = color.r < 0.2 && color.g < 0.2 && color.b < 0.2
         }
+      }
+
+      // If it's small and at the bottom, and either black material or very small, it's likely feet
+      if (isSmall && isAtBottom) {
+        // If already black, definitely feet
+        if (isBlackMaterial) return true
+        
+        // If extremely small (< 5% of parent), likely feet regardless of color
+        const isVerySmall = 
+          meshSize.x < parentSize.x * 0.05 && 
+          meshSize.y < parentSize.y * 0.1 && 
+          meshSize.z < parentSize.z * 0.05
+        if (isVerySmall) return true
       }
     }
   }
@@ -328,65 +340,67 @@ export const GLBModule = memo(
 
     const cacheKey = useMemo(() => `${cellType}-${standardWidth}-white`, [cellType, standardWidth])
 
-    const [modelUrl, setModelUrl] = useState<string | null>(() => {
-      if (explicitModelUrl) return explicitModelUrl
-      return urlCache.get(cacheKey) || null
-    })
-    const [error, setError] = useState<string | null>(null)
-    const fetchedRef = useRef(false)
+  const [modelUrl, setModelUrl] = useState<string | null>(() => {
+    if (explicitModelUrl) return explicitModelUrl
+    return urlCache.get(cacheKey) || null
+  })
+  const [error, setError] = useState<string | null>(null)
+  const lastFetchedCacheKeyRef = useRef<string | null>(null)
 
-    useEffect(() => {
-      if (explicitModelUrl) {
-        setModelUrl(explicitModelUrl)
-        return
-      }
+  useEffect(() => {
+    // Clear error and reset modelUrl when cacheKey changes to allow retry
+    setError(null)
+    
+    if (explicitModelUrl) {
+      setModelUrl(explicitModelUrl)
+      return
+    }
 
-      const cachedUrl = urlCache.get(cacheKey)
-      if (cachedUrl) {
-        setModelUrl(cachedUrl)
-        return
-      }
+    const cachedUrl = urlCache.get(cacheKey)
+    if (cachedUrl) {
+      setModelUrl(cachedUrl)
+      return
+    }
+    
+    // Reset modelUrl while fetching new one
+    setModelUrl(null)
 
-      if (cellType === "empty" || cellType === "ghost") return
-      if (fetchedRef.current) return
-      fetchedRef.current = true
+    if (cellType === "empty" || cellType === "ghost") return
+    
+    // Only skip fetch if we already fetched for this exact cacheKey
+    if (lastFetchedCacheKeyRef.current === cacheKey) return
+    lastFetchedCacheKeyRef.current = cacheKey
 
-      const fetchUrl = async () => {
-        try {
-          const params = new URLSearchParams({
-            moduleType: cellType,
-            width: standardWidth.toString(),
-            height: "40",
-            color: "white",
-          })
+    const fetchUrl = async () => {
+      try {
+        const params = new URLSearchParams({
+          moduleType: cellType,
+          width: standardWidth.toString(),
+          height: "40",
+          color: "white",
+        })
 
-          console.log("[v0] Fetching GLB model:", `/api/blob-models?${params}`)
-          const response = await fetch(`/api/blob-models?${params}`)
-          const data = await response.json()
-          console.log("[v0] API response:", data)
+        const response = await fetch(`/api/blob-models?${params}`)
+        const data = await response.json()
 
-          if (!data.ok || !data.url) {
-            throw new Error(data.error || "Failed to resolve model")
-          }
-
-          if (!data.url.startsWith("https://") && !data.url.startsWith("/")) {
-            throw new Error(`Invalid URL: ${data.url}`)
-          }
-
-          urlCache.set(cacheKey, data.url)
-          setModelUrl(data.url)
-        } catch (err) {
-          console.error("[v0] Error fetching GLB:", err)
-          setError(err instanceof Error ? err.message : "Unknown error")
+        if (!data.ok || !data.url) {
+          throw new Error(data.error || "Failed to resolve model")
         }
+
+        if (!data.url.startsWith("https://") && !data.url.startsWith("/")) {
+          throw new Error(`Invalid URL: ${data.url}`)
+        }
+
+        urlCache.set(cacheKey, data.url)
+        setModelUrl(data.url)
+      } catch (err) {
+        console.error("[v0] Error fetching GLB:", err)
+        setError(err instanceof Error ? err.message : "Unknown error")
       }
+    }
 
-      fetchUrl()
-    }, [cacheKey, explicitModelUrl, cellType, standardWidth, colorName])
-
-    useEffect(() => {
-      fetchedRef.current = false
-    }, [cacheKey])
+    fetchUrl()
+  }, [cacheKey, explicitModelUrl, cellType, standardWidth, colorName])
 
     if (cellType === "empty" || cellType === "ghost") return null
 
@@ -457,9 +471,7 @@ const LoadedGLBModel = memo(
   onClick?: (row: number, col: number) => void
   hideBuiltInFeet?: boolean
   }) {
-    console.log("[v0] LoadedGLBModel attempting to load:", modelUrl)
     const { scene } = useGLTF(modelUrl)
-    console.log("[v0] LoadedGLBModel scene loaded:", scene ? "success" : "null")
     const groupRef = useRef<THREE.Group>(null)
 
   
@@ -523,6 +535,7 @@ const LoadedGLBModel = memo(
           // Handle built-in feet:
           // 1. Not a bottom module - hide feet entirely
           // 2. Custom feet selected (hideBuiltInFeet = true) - make feet chrome to blend with frame
+          // 3. Always render feet in black
           if (isFeet) {
             if (!isBottomModule) {
               // Not bottom module - hide feet completely
@@ -531,6 +544,17 @@ const LoadedGLBModel = memo(
             } else if (hideBuiltInFeet) {
               // Custom feet selected - chrome-plate the built-in feet to blend with frame
               child.material = getCachedMaterial("chrome", () => CHROME_MATERIAL)
+              return
+            } else {
+              // Standard feet are always black
+              child.material = getCachedMaterial("feet-black", () =>
+                new THREE.MeshStandardMaterial({
+                  color: TARGET_COLORS.black,
+                  roughness: 0.8,
+                  metalness: 0.0,
+                  side: THREE.DoubleSide,
+                })
+              )
               return
             }
           }

@@ -2,27 +2,199 @@
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useState, useEffect } from "react"
-import { ArrowLeft, ShoppingCart, Package, Check, Truck, RotateCcw, Award, ChevronRight, Grid3X3, Layers, Sparkles, Box } from "lucide-react"
+import { useState, useEffect, useCallback, Suspense, useRef, memo } from "react"
+import { ArrowLeft, ShoppingCart, Package, Check, Truck, RotateCcw, Award, ChevronRight, Grid3X3, Layers, Sparkles, Box, ChevronLeft, ChevronRight as ChevronRightIcon, Pause, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SimpliRegal3DPreview } from "@/components/simpli-regal-3d-preview"
 import { useCartStore } from "@/lib/cart-store"
 import { productsSimpliRegale } from "@/lib/simpli-products"
 import { calculatePresetPrice } from "@/lib/price-calculator"
+import { Canvas, useFrame } from "@react-three/fiber"
+import { OrbitControls, Environment } from "@react-three/drei"
+import { GLBModule } from "@/components/glb-module-loader"
+import * as THREE from "three"
 
 const regal = productsSimpliRegale.find(r => r.id === "das-medienboard")!
-const calculatedPrice = regal.preset ? calculatePresetPrice(regal.preset) : calculatedPrice
+const calculatedPrice = regal.preset ? calculatePresetPrice(regal.preset) : regal.price
+
+// Cinematic environment presets
+const environments = [
+  { name: "apartment", label: "Wohnzimmer" },
+  { name: "studio", label: "Studio" },
+  { name: "city", label: "Loft" },
+  { name: "sunset", label: "Abendstimmung" },
+  { name: "dawn", label: "Morgenlicht" },
+  { name: "lobby", label: "Showroom" },
+] as const
+
+// Hero 3D Scene Component with the actual Medienboard configuration
+const HeroRegalScene = memo(function HeroRegalScene({ 
+  isHovered 
+}: { 
+  isHovered: boolean 
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      // Slow cinematic rotation
+      groupRef.current.rotation.y += delta * (isHovered ? 0.4 : 0.12)
+    }
+  })
+
+  const preset = regal.preset
+  if (!preset) return null
+
+  const { columns, rows, columnWidths, rowHeights, grid } = preset
+  const depth = 0.38
+  const columnTubeOverlap = 0.003
+  const rowTubeOverlap = 0.003
+
+  const columnCenters: number[] = []
+  let totalWidth = 0
+  for (let col = 0; col < columns; col++) {
+    const colWidth = columnWidths[col] / 100
+    let xPos = 0
+    for (let c = 0; c < col; c++) {
+      xPos += columnWidths[c] / 100 - columnTubeOverlap
+    }
+    columnCenters.push(xPos + colWidth / 2)
+    totalWidth += colWidth
+    if (col > 0) totalWidth -= columnTubeOverlap
+  }
+
+  const rowCenters: number[] = []
+  for (let row = 0; row < rows; row++) {
+    const rowHeight = rowHeights[row] / 100
+    let yPos = 0
+    for (let r = 0; r < row; r++) {
+      yPos += rowHeights[r] / 100 - rowTubeOverlap
+    }
+    rowCenters.push(yPos + rowHeight / 2)
+  }
+
+  const offsetX = -totalWidth / 2
+
+  const modules: Array<{
+    key: string
+    position: [number, number, number]
+    cellType: string
+    width: number
+    height: number
+    color: string
+    row: number
+    col: number
+    isBottomModule: boolean
+  }> = []
+
+  grid.forEach((rowCells, gridRow) => {
+    rowCells.forEach((cell, gridCol) => {
+      if (cell.type === "empty" || cell.type === "ghost") return
+
+      const cellWidth = columnWidths[gridCol] / 100
+      const cellHeight = rowHeights[gridRow] / 100
+
+      let zOffset = 0
+      if (cell.type === "mit-doppelschublade" || cell.type === "abschliessbare-tueren") {
+        zOffset = 0.01
+      } else if (cell.type === "mit-rueckwand") {
+        zOffset = -0.01
+      }
+
+      const position: [number, number, number] = [
+        columnCenters[gridCol] + offsetX,
+        rowCenters[gridRow],
+        -depth / 2 + zOffset,
+      ]
+
+      const maxRowInColumn = grid.reduce((max, gridRowCells, rowIndex) => {
+        if (gridRowCells[gridCol] && gridRowCells[gridCol].type !== "empty" && gridRowCells[gridCol].type !== "ghost") {
+          return Math.max(max, rowIndex)
+        }
+        return max
+      }, -1)
+      const isBottomModule = gridRow === maxRowInColumn
+
+      modules.push({
+        key: `module-${gridRow}-${gridCol}`,
+        position,
+        cellType: cell.type,
+        width: cellWidth,
+        height: cellHeight,
+        color: "weiss",
+        row: gridRow,
+        col: gridCol,
+        isBottomModule,
+      })
+    })
+  })
+
+  const mockGridConfig = {
+    width: 75 as const,
+    height: 40 as const,
+    sections: columns,
+    levels: rows,
+    material: "metal" as const,
+    finish: "white" as const,
+    grid: grid,
+    columns,
+    rows,
+    columnWidths: columnWidths as (75 | 38)[],
+    rowHeights: rowHeights as (40 | 80 | 120 | 160 | 200)[],
+  }
+
+  return (
+    <group ref={groupRef}>
+      {modules.map(({ key, position, cellType, width, height, color, row, col, isBottomModule }) => (
+        <GLBModule
+          key={key}
+          position={position}
+          cellType={cellType as any}
+          width={width}
+          height={height}
+          depth={depth}
+          color={color as any}
+          row={row}
+          col={col}
+          gridConfig={mockGridConfig}
+          isBottomModule={isBottomModule}
+        />
+      ))}
+    </group>
+  )
+})
 
 export default function DasMedienboardProductPage() {
   const [added, setAdded] = useState(false)
   const [activeTab, setActiveTab] = useState<"features" | "specs">("features")
   const { addItem } = useCartStore()
+  const [currentEnv, setCurrentEnv] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [isHovered, setIsHovered] = useState(false)
+  const [canvasReady, setCanvasReady] = useState(false)
+
+  const nextEnv = useCallback(() => {
+    setCurrentEnv((prev) => (prev + 1) % environments.length)
+  }, [])
+
+  const prevEnv = useCallback(() => {
+    setCurrentEnv((prev) => (prev - 1 + environments.length) % environments.length)
+  }, [])
 
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0)
+    const timer = setTimeout(() => setCanvasReady(true), 300)
+    return () => clearTimeout(timer)
   }, [])
+
+  // Auto-cycle environments for cinematic effect
+  useEffect(() => {
+    if (!isPlaying) return
+    const interval = setInterval(nextEnv, 7000)
+    return () => clearInterval(interval)
+  }, [isPlaying, nextEnv])
 
   const handleAddToCart = () => {
     addItem({ id: regal.id, name: regal.name, artNr: regal.artNr, price: calculatedPrice })
@@ -62,6 +234,154 @@ export default function DasMedienboardProductPage() {
           </div>
         </div>
       </header>
+
+      {/* Cinematic Fullscreen Hero with 3D Model */}
+      <section 
+        className="relative w-full h-[75vh] md:h-[90vh] overflow-hidden bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* 3D Canvas with Real GLB Model */}
+        {canvasReady && (
+          <Canvas
+            dpr={[1, 2]}
+            gl={{
+              antialias: true,
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.0,
+              alpha: true,
+              powerPreference: "high-performance",
+            }}
+            camera={{ position: [0, 0.2, 2.4], fov: 32 }}
+            className="absolute inset-0"
+          >
+            <color attach="background" args={["#171717"]} />
+            
+            {/* Cinematic lighting setup */}
+            <ambientLight intensity={0.3} />
+            <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow color="#ffffff" />
+            <directionalLight position={[-5, 3, -3]} intensity={0.4} color="#4fd1c5" />
+            <spotLight position={[0, 10, 0]} intensity={0.6} angle={0.4} penumbra={1} color="#ffffff" />
+            <pointLight position={[-3, 1, 2]} intensity={0.3} color="#f59e0b" />
+            
+            <Environment preset={environments[currentEnv].name} background={false} />
+
+            <Suspense fallback={null}>
+              <HeroRegalScene isHovered={isHovered} />
+            </Suspense>
+
+            <OrbitControls
+              enableZoom={false}
+              enablePan={false}
+              minPolarAngle={Math.PI / 3}
+              maxPolarAngle={Math.PI / 2}
+              target={[0, 0.15, 0]}
+              autoRotate={false}
+            />
+          </Canvas>
+        )}
+
+        {/* Loading State */}
+        {!canvasReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-3 border-neutral-700 border-t-teal-500 rounded-full animate-spin" />
+              <span className="text-neutral-400 font-medium">3D Modell wird geladen...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Cinematic gradient overlays */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/80 via-transparent to-neutral-900/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/40 via-transparent to-neutral-900/40" />
+        </div>
+
+        {/* Content Overlay */}
+        <div className="absolute inset-0 flex flex-col justify-end pointer-events-none">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-20 md:pb-28">
+            <Badge className="bg-teal-500/20 backdrop-blur-sm text-teal-400 border-teal-500/30 px-4 py-1.5 text-sm font-medium mb-4">
+              SIMPLI REGAL KOLLEKTION
+            </Badge>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold text-white leading-tight mb-4 drop-shadow-2xl">
+              {regal.name}
+            </h1>
+            <p className="text-xl md:text-2xl text-neutral-300 max-w-2xl mb-8">
+              {regal.subtitle} - Perfekt für TV und Heimkino.
+            </p>
+            <div className="flex flex-wrap gap-4 pointer-events-auto">
+              <Button 
+                size="lg" 
+                className="bg-white text-neutral-900 hover:bg-neutral-100 gap-2 text-base px-8 py-6 font-semibold shadow-2xl"
+                onClick={handleAddToCart}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {calculatedPrice.toFixed(2)} EUR - Kaufen
+              </Button>
+              <Link href="/konfigurator?preset=das-medienboard">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-2 border-white/30 text-white hover:bg-white/10 bg-white/5 backdrop-blur-sm gap-2 text-base px-8 py-6 font-semibold"
+                >
+                  <Package className="w-5 h-5" />
+                  Anpassen
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Environment Label */}
+        <div className="absolute top-6 left-6 bg-black/40 backdrop-blur-sm px-4 py-2 border border-white/10">
+          <span className="text-xs text-neutral-400 uppercase tracking-wide">Szene</span>
+          <p className="text-sm font-semibold text-white">{environments[currentEnv].label}</p>
+        </div>
+
+        {/* Navigation Controls */}
+        <div className="absolute bottom-8 right-4 sm:right-8 flex items-center gap-3">
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="w-10 h-10 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/10 flex items-center justify-center transition-colors"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white" />}
+          </button>
+          <button
+            onClick={prevEnv}
+            className="w-10 h-10 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/10 flex items-center justify-center transition-colors"
+            aria-label="Vorherige Szene"
+          >
+            <ChevronLeft className="w-5 h-5 text-white" />
+          </button>
+          <button
+            onClick={nextEnv}
+            className="w-10 h-10 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/10 flex items-center justify-center transition-colors"
+            aria-label="Nächste Szene"
+          >
+            <ChevronRightIcon className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* Environment Indicators */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+          {environments.map((env, index) => (
+            <button
+              key={env.name}
+              onClick={() => setCurrentEnv(index)}
+              className={`h-1 rounded-full transition-all duration-500 ${
+                index === currentEnv ? "bg-teal-500 w-8" : "bg-white/30 w-2 hover:bg-white/50"
+              }`}
+              aria-label={`Szene: ${env.label}`}
+            />
+          ))}
+        </div>
+
+        {/* Interaction Hint */}
+        <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-sm px-3 py-1.5 border border-white/10 text-xs text-neutral-400">
+          Ziehen zum Drehen
+        </div>
+      </section>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <ol className="flex items-center gap-2 text-sm text-gray-500">
