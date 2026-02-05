@@ -580,8 +580,9 @@ const LoadedGLBModel = memo(
                 const texture = oldMat.map || null
                 const finalColor = isBottom ? TARGET_COLORS.black : targetColorValue
                 const isWhitePanel = mappedColor === "white" && !isBottom
+                const isBlackPanel = mappedColor === "black" && !isBottom
 
-                // Panel materials - White panels get extra brightness via MeshStandardMaterial with emissive
+                // Panel materials - White and black panels get extra brightness via MeshStandardMaterial with emissive
                 const materialKey = `panel-${mappedColor}-${isBottom ? "bottom" : "normal"}-${texture ? "textured" : "plain"}`
                 
                 if (isWhitePanel) {
@@ -595,6 +596,21 @@ const LoadedGLBModel = memo(
                         emissive: new THREE.Color("#ffffff"),
                         emissiveIntensity: 0.15,
                         roughness: 0.9,
+                        metalness: 0.0,
+                        side: THREE.DoubleSide,
+                      }),
+                  )
+                } else if (isBlackPanel) {
+                  // Black panels use MeshStandardMaterial with 20% emissive boost for better visibility
+                  child.material = getCachedMaterial(
+                    materialKey,
+                    () =>
+                      new THREE.MeshStandardMaterial({
+                        map: texture,
+                        color: finalColor,
+                        emissive: new THREE.Color("#111111"),
+                        emissiveIntensity: 0.2,
+                        roughness: 0.85,
                         metalness: 0.0,
                         side: THREE.DoubleSide,
                       }),
