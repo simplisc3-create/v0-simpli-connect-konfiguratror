@@ -1638,7 +1638,7 @@ const toggleDefaultColumnWidth = () => {
           )}
         </div>
 
-        <div className="hidden lg:block w-80 xl:w-96 shrink-0">
+        <div className="hidden lg:block w-80 xl:w-[420px] 2xl:w-[480px] shrink-0">
           <ConfiguratorPanel
             config={config}
             selectedTool={selectedTool}
