@@ -1537,7 +1537,7 @@ const toggleDefaultColumnWidth = () => {
             )}
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/70 px-4 py-2 text-sm text-white">
+          <div className="pointer-events-none absolute bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/70 px-4 py-2 text-sm text-white">
             <div className="flex items-center gap-4">
               <span>
                 Breite:{" "}
@@ -1623,7 +1623,7 @@ const toggleDefaultColumnWidth = () => {
 
           {/* Height Warning */}
           {showHeightWarning && (
-            <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
+            <div className="absolute bottom-36 lg:bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
               <AlertTriangle className="h-5 w-5" />
               <span>Die Regalhöhe überschreitet 200 cm.</span>
               <Button
