@@ -1333,7 +1333,7 @@ const toggleDefaultColumnWidth = () => {
     <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
-        <div ref={canvasContainerRef} className="relative flex-1">
+        <div ref={canvasContainerRef} className="relative flex-1 lg:pb-0 pb-[180px] sm:pb-[120px]">
           {showVideoPreview && presetYoutubeId && (
             <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-50 w-32 sm:w-48 h-20 sm:h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
               <button
@@ -1623,7 +1623,7 @@ const toggleDefaultColumnWidth = () => {
 
           {/* Height Warning */}
           {showHeightWarning && (
-            <div className="absolute bottom-36 lg:bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
+            <div className="absolute bottom-56 lg:bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
               <AlertTriangle className="h-5 w-5" />
               <span>Die Regalhöhe überschreitet 200 cm.</span>
               <Button
