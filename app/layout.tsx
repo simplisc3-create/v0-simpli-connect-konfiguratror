@@ -5,7 +5,6 @@ import "./globals.css"
 
 import { Oxanium } from "next/font/google"
 import { SosFloatingSphere } from "@/components/sos-floating-sphere"
-import { PasswordGate } from "@/components/password-gate"
 
 const oxanium = Oxanium({ 
   subsets: ["latin"],
@@ -68,9 +67,7 @@ export default function RootLayout({
   return (
     <html lang="de" className={oxanium.variable}>
       <body className="font-sans antialiased">
-        <PasswordGate>
-          {children}
-        </PasswordGate>
+        {children}
         <SosFloatingSphere />
       </body>
     </html>

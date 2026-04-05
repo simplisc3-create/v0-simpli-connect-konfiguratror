@@ -425,7 +425,7 @@ export default async function KonfiguratorPage({
     : undefined
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-white">
+    <main className="h-dvh w-screen overflow-hidden bg-white">
       <ShelfConfigurator initialPreset={preset} presetYoutubeId={preset?.youtubeId} />
     </main>
   )
