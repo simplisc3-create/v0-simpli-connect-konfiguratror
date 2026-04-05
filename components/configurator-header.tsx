@@ -3,63 +3,6 @@
 import Link from "next/link"
 import { X } from "lucide-react"
 
-// Module sequence with integrated text
-type MarqueeItem = 
-  | { type: "module"; width: number; color: string }
-  | { type: "text"; content: string }
-
-const marqueeItems: MarqueeItem[] = [
-  { type: "module", width: 80, color: "#ffffff" },
-  { type: "module", width: 40, color: "#22c55e" },
-  { type: "module", width: 80, color: "#eab308" },
-  { type: "text", content: "VIEL" },
-  { type: "module", width: 40, color: "#ef4444" },
-  { type: "module", width: 80, color: "#3b82f6" },
-  { type: "module", width: 40, color: "#ffffff" },
-  { type: "text", content: "SPASS" },
-  { type: "module", width: 80, color: "#22c55e" },
-  { type: "module", width: 40, color: "#eab308" },
-  { type: "module", width: 80, color: "#ef4444" },
-  { type: "text", content: "BEIM" },
-  { type: "module", width: 40, color: "#3b82f6" },
-  { type: "module", width: 80, color: "#ffffff" },
-  { type: "module", width: 40, color: "#22c55e" },
-  { type: "text", content: "DESIGNEN" },
-  { type: "module", width: 80, color: "#eab308" },
-  { type: "module", width: 40, color: "#ef4444" },
-]
-
-function ModuleMarquee() {
-  // Triple the items for truly seamless loop
-  const allItems = [...marqueeItems, ...marqueeItems, ...marqueeItems]
-  
-  return (
-    <div className="w-full overflow-hidden">
-      <div className="flex animate-marquee-continuous items-center whitespace-nowrap">
-        {allItems.map((item, index) => (
-          item.type === "module" ? (
-            <div
-              key={index}
-              className="flex-shrink-0 h-10 mx-0.5 rounded-sm border border-black/10"
-              style={{
-                width: `${item.width}px`,
-                backgroundColor: item.color,
-              }}
-            />
-          ) : (
-            <span
-              key={index}
-              className="flex-shrink-0 mx-4 text-sm font-bold tracking-widest text-[#1a1a1a]/70"
-            >
-              {item.content}
-            </span>
-          )
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export function ConfiguratorHeader() {
   return (
     <header className="flex items-center justify-between border-b border-black/10 bg-[#f5f5f5] px-3 sm:px-6 py-2 overflow-hidden">
@@ -74,11 +17,6 @@ export function ConfiguratorHeader() {
         <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-[#1a1a1a]">
           <span className="text-base sm:text-lg font-bold text-white">S</span>
         </div>
-      </div>
-      
-      {/* Animated module marquee with integrated text - visible on all screen sizes */}
-      <div className="flex-1 mx-2 sm:mx-4">
-        <ModuleMarquee />
       </div>
       
       <div className="hidden sm:flex items-center gap-4">
