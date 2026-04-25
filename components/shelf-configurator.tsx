@@ -463,10 +463,40 @@ export function ShelfConfigurator({
           return prev
         }
 
-        const columnWidth = prev.columnWidths[col]
-        const widthInCm = columnWidth === 75 ? 80 : 40
-        if (type !== "empty" && type !== "ghost" && !isModuleTypeAvailableForWidth(type, widthInCm)) {
+        let columnWidth = prev.columnWidths[col]
+        let widthInCm = columnWidth === 75 ? 80 : 40
+        
+        // Check if this column has any real modules (not ghost/empty)
+        const columnHasRealModules = prev.grid.some((r) => {
+          const cell = r[col]
+          return cell && cell.type !== "ghost" && cell.type !== "empty"
+        })
+        
+        // If placing on a ghost cell in an empty column, adjust column width to match module requirements
+        if (type !== "empty" && type !== "ghost" && !columnHasRealModules && currentCell.type === "ghost") {
+          const availableFor40 = isModuleTypeAvailableForWidth(type as ModuleType, 40)
+          const availableFor80 = isModuleTypeAvailableForWidth(type as ModuleType, 80)
+          
+          if (availableFor40 && !availableFor80) {
+            // Module only available for 40cm - adjust column width
+            columnWidth = 38
+            widthInCm = 40
+          } else if (availableFor80 && !availableFor40) {
+            // Module only available for 80cm - adjust column width
+            columnWidth = 75
+            widthInCm = 80
+          }
+          // If available for both, keep the current column width
+        }
+        
+        if (type !== "empty" && type !== "ghost" && !isModuleTypeAvailableForWidth(type as ModuleType, widthInCm)) {
           return prev
+        }
+        
+        // Update columnWidths if we changed the width
+        const adjustedColumnWidths = [...prev.columnWidths]
+        if (adjustedColumnWidths[col] !== columnWidth) {
+          adjustedColumnWidths[col] = columnWidth
         }
 
         let newGrid = prev.grid.map((r, ri) =>
@@ -482,7 +512,7 @@ export function ShelfConfigurator({
           grid: expandedGrid,
           columnWidths: updatedColumnWidths,
           shifted,
-        } = expandGridAroundPlacement(newGrid, row, col, prev.columnWidths)
+        } = expandGridAroundPlacement(newGrid, row, col, adjustedColumnWidths)
         newGrid = expandedGrid
 
         const newColumns = newGrid[0]?.length || 1
@@ -1333,7 +1363,7 @@ const toggleDefaultColumnWidth = () => {
     <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
       <ConfiguratorHeader />
       <div className="flex flex-1 overflow-hidden">
-        <div ref={canvasContainerRef} className="relative flex-1">
+        <div ref={canvasContainerRef} className="relative flex-1 lg:pb-0 pb-[180px] sm:pb-[120px]">
           {showVideoPreview && presetYoutubeId && (
             <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-50 w-32 sm:w-48 h-20 sm:h-32 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
               <button
@@ -1537,7 +1567,7 @@ const toggleDefaultColumnWidth = () => {
             )}
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/70 px-4 py-2 text-sm text-white">
+          <div className="pointer-events-none absolute bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/70 px-4 py-2 text-sm text-white">
             <div className="flex items-center gap-4">
               <span>
                 Breite:{" "}
@@ -1623,7 +1653,7 @@ const toggleDefaultColumnWidth = () => {
 
           {/* Height Warning */}
           {showHeightWarning && (
-            <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
+            <div className="absolute bottom-56 lg:bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-lg">
               <AlertTriangle className="h-5 w-5" />
               <span>Die Regalhöhe überschreitet 200 cm.</span>
               <Button
