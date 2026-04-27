@@ -1386,7 +1386,7 @@ const toggleDefaultColumnWidth = () => {
           <Canvas3DErrorBoundary>
             <Canvas
               shadows={true}
-              camera={{ position: [0, 0.4, 2.5], fov: 50 }}
+              camera={{ position: [0, 0.5, 2.2], fov: 45 }}
               gl={{
                 antialias: true,
                 alpha: true,
@@ -1457,8 +1457,8 @@ const toggleDefaultColumnWidth = () => {
                 target={initialCameraTarget}
                 minPolarAngle={0.3}
                 maxPolarAngle={Math.PI / 2.1}
-                minDistance={1}
-                maxDistance={8}
+                minDistance={0.8}
+                maxDistance={10}
                 enableDamping
                 dampingFactor={0.05}
                 maxAzimuthAngle={Infinity}
@@ -1668,7 +1668,7 @@ const toggleDefaultColumnWidth = () => {
           )}
         </div>
 
-        <div className="hidden lg:block w-80 xl:w-[420px] 2xl:w-[480px] shrink-0">
+        <div className="hidden lg:block w-72 xl:w-80 2xl:w-96 shrink-0">
           <ConfiguratorPanel
             config={config}
             selectedTool={selectedTool}

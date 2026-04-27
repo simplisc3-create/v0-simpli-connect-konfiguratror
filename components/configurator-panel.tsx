@@ -201,7 +201,7 @@ export function ConfiguratorPanel({
   const totalPrice = price || 0
 
   return (
-    <div className="flex h-full flex-col bg-white text-gray-900 overflow-hidden shadow-xl">
+    <div className="flex h-full flex-col bg-white text-gray-900 overflow-hidden shadow-xl border-l border-gray-100">
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {selectedCell && selectedCellInfo && selectedCellInfo.type !== "empty" && selectedCellInfo.type !== "ghost" && (
@@ -295,9 +295,9 @@ export function ConfiguratorPanel({
           </div>
         )}
 
-        <div className="border-b border-gray-100 p-4">
+        <div className="border-b border-gray-100 p-3">
           {/* Tab Navigation */}
-          <div className="mb-4">
+          <div className="mb-3">
             <div className="flex rounded-xl bg-gray-100 p-1">
               <button
                 onClick={() => {
@@ -331,7 +331,7 @@ export function ConfiguratorPanel({
           </div>
 
           {/* Module Grid with 3D Thumbnails */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {(widthFilter === 80 ? modules80 : modules40).map((module) => {
               const actualModuleType = getModuleTypeFromThumbnailId(module.id)
               

@@ -52,36 +52,30 @@ export default function Home() {
           >
             <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/0108%281%29-pS6CfKhfSUB0VKDFJvOzkgxn7AYWh3.mov" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/40" />
         </div>
 
-        {/* Hero Content - optimized for mobile */}
-        <div className="relative z-10 h-full flex flex-col justify-between px-4 sm:px-6 pt-24 sm:pt-44 pb-20 sm:pb-24">
-          {/* Main Content */}
-          <div className="max-w-7xl mx-auto w-full flex-1 flex items-start justify-center pt-4 sm:pt-8">
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-white leading-none tracking-tight text-center px-2">
-              {/* Mobile: split into two lines */}
-              <span className="sm:hidden block py-8">
-                Modular
-                <br />
-                Furniture
-              </span>
-              {/* Desktop: keep original dynamic headline */}
-              <span className="hidden sm:inline">{activeCollection.headline}</span>
-            </h1>
-          </div>
+        {/* Hero Content */}
+        <div className="relative z-10 h-full flex flex-col px-4 sm:px-6">
+          {/* Spacer for nav */}
+          <div className="h-16 sm:h-20 shrink-0" />
 
-          {/* Collection Selector - optimized for mobile */}
-          <div className="max-w-7xl mx-auto w-full flex justify-center">
-            <div className="inline-flex items-center gap-1 sm:gap-2 bg-white/20 backdrop-blur-md rounded-full p-1 sm:p-1.5">
+          {/* Main Content — vertically centered in remaining space */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 sm:gap-8">
+            <h1 className="text-balance text-center text-5xl sm:text-7xl md:text-8xl lg:text-[7rem] xl:text-[8rem] font-bold text-white leading-none tracking-tight">
+              {activeCollection.headline}
+            </h1>
+
+            {/* Collection Selector */}
+            <div className="inline-flex items-center gap-1 sm:gap-1.5 bg-white/15 backdrop-blur-md rounded-full p-1">
               {collections.map((collection) => (
                 <button
                   key={collection.id}
                   onClick={() => setActiveCollection(collection)}
-                  className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
+                  className={`px-4 sm:px-7 py-2 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
                     activeCollection.id === collection.id
                       ? "bg-white text-black shadow-lg"
-                      : "text-white hover:bg-white/10"
+                      : "text-white hover:bg-white/15"
                   }`}
                 >
                   {collection.name}
@@ -89,12 +83,14 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Scroll indicator - hidden on very small screens */}
-        <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 animate-bounce hidden sm:block">
-          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center pt-2">
-            <div className="w-1.5 h-3 bg-white/70 rounded-full" />
+          {/* Bottom scroll hint */}
+          <div className="pb-8 sm:pb-10 flex justify-center">
+            <div className="animate-bounce">
+              <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center pt-2">
+                <div className="w-1.5 h-3 bg-white/60 rounded-full" />
+              </div>
+            </div>
           </div>
         </div>
       </section>
