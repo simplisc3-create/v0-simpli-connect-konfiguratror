@@ -292,22 +292,35 @@ export function ShelfConfigurator({
   const [showTutorial, setShowTutorial] = useState(false)
   
   useEffect(() => {
-    // Only show tutorial for first-time users (check localStorage)
-    const hasSeenTutorial = localStorage.getItem("simpli-configurator-tutorial-seen")
-    if (!hasSeenTutorial && !initialPreset) {
-      // Delay slightly so the 3D scene loads first
-      const timer = setTimeout(() => setShowTutorial(true), 1500)
-      return () => clearTimeout(timer)
+    try {
+      const hasSeenTutorial = localStorage.getItem("simpli-configurator-tutorial-seen")
+      if (!hasSeenTutorial && !initialPreset) {
+        // Delay slightly so the 3D scene loads first
+        const timer = setTimeout(() => setShowTutorial(true), 1500)
+        return () => clearTimeout(timer)
+      }
+    } catch {
+      // localStorage blocked (private mode etc.) - skip tutorial
     }
   }, [initialPreset])
   
+  const handleTutorialComplete = () => {
+    try {
+      localStorage.setItem("simpli-configurator-tutorial-seen", "true")
+    } catch {}
+    setShowTutorial(false)
+  }
+
   const handleSaveConfiguration = async () => {
-    // Save configuration to localStorage and optionally to backend
-    const configData = {
-      config,
-      timestamp: new Date().toISOString(),
+    try {
+      const configData = {
+        config,
+        timestamp: new Date().toISOString(),
+      }
+      localStorage.setItem("simpli-configurator-saved", JSON.stringify(configData))
+    } catch {
+      // localStorage blocked - silently continue
     }
-    localStorage.setItem("simpli-configurator-saved", JSON.stringify(configData))
     
     // If you have a backend API, save it here:
     // await fetch('/api/configurations/save', { method: 'POST', body: JSON.stringify(configData) })
