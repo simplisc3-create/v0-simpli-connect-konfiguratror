@@ -301,9 +301,35 @@ export function ShelfConfigurator({
     }
   }, [initialPreset])
   
-  const handleTutorialComplete = () => {
-    localStorage.setItem("simpli-configurator-tutorial-seen", "true")
-    setShowTutorial(false)
+  const handleSaveConfiguration = async () => {
+    // Save configuration to localStorage and optionally to backend
+    const configData = {
+      config,
+      timestamp: new Date().toISOString(),
+    }
+    localStorage.setItem("simpli-configurator-saved", JSON.stringify(configData))
+    
+    // If you have a backend API, save it here:
+    // await fetch('/api/configurations/save', { method: 'POST', body: JSON.stringify(configData) })
+  }
+
+  const handleShareConfiguration = async () => {
+    // Generate a shareable link with the configuration as query params
+    const configString = btoa(JSON.stringify(config)) // Base64 encode for URL safety
+    const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/konfigurator?preset=${configString}`
+    
+    // Copy to clipboard
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(shareUrl)
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea")
+      textArea.value = shareUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textArea)
+    }
   }
 
   // Camera focus state for smooth animation to newest module
@@ -1380,7 +1406,11 @@ const toggleDefaultColumnWidth = () => {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
-      <ConfiguratorHeader onShowTutorial={() => setShowTutorial(true)} />
+      <ConfiguratorHeader 
+  onShowTutorial={() => setShowTutorial(true)}
+  onSave={handleSaveConfiguration}
+  onShare={handleShareConfiguration}
+/>
       <div className="flex flex-1 overflow-hidden">
         <div ref={canvasContainerRef} className="relative flex-1 lg:pb-0 pb-[180px] sm:pb-[120px]">
           {showVideoPreview && presetYoutubeId && (
