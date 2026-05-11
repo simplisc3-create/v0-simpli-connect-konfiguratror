@@ -314,9 +314,12 @@ export function ShelfConfigurator({
   }
 
   const handleShareConfiguration = async () => {
+    // Only run in browser environment
+    if (typeof window === "undefined") return
+    
     // Generate a shareable link with the configuration as query params
     const configString = btoa(JSON.stringify(config)) // Base64 encode for URL safety
-    const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/konfigurator?preset=${configString}`
+    const shareUrl = `${window.location.origin}/konfigurator?preset=${configString}`
     
     // Copy to clipboard
     if (navigator.clipboard) {
