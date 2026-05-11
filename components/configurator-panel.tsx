@@ -305,13 +305,13 @@ export function ConfiguratorPanel({
                   onSetDefaultColumnWidth?.(75)
                 }}
                 className={cn(
-                  "flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all",
+                  "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all",
                   widthFilter === 80
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-700",
                 )}
               >
-                80er Module
+                80cm
               </button>
               <button
                 onClick={() => {
@@ -319,13 +319,13 @@ export function ConfiguratorPanel({
                   onSetDefaultColumnWidth?.(38)
                 }}
                 className={cn(
-                  "flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all",
+                  "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all",
                   widthFilter === 40
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-700",
                 )}
               >
-                40er Module
+                40cm
               </button>
             </div>
           </div>
@@ -347,14 +347,14 @@ export function ConfiguratorPanel({
                   onClick={() => onSelectTool(actualModuleType)}
                   title={module.name}
                 >
-                  <div className="relative h-16 w-full flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                  <div className="relative h-12 w-full flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
                     <ModuleThumbnail3D
                       moduleType={actualModuleType as ModuleType}
                       width={widthFilter === 80 ? 80 : 40}
                       color={selectedColor === "weiss" ? "white" : selectedColor === "schwarz" ? "black" : selectedColor === "blau" ? "blue" : selectedColor === "gruen" ? "green" : selectedColor === "gelb" ? "yellow" : selectedColor === "rot" ? "red" : "white"}
                     />
                   </div>
-                  <span className="mt-1.5 text-[9px] font-semibold leading-tight text-center line-clamp-2">
+                  <span className="mt-1 text-[8px] font-semibold leading-tight text-center line-clamp-2">
                     {module.name}
                   </span>
                 </button>
@@ -365,17 +365,17 @@ export function ConfiguratorPanel({
             {widthFilter === 80 ? "80cm breite Module" : widthFilter === 40 ? "40cm breite Module" : "Alle Module"}
           </p>
 
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="mb-2 text-xs font-medium text-gray-600">Farbe für neue Module:</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="mb-1.5 text-[11px] font-medium text-gray-600">Farben:</p>
+            <div className="flex flex-wrap gap-1.5">
               {[...baseColors, ...specialColors].map((color) => (
                 <button
                   key={color.id}
                   onClick={() => onSelectColor(color.id)}
                   className={cn(
-                    "relative h-8 w-8 rounded-lg transition-all shadow-sm",
+                    "relative h-6 w-6 rounded-lg transition-all shadow-sm",
                     selectedColor === color.id
-                      ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white scale-110"
+                      ? "ring-2 ring-teal-500 ring-offset-1 ring-offset-white scale-105"
                       : "ring-1 ring-gray-200 hover:ring-gray-300 hover:scale-105",
                   )}
                   style={{ backgroundColor: color.color }}
@@ -384,7 +384,7 @@ export function ConfiguratorPanel({
                   {selectedColor === color.id && (
                     <Check
                       className={cn(
-                        "absolute inset-0 m-auto h-4 w-4",
+                        "absolute inset-0 m-auto h-3 w-3",
                         color.id === "weiss" || color.id === "gelb" ? "text-gray-800" : "text-white",
                       )}
                     />
@@ -395,29 +395,29 @@ export function ConfiguratorPanel({
           </div>
 
           {/* Foot Type Selection */}
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="mb-2 text-xs font-medium text-gray-600">Fuss-Optionen (4 Stück pro Bodenmodul):</p>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="mb-1.5 text-[11px] font-medium text-gray-600">Füße:</p>
+            <div className="grid grid-cols-3 gap-1.5">
               {/* Black Plastic Feet */}
               <button
                 onClick={() => onSetFootType?.("black-plastic")}
                 className={cn(
-                  "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
+                  "relative flex flex-col items-center rounded-xl p-1.5 transition-all border-2",
                   footType === "black-plastic"
                     ? "bg-teal-50 border-teal-400 shadow-md"
                     : "bg-white border-gray-200 hover:border-gray-300"
                 )}
               >
-                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="h-9 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                   <div className="flex gap-1">
                     {[...Array(4)].map((_, i) => (
-                      <div key={i} className="w-2 h-2 rounded-full bg-gray-800" />
+                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-gray-800" />
                     ))}
                   </div>
                 </div>
-                <span className="mt-1 text-[9px] font-semibold text-gray-700">Standard</span>
+                <span className="mt-0.5 text-[8px] font-semibold text-gray-700">Standard</span>
                 {footType === "black-plastic" && (
-                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                  <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-teal-600" />
                 )}
               </button>
 
@@ -425,24 +425,24 @@ export function ConfiguratorPanel({
               <button
                 onClick={() => onSetFootType?.("casters")}
                 className={cn(
-                  "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
+                  "relative flex flex-col items-center rounded-xl p-1.5 transition-all border-2",
                   footType === "casters"
                     ? "bg-teal-50 border-teal-400 shadow-md"
                     : "bg-white border-gray-200 hover:border-gray-300"
                 )}
               >
-                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="h-9 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                   <Image
                     src="/images/feet/casters.webp"
                     alt="Rollen"
                     width={80}
-                    height={48}
-                    className="object-contain"
+                    height={36}
+                    className="object-contain scale-75"
                   />
                 </div>
-                <span className="mt-1 text-[9px] font-semibold text-gray-700">Rollen</span>
+                <span className="mt-0.5 text-[8px] font-semibold text-gray-700">Rollen</span>
                 {footType === "casters" && (
-                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                  <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-teal-600" />
                 )}
               </button>
 
@@ -450,24 +450,24 @@ export function ConfiguratorPanel({
               <button
                 onClick={() => onSetFootType?.("chrome-adjustable")}
                 className={cn(
-                  "relative flex flex-col items-center rounded-xl p-2 transition-all border-2",
+                  "relative flex flex-col items-center rounded-xl p-1.5 transition-all border-2",
                   footType === "chrome-adjustable"
                     ? "bg-teal-50 border-teal-400 shadow-md"
                     : "bg-white border-gray-200 hover:border-gray-300"
                 )}
               >
-                <div className="h-12 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="h-9 w-full rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                   <Image
                     src="/images/feet/chrome-adjustable.webp"
                     alt="Verchromte Stellfüße"
                     width={80}
-                    height={48}
-                    className="object-contain"
+                    height={36}
+                    className="object-contain scale-75"
                   />
                 </div>
-                <span className="mt-1 text-[9px] font-semibold text-gray-700">Stellfüße</span>
+                <span className="mt-0.5 text-[8px] font-semibold text-gray-700">Stellfüße</span>
                 {footType === "chrome-adjustable" && (
-                  <Check className="absolute top-1 right-1 h-3 w-3 text-teal-600" />
+                  <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-teal-600" />
                 )}
               </button>
             </div>
