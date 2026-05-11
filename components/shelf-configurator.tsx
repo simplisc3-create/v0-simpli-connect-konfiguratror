@@ -40,6 +40,7 @@ import { useHeightWarning } from "@/hooks/use-height-warning"
 import type { ConfiguratorConfig, GridCellConfig, ModuleType, CellColor, FootType } from "@/lib/derive"
 import { useCellColors } from "@/hooks/use-cell-colors"
 import { SummaryChips } from "./summary-chips"
+import { ConfiguratorTutorial } from "./configurator-tutorial"
 
 // Error Boundary to catch 3D rendering errors and prevent white screen
 interface ErrorBoundaryProps {
@@ -286,6 +287,24 @@ export function ShelfConfigurator({
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
+  
+  // Tutorial state - check localStorage to see if user has completed tutorial
+  const [showTutorial, setShowTutorial] = useState(false)
+  
+  useEffect(() => {
+    // Only show tutorial for first-time users (check localStorage)
+    const hasSeenTutorial = localStorage.getItem("simpli-configurator-tutorial-seen")
+    if (!hasSeenTutorial && !initialPreset) {
+      // Delay slightly so the 3D scene loads first
+      const timer = setTimeout(() => setShowTutorial(true), 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [initialPreset])
+  
+  const handleTutorialComplete = () => {
+    localStorage.setItem("simpli-configurator-tutorial-seen", "true")
+    setShowTutorial(false)
+  }
 
   // Camera focus state for smooth animation to newest module
   const [cameraTarget, setCameraTarget] = useState<[number, number, number] | null>(null)
@@ -1361,7 +1380,7 @@ const toggleDefaultColumnWidth = () => {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-[#1a1a1a]">
-      <ConfiguratorHeader />
+      <ConfiguratorHeader onShowTutorial={() => setShowTutorial(true)} />
       <div className="flex flex-1 overflow-hidden">
         <div ref={canvasContainerRef} className="relative flex-1 lg:pb-0 pb-[180px] sm:pb-[120px]">
           {showVideoPreview && presetYoutubeId && (
@@ -1719,6 +1738,14 @@ const toggleDefaultColumnWidth = () => {
           />
         </div>
       </div>
+      
+      {/* Tutorial Overlay */}
+      {showTutorial && (
+        <ConfiguratorTutorial
+          onComplete={handleTutorialComplete}
+          onSkip={handleTutorialComplete}
+        />
+      )}
     </div>
   )
 }
