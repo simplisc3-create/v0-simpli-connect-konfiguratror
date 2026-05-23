@@ -5,6 +5,7 @@ import "./globals.css"
 
 import { Oxanium } from "next/font/google"
 import { SosFloatingSphere } from "@/components/sos-floating-sphere"
+import { Analytics } from "@vercel/analytics/next"
 
 const oxanium = Oxanium({ 
   subsets: ["latin"],
@@ -69,6 +70,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         {children}
         <SosFloatingSphere />
+        <Analytics />
       </body>
     </html>
   )
