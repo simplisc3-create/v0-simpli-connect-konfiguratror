@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle, Upload, ImageIcon } from 'lucide-react'
+import { CheckCircle, Upload, ImageIcon, ShoppingBag, ArrowRight } from 'lucide-react'
 
 export default function AdminPage() {
   return (
@@ -15,6 +15,38 @@ export default function AdminPage() {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Orders Card */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingBag className="w-5 h-5 text-blue-600" />
+                    Bestellungen
+                  </CardTitle>
+                </div>
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Sehen Sie alle Live-Bestellungen aus Stripe ein, prüfen Sie den Zahlungsstatus und laden Sie Rechnungen als PDF herunter.
+              </p>
+              <ul className="text-sm space-y-2 text-gray-600">
+                <li>✓ Live-Bestellungen aus Stripe</li>
+                <li>✓ Zahlungsstatus & Umsatz</li>
+                <li>✓ Kundendaten pro Bestellung</li>
+                <li>✓ Rechnungs-PDF herunterladen</li>
+              </ul>
+              <Link href="/admin/orders" className="block">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  Zu den Bestellungen
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           {/* Image Management Card */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>

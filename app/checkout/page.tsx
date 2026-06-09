@@ -2,63 +2,54 @@
 
 import type React from "react"
 
-import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useCartStore } from "@/lib/cart-store"
-import { Check, CreditCard, Truck } from "lucide-react"
+import { Check, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SiteHeader } from "@/components/site-header"
+import { StripeCheckout } from "@/components/stripe-checkout"
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, getTotalPrice, clearCart } = useCartStore()
   const [step, setStep] = useState(1)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [orderComplete, setOrderComplete] = useState(false)
+  // Set once payment completes so the empty-cart guard doesn't redirect to the
+  // cart while we navigate to the confirmation page.
+  const [completing, setCompleting] = useState(false)
 
   const shipping = getTotalPrice() >= 500 ? 0 : 49
   const total = getTotalPrice() + shipping
 
+  // Client sends SKU ids + quantities. Name + price are only a fallback for
+  // configurator-derived custom lines; catalog prices are validated server-side.
+  const checkoutLines = items.map((item) => ({
+    id: item.id,
+    quantity: item.quantity,
+    name: item.name,
+    price: item.price,
+  }))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Steps 1 (address) and 2 (shipping) advance the wizard. Step 3 renders the
+    // Stripe Embedded Checkout, which handles payment itself.
     if (step < 3) {
       setStep(step + 1)
-      return
     }
-
-    setIsSubmitting(true)
-    // Simulate order processing
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsSubmitting(false)
-    setOrderComplete(true)
-    clearCart()
   }
 
-  if (items.length === 0 && !orderComplete) {
+  const handlePaymentComplete = (sessionId: string) => {
+    setCompleting(true)
+    clearCart()
+    router.push(`/checkout/success?session_id=${sessionId}`)
+  }
+
+  if (items.length === 0 && !completing) {
     router.push("/warenkorb")
     return null
-  }
-
-  if (orderComplete) {
-    return (
-      <main className="min-h-screen bg-white flex items-center justify-center px-6">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Bestellung erfolgreich!</h1>
-          <p className="text-gray-600 mb-6">
-            Vielen Dank für deine Bestellung. Du erhältst in Kürze eine Bestätigung per E-Mail.
-          </p>
-          <Link href="/">
-            <Button className="bg-black hover:bg-gray-800">Zurück zur Startseite</Button>
-          </Link>
-        </div>
-      </main>
-    )
   }
 
   return (
@@ -154,42 +145,31 @@ export default function CheckoutPage() {
 
                 {step === 3 && (
                   <>
-                    <h2 className="text-lg font-semibold mb-6">Zahlungsart</h2>
-                    <div className="space-y-3">
-                      <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border-2 border-black cursor-pointer">
-                        <input type="radio" name="payment" defaultChecked className="w-4 h-4" />
-                        <CreditCard className="w-5 h-5 text-gray-600" />
-                        <div className="flex-grow">
-                          <p className="font-medium">Kreditkarte</p>
-                          <p className="text-sm text-gray-500">Visa, Mastercard, American Express</p>
-                        </div>
-                      </label>
-                      <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition">
-                        <input type="radio" name="payment" className="w-4 h-4" />
-                        <div className="w-5 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                          P
-                        </div>
-                        <div className="flex-grow">
-                          <p className="font-medium">PayPal</p>
-                          <p className="text-sm text-gray-500">Schnell und sicher bezahlen</p>
-                        </div>
-                      </label>
-                      <label className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition">
-                        <input type="radio" name="payment" className="w-4 h-4" />
-                        <div className="w-5 h-5 bg-gray-800 rounded text-white text-xs flex items-center justify-center font-bold">
-                          R
-                        </div>
-                        <div className="flex-grow">
-                          <p className="font-medium">Rechnung</p>
-                          <p className="text-sm text-gray-500">Zahlung innerhalb 14 Tage</p>
-                        </div>
-                      </label>
-                    </div>
+                    <h2 className="text-lg font-semibold mb-6">Zahlung</h2>
+                    <StripeCheckout lines={checkoutLines} onComplete={handlePaymentComplete} />
                   </>
                 )}
 
-                <div className="flex gap-4 mt-8">
-                  {step > 1 && (
+                {step < 3 && (
+                  <div className="flex gap-4 mt-8">
+                    {step > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setStep(step - 1)}
+                        className="bg-transparent"
+                      >
+                        Zurück
+                      </Button>
+                    )}
+                    <Button type="submit" className="flex-grow bg-black hover:bg-gray-800">
+                      Weiter
+                    </Button>
+                  </div>
+                )}
+
+                {step === 3 && (
+                  <div className="mt-6">
                     <Button
                       type="button"
                       variant="outline"
@@ -198,15 +178,8 @@ export default function CheckoutPage() {
                     >
                       Zurück
                     </Button>
-                  )}
-                  <Button type="submit" className="flex-grow bg-black hover:bg-gray-800" disabled={isSubmitting}>
-                    {isSubmitting
-                      ? "Wird verarbeitet..."
-                      : step === 3
-                        ? `Jetzt kaufen (${total.toFixed(2)} €)`
-                        : "Weiter"}
-                  </Button>
-                </div>
+                  </div>
+                )}
               </div>
             </form>
           </div>
