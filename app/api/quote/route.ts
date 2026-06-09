@@ -40,9 +40,11 @@ export async function POST(req: Request) {
       })),
     )
 
-    // 4) Persist JSON + CSV (example: local storage under /data/quotes)
-    // In production, replace with DB/S3.
-    const baseDir = path.join(process.cwd(), "data", "quotes")
+    // 4) Persist JSON + CSV
+    // Choose storage dir: explicit override, /tmp on Vercel (read-only FS), else local data dir.
+    const baseDir =
+      process.env.QUOTE_STORAGE_DIR ||
+      (process.env.VERCEL ? path.join("/tmp", "quotes") : path.join(process.cwd(), "data", "quotes"))
     await mkdir(baseDir, { recursive: true })
 
     const jsonPath = path.join(baseDir, `${id}.json`)
@@ -51,22 +53,74 @@ export async function POST(req: Request) {
     await writeFile(jsonPath, JSON.stringify(body, null, 2), "utf-8")
     await writeFile(csvPath, csv, "utf-8")
 
-    // 5) OPTIONAL: Forward to ERP/Webhook (placeholder)
-    // If you have an ERP endpoint, send BOM + meta.
-    // Example:
-    // await fetch(process.env.ERP_WEBHOOK_URL!, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.ERP_TOKEN}` },
-    //   body: JSON.stringify({ id, payload: body }),
-    // });
+    // 5) Forward to the JTL bridge (only when configured)
+    // Supports JTL_API_URL/JTL_API_KEY with backwards-compatible ERP_WEBHOOK_URL/ERP_TOKEN fallbacks.
+    const jtlApiUrl = process.env.JTL_API_URL || process.env.ERP_WEBHOOK_URL
+    const jtlApiKey = process.env.JTL_API_KEY || process.env.ERP_TOKEN
+
+    let jtlForward: unknown = undefined
+
+    if (jtlApiUrl && jtlApiKey) {
+      const target = new URL("/orders", jtlApiUrl).toString()
+
+      let res: Response
+      try {
+        res = await fetch(target, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jtlApiKey}`,
+          },
+          body: JSON.stringify({ id, payload: body, csv }),
+          signal: AbortSignal.timeout(15000),
+        })
+      } catch (err: any) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "JTL_FORWARD_FAILED",
+            id,
+            message: err?.message ?? "Failed to reach JTL bridge",
+          },
+          { status: 502 },
+        )
+      }
+
+      // Parse response body (JSON if possible, otherwise raw text).
+      const text = await res.text()
+      let parsed: unknown = text
+      const contentType = res.headers.get("content-type") || ""
+      if (contentType.includes("application/json")) {
+        try {
+          parsed = JSON.parse(text)
+        } catch {
+          parsed = text
+        }
+      }
+
+      if (!res.ok) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "JTL_FORWARD_FAILED",
+            id,
+            status: res.status,
+            response: parsed,
+          },
+          { status: 502 },
+        )
+      }
+
+      jtlForward = parsed
+    }
 
     // 6) Return success
     return NextResponse.json({
       ok: true,
       id,
       stored: {
-        json: `/data/quotes/${id}.json`,
-        csv: `/data/quotes/${id}.csv`,
+        json: jsonPath,
+        csv: csvPath,
       },
       summary: {
         widthUI: body.configuration.widthUI,
@@ -77,6 +131,7 @@ export async function POST(req: Request) {
         material: body.configuration.material,
         bomLines: body.bom.length,
       },
+      ...(jtlForward !== undefined ? { jtlForward } : {}),
     })
   } catch (err: any) {
     return NextResponse.json(
