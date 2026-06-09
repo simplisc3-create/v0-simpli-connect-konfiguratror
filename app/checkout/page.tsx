@@ -56,35 +56,39 @@ export default function CheckoutPage() {
     <main className="min-h-screen bg-gray-50">
       <SiteHeader />
 
-      <div className="max-w-6xl mx-auto px-6 py-12 pt-24">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 pt-20 sm:pt-24">
         {/* Progress Steps */}
-        <div className="flex items-center justify-center mb-12">
+        <div className="flex items-center justify-center mb-8 sm:mb-12">
           {[
             { num: 1, label: "Adresse" },
             { num: 2, label: "Versand" },
             { num: 3, label: "Zahlung" },
           ].map((s, i) => (
             <div key={s.num} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= s.num ? "bg-black text-white" : "bg-gray-200 text-gray-500"
-                }`}
-              >
-                {step > s.num ? <Check className="w-4 h-4" /> : s.num}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${
+                    step >= s.num ? "bg-black text-white" : "bg-gray-200 text-gray-500"
+                  }`}
+                >
+                  {step > s.num ? <Check className="w-4 h-4" /> : s.num}
+                </div>
+                <span
+                  className={`text-xs sm:text-sm font-medium ${step >= s.num ? "text-gray-900" : "text-gray-500"}`}
+                >
+                  {s.label}
+                </span>
               </div>
-              <span className={`ml-2 text-sm font-medium ${step >= s.num ? "text-gray-900" : "text-gray-500"}`}>
-                {s.label}
-              </span>
-              {i < 2 && <div className="w-16 h-px bg-gray-200 mx-4" />}
+              {i < 2 && <div className="w-6 sm:w-16 h-px bg-gray-200 mx-2 sm:mx-4" />}
             </div>
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Form */}
           <div className="lg:col-span-2">
             <form onSubmit={handleSubmit}>
-              <div className="bg-white rounded-xl p-6 border border-gray-100">
+              <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100">
                 {step === 1 && (
                   <>
                     <h2 className="text-lg font-semibold mb-6">Lieferadresse</h2>
@@ -186,7 +190,7 @@ export default function CheckoutPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 border border-gray-100 sticky top-24">
+            <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100 lg:sticky lg:top-24">
               <h2 className="font-semibold text-lg mb-4">Deine Bestellung</h2>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {items.map((item) => (

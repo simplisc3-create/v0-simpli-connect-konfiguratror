@@ -4,7 +4,6 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 import { Oxanium } from "next/font/google"
-import { SosFloatingSphere } from "@/components/sos-floating-sphere"
 
 const oxanium = Oxanium({ 
   subsets: ["latin"],
@@ -68,7 +67,6 @@ export default function RootLayout({
     <html lang="de" className={oxanium.variable}>
       <body className="font-sans antialiased">
         {children}
-        <SosFloatingSphere />
       </body>
     </html>
   )
