@@ -35,6 +35,7 @@ import {
   expandGridAroundPlacement,
 } from "@/lib/grid-utils"
 import { useConfigHistory } from "@/hooks/use-config-history"
+import { useJtlPrices } from "@/hooks/use-jtl-prices"
 import { ValidationAlerts } from "./validation-alerts"
 import { useHeightWarning } from "@/hooks/use-height-warning"
 import type { ConfiguratorConfig, GridCellConfig, ModuleType, CellColor, FootType } from "@/lib/derive"
@@ -1351,6 +1352,32 @@ export function ShelfConfigurator({
     return { items: filteredItems, totalPrice: filteredTotalPrice }
   }, [gridHash])
 
+  // Live JTL prices for the current BOM SKUs (fallback-safe: empty when unavailable).
+  const bomSkus = useMemo(() => bomData.items.map((item) => item.id), [bomData.items])
+  const { prices: jtlPrices, isLive: isJtlLive } = useJtlPrices(bomSkus)
+
+  // Apply live JTL prices over the local fallback prices when available.
+  const pricedBomData = useMemo(() => {
+    if (!isJtlLive || !jtlPrices || Object.keys(jtlPrices).length === 0) {
+      return bomData
+    }
+
+    const items = bomData.items.map((item) => {
+      const livePrice = jtlPrices[item.id]
+      if (typeof livePrice !== "number" || !Number.isFinite(livePrice)) {
+        return item
+      }
+      return {
+        ...item,
+        pricePerUnit: livePrice,
+        total: item.quantity * livePrice,
+      }
+    })
+
+    const totalPrice = items.reduce((sum, item) => sum + item.total, 0)
+    return { items, totalPrice }
+  }, [bomData, jtlPrices, isJtlLive])
+
 const toggleDefaultColumnWidth = () => {
     setDefaultNewColumnWidth((prev) => (prev === 75 ? 38 : 75))
   }
@@ -1682,8 +1709,8 @@ const toggleDefaultColumnWidth = () => {
             onSetColumnWidth={setColumnWidth} // Renamed to handleSetColumnWidth in updates
             onSetRowHeight={setRowHeight} // Renamed to handleSetRowHeight in updates
             onUpdateConfig={updateConfig} // Renamed to handleUpdateConfig in updates
-            shoppingList={bomData.items}
-            price={bomData.totalPrice}
+            shoppingList={pricedBomData.items}
+            price={pricedBomData.totalPrice}
             showShoppingList={showShoppingList}
             onToggleShoppingList={() => setShowShoppingList(!showShoppingList)}
             onApplyCellColor={applyCellColor} // Renamed to handleApplyCellColor in updates
@@ -1710,8 +1737,8 @@ const toggleDefaultColumnWidth = () => {
             }}
             onSelectColor={setSelectedColor}
             onUpdateConfig={updateConfig}
-            shoppingList={bomData.items}
-            price={bomData.totalPrice}
+            shoppingList={pricedBomData.items}
+            price={pricedBomData.totalPrice}
             defaultNewColumnWidth={defaultNewColumnWidth}
             onSetDefaultColumnWidth={setDefaultNewColumnWidth}
             footType={config.footType}
