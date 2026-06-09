@@ -61,11 +61,57 @@ export async function startCheckoutSession(lines: CheckoutLineInput[]) {
     redirect_on_completion: "never",
     line_items: lineItems,
     mode: "payment",
+    // Stripe collects the email in the embedded form. Generating an invoice makes
+    // Stripe email the customer a confirmation / receipt automatically — no
+    // external email provider required.
+    invoice_creation: { enabled: true },
   })
 
   if (!session.client_secret) {
     throw new Error("Failed to create checkout session")
   }
 
-  return session.client_secret
+  return { clientSecret: session.client_secret, sessionId: session.id }
+}
+
+export interface OrderSummary {
+  orderNumber: string
+  paymentStatus: string
+  email: string | null
+  currency: string
+  amountTotal: number
+  items: { name: string; description: string | null; quantity: number; amountTotal: number }[]
+}
+
+/**
+ * Retrieves a completed checkout session and returns a customer-friendly order
+ * summary for the confirmation page. Reads pricing from Stripe (the source of
+ * truth for what was actually charged), not from the client.
+ */
+export async function getOrderSummary(sessionId: string): Promise<OrderSummary | null> {
+  if (!sessionId) return null
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["line_items"],
+  })
+
+  if (!session) return null
+
+  const items =
+    session.line_items?.data.map((li) => ({
+      name: li.description ?? "Artikel",
+      description: null,
+      quantity: li.quantity ?? 1,
+      amountTotal: (li.amount_total ?? 0) / 100,
+    })) ?? []
+
+  return {
+    // Short, human-friendly order number derived from the session id.
+    orderNumber: session.id.replace(/^cs_(test_|live_)?/, "").slice(0, 12).toUpperCase(),
+    paymentStatus: session.payment_status,
+    email: session.customer_details?.email ?? null,
+    currency: (session.currency ?? "eur").toUpperCase(),
+    amountTotal: (session.amount_total ?? 0) / 100,
+    items,
+  }
 }

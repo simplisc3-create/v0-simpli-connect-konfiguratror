@@ -2,7 +2,6 @@
 
 import type React from "react"
 
-import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useCartStore } from "@/lib/cart-store"
@@ -17,7 +16,9 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { items, getTotalPrice, clearCart } = useCartStore()
   const [step, setStep] = useState(1)
-  const [orderComplete, setOrderComplete] = useState(false)
+  // Set once payment completes so the empty-cart guard doesn't redirect to the
+  // cart while we navigate to the confirmation page.
+  const [completing, setCompleting] = useState(false)
 
   const shipping = getTotalPrice() >= 500 ? 0 : 49
   const total = getTotalPrice() + shipping
@@ -34,33 +35,15 @@ export default function CheckoutPage() {
     }
   }
 
-  const handlePaymentComplete = () => {
-    setOrderComplete(true)
+  const handlePaymentComplete = (sessionId: string) => {
+    setCompleting(true)
     clearCart()
+    router.push(`/checkout/success?session_id=${sessionId}`)
   }
 
-  if (items.length === 0 && !orderComplete) {
+  if (items.length === 0 && !completing) {
     router.push("/warenkorb")
     return null
-  }
-
-  if (orderComplete) {
-    return (
-      <main className="min-h-screen bg-white flex items-center justify-center px-6">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Bestellung erfolgreich!</h1>
-          <p className="text-gray-600 mb-6">
-            Vielen Dank für deine Bestellung. Du erhältst in Kürze eine Bestätigung per E-Mail.
-          </p>
-          <Link href="/">
-            <Button className="bg-black hover:bg-gray-800">Zurück zur Startseite</Button>
-          </Link>
-        </div>
-      </main>
-    )
   }
 
   return (
