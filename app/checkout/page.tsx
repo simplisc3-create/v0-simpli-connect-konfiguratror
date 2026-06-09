@@ -23,8 +23,14 @@ export default function CheckoutPage() {
   const shipping = getTotalPrice() >= 500 ? 0 : 49
   const total = getTotalPrice() + shipping
 
-  // Client only sends SKU ids + quantities; prices are validated server-side.
-  const checkoutLines = items.map((item) => ({ id: item.id, quantity: item.quantity }))
+  // Client sends SKU ids + quantities. Name + price are only a fallback for
+  // configurator-derived custom lines; catalog prices are validated server-side.
+  const checkoutLines = items.map((item) => ({
+    id: item.id,
+    quantity: item.quantity,
+    name: item.name,
+    price: item.price,
+  }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

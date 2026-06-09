@@ -7,6 +7,11 @@ import { fetchJtlPrices } from "@/lib/jtl-prices"
 export interface CheckoutLineInput {
   id: string
   quantity: number
+  /** Display name for configurator-derived lines that aren't plain catalog SKUs. */
+  name?: string
+  /** Client-computed unit price (BOM price). Used only as a fallback when the
+   * SKU is not in the authoritative catalog or live JTL prices. */
+  price?: number
 }
 
 // Build a fast SKU -> product lookup from the authoritative catalog.
@@ -15,10 +20,13 @@ const productBySku = new Map(allProducts.map((p) => [p.artNr, p]))
 /**
  * Starts a Stripe Embedded Checkout session.
  *
- * Security: the client only sends SKU ids and quantities. Prices are resolved
- * SERVER-SIDE from the authoritative product catalog (allProducts), preferring
- * live JTL prices when the bridge is reachable. This prevents any client-side
- * price tampering.
+ * Security: the client sends SKU ids, quantities, and (as a fallback only) a
+ * display name + BOM price. When a SKU exists in the authoritative catalog,
+ * the price is resolved SERVER-SIDE — preferring live JTL prices, then the
+ * catalog price — and the client price is ignored, preventing tampering on
+ * real catalog products. Configurator-derived lines (custom shelf modules that
+ * are not plain catalog SKUs) fall back to the client-computed BOM price so
+ * checkout never breaks on a valid configuration.
  */
 export async function startCheckoutSession(lines: CheckoutLineInput[]) {
   if (!Array.isArray(lines) || lines.length === 0) {
@@ -30,25 +38,37 @@ export async function startCheckoutSession(lines: CheckoutLineInput[]) {
 
   const lineItems = lines.map((line) => {
     const product = productBySku.get(line.id)
-    if (!product) {
-      throw new Error(`Unknown product SKU "${line.id}"`)
-    }
-
     const quantity = Math.max(1, Math.floor(Number(line.quantity) || 1))
 
-    // Prefer live JTL price, fall back to the catalog price.
+    // Resolve the unit price with this priority:
+    //   1. Live JTL price for the SKU (authoritative, real-time)
+    //   2. Catalog price for the SKU (authoritative)
+    //   3. Client-supplied BOM price (for configurator-derived custom lines)
     const livePrice = livePrices[line.id]
-    const unitPrice = typeof livePrice === "number" && Number.isFinite(livePrice) ? livePrice : product.price
+    let unitPrice: number | undefined
+    if (typeof livePrice === "number" && Number.isFinite(livePrice)) {
+      unitPrice = livePrice
+    } else if (product) {
+      unitPrice = product.price
+    } else if (typeof line.price === "number" && Number.isFinite(line.price) && line.price >= 0) {
+      unitPrice = line.price
+    }
 
+    if (typeof unitPrice !== "number" || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+      throw new Error(`No valid price for line "${line.id}"`)
+    }
+
+    const name = product?.name ?? line.name ?? line.id
+    const artNr = product?.artNr ?? line.id
     const unitAmount = Math.round(unitPrice * 100)
 
     return {
       price_data: {
         currency: "eur",
         product_data: {
-          name: product.name,
+          name,
           // Stripe requires a non-empty description if provided; keep it to the SKU.
-          description: `Art.Nr: ${product.artNr}`,
+          description: `Art.Nr: ${artNr}`,
         },
         unit_amount: unitAmount,
       },
