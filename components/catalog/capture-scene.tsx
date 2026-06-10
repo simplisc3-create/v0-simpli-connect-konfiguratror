@@ -271,8 +271,9 @@ export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture
   )
 
   // Sehr große Aufbauten (viele Module) bei dpr=2 sprengen den GPU-Speicher und
-  // lassen toDataURL scheitern. Für schwere Szenen die Auflösung etwas senken.
-  const captureDpr = modules.length > 10 ? 1.5 : 2
+  // lassen toDataURL scheitern. Für schwere Szenen die Auflösung stufenweise senken.
+  const isHeavy = modules.length > 12
+  const captureDpr = isHeavy ? 1 : modules.length > 10 ? 1.5 : 2
 
   const mockGridConfig = useMemo(
     () => ({
@@ -296,7 +297,7 @@ export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture
       <Canvas
         dpr={captureDpr}
         gl={{
-          antialias: true,
+          antialias: !isHeavy,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.05,
           preserveDrawingBuffer: true,
