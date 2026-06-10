@@ -156,6 +156,21 @@ function CaptureRig({
 }) {
   const { camera, gl, scene } = useThree()
 
+  // Live-Werte über Refs lesen, damit der Capture-Effekt NUR von `captureKey`
+  // abhängt. Sonst starten neue Array-/Funktions-Referenzen (position, target,
+  // onReady) bei jedem Re-Render den Timer neu – das passiert bei schweren
+  // Szenen (hohe Türme) während des GLB-Ladens dauernd, sodass `grab()` nie feuert.
+  const positionRef = useRef(position)
+  const targetRef = useRef(target)
+  const settleMsRef = useRef(settleMs)
+  const expectedModulesRef = useRef(expectedModules)
+  const onReadyRef = useRef(onReady)
+  positionRef.current = position
+  targetRef.current = target
+  settleMsRef.current = settleMs
+  expectedModulesRef.current = expectedModules
+  onReadyRef.current = onReady
+
   useEffect(() => {
     let cancelled = false
     let pollId: ReturnType<typeof setTimeout> | null = null
@@ -163,6 +178,8 @@ function CaptureRig({
     const startedAt = Date.now()
 
     const positionCamera = () => {
+      const position = positionRef.current
+      const target = targetRef.current
       camera.position.set(position[0], position[1], position[2])
       camera.lookAt(target[0], target[1], target[2])
       camera.updateProjectionMatrix()
@@ -176,7 +193,7 @@ function CaptureRig({
       gl.render(scene, camera)
       try {
         const url = gl.domElement.toDataURL("image/png")
-        onReady(captureKey, url)
+        onReadyRef.current(captureKey, url)
       } catch (e) {
         console.log("[v0] capture toDataURL failed", e)
       }
@@ -189,10 +206,10 @@ function CaptureRig({
       scene.traverse((o) => {
         if ((o as THREE.Mesh).isMesh) meshCount++
       })
-      const ready = meshCount >= Math.max(1, expectedModules)
+      const ready = meshCount >= Math.max(1, expectedModulesRef.current)
       const timedOut = Date.now() - startedAt > 5000
       if (ready || timedOut) {
-        settleId = setTimeout(grab, settleMs)
+        settleId = setTimeout(grab, settleMsRef.current)
       } else {
         pollId = setTimeout(waitForMeshes, 120)
       }
@@ -206,7 +223,7 @@ function CaptureRig({
       if (pollId) clearTimeout(pollId)
       if (settleId) clearTimeout(settleId)
     }
-  }, [captureKey, camera, gl, scene, position, target, settleMs, expectedModules, onReady])
+  }, [captureKey, camera, gl, scene])
 
   return null
 }
