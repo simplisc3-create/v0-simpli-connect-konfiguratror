@@ -176,6 +176,16 @@ const products40 = [
     width: 40,
     glbModule: { moduleType: "abschliessbar-links", color: "white", width: 40 as const },
   },
+  {
+    id: "abschliessbar-rechts-40",
+    name: "Abschließbar rechts",
+    artNr: "MOD-40-007",
+    description: "Sicherer Stauraum mit Schloss, Anschlag rechts",
+    price: 65.0,
+    category: "geschlossen",
+    width: 40,
+    glbModule: { moduleType: "abschliessbar-rechts", color: "white", width: 40 as const },
+  },
 ]
 
 // Recommended products - curated selection
