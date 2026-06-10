@@ -53,6 +53,11 @@ export default function ShotPage({ params }: { params: Promise<{ jobId: string }
     }
   }
 
+  const handleError = (erroredJobId: string) => {
+    window.__shotDone = { jobId: erroredJobId, ok: false, error: "capture-failed" }
+    setState("error")
+  }
+
   const captureJob: CaptureJobInput | null =
     job && item
       ? {
@@ -77,7 +82,7 @@ export default function ShotPage({ params }: { params: Promise<{ jobId: string }
                 transformOrigin: "top left",
               }}
             >
-              <CaptureStudioCanvas job={captureJob} size={CAPTURE_SIZE} onCapture={handleCapture} />
+              <CaptureStudioCanvas job={captureJob} size={CAPTURE_SIZE} onCapture={handleCapture} onError={handleError} />
             </div>
           </div>
         ) : (
