@@ -190,7 +190,7 @@ function CaptureRig({
         if ((o as THREE.Mesh).isMesh) meshCount++
       })
       const ready = meshCount >= Math.max(1, expectedModules)
-      const timedOut = Date.now() - startedAt > 9000
+      const timedOut = Date.now() - startedAt > 5000
       if (ready || timedOut) {
         settleId = setTimeout(grab, settleMs)
       } else {
@@ -294,15 +294,17 @@ export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture
               />
             ))}
           </group>
-          <CaptureRig
-            captureKey={job.jobId}
-            position={cam.position}
-            target={cam.target}
-            settleMs={settleMs}
-            expectedModules={modules.length}
-            onReady={onCapture}
-          />
         </Suspense>
+        {/* Rig liegt AUSSERHALB von Suspense: so läuft der Timeout immer,
+            auch wenn ein GLB nie auflöst, und der Shot wird garantiert fertig. */}
+        <CaptureRig
+          captureKey={job.jobId}
+          position={cam.position}
+          target={cam.target}
+          settleMs={settleMs}
+          expectedModules={modules.length}
+          onReady={onCapture}
+        />
       </Canvas>
     </div>
   )
