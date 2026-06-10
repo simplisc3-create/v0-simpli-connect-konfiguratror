@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useMemo, useEffect } from "react"
+import { Suspense, useMemo, useEffect, useRef } from "react"
 import { Canvas, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 import { GLBModule } from "@/components/glb-module-loader"
@@ -146,6 +146,7 @@ function CaptureRig({
   settleMs,
   expectedModules,
   onReady,
+  onError,
 }: {
   captureKey: string
   position: [number, number, number]
@@ -153,6 +154,7 @@ function CaptureRig({
   settleMs: number
   expectedModules: number
   onReady: (key: string, dataUrl: string) => void
+  onError?: (key: string) => void
 }) {
   const { camera, gl, scene } = useThree()
 
@@ -165,11 +167,13 @@ function CaptureRig({
   const settleMsRef = useRef(settleMs)
   const expectedModulesRef = useRef(expectedModules)
   const onReadyRef = useRef(onReady)
+  const onErrorRef = useRef(onError)
   positionRef.current = position
   targetRef.current = target
   settleMsRef.current = settleMs
   expectedModulesRef.current = expectedModules
   onReadyRef.current = onReady
+  onErrorRef.current = onError
 
   useEffect(() => {
     let cancelled = false
@@ -185,7 +189,7 @@ function CaptureRig({
       camera.updateProjectionMatrix()
     }
 
-    const grab = () => {
+    const grab = (attempt = 0) => {
       if (cancelled) return
       positionCamera()
       // Mehrere Render-Durchläufe für stabile Beleuchtung/Environment.
@@ -193,9 +197,23 @@ function CaptureRig({
       gl.render(scene, camera)
       try {
         const url = gl.domElement.toDataURL("image/png")
+        if (!url || url.length < 1000) throw new Error("leeres Canvas")
         onReadyRef.current(captureKey, url)
       } catch (e) {
-        console.log("[v0] capture toDataURL failed", e)
+        console.log("[v0] capture toDataURL failed", attempt, e)
+        // Bei schweren Szenen kann toDataURL kurzzeitig scheitern: einige Male
+        // mit Abstand neu versuchen, statt im "rendering"-Zustand hängen zu bleiben.
+        if (attempt < 4) {
+          settleId = setTimeout(() => grab(attempt + 1), 700)
+        } else {
+          // Letzter Fallback: trotzdem versuchen auszuliefern, damit die Seite
+          // nie dauerhaft im Render-Zustand stecken bleibt.
+          try {
+            onReadyRef.current(captureKey, gl.domElement.toDataURL("image/png"))
+          } catch {
+            onErrorRef.current?.(captureKey)
+          }
+        }
       }
     }
 
@@ -241,15 +259,20 @@ interface CaptureStudioCanvasProps {
   size?: number
   settleMs?: number
   onCapture: (jobId: string, dataUrl: string) => void
+  onError?: (jobId: string) => void
 }
 
 // Dauerhafter Canvas – nur Inhalt (Modell/Farbe/Kamera) wechselt pro Job.
-export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture }: CaptureStudioCanvasProps) {
+export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture, onError }: CaptureStudioCanvasProps) {
   const { modules, totalWidth, totalHeight, depth } = useModules(job.preset, job.colorGerman)
   const cam = useMemo(
     () => computeCamera(job.view, totalWidth, totalHeight, depth),
     [job.view, totalWidth, totalHeight, depth],
   )
+
+  // Sehr große Aufbauten (viele Module) bei dpr=2 sprengen den GPU-Speicher und
+  // lassen toDataURL scheitern. Für schwere Szenen die Auflösung etwas senken.
+  const captureDpr = modules.length > 10 ? 1.5 : 2
 
   const mockGridConfig = useMemo(
     () => ({
@@ -271,7 +294,7 @@ export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture
   return (
     <div style={{ width: size, height: size }}>
       <Canvas
-        dpr={2}
+        dpr={captureDpr}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
@@ -321,6 +344,7 @@ export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture
           settleMs={settleMs}
           expectedModules={modules.length}
           onReady={onCapture}
+          onError={onError}
         />
       </Canvas>
     </div>
