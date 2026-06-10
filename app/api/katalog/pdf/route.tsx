@@ -64,8 +64,6 @@ export async function GET() {
   try {
     const manifest = await loadManifest()
     const inlinedManifest = await inlineManifestImages(manifest)
-    const inlinedCount = Object.values(inlinedManifest.images).filter((v) => v?.startsWith("data:")).length
-    console.log("[v0] PDF: manifest images", Object.keys(manifest.images).length, "inlined data-urls", inlinedCount)
     const buffer = await renderToBuffer(<CatalogDocument manifest={inlinedManifest} />)
 
     return new NextResponse(buffer as unknown as BodyInit, {
