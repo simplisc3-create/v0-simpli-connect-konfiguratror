@@ -12,6 +12,12 @@ const SAVE_EVERY = 12 // Manifest alle N Captures zwischenspeichern (resumierbar
 
 export default function KatalogStudioPage() {
   const jobs = useMemo(() => buildRenderJobs(), [])
+  // ?force=1 ignoriert vorhandene Renderings und rendert alles neu (überschreibt
+  // die Blobs). Nötig z. B. nach Kamera-/Framing-Änderungen.
+  const forceRerender = useMemo(() => {
+    if (typeof window === "undefined") return false
+    return new URLSearchParams(window.location.search).get("force") === "1"
+  }, [])
   const [index, setIndex] = useState(0)
   const [status, setStatus] = useState<Status>("loading")
   const [log, setLog] = useState<string[]>([])
@@ -98,9 +104,10 @@ export default function KatalogStudioPage() {
         const res = await fetch("/api/katalog/manifest", { cache: "no-store" })
         const manifest = (await res.json()) as CatalogManifest
         if (cancelled) return
-        imagesRef.current = manifest.images ?? {}
+        // Im Force-Modus bestehende Renderings ignorieren -> alles neu rendern.
+        imagesRef.current = forceRerender ? {} : (manifest.images ?? {})
         const done = Object.keys(imagesRef.current).length
-        appendLog(`${done} vorhandene Renderings geladen.`)
+        appendLog(forceRerender ? "Force-Modus: rendere alle Jobs neu." : `${done} vorhandene Renderings geladen.`)
         setStatus("idle")
       } catch {
         if (!cancelled) setStatus("idle")
@@ -109,7 +116,7 @@ export default function KatalogStudioPage() {
     return () => {
       cancelled = true
     }
-  }, [appendLog])
+  }, [appendLog, forceRerender])
 
   const start = useCallback(() => {
     if (startedRef.current) return

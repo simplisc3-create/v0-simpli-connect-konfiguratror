@@ -108,6 +108,19 @@ function useModules(preset: CatalogPreset, color: string) {
 // -----------------------------------------------------------------------------
 // Kamera-Positionierung für 4 Ansichten
 // -----------------------------------------------------------------------------
+// FOV der Capture-Kamera (vertikal, Grad). Muss mit dem <Canvas camera fov />
+// Wert übereinstimmen, damit die Abstandsberechnung das Möbel komplett einrahmt.
+const CAPTURE_FOV_DEG = 32
+
+// Abstand, der nötig ist, damit ein Objekt der Größe `extent` bei quadratischem
+// Canvas (Aspect 1) vollständig ins Bild passt – plus Sicherheitsrand (margin).
+// Großzügiger Rand, damit das komplette Möbel mit Luft drumherum sichtbar ist
+// und nichts angeschnitten wird.
+function fitDistance(extent: number, margin = 1.32) {
+  const halfFov = (CAPTURE_FOV_DEG / 2) * (Math.PI / 180)
+  return (extent / 2 / Math.tan(halfFov)) * margin
+}
+
 function computeCamera(
   view: ViewKey,
   totalWidth: number,
@@ -117,19 +130,33 @@ function computeCamera(
   const targetY = totalHeight / 2
   const target: [number, number, number] = [0, targetY, 0]
 
-  const maxDim = Math.max(totalWidth, totalHeight, depth)
-  const dist = Math.max(1.6, maxDim * 1.55)
-
   switch (view) {
     case "front":
-      return { position: [0, targetY, dist], target }
-    case "back":
-      return { position: [0, targetY, -dist], target }
-    case "side":
+    case "back": {
+      const dist = Math.max(1.6, fitDistance(Math.max(totalWidth, totalHeight)))
+      return { position: [0, targetY, view === "back" ? -dist : dist], target }
+    }
+    case "side": {
+      const dist = Math.max(1.6, fitDistance(Math.max(depth, totalHeight)))
       return { position: [dist, targetY, 0.0001], target }
+    }
     case "perspective":
-    default:
-      return { position: [dist * 0.72, targetY + totalHeight * 0.32 + 0.3, dist * 0.72], target }
+    default: {
+      // Bei 45°-Blick wächst die sichtbare Silhouette: Breite und Tiefe
+      // projizieren gemeinsam, und die leichte Aufsicht vergrößert die Höhe.
+      const projectedWidth = (totalWidth + depth) * 0.78
+      const projectedHeight = totalHeight * 1.25
+      const extent = Math.max(projectedWidth, projectedHeight)
+      // Großzügiger Rand, damit das gesamte Möbel inkl. Rändern sichtbar bleibt.
+      const dist = Math.max(2.0, fitDistance(extent, 1.34))
+      const horiz = dist * 0.7
+      return {
+        // Blickziel auf die Möbelmitte richten und nur leicht von oben schauen,
+        // damit weder oben noch unten etwas abgeschnitten wird.
+        position: [horiz, targetY + totalHeight * 0.1 + 0.15, horiz],
+        target,
+      }
+    }
   }
 }
 
