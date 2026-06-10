@@ -12,7 +12,6 @@ import {
   CATALOG_REGALE,
   CATALOG_MODULES,
   CATALOG_COLORS,
-  CATALOG_VIEWS,
   PRIMARY_COLOR,
   SIMPLI_MATERIALS,
   formatPrice,
@@ -179,26 +178,16 @@ const s = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 0.5,
     borderColor: LINE,
-    height: 250,
+    height: 320,
     alignItems: "center",
     justifyContent: "center",
   },
-  heroImage: { height: 236, objectFit: "contain" },
+  heroImage: { height: 286, objectFit: "contain" },
+  heroCaption: { fontSize: 7, color: MUTED, letterSpacing: 1, marginTop: 6, textTransform: "uppercase" },
+  viewLabel: { fontSize: 7, color: MUTED, marginTop: 2, letterSpacing: 0.5 },
 
-  viewsRow: { flexDirection: "row", marginTop: 10, gap: 8 },
-  viewCell: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    borderRadius: 3,
-    borderWidth: 0.5,
-    borderColor: LINE,
-    height: 92,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 4,
-  },
-  viewImage: { height: 70, objectFit: "contain" },
-  viewLabel: { fontSize: 6.5, color: MUTED, marginTop: 2, letterSpacing: 0.5 },
+  colorChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 4 },
+  colorChip: { flexDirection: "row", alignItems: "center" },
 
   lowerRow: { flexDirection: "row", marginTop: 16, gap: 18 },
   descCol: { flex: 1.4 },
@@ -217,22 +206,8 @@ const s = StyleSheet.create({
   matItem: { fontSize: 8.5, color: "#33312c", marginTop: 3 },
 
   swatchHeading: { fontSize: 8, letterSpacing: 2, color: MUTED, textTransform: "uppercase", marginTop: 14, marginBottom: 8 },
-  swatchRow: { flexDirection: "row", gap: 8 },
-  swatchCell: { alignItems: "center", width: 70 },
-  swatchImgWrap: {
-    width: 70,
-    height: 58,
-    backgroundColor: "#ffffff",
-    borderRadius: 3,
-    borderWidth: 0.5,
-    borderColor: LINE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  swatchImg: { height: 48, objectFit: "contain" },
-  swatchDotRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-  swatchDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 3, borderWidth: 0.5, borderColor: LINE },
-  swatchLabel: { fontSize: 6.5, color: MUTED },
+  swatchDot: { width: 8, height: 8, borderRadius: 4, marginRight: 4, borderWidth: 0.5, borderColor: LINE },
+  swatchLabel: { fontSize: 7.5, color: MUTED },
 })
 
 function Footer() {
@@ -258,9 +233,6 @@ function ProductPage({ item, manifest }: { item: CatalogItem; manifest: CatalogM
   const hero = img(manifest, `${item.id}__perspective__${PRIMARY_COLOR.key}`)
   const kicker = item.kind === "regal" ? "Komplett-Regal" : item.width === 80 ? "Modul · 80 cm" : "Modul · 40 cm"
 
-  const sideViews = CATALOG_VIEWS.filter((v) => v.key !== "perspective")
-  const variantColors = CATALOG_COLORS.filter((c) => c.key !== PRIMARY_COLOR.key)
-
   return (
     <Page size="A4" style={s.page} wrap={false}>
       <View style={s.prodHeaderRow}>
@@ -279,19 +251,7 @@ function ProductPage({ item, manifest }: { item: CatalogItem; manifest: CatalogM
       {/* Hero */}
       <View style={s.heroWrap}>
         {hero ? <Image style={s.heroImage} src={hero} /> : <Text style={s.viewLabel}>Abbildung folgt</Text>}
-      </View>
-
-      {/* 3 weitere Ansichten */}
-      <View style={s.viewsRow}>
-        {sideViews.map((v) => {
-          const u = img(manifest, `${item.id}__${v.key}__${PRIMARY_COLOR.key}`)
-          return (
-            <View key={v.key} style={s.viewCell}>
-              {u ? <Image style={s.viewImage} src={u} /> : <Text style={s.viewLabel}>—</Text>}
-              <Text style={s.viewLabel}>{v.label.toUpperCase()}</Text>
-            </View>
-          )
-        })}
+        <Text style={s.heroCaption}>Ansicht · Perspektive · {PRIMARY_COLOR.label}</Text>
       </View>
 
       {/* Beschreibung + Spezifikationen */}
@@ -330,23 +290,15 @@ function ProductPage({ item, manifest }: { item: CatalogItem; manifest: CatalogM
         </View>
       </View>
 
-      {/* Farbvarianten */}
+      {/* Farbhinweis */}
       <Text style={s.swatchHeading}>Erhältlich in {CATALOG_COLORS.length} Farben</Text>
-      <View style={s.swatchRow}>
-        {variantColors.map((c) => {
-          const u = img(manifest, `${item.id}__variant__${c.key}`)
-          return (
-            <View key={c.key} style={s.swatchCell}>
-              <View style={s.swatchImgWrap}>
-                {u ? <Image style={s.swatchImg} src={u} /> : <Text style={s.viewLabel}>—</Text>}
-              </View>
-              <View style={s.swatchDotRow}>
-                <View style={[s.swatchDot, { backgroundColor: c.hex }]} />
-                <Text style={s.swatchLabel}>{c.label}</Text>
-              </View>
-            </View>
-          )
-        })}
+      <View style={s.colorChipRow}>
+        {CATALOG_COLORS.map((c) => (
+          <View key={c.key} style={s.colorChip}>
+            <View style={[s.swatchDot, { backgroundColor: c.hex }]} />
+            <Text style={s.swatchLabel}>{c.label}</Text>
+          </View>
+        ))}
       </View>
 
       <Footer />
@@ -398,7 +350,8 @@ export function CatalogDocument({ manifest }: { manifest: CatalogManifest }) {
         </Text>
         <Text style={s.editorialBody}>
           Auf den folgenden Seiten finden Sie unsere vorkonfigurierten Kompositionen sowie sämtliche Einzelmodule – jedes
-          aus vier Blickwinkeln und in allen fünf Farben des Systems. Lassen Sie sich inspirieren.
+          als sorgfältig gerendertes Studio-Porträt, ergänzt um Maße, Materialien und alle fünf Farben des Systems.
+          Lassen Sie sich inspirieren.
         </Text>
         <Footer />
       </Page>
