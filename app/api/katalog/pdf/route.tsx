@@ -2,22 +2,32 @@ import { NextResponse } from "next/server"
 import { list } from "@vercel/blob"
 import { renderToBuffer } from "@react-pdf/renderer"
 import { CatalogDocument } from "@/lib/catalog-pdf"
-import { MANIFEST_PATHNAME, type CatalogManifest } from "@/lib/catalog-data"
+import { type CatalogManifest } from "@/lib/catalog-data"
 
 export const runtime = "nodejs"
 export const maxDuration = 120
 
+const RENDERS_PREFIX = "katalog/renders/"
+
+// Manifest live aus den Render-Blobs ableiten – identisch zur GET /api/katalog/manifest
+// Route. Der gespeicherte Snapshot ist oft veraltet (0 Bilder), daher hier nicht nutzen.
 async function loadManifest(): Promise<CatalogManifest> {
+  const images: Record<string, string> = {}
   try {
-    const { blobs } = await list({ prefix: MANIFEST_PATHNAME })
-    const found = blobs.find((b) => b.pathname === MANIFEST_PATHNAME)
-    if (!found) return { generatedAt: "", version: 0, images: {} }
-    const res = await fetch(found.url, { cache: "no-store" })
-    return (await res.json()) as CatalogManifest
+    let cursor: string | undefined
+    do {
+      const result = await list({ prefix: RENDERS_PREFIX, cursor, limit: 1000 })
+      for (const b of result.blobs) {
+        const file = b.pathname.slice(RENDERS_PREFIX.length)
+        if (!file.endsWith(".png")) continue
+        images[file.slice(0, -4)] = b.url
+      }
+      cursor = result.hasMore ? result.cursor : undefined
+    } while (cursor)
   } catch (e) {
     console.error("[v0] PDF: manifest load failed", e)
-    return { generatedAt: "", version: 0, images: {} }
   }
+  return { generatedAt: new Date().toISOString(), version: Date.now(), images }
 }
 
 // @react-pdf bettet entfernte URLs unzuverlässig ein. Daher alle Renders vorab
@@ -54,6 +64,8 @@ export async function GET() {
   try {
     const manifest = await loadManifest()
     const inlinedManifest = await inlineManifestImages(manifest)
+    const inlinedCount = Object.values(inlinedManifest.images).filter((v) => v?.startsWith("data:")).length
+    console.log("[v0] PDF: manifest images", Object.keys(manifest.images).length, "inlined data-urls", inlinedCount)
     const buffer = await renderToBuffer(<CatalogDocument manifest={inlinedManifest} />)
 
     return new NextResponse(buffer as unknown as BodyInit, {
