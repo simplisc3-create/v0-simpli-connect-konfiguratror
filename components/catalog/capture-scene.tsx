@@ -1,0 +1,383 @@
+"use client"
+
+import { Suspense, useMemo, useEffect, useRef } from "react"
+import { Canvas, useThree } from "@react-three/fiber"
+import * as THREE from "three"
+import { GLBModule } from "@/components/glb-module-loader"
+import type { CatalogPreset, ViewKey } from "@/lib/catalog-data"
+
+// -----------------------------------------------------------------------------
+// Grid-Aufbau – identisch zur SimpliRegal3DPreview-Logik, damit Renderings
+// exakt dem Konfigurator entsprechen.
+// -----------------------------------------------------------------------------
+function useModules(preset: CatalogPreset, color: string) {
+  return useMemo(() => {
+    const { columns, rows, columnWidths, rowHeights, grid } = preset
+    const depth = 0.38
+    const columnTubeOverlap = 0.003
+    const rowTubeOverlap = 0.003
+
+    const columnCenters: number[] = []
+    let totalWidth = 0
+    for (let col = 0; col < columns; col++) {
+      const colWidth = columnWidths[col] / 100
+      let xPos = 0
+      for (let c = 0; c < col; c++) {
+        xPos += columnWidths[c] / 100 - columnTubeOverlap
+      }
+      columnCenters.push(xPos + colWidth / 2)
+      totalWidth += colWidth
+      if (col > 0) totalWidth -= columnTubeOverlap
+    }
+
+    const rowCenters: number[] = []
+    let totalHeight = 0
+    for (let row = 0; row < rows; row++) {
+      const rowHeight = rowHeights[row] / 100
+      let yPos = 0
+      for (let r = 0; r < row; r++) {
+        yPos += rowHeights[r] / 100 - rowTubeOverlap
+      }
+      rowCenters.push(yPos + rowHeight / 2)
+      totalHeight += rowHeight
+      if (row > 0) totalHeight -= rowTubeOverlap
+    }
+
+    const offsetX = -totalWidth / 2
+
+    const modules: Array<{
+      key: string
+      position: [number, number, number]
+      cellType: string
+      width: number
+      height: number
+      row: number
+      col: number
+      isBottomModule: boolean
+    }> = []
+
+    grid.forEach((rowCells, gridRow) => {
+      rowCells.forEach((cell, gridCol) => {
+        if (cell.type === "empty" || cell.type === "ghost") return
+
+        const cellWidth = columnWidths[gridCol] / 100
+        const cellHeight = rowHeights[gridRow] / 100
+
+        let zOffset = 0
+        if (cell.type === "mit-doppelschublade" || cell.type === "abschliessbare-tueren") {
+          zOffset = 0.01
+        } else if (cell.type === "mit-rueckwand") {
+          zOffset = -0.01
+        }
+
+        const position: [number, number, number] = [
+          columnCenters[gridCol] + offsetX,
+          rowCenters[gridRow],
+          -depth / 2 + zOffset,
+        ]
+
+        const maxRowInColumn = grid.reduce((max, gridRowCells, rowIndex) => {
+          if (
+            gridRowCells[gridCol] &&
+            gridRowCells[gridCol].type !== "empty" &&
+            gridRowCells[gridCol].type !== "ghost"
+          ) {
+            return Math.max(max, rowIndex)
+          }
+          return max
+        }, -1)
+        const isBottomModule = gridRow === maxRowInColumn
+
+        modules.push({
+          key: `module-${gridRow}-${gridCol}`,
+          position,
+          cellType: cell.type,
+          width: cellWidth,
+          height: cellHeight,
+          row: gridRow,
+          col: gridCol,
+          isBottomModule,
+        })
+      })
+    })
+
+    return { modules, totalWidth, totalHeight, depth }
+  }, [preset, color])
+}
+
+// -----------------------------------------------------------------------------
+// Kamera-Positionierung für 4 Ansichten
+// -----------------------------------------------------------------------------
+// FOV der Capture-Kamera (vertikal, Grad). Muss mit dem <Canvas camera fov />
+// Wert übereinstimmen, damit die Abstandsberechnung das Möbel komplett einrahmt.
+const CAPTURE_FOV_DEG = 32
+
+// Abstand, der nötig ist, damit ein Objekt der Größe `extent` bei quadratischem
+// Canvas (Aspect 1) vollständig ins Bild passt – plus Sicherheitsrand (margin).
+// Großzügiger Rand, damit das komplette Möbel mit Luft drumherum sichtbar ist
+// und nichts angeschnitten wird.
+function fitDistance(extent: number, margin = 1.32) {
+  const halfFov = (CAPTURE_FOV_DEG / 2) * (Math.PI / 180)
+  return (extent / 2 / Math.tan(halfFov)) * margin
+}
+
+function computeCamera(
+  view: ViewKey,
+  totalWidth: number,
+  totalHeight: number,
+  depth: number,
+): { position: [number, number, number]; target: [number, number, number] } {
+  const targetY = totalHeight / 2
+  const target: [number, number, number] = [0, targetY, 0]
+
+  switch (view) {
+    case "front":
+    case "back": {
+      const dist = Math.max(1.8, fitDistance(Math.max(totalWidth, totalHeight), 1.4))
+      return { position: [0, targetY, view === "back" ? -dist : dist], target }
+    }
+    case "side": {
+      const dist = Math.max(1.8, fitDistance(Math.max(depth, totalHeight), 1.4))
+      return { position: [dist, targetY, 0.0001], target }
+    }
+    case "perspective":
+    default: {
+      // Bei 45°-Blick projizieren Breite und Tiefe gemeinsam auf die Bildebene.
+      // Wir rechnen die volle diagonale Silhouette plus die durch die leichte
+      // Aufsicht zusätzlich sichtbare Höhe großzügig ein, damit nichts
+      // angeschnitten wird.
+      const projectedWidth = (totalWidth + depth) * 0.95
+      const projectedHeight = totalHeight + depth * 0.5
+      const extent = Math.max(projectedWidth, projectedHeight)
+      // Deutlich großzügigerer Rand → das komplette Möbel ist mit Luft drumherum
+      // sichtbar (vorher schnitt es oben/unten an).
+      const dist = Math.max(2.4, fitDistance(extent, 1.6))
+      const horiz = dist * 0.7
+      return {
+        // Genau auf die Möbelmitte blicken und nur ganz leicht von oben –
+        // so bleiben Ober- und Unterkante sicher im Bild.
+        position: [horiz, targetY + totalHeight * 0.06, horiz],
+        target,
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Capture-Rig: läuft innerhalb EINES dauerhaften Canvas/WebGL-Kontexts.
+// Bei jedem Wechsel von `captureKey` wird die Kamera gesetzt und nach einer
+// kurzen Settle-Zeit (timer-basiert, damit Hintergrund-Tabs den RAF-Loop nicht
+// drosseln) das Canvas ausgelesen. So entsteht kein WebGL-Kontext-Verlust.
+// -----------------------------------------------------------------------------
+function CaptureRig({
+  captureKey,
+  position,
+  target,
+  settleMs,
+  expectedModules,
+  onReady,
+  onError,
+}: {
+  captureKey: string
+  position: [number, number, number]
+  target: [number, number, number]
+  settleMs: number
+  expectedModules: number
+  onReady: (key: string, dataUrl: string) => void
+  onError?: (key: string) => void
+}) {
+  const { camera, gl, scene } = useThree()
+
+  // Live-Werte über Refs lesen, damit der Capture-Effekt NUR von `captureKey`
+  // abhängt. Sonst starten neue Array-/Funktions-Referenzen (position, target,
+  // onReady) bei jedem Re-Render den Timer neu – das passiert bei schweren
+  // Szenen (hohe Türme) während des GLB-Ladens dauernd, sodass `grab()` nie feuert.
+  const positionRef = useRef(position)
+  const targetRef = useRef(target)
+  const settleMsRef = useRef(settleMs)
+  const expectedModulesRef = useRef(expectedModules)
+  const onReadyRef = useRef(onReady)
+  const onErrorRef = useRef(onError)
+  positionRef.current = position
+  targetRef.current = target
+  settleMsRef.current = settleMs
+  expectedModulesRef.current = expectedModules
+  onReadyRef.current = onReady
+  onErrorRef.current = onError
+
+  useEffect(() => {
+    let cancelled = false
+    let pollId: ReturnType<typeof setTimeout> | null = null
+    let settleId: ReturnType<typeof setTimeout> | null = null
+    const startedAt = Date.now()
+
+    const positionCamera = () => {
+      const position = positionRef.current
+      const target = targetRef.current
+      camera.position.set(position[0], position[1], position[2])
+      camera.lookAt(target[0], target[1], target[2])
+      camera.updateProjectionMatrix()
+    }
+
+    const grab = (attempt = 0) => {
+      if (cancelled) return
+      positionCamera()
+      // Mehrere Render-Durchläufe für stabile Beleuchtung/Environment.
+      gl.render(scene, camera)
+      gl.render(scene, camera)
+      try {
+        const url = gl.domElement.toDataURL("image/png")
+        if (!url || url.length < 1000) throw new Error("leeres Canvas")
+        onReadyRef.current(captureKey, url)
+      } catch (e) {
+        console.log("[v0] capture toDataURL failed", attempt, e)
+        // Bei schweren Szenen kann toDataURL kurzzeitig scheitern: einige Male
+        // mit Abstand neu versuchen, statt im "rendering"-Zustand hängen zu bleiben.
+        if (attempt < 4) {
+          settleId = setTimeout(() => grab(attempt + 1), 700)
+        } else {
+          // Letzter Fallback: trotzdem versuchen auszuliefern, damit die Seite
+          // nie dauerhaft im Render-Zustand stecken bleibt.
+          try {
+            onReadyRef.current(captureKey, gl.domElement.toDataURL("image/png"))
+          } catch {
+            onErrorRef.current?.(captureKey)
+          }
+        }
+      }
+    }
+
+    // Warten bis die erwarteten GLB-Meshes geladen sind, dann kurz settlen.
+    const waitForMeshes = () => {
+      if (cancelled) return
+      let meshCount = 0
+      scene.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh) meshCount++
+      })
+      const ready = meshCount >= Math.max(1, expectedModulesRef.current)
+      const timedOut = Date.now() - startedAt > 5000
+      if (ready || timedOut) {
+        settleId = setTimeout(grab, settleMsRef.current)
+      } else {
+        pollId = setTimeout(waitForMeshes, 120)
+      }
+    }
+
+    positionCamera()
+    waitForMeshes()
+
+    return () => {
+      cancelled = true
+      if (pollId) clearTimeout(pollId)
+      if (settleId) clearTimeout(settleId)
+    }
+  }, [captureKey, camera, gl, scene])
+
+  return null
+}
+
+export interface CaptureJobInput {
+  jobId: string
+  itemId: string
+  preset: CatalogPreset
+  colorGerman: string
+  view: ViewKey
+}
+
+interface CaptureStudioCanvasProps {
+  job: CaptureJobInput
+  size?: number
+  settleMs?: number
+  onCapture: (jobId: string, dataUrl: string) => void
+  onError?: (jobId: string) => void
+}
+
+// Dauerhafter Canvas – nur Inhalt (Modell/Farbe/Kamera) wechselt pro Job.
+export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture, onError }: CaptureStudioCanvasProps) {
+  const { modules, totalWidth, totalHeight, depth } = useModules(job.preset, job.colorGerman)
+  const cam = useMemo(
+    () => computeCamera(job.view, totalWidth, totalHeight, depth),
+    [job.view, totalWidth, totalHeight, depth],
+  )
+
+  // Sehr große Aufbauten (viele Module) bei dpr=2 sprengen den GPU-Speicher und
+  // lassen toDataURL scheitern. Für schwere Szenen die Auflösung stufenweise senken.
+  const isHeavy = modules.length > 12
+  const captureDpr = isHeavy ? 1 : modules.length > 10 ? 1.5 : 2
+
+  const mockGridConfig = useMemo(
+    () => ({
+      width: 75 as const,
+      height: 40 as const,
+      sections: job.preset.columns,
+      levels: job.preset.rows,
+      material: "metal" as const,
+      finish: "white" as const,
+      grid: job.preset.grid,
+      columns: job.preset.columns,
+      rows: job.preset.rows,
+      columnWidths: job.preset.columnWidths,
+      rowHeights: job.preset.rowHeights,
+    }),
+    [job.preset],
+  )
+
+  return (
+    <div style={{ width: size, height: size }}>
+      <Canvas
+        dpr={captureDpr}
+        gl={{
+          antialias: !isHeavy,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.05,
+          preserveDrawingBuffer: true,
+          alpha: false,
+          powerPreference: "high-performance",
+        }}
+        camera={{ position: cam.position, fov: 32 }}
+        frameloop="demand"
+      >
+        <color attach="background" args={["#f4f4f5"]} />
+        {/* Reines Licht-Setup ohne cross-origin HDR, damit das Canvas nicht
+            "tainted" wird und toDataURL() zuverlässig funktioniert. */}
+        <ambientLight intensity={0.9} />
+        <hemisphereLight args={["#ffffff", "#d8d8dc", 0.7]} />
+        <directionalLight position={[4, 8, 5]} intensity={1.1} />
+        <directionalLight position={[-4, 5, -3]} intensity={0.5} />
+        <directionalLight position={[0, 3, 6]} intensity={0.35} />
+
+        <Suspense fallback={null}>
+          {/* group keyed per Job, damit Modelle sauber neu aufgebaut werden */}
+          <group key={`${job.itemId}-${job.colorGerman}`}>
+            {modules.map(({ key, position, cellType, width, height, row, col, isBottomModule }) => (
+              <GLBModule
+                key={`${key}-${job.colorGerman}`}
+                position={position}
+                cellType={cellType as never}
+                width={width}
+                height={height}
+                depth={depth}
+                color={job.colorGerman as never}
+                row={row}
+                col={col}
+                gridConfig={mockGridConfig as never}
+                isBottomModule={isBottomModule}
+              />
+            ))}
+          </group>
+        </Suspense>
+        {/* Rig liegt AUSSERHALB von Suspense: so läuft der Timeout immer,
+            auch wenn ein GLB nie auflöst, und der Shot wird garantiert fertig. */}
+        <CaptureRig
+          captureKey={job.jobId}
+          position={cam.position}
+          target={cam.target}
+          settleMs={settleMs}
+          expectedModules={modules.length}
+          onReady={onCapture}
+          onError={onError}
+        />
+      </Canvas>
+    </div>
+  )
+}

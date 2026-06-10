@@ -1,255 +1,14 @@
 "use client"
 import Link from "next/link"
-import type React from "react"
 import { useState } from "react"
-import { ShoppingCart, ChevronDown, Check, ArrowRight, Package } from "lucide-react"
+import { ChevronDown, ArrowRight, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useCartStore } from "@/lib/cart-store"
 import { SiteHeader } from "@/components/site-header"
-import { Product3DPreview } from "@/components/product-3d-preview"
 import { productsSimpliRegale } from "@/lib/simpli-products"
-import { SimpliRegalCard } from "@/components/simpli-regal-card" // Declare SimpliRegalCard import
-
-// 80cm Module products with 3D previews
-const products80 = [
-  {
-    id: "offenes-fach-80",
-    name: "Offenes Fach",
-    artNr: "MOD-80-001",
-    description: "Perfekt für schnellen Zugriff und Dekoration",
-    price: 29.0,
-    category: "offen",
-    width: 80,
-    glbModule: { moduleType: "offenes-fach", color: "white", width: 80 as const },
-  },
-  {
-    id: "ohne-seitenwaende-80",
-    name: "Ohne Seitenwände",
-    artNr: "MOD-80-002",
-    description: "Für durchgehende Regale und offene Raumgestaltung",
-    price: 32.0,
-    category: "offen",
-    width: 80,
-    glbModule: { moduleType: "ohne-seitenwaende", color: "white", width: 80 as const },
-  },
-  {
-    id: "ohne-rueckwand-80",
-    name: "Ohne Rückwand",
-    artNr: "MOD-80-003",
-    description: "Ideal als Raumteiler mit beidseitigem Zugang",
-    price: 35.0,
-    category: "offen",
-    width: 80,
-    glbModule: { moduleType: "ohne-rueckwand", color: "white", width: 80 as const },
-  },
-  {
-    id: "mit-rueckwand-80",
-    name: "Mit Rückwand",
-    artNr: "MOD-80-004",
-    description: "Für einen aufgeräumten, geschlossenen Look",
-    price: 42.0,
-    category: "offen",
-    width: 80,
-    glbModule: { moduleType: "mit-rueckwand", color: "white", width: 80 as const },
-  },
-  {
-    id: "mit-tueren-80",
-    name: "Mit Türen",
-    artNr: "MOD-80-005",
-    description: "Stauraum mit elegantem Verschluss",
-    price: 65.0,
-    category: "geschlossen",
-    width: 80,
-    glbModule: { moduleType: "mit-tueren", color: "white", width: 80 as const },
-  },
-  {
-    id: "mit-klapptuer-80",
-    name: "Mit Klapptür",
-    artNr: "MOD-80-006",
-    description: "Platzsparend mit Soft-Close-Scharnieren",
-    price: 55.0,
-    category: "geschlossen",
-    width: 80,
-    glbModule: { moduleType: "mit-klapptuer", color: "white", width: 80 as const },
-  },
-  {
-    id: "mit-klapptuer-oben-80",
-    name: "Klapptür (oben)",
-    artNr: "MOD-80-007",
-    description: "Nach oben öffnend mit Gasfeder-Unterstützung",
-    price: 58.0,
-    category: "geschlossen",
-    width: 80,
-    glbModule: { moduleType: "mit-klapptuer-oben", color: "white", width: 80 as const },
-  },
-  {
-    id: "mit-doppelschublade-80",
-    name: "Mit Schubladen",
-    artNr: "MOD-80-008",
-    description: "Optimaler Stauraum mit Vollauszug",
-    price: 85.0,
-    category: "schubladen",
-    width: 80,
-    glbModule: { moduleType: "mit-doppelschublade", color: "white", width: 80 as const },
-  },
-  {
-    id: "mit-einzelschublade-80",
-    name: "Einzelschublade",
-    artNr: "MOD-80-009",
-    description: "Kompakter Stauraum für einzelne Fächer",
-    price: 48.0,
-    category: "schubladen",
-    width: 80,
-    glbModule: { moduleType: "mit-einzelschublade", color: "white", width: 80 as const },
-  },
-  {
-    id: "abschliessbare-tueren-80",
-    name: "Abschließbar",
-    artNr: "MOD-80-010",
-    description: "Sicherer Stauraum mit Schloss",
-    price: 95.0,
-    category: "geschlossen",
-    width: 80,
-    glbModule: { moduleType: "abschliessbare-tueren", color: "white", width: 80 as const },
-  },
-]
-
-// 40cm Module products with 3D previews
-const products40 = [
-  {
-    id: "offenes-fach-40",
-    name: "Offenes Fach",
-    artNr: "MOD-40-001",
-    description: "Kompaktes offenes Fach für kleine Räume",
-    price: 22.0,
-    category: "offen",
-    width: 40,
-    glbModule: { moduleType: "offenes-fach", color: "white", width: 40 as const },
-  },
-  {
-    id: "ohne-seitenwaende-40",
-    name: "Ohne Seitenwände",
-    artNr: "MOD-40-002",
-    description: "Schlankes Design ohne seitliche Begrenzung",
-    price: 25.0,
-    category: "offen",
-    width: 40,
-    glbModule: { moduleType: "ohne-seitenwaende", color: "white", width: 40 as const },
-  },
-  {
-    id: "mit-rueckwand-40",
-    name: "Mit Rückwand",
-    artNr: "MOD-40-003",
-    description: "Geschlossene Rückseite für sauberen Look",
-    price: 32.0,
-    category: "offen",
-    width: 40,
-    glbModule: { moduleType: "mit-rueckwand", color: "white", width: 40 as const },
-  },
-  {
-    id: "mit-tuere-rechts-40",
-    name: "Mit Tür rechts",
-    artNr: "MOD-40-004",
-    description: "Einzeltür mit Anschlag rechts",
-    price: 45.0,
-    category: "geschlossen",
-    width: 40,
-    glbModule: { moduleType: "mit-tuere-rechts", color: "white", width: 40 as const },
-  },
-  {
-    id: "mit-tuere-links-40",
-    name: "Mit Tür links",
-    artNr: "MOD-40-005",
-    description: "Einzeltür mit Anschlag links",
-    price: 45.0,
-    category: "geschlossen",
-    width: 40,
-    glbModule: { moduleType: "mit-tuere-links", color: "white", width: 40 as const },
-  },
-  {
-    id: "abschliessbar-links-40",
-    name: "Abschließbar links",
-    artNr: "MOD-40-006",
-    description: "Sicherer Stauraum mit Schloss, Anschlag links",
-    price: 65.0,
-    category: "geschlossen",
-    width: 40,
-    glbModule: { moduleType: "abschliessbar-links", color: "white", width: 40 as const },
-  },
-]
-
-// Recommended products - curated selection
-const productsRecommended = [
-  {
-    id: "offenes-fach-80",
-    name: "Offenes Fach 80",
-    artNr: "MOD-80-001",
-    description: "Perfekt für schnellen Zugriff und Dekoration",
-    price: 29.0,
-    category: "offen",
-    width: 80,
-    glbModule: { moduleType: "offenes-fach", color: "white", width: 80 as const },
-    badge: "Bestseller",
-  },
-  {
-    id: "mit-doppelschublade-80",
-    name: "Mit Schubladen",
-    artNr: "MOD-80-008",
-    description: "Optimaler Stauraum mit Vollauszug",
-    price: 85.0,
-    category: "schubladen",
-    width: 80,
-    glbModule: { moduleType: "mit-doppelschublade", color: "white", width: 80 as const },
-    badge: "Beliebt",
-  },
-  {
-    id: "mit-tueren-80",
-    name: "Mit Türen",
-    artNr: "MOD-80-005",
-    description: "Stauraum mit elegantem Verschluss",
-    price: 65.0,
-    category: "geschlossen",
-    width: 80,
-    glbModule: { moduleType: "mit-tueren", color: "white", width: 80 as const },
-    badge: "Top Bewertung",
-  },
-  {
-    id: "offenes-fach-40",
-    name: "Offenes Fach 40",
-    artNr: "MOD-40-001",
-    description: "Kompaktes offenes Fach für kleine Räume",
-    price: 22.0,
-    category: "offen",
-    width: 40,
-    glbModule: { moduleType: "offenes-fach", color: "white", width: 40 as const },
-    badge: "Preis-Tipp",
-  },
-  {
-    id: "mit-rueckwand-80",
-    name: "Mit Rückwand",
-    artNr: "MOD-80-004",
-    description: "Für einen aufgeräumten, geschlossenen Look",
-    price: 42.0,
-    category: "offen",
-    width: 80,
-    glbModule: { moduleType: "mit-rueckwand", color: "white", width: 80 as const },
-    badge: "Neu",
-  },
-  {
-    id: "abschliessbare-tueren-80",
-    name: "Abschließbar",
-    artNr: "MOD-80-010",
-    description: "Sicherer Stauraum mit Schloss",
-    price: 95.0,
-    category: "geschlossen",
-    width: 80,
-    glbModule: { moduleType: "abschliessbare-tueren", color: "white", width: 80 as const },
-    badge: "Premium",
-  },
-]
-
-// Combined for backwards compatibility - use products80 as default
-const products = products80
+import { SimpliRegalCard } from "@/components/simpli-regal-card"
+import { ShopProductCard } from "@/components/shop-product-card"
+import { products80, products40 } from "@/lib/shop-modules"
+import { shopCategories } from "@/lib/shop-categories"
 
 const categories = [
   { id: "alle", name: "Alle" },
@@ -270,8 +29,6 @@ export default function ShopPage() {
   const [selectedTab, setSelectedTab] = useState<"simpli-regale" | 80 | 40>("simpli-regale")
   const [selectedCategory, setSelectedCategory] = useState("alle")
   const [sortBy, setSortBy] = useState("name")
-  const [selectedWidth, setSelectedWidth] = useState(80) // Declare selectedWidth
-  const { addItem } = useCartStore()
 
   // Get products based on selected tab
   const currentProducts = selectedTab === 80 
@@ -310,6 +67,9 @@ export default function ShopPage() {
     return a.name.localeCompare(b.name)
   })
 
+  const regaleCategories = shopCategories.filter((c) => c.group === "regale")
+  const moduleCategories = shopCategories.filter((c) => c.group === "module")
+
   return (
     <main className="min-h-screen bg-gray-50">
       <SiteHeader />
@@ -334,6 +94,26 @@ export default function ShopPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Kategorien */}
+          <section className="mb-10">
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Nach Kategorie shoppen</h2>
+            <p className="mt-1 text-sm text-gray-500">Vorkonfigurierte Regale und Einzelmodule – übersichtlich sortiert.</p>
+
+            <h3 className="mt-6 mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Komplett-Regale</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {regaleCategories.map((c) => (
+                <CategoryTile key={c.slug} slug={c.slug} title={c.title} subtitle={c.subtitle} />
+              ))}
+            </div>
+
+            <h3 className="mt-6 mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Einzelmodule</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {moduleCategories.map((c) => (
+                <CategoryTile key={c.slug} slug={c.slug} title={c.title} subtitle={c.subtitle} />
+              ))}
+            </div>
+          </section>
+
           {/* Width Tabs */}
           <div className="mb-6">
             <div className="inline-flex rounded-xl bg-gray-200 p-1">
@@ -430,12 +210,10 @@ export default function ShopPage() {
             /* Regular Products Grid */
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {sortedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} addItem={addItem} />
+                <ShopProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
-
-
 
           {/* CTA Banner */}
           <div className="mt-16 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -452,6 +230,28 @@ export default function ShopPage() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
+          </div>
+
+          {/* Katalog Download Banner */}
+          <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="hidden sm:flex w-12 h-12 rounded-xl bg-teal-50 items-center justify-center shrink-0">
+                <Download className="w-6 h-6 text-teal-600" />
+              </div>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">Katalog als PDF herunterladen</h2>
+                <p className="mt-2 text-gray-600 max-w-lg text-pretty">
+                  Alle Module und vorkonfigurierten Regale mit Maßen, Materialien und Studio-Renderings –
+                  übersichtlich als hochwertiges PDF-Magazin zum Mitnehmen.
+                </p>
+              </div>
+            </div>
+            <a href="/api/katalog/pdf?download=1" className="shrink-0">
+              <Button size="lg" variant="outline" className="border-gray-300 text-gray-900 hover:bg-gray-50 whitespace-nowrap gap-2 bg-transparent">
+                <Download className="w-4 h-4" />
+                Katalog herunterladen
+              </Button>
+            </a>
           </div>
         </div>
       </div>
@@ -481,6 +281,11 @@ export default function ShopPage() {
                   <Link href="/konfigurator" className="hover:text-black transition">
                     Konfigurator
                   </Link>
+                </li>
+                <li>
+                  <a href="/api/katalog/pdf?download=1" className="hover:text-black transition">
+                    Katalog (PDF)
+                  </a>
                 </li>
               </ul>
             </div>
@@ -519,60 +324,17 @@ export default function ShopPage() {
   )
 }
 
-function ProductCard({ product, addItem }: { product: (typeof products)[0]; addItem: any }) {
-  const [added, setAdded] = useState(false)
-
-  const handleAdd = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    addItem({
-      id: product.id,
-      name: product.name,
-      artNr: product.artNr,
-      price: product.price,
-    })
-    setAdded(true)
-    setTimeout(() => setAdded(false), 1500)
-  }
-
+function CategoryTile({ slug, title, subtitle }: { slug: string; title: string; subtitle: string }) {
   return (
-    <Link href={`/shop/${product.id}`} className="block">
-      <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
-        <div className="aspect-square overflow-hidden flex items-center justify-center bg-gray-50 relative">
-          <Product3DPreview
-            moduleType={product.glbModule.moduleType}
-            color={product.glbModule.color}
-            width={product.glbModule.width}
-            autoRotate={true}
-          />
-        </div>
-        <div className="p-4">
-          <p className="text-xs text-gray-400 mb-1">{product.artNr}</p>
-          <h3 className="font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">{product.name}</h3>
-          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{product.description}</p>
-          <div className="mt-4 flex items-center justify-between">
-            <span className="font-bold text-lg">ab {product.price.toFixed(2)} €</span>
-            <Button
-              size="sm"
-              variant={added ? "default" : "outline"}
-              className={`gap-1 ${added ? "bg-green-600 hover:bg-green-600" : "bg-transparent hover:bg-gray-100"}`}
-              onClick={handleAdd}
-            >
-              {added ? (
-                <>
-                  <Check className="w-3 h-3" />
-                  Hinzugefügt
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-3 h-3" />
-                  Hinzufügen
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+    <Link
+      href={`/shop/kategorie/${slug}`}
+      className="group flex items-center justify-between gap-3 bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-teal-200 transition-all duration-200"
+    >
+      <div>
+        <h4 className="font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">{title}</h4>
+        <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
       </div>
+      <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-teal-600 group-hover:translate-x-0.5 transition-all shrink-0" />
     </Link>
   )
 }
