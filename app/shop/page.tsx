@@ -2,7 +2,7 @@
 import Link from "next/link"
 import type React from "react"
 import { useState } from "react"
-import { ShoppingCart, ChevronDown, Check, ArrowRight, Package } from "lucide-react"
+import { ShoppingCart, ChevronDown, Check, ArrowRight, Package, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCartStore } from "@/lib/cart-store"
 import { SiteHeader } from "@/components/site-header"
@@ -453,6 +453,28 @@ export default function ShopPage() {
               </Button>
             </Link>
           </div>
+
+          {/* Katalog Download Banner */}
+          <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="hidden sm:flex w-12 h-12 rounded-xl bg-teal-50 items-center justify-center shrink-0">
+                <Download className="w-6 h-6 text-teal-600" />
+              </div>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">Katalog als PDF herunterladen</h2>
+                <p className="mt-2 text-gray-600 max-w-lg text-pretty">
+                  Alle Module und vorkonfigurierten Regale mit Maßen, Materialien und Studio-Renderings –
+                  übersichtlich als hochwertiges PDF-Magazin zum Mitnehmen.
+                </p>
+              </div>
+            </div>
+            <a href="/api/katalog/pdf" target="_blank" rel="noopener noreferrer" className="shrink-0">
+              <Button size="lg" variant="outline" className="border-gray-300 text-gray-900 hover:bg-gray-50 whitespace-nowrap gap-2 bg-transparent">
+                <Download className="w-4 h-4" />
+                Katalog herunterladen
+              </Button>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -481,6 +503,16 @@ export default function ShopPage() {
                   <Link href="/konfigurator" className="hover:text-black transition">
                     Konfigurator
                   </Link>
+                </li>
+                <li>
+                  <a
+                    href="/api/katalog/pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-black transition"
+                  >
+                    Katalog (PDF)
+                  </a>
                 </li>
               </ul>
             </div>
