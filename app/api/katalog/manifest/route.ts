@@ -24,18 +24,34 @@ export async function GET() {
   }
 }
 
-// POST: komplettes Manifest (jobId -> url) speichern
+async function loadExisting(): Promise<Record<string, string>> {
+  try {
+    const { blobs } = await list({ prefix: MANIFEST_PATHNAME })
+    const found = blobs.find((b) => b.pathname === MANIFEST_PATHNAME)
+    if (!found) return {}
+    const res = await fetch(found.url, { cache: "no-store" })
+    const manifest = (await res.json()) as CatalogManifest
+    return manifest.images ?? {}
+  } catch {
+    return {}
+  }
+}
+
+// POST: Manifest (jobId -> url) speichern.
+// merge=true fügt die übergebenen Bilder zum bestehenden Manifest hinzu (resumierbar).
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { images: Record<string, string> }
+    const body = (await request.json()) as { images: Record<string, string>; merge?: boolean }
     if (!body?.images) {
       return NextResponse.json({ error: "images erforderlich" }, { status: 400 })
     }
 
+    const images = body.merge ? { ...(await loadExisting()), ...body.images } : body.images
+
     const manifest: CatalogManifest = {
       generatedAt: new Date().toISOString(),
       version: Date.now(),
-      images: body.images,
+      images,
     }
 
     const blob = await put(MANIFEST_PATHNAME, JSON.stringify(manifest), {
@@ -44,7 +60,7 @@ export async function POST(request: NextRequest) {
       allowOverwrite: true,
     })
 
-    return NextResponse.json({ ok: true, url: blob.url, count: Object.keys(body.images).length })
+    return NextResponse.json({ ok: true, url: blob.url, count: Object.keys(images).length })
   } catch (error) {
     console.error("[v0] manifest POST error:", error)
     return NextResponse.json({ error: "Speichern fehlgeschlagen" }, { status: 500 })

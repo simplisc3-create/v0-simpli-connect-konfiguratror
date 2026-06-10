@@ -2,28 +2,45 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CaptureScene } from "@/components/catalog/capture-scene"
-import { buildRenderJobs, getItemById, type RenderJob } from "@/lib/catalog-data"
+import { buildRenderJobs, getItemById, type RenderJob, type CatalogManifest } from "@/lib/catalog-data"
 
-type Status = "idle" | "running" | "saving" | "done" | "error"
+type Status = "loading" | "idle" | "running" | "saving" | "done" | "error"
 
 const CAPTURE_SIZE = 900
-const PER_JOB_TIMEOUT = 12000
+const PER_JOB_TIMEOUT = 14000
+const SAVE_EVERY = 12 // Manifest alle N Captures zwischenspeichern (resumierbar)
 
 export default function KatalogStudioPage() {
   const jobs = useMemo(() => buildRenderJobs(), [])
   const [index, setIndex] = useState(0)
-  const [status, setStatus] = useState<Status>("idle")
+  const [status, setStatus] = useState<Status>("loading")
   const [log, setLog] = useState<string[]>([])
   const imagesRef = useRef<Record<string, string>>({})
   const startedRef = useRef(false)
   const capturedForIndexRef = useRef<number>(-1)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sinceSaveRef = useRef(0)
+  const autoStartRef = useRef(true)
 
   const currentJob: RenderJob | undefined = jobs[index]
 
   const appendLog = useCallback((msg: string) => {
-    setLog((l) => [...l.slice(-60), msg])
+    setLog((l) => [...l.slice(-80), msg])
   }, [])
+
+  const persist = useCallback(async () => {
+    try {
+      const res = await fetch("/api/katalog/manifest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: imagesRef.current, merge: true }),
+      })
+      const d = await res.json()
+      appendLog(`zwischengespeichert (${d.count ?? "?"} gesamt)`)
+    } catch {
+      appendLog("Zwischenspeichern fehlgeschlagen")
+    }
+  }, [appendLog])
 
   const advance = useCallback(() => {
     if (timeoutRef.current) {
@@ -45,15 +62,20 @@ export default function KatalogStudioPage() {
         if (data.url) {
           imagesRef.current[job.jobId] = data.url
           appendLog(`OK  ${job.jobId}`)
+          sinceSaveRef.current += 1
+          if (sinceSaveRef.current >= SAVE_EVERY) {
+            sinceSaveRef.current = 0
+            await persist()
+          }
         } else {
           appendLog(`ERR ${job.jobId}: ${data.error ?? "unbekannt"}`)
         }
-      } catch (e) {
+      } catch {
         appendLog(`ERR ${job.jobId}: upload`)
       }
       advance()
     },
-    [advance, appendLog],
+    [advance, appendLog, persist],
   )
 
   const handleCapture = useCallback(
@@ -66,9 +88,60 @@ export default function KatalogStudioPage() {
     [currentJob, index, uploadCapture],
   )
 
+  // Beim Laden: bestehendes Manifest holen, bereits gerenderte Jobs überspringen.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/katalog/manifest", { cache: "no-store" })
+        const manifest = (await res.json()) as CatalogManifest
+        if (cancelled) return
+        imagesRef.current = manifest.images ?? {}
+        const done = Object.keys(imagesRef.current).length
+        appendLog(`${done} vorhandene Renderings geladen.`)
+        setStatus("idle")
+      } catch {
+        if (!cancelled) setStatus("idle")
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [appendLog])
+
+  const start = useCallback(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+    // Beim ersten noch nicht gerenderten Job beginnen
+    let startIdx = 0
+    while (startIdx < jobs.length && imagesRef.current[jobs[startIdx].jobId]) {
+      startIdx++
+    }
+    setIndex(startIdx)
+    setStatus("running")
+    appendLog(`Starte bei Job ${startIdx + 1} von ${jobs.length} …`)
+  }, [jobs, appendLog])
+
+  // Auto-Start sobald das Manifest geladen ist (robust gegen Sandbox-Neustarts).
+  useEffect(() => {
+    if (status === "idle" && autoStartRef.current) {
+      autoStartRef.current = false
+      start()
+    }
+  }, [status, start])
+
+  // Bereits vorhandene Jobs während des Laufs überspringen.
+  useEffect(() => {
+    if (status !== "running" || !currentJob) return
+    if (imagesRef.current[currentJob.jobId]) {
+      advance()
+    }
+  }, [status, currentJob, advance])
+
   // Pro Job ein Sicherheits-Timeout, damit die Pipeline nie hängen bleibt.
   useEffect(() => {
     if (status !== "running" || !currentJob) return
+    if (imagesRef.current[currentJob.jobId]) return
     capturedForIndexRef.current = -1
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => {
@@ -83,7 +156,7 @@ export default function KatalogStudioPage() {
     }
   }, [index, status, currentJob, advance, appendLog])
 
-  // Abschluss: Manifest speichern
+  // Abschluss: finales Manifest speichern.
   useEffect(() => {
     if (status !== "running") return
     if (index < jobs.length) return
@@ -92,7 +165,7 @@ export default function KatalogStudioPage() {
     fetch("/api/katalog/manifest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ images: imagesRef.current }),
+      body: JSON.stringify({ images: imagesRef.current, merge: true }),
     })
       .then((r) => r.json())
       .then((d) => {
@@ -110,15 +183,6 @@ export default function KatalogStudioPage() {
       })
   }, [index, jobs.length, status, appendLog])
 
-  const start = useCallback(() => {
-    if (startedRef.current) return
-    startedRef.current = true
-    imagesRef.current = {}
-    setIndex(0)
-    setStatus("running")
-    appendLog(`Starte Rendering von ${jobs.length} Ansichten …`)
-  }, [jobs.length, appendLog])
-
   const item = currentJob ? getItemById(currentJob.itemId) : undefined
   const progress = jobs.length > 0 ? Math.min(100, Math.round((index / jobs.length) * 100)) : 0
 
@@ -128,21 +192,30 @@ export default function KatalogStudioPage() {
         <h1 className="text-2xl font-semibold">Katalog-Render-Studio</h1>
         <p className="mt-1 text-sm text-zinc-600">
           Rendert alle Produkte und Farbvarianten aus 4 Richtungen, lädt sie in den Blob-Speicher und erzeugt das
-          Manifest für das PDF-Magazin.
+          Manifest für das PDF-Magazin. Läufe sind fortsetzbar – bereits erzeugte Bilder werden übersprungen.
         </p>
 
         <div className="mt-6 flex items-center gap-4">
           <button
-            onClick={start}
-            disabled={status === "running" || status === "saving"}
+            onClick={() => {
+              startedRef.current = false
+              start()
+            }}
+            disabled={status === "running" || status === "saving" || status === "loading"}
             className="rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {status === "idle" ? "Rendering starten" : status === "running" ? "Läuft …" : "Erneut starten"}
+            {status === "loading"
+              ? "Lädt …"
+              : status === "running"
+                ? "Läuft …"
+                : status === "done"
+                  ? "Erneut starten"
+                  : "Rendering starten"}
           </button>
           <div className="text-sm tabular-nums text-zinc-600">
             {index} / {jobs.length} ({progress}%)
           </div>
-          {status === "done" && (
+          {(status === "done" || status === "idle") && (
             <a href="/katalog" className="text-sm font-medium text-emerald-700 underline">
               Zum Katalog →
             </a>
@@ -157,9 +230,9 @@ export default function KatalogStudioPage() {
           {/* Live-Renderbühne */}
           <div className="overflow-hidden rounded-lg border border-zinc-300 bg-white">
             <div className="border-b border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-500">
-              {currentJob ? (
+              {currentJob && item ? (
                 <>
-                  {item?.name} — {currentJob.view} — {currentJob.color}
+                  {item.name} — {currentJob.view} — {currentJob.color}
                 </>
               ) : (
                 "—"
@@ -188,7 +261,13 @@ export default function KatalogStudioPage() {
                 </div>
               ) : (
                 <div className="flex h-[420px] w-[420px] items-center justify-center text-sm text-zinc-400">
-                  {status === "done" ? "Fertig" : status === "saving" ? "Speichere …" : "Bereit"}
+                  {status === "done"
+                    ? "Fertig"
+                    : status === "saving"
+                      ? "Speichere …"
+                      : status === "loading"
+                        ? "Lädt …"
+                        : "Bereit"}
                 </div>
               )}
             </div>
