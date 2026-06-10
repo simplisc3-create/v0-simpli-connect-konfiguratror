@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useMemo, useRef, useEffect } from "react"
-import { Canvas, useThree, useFrame } from "@react-three/fiber"
+import { Canvas, useThree } from "@react-three/fiber"
 import { Environment } from "@react-three/drei"
 import * as THREE from "three"
 import { GLBModule } from "@/components/glb-module-loader"
@@ -136,51 +136,78 @@ function computeCamera(
 
 // -----------------------------------------------------------------------------
 // Capture-Rig: läuft innerhalb EINES dauerhaften Canvas/WebGL-Kontexts.
-// Bei jedem Wechsel von `captureKey` wird die Kamera neu gesetzt, einige Frames
-// gerendert und anschließend das Canvas ausgelesen. So entsteht kein
-// WebGL-Kontext-Verlust durch wiederholtes Mounten.
+// Bei jedem Wechsel von `captureKey` wird die Kamera gesetzt und nach einer
+// kurzen Settle-Zeit (timer-basiert, damit Hintergrund-Tabs den RAF-Loop nicht
+// drosseln) das Canvas ausgelesen. So entsteht kein WebGL-Kontext-Verlust.
 // -----------------------------------------------------------------------------
 function CaptureRig({
   captureKey,
   position,
   target,
-  settleFrames,
+  settleMs,
+  expectedModules,
   onReady,
 }: {
   captureKey: string
   position: [number, number, number]
   target: [number, number, number]
-  settleFrames: number
+  settleMs: number
+  expectedModules: number
   onReady: (key: string, dataUrl: string) => void
 }) {
   const { camera, gl, scene } = useThree()
-  const framesRef = useRef(0)
-  const firedKeyRef = useRef<string | null>(null)
 
-  // Bei neuem Job: Frame-Zähler zurücksetzen und Kamera positionieren.
   useEffect(() => {
-    framesRef.current = 0
-    camera.position.set(position[0], position[1], position[2])
-    camera.lookAt(target[0], target[1], target[2])
-    camera.updateProjectionMatrix()
-  }, [captureKey, camera, position, target])
+    let cancelled = false
+    let pollId: ReturnType<typeof setTimeout> | null = null
+    let settleId: ReturnType<typeof setTimeout> | null = null
+    const startedAt = Date.now()
 
-  useFrame(() => {
-    if (firedKeyRef.current === captureKey) return
-    camera.position.set(position[0], position[1], position[2])
-    camera.lookAt(target[0], target[1], target[2])
-    framesRef.current++
-    if (framesRef.current >= settleFrames) {
+    const positionCamera = () => {
+      camera.position.set(position[0], position[1], position[2])
+      camera.lookAt(target[0], target[1], target[2])
+      camera.updateProjectionMatrix()
+    }
+
+    const grab = () => {
+      if (cancelled) return
+      positionCamera()
+      // Mehrere Render-Durchläufe für stabile Beleuchtung/Environment.
+      gl.render(scene, camera)
       gl.render(scene, camera)
       try {
         const url = gl.domElement.toDataURL("image/png")
-        firedKeyRef.current = captureKey
         onReady(captureKey, url)
       } catch (e) {
         console.log("[v0] capture toDataURL failed", e)
       }
     }
-  })
+
+    // Warten bis die erwarteten GLB-Meshes geladen sind, dann kurz settlen.
+    const waitForMeshes = () => {
+      if (cancelled) return
+      let meshCount = 0
+      scene.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh) meshCount++
+      })
+      const ready = meshCount >= Math.max(1, expectedModules)
+      const timedOut = Date.now() - startedAt > 9000
+      if (ready || timedOut) {
+        settleId = setTimeout(grab, settleMs)
+      } else {
+        pollId = setTimeout(waitForMeshes, 120)
+      }
+    }
+
+    positionCamera()
+    waitForMeshes()
+
+    return () => {
+      cancelled = true
+      if (pollId) clearTimeout(pollId)
+      if (settleId) clearTimeout(settleId)
+    }
+  }, [captureKey, camera, gl, scene, position, target, settleMs, expectedModules, onReady])
 
   return null
 }
