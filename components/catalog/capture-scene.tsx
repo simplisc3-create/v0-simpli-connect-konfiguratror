@@ -1,7 +1,7 @@
 "use client"
 
-import { Suspense, useMemo, useRef, useEffect, useState } from "react"
-import { Canvas, useThree } from "@react-three/fiber"
+import { Suspense, useMemo, useRef, useEffect } from "react"
+import { Canvas, useThree, useFrame } from "@react-three/fiber"
 import { Environment } from "@react-three/drei"
 import * as THREE from "three"
 import { GLBModule } from "@/components/glb-module-loader"
@@ -118,7 +118,6 @@ function computeCamera(
   const targetY = totalHeight / 2
   const target: [number, number, number] = [0, targetY, 0]
 
-  // Distanz so wählen, dass das gesamte Möbel sicher ins Bild passt
   const maxDim = Math.max(totalWidth, totalHeight, depth)
   const dist = Math.max(1.6, maxDim * 1.55)
 
@@ -136,88 +135,94 @@ function computeCamera(
 }
 
 // -----------------------------------------------------------------------------
-// Capture-Helfer: rendert mehrere Frames und liest dann das Canvas aus.
+// Capture-Rig: läuft innerhalb EINES dauerhaften Canvas/WebGL-Kontexts.
+// Bei jedem Wechsel von `captureKey` wird die Kamera neu gesetzt, einige Frames
+// gerendert und anschließend das Canvas ausgelesen. So entsteht kein
+// WebGL-Kontext-Verlust durch wiederholtes Mounten.
 // -----------------------------------------------------------------------------
 function CaptureRig({
+  captureKey,
   position,
   target,
+  settleFrames,
   onReady,
 }: {
+  captureKey: string
   position: [number, number, number]
   target: [number, number, number]
-  onReady: (dataUrl: string) => void
+  settleFrames: number
+  onReady: (key: string, dataUrl: string) => void
 }) {
   const { camera, gl, scene } = useThree()
-  const firedRef = useRef(false)
+  const framesRef = useRef(0)
+  const firedKeyRef = useRef<string | null>(null)
 
+  // Bei neuem Job: Frame-Zähler zurücksetzen und Kamera positionieren.
   useEffect(() => {
-    firedRef.current = false
-  }, [position[0], position[1], position[2]])
-
-  useEffect(() => {
+    framesRef.current = 0
     camera.position.set(position[0], position[1], position[2])
     camera.lookAt(target[0], target[1], target[2])
     camera.updateProjectionMatrix()
-  }, [camera, position, target])
+  }, [captureKey, camera, position, target])
 
-  useEffect(() => {
-    let raf = 0
-    let frames = 0
-    const tick = () => {
-      frames++
-      camera.position.set(position[0], position[1], position[2])
-      camera.lookAt(target[0], target[1], target[2])
+  useFrame(() => {
+    if (firedKeyRef.current === captureKey) return
+    camera.position.set(position[0], position[1], position[2])
+    camera.lookAt(target[0], target[1], target[2])
+    framesRef.current++
+    if (framesRef.current >= settleFrames) {
       gl.render(scene, camera)
-      // Nach ein paar Frames sind GLB-Texturen/Materialien sicher geladen
-      if (frames > 8 && !firedRef.current) {
-        firedRef.current = true
-        try {
-          const url = gl.domElement.toDataURL("image/png")
-          onReady(url)
-        } catch (e) {
-          console.log("[v0] capture toDataURL failed", e)
-        }
-        return
+      try {
+        const url = gl.domElement.toDataURL("image/png")
+        firedKeyRef.current = captureKey
+        onReady(captureKey, url)
+      } catch (e) {
+        console.log("[v0] capture toDataURL failed", e)
       }
-      raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [camera, gl, scene, position, target, onReady])
+  })
 
   return null
 }
 
-interface CaptureSceneProps {
+export interface CaptureJobInput {
+  jobId: string
+  itemId: string
   preset: CatalogPreset
   colorGerman: string
   view: ViewKey
-  size?: number
-  onCapture: (dataUrl: string) => void
 }
 
-export function CaptureScene({ preset, colorGerman, view, size = 900, onCapture }: CaptureSceneProps) {
-  const { modules, totalWidth, totalHeight, depth } = useModules(preset, colorGerman)
+interface CaptureStudioCanvasProps {
+  job: CaptureJobInput
+  size?: number
+  settleFrames?: number
+  onCapture: (jobId: string, dataUrl: string) => void
+}
+
+// Dauerhafter Canvas – nur Inhalt (Modell/Farbe/Kamera) wechselt pro Job.
+export function CaptureStudioCanvas({ job, size = 900, settleFrames = 14, onCapture }: CaptureStudioCanvasProps) {
+  const { modules, totalWidth, totalHeight, depth } = useModules(job.preset, job.colorGerman)
   const cam = useMemo(
-    () => computeCamera(view, totalWidth, totalHeight, depth),
-    [view, totalWidth, totalHeight, depth],
+    () => computeCamera(job.view, totalWidth, totalHeight, depth),
+    [job.view, totalWidth, totalHeight, depth],
   )
 
   const mockGridConfig = useMemo(
     () => ({
       width: 75 as const,
       height: 40 as const,
-      sections: preset.columns,
-      levels: preset.rows,
+      sections: job.preset.columns,
+      levels: job.preset.rows,
       material: "metal" as const,
       finish: "white" as const,
-      grid: preset.grid,
-      columns: preset.columns,
-      rows: preset.rows,
-      columnWidths: preset.columnWidths,
-      rowHeights: preset.rowHeights,
+      grid: job.preset.grid,
+      columns: job.preset.columns,
+      rows: job.preset.rows,
+      columnWidths: job.preset.columnWidths,
+      rowHeights: job.preset.rowHeights,
     }),
-    [preset],
+    [job.preset],
   )
 
   return (
@@ -237,21 +242,22 @@ export function CaptureScene({ preset, colorGerman, view, size = 900, onCapture 
       >
         <color attach="background" args={["#f4f4f5"]} />
         <ambientLight intensity={0.75} />
-        <directionalLight position={[3, 6, 4]} intensity={0.5} castShadow />
+        <directionalLight position={[3, 6, 4]} intensity={0.5} />
         <directionalLight position={[-3, 4, -2]} intensity={0.25} />
         <Environment preset="studio" background={false} />
 
         <Suspense fallback={null}>
-          <group>
+          {/* group keyed per Job, damit Modelle sauber neu aufgebaut werden */}
+          <group key={`${job.itemId}-${job.colorGerman}`}>
             {modules.map(({ key, position, cellType, width, height, row, col, isBottomModule }) => (
               <GLBModule
-                key={`${key}-${colorGerman}`}
+                key={`${key}-${job.colorGerman}`}
                 position={position}
                 cellType={cellType as never}
                 width={width}
                 height={height}
                 depth={depth}
-                color={colorGerman as never}
+                color={job.colorGerman as never}
                 row={row}
                 col={col}
                 gridConfig={mockGridConfig as never}
@@ -259,21 +265,15 @@ export function CaptureScene({ preset, colorGerman, view, size = 900, onCapture 
               />
             ))}
           </group>
-          <CaptureRig position={cam.position} target={cam.target} onReady={onCapture} />
+          <CaptureRig
+            captureKey={job.jobId}
+            position={cam.position}
+            target={cam.target}
+            settleFrames={settleFrames}
+            onReady={onCapture}
+          />
         </Suspense>
       </Canvas>
     </div>
   )
-}
-
-// Hilfs-Wrapper, der nach einer maximalen Wartezeit auch ohne perfektes Laden auslöst,
-// damit die Pipeline niemals hängen bleibt.
-export function useCaptureTimeout(onTimeout: () => void, ms = 9000, deps: unknown[] = []) {
-  const [, setTick] = useState(0)
-  useEffect(() => {
-    const t = setTimeout(onTimeout, ms)
-    setTick((x) => x + 1)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps)
 }

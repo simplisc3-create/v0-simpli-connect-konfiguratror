@@ -1,21 +1,40 @@
 import { put, list } from "@vercel/blob"
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { MANIFEST_PATHNAME, type CatalogManifest } from "@/lib/catalog-data"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-// GET: aktuelles Manifest laden (oder leeres zurückgeben)
+const RENDERS_PREFIX = "katalog/renders/"
+
+// Manifest direkt aus den abgelegten Render-Blobs ableiten.
+// Dadurch ist der Fortschritt selbstheilend: jedes erfolgreich hochgeladene Bild
+// zählt, unabhängig davon ob der Browser zwischendurch neu geladen hat.
+async function deriveImagesFromBlobs(): Promise<Record<string, string>> {
+  const images: Record<string, string> = {}
+  let cursor: string | undefined
+  do {
+    const result = await list({ prefix: RENDERS_PREFIX, cursor, limit: 1000 })
+    for (const b of result.blobs) {
+      const file = b.pathname.slice(RENDERS_PREFIX.length)
+      if (!file.endsWith(".png")) continue
+      const jobId = file.slice(0, -4)
+      images[jobId] = b.url
+    }
+    cursor = result.hasMore ? result.cursor : undefined
+  } while (cursor)
+  return images
+}
+
+// GET: aktuelles Manifest aus dem Blob-Speicher ableiten
 export async function GET() {
   try {
-    const { blobs } = await list({ prefix: MANIFEST_PATHNAME })
-    const found = blobs.find((b) => b.pathname === MANIFEST_PATHNAME)
-    if (!found) {
-      const empty: CatalogManifest = { generatedAt: "", version: 0, images: {} }
-      return NextResponse.json(empty)
+    const images = await deriveImagesFromBlobs()
+    const manifest: CatalogManifest = {
+      generatedAt: new Date().toISOString(),
+      version: Date.now(),
+      images,
     }
-    const res = await fetch(found.url, { cache: "no-store" })
-    const manifest = (await res.json()) as CatalogManifest
     return NextResponse.json(manifest)
   } catch (error) {
     console.error("[v0] manifest GET error:", error)
@@ -24,30 +43,11 @@ export async function GET() {
   }
 }
 
-async function loadExisting(): Promise<Record<string, string>> {
+// POST: optionaler Snapshot. Das Manifest wird beim GET ohnehin live aus den
+// Render-Blobs abgeleitet, daher genügt es hier, den aktuellen Stand zu bestätigen.
+export async function POST() {
   try {
-    const { blobs } = await list({ prefix: MANIFEST_PATHNAME })
-    const found = blobs.find((b) => b.pathname === MANIFEST_PATHNAME)
-    if (!found) return {}
-    const res = await fetch(found.url, { cache: "no-store" })
-    const manifest = (await res.json()) as CatalogManifest
-    return manifest.images ?? {}
-  } catch {
-    return {}
-  }
-}
-
-// POST: Manifest (jobId -> url) speichern.
-// merge=true fügt die übergebenen Bilder zum bestehenden Manifest hinzu (resumierbar).
-export async function POST(request: NextRequest) {
-  try {
-    const body = (await request.json()) as { images: Record<string, string>; merge?: boolean }
-    if (!body?.images) {
-      return NextResponse.json({ error: "images erforderlich" }, { status: 400 })
-    }
-
-    const images = body.merge ? { ...(await loadExisting()), ...body.images } : body.images
-
+    const images = await deriveImagesFromBlobs()
     const manifest: CatalogManifest = {
       generatedAt: new Date().toISOString(),
       version: Date.now(),

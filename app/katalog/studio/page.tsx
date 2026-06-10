@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { CaptureScene } from "@/components/catalog/capture-scene"
+import { CaptureStudioCanvas, type CaptureJobInput } from "@/components/catalog/capture-scene"
 import { buildRenderJobs, getItemById, type RenderJob, type CatalogManifest } from "@/lib/catalog-data"
 
 type Status = "loading" | "idle" | "running" | "saving" | "done" | "error"
@@ -79,8 +79,10 @@ export default function KatalogStudioPage() {
   )
 
   const handleCapture = useCallback(
-    (dataUrl: string) => {
+    (jobId: string, dataUrl: string) => {
       if (!currentJob) return
+      // Nur das Capture für den aktuellen Job akzeptieren (stale Frames ignorieren).
+      if (jobId !== currentJob.jobId) return
       if (capturedForIndexRef.current === index) return
       capturedForIndexRef.current = index
       uploadCapture(currentJob, dataUrl)
@@ -186,6 +188,18 @@ export default function KatalogStudioPage() {
   const item = currentJob ? getItemById(currentJob.itemId) : undefined
   const progress = jobs.length > 0 ? Math.min(100, Math.round((index / jobs.length) * 100)) : 0
 
+  // Job-Eingabe für den dauerhaften Canvas (nur Inhalt wechselt, Canvas bleibt montiert).
+  const captureJob: CaptureJobInput | null =
+    currentJob && item
+      ? {
+          jobId: currentJob.jobId,
+          itemId: currentJob.itemId,
+          preset: item.preset,
+          colorGerman: currentJob.colorGerman,
+          view: currentJob.view,
+        }
+      : null
+
   return (
     <main className="min-h-screen bg-zinc-100 p-6 text-zinc-900">
       <div className="mx-auto max-w-5xl">
@@ -239,7 +253,7 @@ export default function KatalogStudioPage() {
               )}
             </div>
             <div className="flex items-center justify-center bg-zinc-50 p-2">
-              {status === "running" && currentJob && item ? (
+              {status === "running" && captureJob ? (
                 <div style={{ width: 420, height: 420 }} className="overflow-hidden">
                   <div
                     style={{
@@ -249,14 +263,7 @@ export default function KatalogStudioPage() {
                       transformOrigin: "top left",
                     }}
                   >
-                    <CaptureScene
-                      key={currentJob.jobId}
-                      preset={item.preset}
-                      colorGerman={currentJob.colorGerman}
-                      view={currentJob.view}
-                      size={CAPTURE_SIZE}
-                      onCapture={handleCapture}
-                    />
+                    <CaptureStudioCanvas job={captureJob} size={CAPTURE_SIZE} onCapture={handleCapture} />
                   </div>
                 </div>
               ) : (
