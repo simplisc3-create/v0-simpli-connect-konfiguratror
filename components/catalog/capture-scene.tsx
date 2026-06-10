@@ -264,7 +264,7 @@ export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture
           powerPreference: "high-performance",
         }}
         camera={{ position: cam.position, fov: 32 }}
-        frameloop="always"
+        frameloop="demand"
       >
         <color attach="background" args={["#f4f4f5"]} />
         {/* Reines Licht-Setup ohne cross-origin HDR, damit das Canvas nicht
