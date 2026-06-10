@@ -133,27 +133,30 @@ function computeCamera(
   switch (view) {
     case "front":
     case "back": {
-      const dist = Math.max(1.6, fitDistance(Math.max(totalWidth, totalHeight)))
+      const dist = Math.max(1.8, fitDistance(Math.max(totalWidth, totalHeight), 1.4))
       return { position: [0, targetY, view === "back" ? -dist : dist], target }
     }
     case "side": {
-      const dist = Math.max(1.6, fitDistance(Math.max(depth, totalHeight)))
+      const dist = Math.max(1.8, fitDistance(Math.max(depth, totalHeight), 1.4))
       return { position: [dist, targetY, 0.0001], target }
     }
     case "perspective":
     default: {
-      // Bei 45°-Blick wächst die sichtbare Silhouette: Breite und Tiefe
-      // projizieren gemeinsam, und die leichte Aufsicht vergrößert die Höhe.
-      const projectedWidth = (totalWidth + depth) * 0.78
-      const projectedHeight = totalHeight * 1.25
+      // Bei 45°-Blick projizieren Breite und Tiefe gemeinsam auf die Bildebene.
+      // Wir rechnen die volle diagonale Silhouette plus die durch die leichte
+      // Aufsicht zusätzlich sichtbare Höhe großzügig ein, damit nichts
+      // angeschnitten wird.
+      const projectedWidth = (totalWidth + depth) * 0.95
+      const projectedHeight = totalHeight + depth * 0.5
       const extent = Math.max(projectedWidth, projectedHeight)
-      // Großzügiger Rand, damit das gesamte Möbel inkl. Rändern sichtbar bleibt.
-      const dist = Math.max(2.0, fitDistance(extent, 1.34))
+      // Deutlich großzügigerer Rand → das komplette Möbel ist mit Luft drumherum
+      // sichtbar (vorher schnitt es oben/unten an).
+      const dist = Math.max(2.4, fitDistance(extent, 1.6))
       const horiz = dist * 0.7
       return {
-        // Blickziel auf die Möbelmitte richten und nur leicht von oben schauen,
-        // damit weder oben noch unten etwas abgeschnitten wird.
-        position: [horiz, targetY + totalHeight * 0.1 + 0.15, horiz],
+        // Genau auf die Möbelmitte blicken und nur ganz leicht von oben –
+        // so bleiben Ober- und Unterkante sicher im Bild.
+        position: [horiz, targetY + totalHeight * 0.06, horiz],
         target,
       }
     }
