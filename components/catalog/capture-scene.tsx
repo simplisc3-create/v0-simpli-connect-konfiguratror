@@ -1,8 +1,7 @@
 "use client"
 
-import { Suspense, useMemo, useRef, useEffect } from "react"
+import { Suspense, useMemo, useEffect } from "react"
 import { Canvas, useThree } from "@react-three/fiber"
-import { Environment } from "@react-three/drei"
 import * as THREE from "three"
 import { GLBModule } from "@/components/glb-module-loader"
 import type { CatalogPreset, ViewKey } from "@/lib/catalog-data"
@@ -223,12 +222,12 @@ export interface CaptureJobInput {
 interface CaptureStudioCanvasProps {
   job: CaptureJobInput
   size?: number
-  settleFrames?: number
+  settleMs?: number
   onCapture: (jobId: string, dataUrl: string) => void
 }
 
 // Dauerhafter Canvas – nur Inhalt (Modell/Farbe/Kamera) wechselt pro Job.
-export function CaptureStudioCanvas({ job, size = 900, settleFrames = 14, onCapture }: CaptureStudioCanvasProps) {
+export function CaptureStudioCanvas({ job, size = 900, settleMs = 150, onCapture }: CaptureStudioCanvasProps) {
   const { modules, totalWidth, totalHeight, depth } = useModules(job.preset, job.colorGerman)
   const cam = useMemo(
     () => computeCamera(job.view, totalWidth, totalHeight, depth),
@@ -268,10 +267,13 @@ export function CaptureStudioCanvas({ job, size = 900, settleFrames = 14, onCapt
         frameloop="always"
       >
         <color attach="background" args={["#f4f4f5"]} />
-        <ambientLight intensity={0.75} />
-        <directionalLight position={[3, 6, 4]} intensity={0.5} />
-        <directionalLight position={[-3, 4, -2]} intensity={0.25} />
-        <Environment preset="studio" background={false} />
+        {/* Reines Licht-Setup ohne cross-origin HDR, damit das Canvas nicht
+            "tainted" wird und toDataURL() zuverlässig funktioniert. */}
+        <ambientLight intensity={0.9} />
+        <hemisphereLight args={["#ffffff", "#d8d8dc", 0.7]} />
+        <directionalLight position={[4, 8, 5]} intensity={1.1} />
+        <directionalLight position={[-4, 5, -3]} intensity={0.5} />
+        <directionalLight position={[0, 3, 6]} intensity={0.35} />
 
         <Suspense fallback={null}>
           {/* group keyed per Job, damit Modelle sauber neu aufgebaut werden */}
@@ -296,7 +298,8 @@ export function CaptureStudioCanvas({ job, size = 900, settleFrames = 14, onCapt
             captureKey={job.jobId}
             position={cam.position}
             target={cam.target}
-            settleFrames={settleFrames}
+            settleMs={settleMs}
+            expectedModules={modules.length}
             onReady={onCapture}
           />
         </Suspense>
