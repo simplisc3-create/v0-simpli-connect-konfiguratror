@@ -363,31 +363,16 @@ export const ALL_CATALOG_ITEMS: CatalogItem[] = [...CATALOG_REGALE, ...CATALOG_M
 export function buildRenderJobs(): RenderJob[] {
   const jobs: RenderJob[] = []
   for (const item of ALL_CATALOG_ITEMS) {
-    // 4 Hero-Ansichten in der Primärfarbe (Weiß)
-    for (const view of CATALOG_VIEWS) {
-      jobs.push({
-        jobId: `${item.id}__${view.key}__${PRIMARY_COLOR.key}`,
-        itemId: item.id,
-        itemKind: item.kind,
-        view: view.key,
-        color: PRIMARY_COLOR.key,
-        colorGerman: PRIMARY_COLOR.german,
-        role: "hero",
-      })
-    }
-    // Farbvarianten: Perspektive in allen Farben außer der Primärfarbe
-    for (const color of CATALOG_COLORS) {
-      if (color.key === PRIMARY_COLOR.key) continue
-      jobs.push({
-        jobId: `${item.id}__variant__${color.key}`,
-        itemId: item.id,
-        itemKind: item.kind,
-        view: "perspective",
-        color: color.key,
-        colorGerman: color.german,
-        role: "variant",
-      })
-    }
+    // Ein Hero-Shot pro Produkt in der Primärfarbe (Weiß), Perspektive.
+    jobs.push({
+      jobId: `${item.id}__perspective__${PRIMARY_COLOR.key}`,
+      itemId: item.id,
+      itemKind: item.kind,
+      view: "perspective",
+      color: PRIMARY_COLOR.key,
+      colorGerman: PRIMARY_COLOR.german,
+      role: "hero",
+    })
   }
   return jobs
 }
