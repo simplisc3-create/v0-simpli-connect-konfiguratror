@@ -60,8 +60,11 @@ async function inlineManifestImages(manifest: CatalogManifest): Promise<CatalogM
   return { ...manifest, images: inlined }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const asDownload = searchParams.get("download") === "1"
+
     const manifest = await loadManifest()
     const inlinedManifest = await inlineManifestImages(manifest)
     const buffer = await renderToBuffer(<CatalogDocument manifest={inlinedManifest} />)
@@ -69,7 +72,7 @@ export async function GET() {
     return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": 'inline; filename="simpli-connect-kollektion-2026.pdf"',
+        "Content-Disposition": `${asDownload ? "attachment" : "inline"}; filename="simpli-connect-kollektion-2026.pdf"`,
         "Cache-Control": "no-store",
       },
     })

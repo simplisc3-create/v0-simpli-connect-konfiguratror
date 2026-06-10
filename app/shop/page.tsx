@@ -468,7 +468,7 @@ export default function ShopPage() {
                 </p>
               </div>
             </div>
-            <a href="/api/katalog/pdf" target="_blank" rel="noopener noreferrer" className="shrink-0">
+            <a href="/api/katalog/pdf?download=1" className="shrink-0">
               <Button size="lg" variant="outline" className="border-gray-300 text-gray-900 hover:bg-gray-50 whitespace-nowrap gap-2 bg-transparent">
                 <Download className="w-4 h-4" />
                 Katalog herunterladen
@@ -505,12 +505,7 @@ export default function ShopPage() {
                   </Link>
                 </li>
                 <li>
-                  <a
-                    href="/api/katalog/pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-black transition"
-                  >
+                  <a href="/api/katalog/pdf?download=1" className="hover:text-black transition">
                     Katalog (PDF)
                   </a>
                 </li>

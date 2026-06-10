@@ -25,18 +25,16 @@ export default function KatalogPage() {
         </h1>
         <p className="mt-8 max-w-xl text-pretty text-base leading-relaxed text-[#33312c]">
           Ein hochwertiges Magazin, das alle {ALL_CATALOG_ITEMS.length} Modelle des modularen Möbelsystems präsentiert –
-          jedes aus vier Blickwinkeln und in allen {CATALOG_COLORS.length} Systemfarben, mit Inhaltsverzeichnis,
-          Spezifikationen und Seitenzahlen.
+          jedes als hochwertiges Studio-Rendering, erhältlich in {CATALOG_COLORS.length} Systemfarben, mit
+          Inhaltsverzeichnis, Spezifikationen und Seitenzahlen.
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
           <a
-            href="/api/katalog/pdf"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/api/katalog/pdf?download=1"
             className="rounded-full bg-[#1a1a1a] px-8 py-3.5 text-sm font-medium text-[#f7f5f0] transition-colors hover:bg-[#1f6f4a]"
           >
-            PDF-Magazin öffnen
+            PDF-Magazin herunterladen
           </a>
           <a
             href="/katalog/studio"
