@@ -53,7 +53,7 @@ const product = {
 const availableColors = [
   { id: "white", label: "Weiß", hex: "#FFFFFF" },
   { id: "grey", label: "Grau", hex: "#9E9E9E" },
-  { id: "black", label: "Schwarz", hex: "#111111" },
+  { id: "black", label: "Schwarz", hex: "#333333" },
   { id: "blue", label: "Blau", hex: "#1E5EFF" },
   { id: "green", label: "Grün", hex: "#2FAE5D" },
   { id: "yellow", label: "Gelb", hex: "#FFD400" },
